@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ESNTLS CLUB — Premium Streetwear</title>
+<meta name="description" content="Curated designer footwear, jackets & accessories. Free UK shipping.">
+<meta name="theme-color" content="#00C853">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://esntlsclub.com">
+<link rel="dns-prefetch" href="https://pccqpmefzeaorgtajdfm.supabase.co">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
+<style>
+/* ═══ RESET ═══ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:#fff;color:#111;font-family:'DM Sans',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;max-width:100vw}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+section,footer,nav{max-width:100vw;overflow-x:hidden}
+::selection{background:#00C853;color:#fff}
+
+/* ═══ PRODUCT GRID — uniform cards ═══ */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:0;contain:layout style}
+@media(min-width:640px){.g2{grid-template-columns:repeat(3,1fr);gap:6px}}
+@media(min-width:1024px){.g2{grid-template-columns:repeat(4,1fr);gap:6px}}
+
+/* ═══ CARDS ═══ */
+.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease;cursor:pointer;position:relative;opacity:0;transform:translateY(30px) scale(.97);contain:layout style paint}
+.pc.vis{opacity:1;transform:translateY(0) scale(1)}
+.pc:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.pc:active{transform:scale(.98);transition:.1s}
+.pc img{transition:transform .5s cubic-bezier(.22,1,.36,1);will-change:transform}
+.pc:hover img{transform:scale(1.08)}
+
+/* ═══ SCROLLING ROWS ═══ */
+.hscroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ═══ NAV TOGGLE ═══ */
+.dnav{display:none!important}
+.mbtn{display:flex!important}
+@media(min-width:769px){
+.dnav{display:flex!important}
+.mbtn{display:none!important}
+.nav-logo{position:static!important;left:auto!important;transform:none!important}
+}
+
+/* ═══ FILTER BUTTONS ═══ */
+.fb{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:50px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;min-height:44px;flex-shrink:0;border:1.5px solid #e0e0e0;background:transparent;color:#888;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.fb:hover{border-color:#00C853;color:#00C853;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,200,83,.15)}
+.fb:active{transform:scale(.95)}
+.fb.on{background:#111;color:#fff;border-color:#111;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+
+/* ═══ NAV LINKS ═══ */
+.nl{color:#777;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;transition:color .3s;position:relative}
+.nl::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:#00C853;transition:width .3s cubic-bezier(.22,1,.36,1);border-radius:2px}
+.nl:hover{color:#00C853}
+.nl:hover::after{width:100%}
+
+/* ═══ FOOTER ═══ */
+.fl{display:block;font-size:12px;color:#888;margin-bottom:8px;min-height:32px;line-height:32px;transition:color .2s}
+.fl:hover{color:#111}
+.fcols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:480px){.fcols{grid-template-columns:1fr 1fr;gap:12px}}
+
+/* ═══ STEPS ═══ */
+.steps-compact{grid-template-columns:repeat(2,1fr)!important}
+@media(min-width:480px){.steps-compact{grid-template-columns:repeat(4,1fr)!important}}
+
+/* ═══ CONTACT ═══ */
+.cgrid{display:grid;grid-template-columns:1fr;gap:24px}
+@media(min-width:768px){.cgrid{grid-template-columns:1fr 1fr;gap:32px}}
+
+/* ═══ STEPS GRID ═══ */
+.sgrid{display:grid;grid-template-columns:1fr;gap:24px}
+@media(min-width:640px){.sgrid{grid-template-columns:repeat(3,1fr);gap:28px}}
+
+/* ═══ AUTO-SCROLL CATEGORIES ═══ */
+@keyframes scrollCats{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.cat-wrapper{overflow:hidden;width:100%;max-width:100vw;position:relative}
+.cat-wrapper::before,.cat-wrapper::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
+.cat-wrapper::before{left:0;background:linear-gradient(to right,#fff,transparent)}
+.cat-wrapper::after{right:0;background:linear-gradient(to left,#fff,transparent)}
+.cat-track{display:inline-flex;gap:12px;animation:scrollCats 20s linear infinite;white-space:nowrap;will-change:transform}
+.cat-track:hover{animation-play-state:paused}
+.cat-item{flex-shrink:0;background:#f5f5f5;border-radius:14px;padding:16px 24px;text-align:center;min-width:130px;border:1.5px solid transparent;transition:all .35s cubic-bezier(.22,1,.36,1);cursor:pointer;display:inline-block}
+.cat-item:hover{border-color:#00C853;background:#fff;box-shadow:0 8px 24px rgba(0,200,83,.12);transform:translateY(-4px) scale(1.03)}
+
+/* ═══ MODAL ═══ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:12px}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.15)}
+
+/* (gallery thumbs and modal styles in animation section) */
+
+/* ═══ MOBILE MENU LINKS ═══ */
+#mob a{transition:all .2s;border-radius:10px}
+#mob a:hover{background:rgba(255,255,255,.15);padding-left:18px}
+#mob a:active{transform:scale(.97)}
+
+/* ═══ PAGE TRANSITIONS ═══ */
+#app{animation:blurIn .4s ease both}
+
+/* ═══ VIEW ALL BUTTON ═══ */
+.view-all-btn{transition:all .3s cubic-bezier(.22,1,.36,1)}
+.view-all-btn:hover{border-color:#00C853;color:#00C853;transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,200,83,.12)}
+.view-all-btn:active{transform:scale(.97)}
+
+/* ═══ INPUTS ═══ */
+.inp{width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:10px;padding:12px 14px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-height:48px;transition:border-color .2s;box-sizing:border-box}
+.inp:focus{border-color:#00C853}
+
+/* ═══ HERO SLIDER ═══ */
+.hero-slider{scrollbar-width:none;-ms-overflow-style:none}
+.hero-slider::-webkit-scrollbar{display:none}
+
+/* ═══ 3D BUSINESS CARD ═══ */
+.card3d-scene{perspective:1200px;width:320px;height:190px;margin:0 auto;cursor:grab;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.card3d-scene:active{cursor:grabbing}
+.card3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .05s linear;will-change:transform}
+.card3d-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.card3d-front{background:linear-gradient(135deg,#fff 0%,#f8f8f8 100%);display:flex;align-items:center;justify-content:center;padding:24px;border:1px solid #eee}
+.card3d-back{background:linear-gradient(135deg,#111 0%,#1a1a1a 100%);transform:rotateY(180deg);padding:24px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}
+@media(max-width:380px){.card3d-scene{width:280px;height:168px}}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fu{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.2)}}
+@keyframes stepIn{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes blurIn{from{opacity:0;filter:blur(12px);transform:scale(1.05)}to{opacity:1;filter:blur(0);transform:scale(1)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(0,200,83,.2)}50%{box-shadow:0 0 20px rgba(0,200,83,.4)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes modalIn{from{opacity:0;transform:scale(.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes menuDrop{from{opacity:0;transform:translateY(-8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tickerGlow{0%,100%{text-shadow:0 0 4px rgba(255,255,255,.3)}50%{text-shadow:0 0 12px rgba(255,255,255,.6)}}
+
+/* Scroll reveal classes */
+.reveal{opacity:0;transform:translateY(30px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+.reveal.vis{opacity:1;transform:translateY(0)}
+.reveal-left{opacity:0;transform:translateX(-30px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+.reveal-left.vis{opacity:1;transform:translateX(0)}
+.reveal-scale{opacity:0;transform:scale(.9);transition:all .6s cubic-bezier(.22,1,.36,1)}
+.reveal-scale.vis{opacity:1;transform:scale(1)}
+.reveal-blur{opacity:0;filter:blur(8px);transition:all .8s cubic-bezier(.22,1,.36,1)}
+.reveal-blur.vis{opacity:1;filter:blur(0)}
+
+/* Enhanced modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0);z-index:500;display:flex;align-items:center;justify-content:center;padding:12px;transition:all .35s}
+.modal-bg.open{background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:modalIn .4s cubic-bezier(.22,1,.36,1) both}
+
+/* Green glow button */
+.glow-btn{position:relative;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.glow-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,200,83,.3)}
+.glow-btn:active{transform:scale(.97)}
+.glow-btn::after{content:'';position:absolute;inset:-50%;background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);transition:transform .6s;transform:translateX(-100%)}
+.glow-btn:hover::after{transform:translateX(100%)}
+
+/* Ticker glow */
+.ticker-text{animation:tickerGlow 3s ease infinite}
+
+/* Floating elements */
+.float-anim{animation:float 3s ease-in-out infinite}
+
+/* Price badge glass */
+.price-glass{background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.1);transition:all .3s}
+.pc:hover .price-glass{background:rgba(0,200,83,.8);transform:scale(1.05)}
+
+/* Gallery thumb enhanced */
+.gthumb{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.gthumb:hover{transform:scale(1.1);border-color:rgba(0,200,83,.4)}
+.gthumb.active{border-color:#00C853;transform:scale(1.05);box-shadow:0 0 12px rgba(0,200,83,.3)}
+</style>
+</head>
+<body>
+<div id="page-wrap" style="width:100%;max-width:100vw;overflow-x:hidden;position:relative">
+
+<!-- ═══ GREEN TICKER ═══ -->
+<div style="background:#00C853;color:#fff;overflow:hidden;padding:10px 0;white-space:nowrap;width:100%;max-width:100vw">
+<div style="display:inline-flex;animation:marquee 20s linear infinite;will-change:transform">
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
+</div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav id="nav" style="position:sticky;top:0;z-index:100;background:#fff;padding:0 16px;transition:all .3s;max-width:100vw;overflow:visible;border-bottom:1px solid #eee">
+<div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:58px;position:relative">
+<!-- Hamburger left (mobile only) -->
+<button class="mbtn" id="menuBtn" onclick="toggleMenu()" style="background:none;border:none;color:#111;cursor:pointer;padding:8px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;z-index:10">
+<span style="display:flex;flex-direction:column;gap:5px;width:20px"><span style="display:block;height:2px;background:#111;width:100%;border-radius:2px;transition:all .3s"></span><span style="display:block;height:2px;background:#111;width:14px;border-radius:2px;transition:all .3s"></span></span>
+</button>
+<!-- Logo center (mobile), left-ish (desktop) -->
+<a href="#" onclick="goHome()" class="nav-logo" style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;padding:4px 0;z-index:5"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAE2AYQDASIAAhEBAxEB/8QAHAABAAMAAwEBAAAAAAAAAAAAAAEGBwIEBQMI/8QAThAAAQIDBAMJCwkFCAMBAAAAAAECAwQFBgcREjZzsRMhIjE1QVFVcRQWFzJCUmFygZGSFSMzNIOhwdHwJCUmRWJDU2NkgpOywkR0hFT/xAAbAQEBAQEBAQEBAAAAAAAAAAAABgUEAQIHA//EADERAQABAwIEBAMIAwEAAAAAAAABAgMEBRESITFxEzM0gTI1QQYUFSJRUmGRIyRCof/aAAwDAQACEQMRAD8A/ZQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAAAAABQAAAAhFCqBIBGIEgAAAAABGIEgEKoEgjEkAAAAAAAEYgSCEUlQAAAAAAAQigSAAAAAAAAAAAAAAAAAAK3a+1MGzsWC2JKvjbqi4K1UTA8HwnSvVcx8TTq3zL+0SPqrtM8A03wnSvVcx8TR4TpXquY+JpmQA03wnSvVcx8TTv0C3cvVqrCkWyMaE6IuGZXJvGRlhu60ukvWXYBtx156bl5GXdMTUZkKEnG5y4H0jRGwYTokR2VjEVV7MDFbaWhmK1UHta7LKw1VrG4rgvpUC41S8inwXubIysaaw8pVytU8p15lQzcGmy6N1jsdhQlAGjyl5nDa2aprsq88J+Kp7y3UC0tJrTMsrMYReeG/ecYVh+t8+kvHjS8VkaDEcx7FxRzd5UUD9Fnwn5juWSjTDm5khtV2HSeBYGv8Ay1TMsZze6oWCRMPK9J7Ff5FndS7YBSvCZKt/lcb2PQnwnSvVcx8TTM1/MgDYbMW2l65U0kWycWC5WqqK5UUsVWm/k+mxpx0NXpBYrsEXDExaxE13LaiSiZsrVflXsU1+1ui9Q1KgVNLzZfquN8aBbzZXq2Y+JpmSeIANzslX4doJSLMQ5d8Dc3ZcHKinhVW8KXp9SmJN1NjP3JytzI5N843Pcjzeu/AoFrtJahrlAvHhOleq5j4mjwnSvVcx8TTMgBpvhOleq5j4mjwnSvVcx8TTMgBqMteRLzE1CgtpsZu6ORuKuTexXjLPaesNodK+UHQXxWo5G5UVMd8xKkcpyutZtNWvV0SdrGAeX4TZfquN8TR4TZV38rmPjQzNSAN4srWW1ymd3NguhNzK3BVxPXKhdNoomucW8AQqknymIjYMF8WI5GtYiuXHoQD5z03KycusxNRmQmJzquBS6peRIy8Xc5OTjTH9TlRre3pKXbK0MxXKm/hZZViqkKFzYdKnhKBfHXmVDPwabLozWOx2Hbk7zGue1s1TXNavPCfiqe8zcIoG7UG0dLrDP2WY4fmPTK49hFPzrLzEaXmGRoMRzHouKOauCm0WDr/y5Ss0bL3VCwbFROf0gWMAAAAAAAAAACFJIUDM75vrcl6qmemhXzfW5L1V2megAiebwuzfBtdkadT41nZSJGp8s96w0VVdCaqgYtld5rvcWC7zg2tkszXeMvN6DX/kildWyn+y38jnBptPgvSJLyMtCenO2EiL9wHh3lTzpOzUVrXZXxVRiYGLqjfF+/pNRvie5tMlIfkrFVV9xlwA7spSqlNQnRpeRjRWJxubDVUOo39IbxZlsFtClGwWtybknFxLvAYM5rmvc1zXNcm8qKmCoRgWG8OFDg2qm2w25GqqL7cCvYgWe7af7jtLCbwmsj4sVOk1mv8AIk63/AdsMOs/EdDrcpEbzRkx95uFcXNQpt3+A7YBgKkEr+ZAH1lIroM3CjN8iIjvvNsrkXuixM1G/vJXN9xh2JrkhNd1XXviZsypLOavsAyMBPEAGqXPcjzeu/AoFrtJqhr1L/c5yPN678C4Pp8jEc50STl3uXjVYTVVVA/PaIMTXryJKTl7LxokGTl2PzJvtYiLx+hDIQCglDUbqJKVmKFFiRpWDFVIqoivYir94Gb0nlKV1zNpq16i/wAJO1rCyNp1Pa/M2Rlkcm+ipCai4+4rd6+ij9YwDIFIAA2C6bRRNc4t5ULptFE1zi3gCqXozzpOy74cN2V8w5IadnOWsz6+WI5tPkYfkrEcvtwAzJWtIRCcQ3+rxd7H3gdyWpNSmpfdpeRmIsLzmsVUOmqOa9zXNc1ybyoqYKim+WeSD8iSm45UZuSbycXEZBb6E2Daudhw2tY3Mi73FvoB4Jarr590naWFB8iZxYvRjzFVxPRs3FdBrslEb4yR28XaBvwIRSQAAAAAAAABC8xJCgZpfN9akPVUzw0O+b61I+qpngBeI3axa/wzJapOLfMJxNPs7biiyNHl5ON3RnhtwXCHimIGgBCn+EOz/wDmv9o79CtZS61O9xye7Z8quXO3BMAPJvdlnRKDCjNb9HE3/Qhk+Pk+k3+vyEOpUqPJu/tGqidphFRlI0jNxZeM3K+GqoqLx9oHXwNBu0tRDl2NpNQicBV+ZcvEnoM+JauV/wCPOgG01ax1Hq08+emHRs78McrsEOp4O6D/AJr/AHTxLA2yy5KbVInB8WFGXj9CKaS1zXeLvgVODYChwYrIje6MzFRyYxOc96uploU21vNAcnp4jv4nSr/Ik7qXbAPz+pBK/ipADE0Gxkzul3lWlc2bckcqdimfIpZrFzW5yValfJiyiqielAKyniAIvA7ABqtzvI83ri9FFud5Hm9cXoCrXoaJR/WTaY042W9DRKP6ybTGnAQa1c/o7G1y7DJTWroNH4+uUC6lRvX0UfrWbS3FSvX0UfrWAY6qAlSANgum0UTXOLeVC6bRRNc4t4Aot8Ms6JRJWYa3NuUbf7FQvR59oafDqlHmJF39o1UavQvMBgKkKp956WjScxFlZhrmvhuVqovGinwxA0S7S1EOCxtHnomVuPzL1/4lmq1jaPVKhFnpjdt1iYKuV+CGKp53Rvp04mjXf2zd81S6s7+mFGXj7FA9nwd0H/Nf7p9JewNDl5iHGhumM0NyOTF+O+Wpqtc1HNdmb78TkBxamU5AAAAAAAAAACFJIUDM75frEj6q7TPTQr5vrcl6q7TPQACIAGJcLpNKPsXFQwLhdKn8UfYuA14pV4llvlSC6oSLW91sThJh9IhdSFQD86RWOhvdDc3I9FwVF3sFTmOBq9vbINnmOqFPho2aRMYjU/tPT2mVxWOhvdDiNyKi4Ki72+BwNAu8te6DFZS6lGzQVXCFFdxsXzcegz8IB+jmq13Cbz850q/yJO6l2wq12NoXVCSWmzTnOmICYtVeNzS0V/kWd1LtgGAL+KkEr+ZC+UAO3S5ruOYfE8l8F7F9OKEw5ZzqVFmGt8R6NVejFDpqgDzQABqtzvI83ri9FFud5Hm9cXoCrXoaJR/WTaY042W9DRKP6ybTGnAQa1c/o5F1y7DJTWrn9HY2uXYBdSpXr6KP1rNpbSo3saKP1rNoGPqQABsF02iia5xbyoXTaKJrnFvAHFTkAKTeLZX5UhOqEi39rht4Sf3ifmZQ9rmvc1zcjkXBUXe3+dD9GKUW8CxzZ5j6lTYbWTSJi9iJvP8AT2gZWSi/rnJexzXua5uRyLgqLvYL0HHEDRLvrYua5lLqkTgrvQo3R6FNJb/TxdJ+ckzcHLwefE1u7O0DqlIup805yzEuiYKvlMAugIRSQAAAAAAAABCkkKBmd831uS9VdpnpoV831uS9VdpnoA2OytAo8xZ+UjTFPgxXvhoquVOcxxeI3exWi8hqkAd7Nn+qZf4T7yNGpcjH3aTp8KDE4szUwXA9EAdKoVKRprGunppkFr+JXLhip0ltTZ/rSX+IrV8f1KS9ddhmCgbmtqbP+TVJf2KVy3dl5eqSXyxS8m65czsvFETpMvT9cSm7WQRvevI+mCm8oGFPRzXua5uXf4jivEWO8SmtptpYzYfBhRfnGp0FcA9ix086n2glJhrsrcyNcnSimz11c1Cncv8AcO2GCyqubMQnN5oiL95utRdms1HiO55Vf+IGDKEC/mQBZ7OSzZyylYbzsyPT0YFYVfGL9dZA7oplWl3eWxE9qoUWZZuMw+D5jlRfeB8wAvEBqlznI83rvwL2US5vkeZ134F7Aq16GiUf1k2mNONlvQ0Sj+sm0xpwEGtXQaPx9cpkprVz+jkXXLsAupUb2NFH61m0txUb19FH61m0DHgFQAbBdNoomucW8qF02iia5xbwCnSqVVp9Nyd3TTJdH45VcuCKdxTPL5k/ZKf67tgFp76rP9bS/wARPfRZ93BbVJf2O3zCif1zKBp1urLS9SlHVik5c+XO5qJvRE6U9JmKp43Byux3/wAjebLaOyLXNT6FPaZNeDTm020sxDh8GFF+canRiBXj27FVCJT7RykZrsGvejIidKKeIfWTe6HNwojeNHov3gfopAfKUdml4TulqL9x9QAAAAAAAABC8xJCgZpfN9akPVUzw0K+b63JeqpnoBUN3sZozI6pDCD2Ja09clZdkvL1KKyExMGtwTeQDdyMTDu+60XWUX3HZplq69EqEvDiVKK5ixWoqYJvpiBar5E/dko7yc6p7cDL08Q1+9CW7osvumXMsJyOVecyAAbtYt7Yll5HK7H5lE9phJabNW0nqLKdyugwpiEi4txVUVoHfvhy/Lcv5247/vKOejaCrTFaqDpyY4Ll4m8zU6DzgPrKJmm4Tf602m61NMtmphv+VX/iYvZeWdNWglJdrc2MVFXsxNurqZaFNt6IDk+4DAFCBfzIXiA0e5rhd3f6dhULZS3cdpZ6C1uVu6qqdiluuZ8Se/0nnXuSm42ghTDW/Twse1UUClAADVbneR5vXF6KLc7yPN64vQFWvQ0Sj+sm0xpxst6GiUf1k2mNOAg1q5/RyLrl2GSmtXP6ORdcuwC6lSvX0UfrWbS2lRvY0UfrWbQMfUIQANgum0UTXOLeZFZK2cOhUlsn3G6OuZXZkVEPY8JsPq1/xIBopnt8zHdxU93k7q5PbgcG3mQ8yfu1/GieMnOd+8+B3dZKFONa5robmxMOhFQDJgPOAG9WTe11nJHLv/MoZ3e/l74Jfztw309p1LN22nqPJNk3S7JhjPEVVVFQ8OvVaYrVQfPTWVr13kanE1OgDoH1lG5puC3peifefI9WyMr3ZaOSl8ub51HL2IBusqmWXhN/pTYfU4tQ5AAAAAAAAACFJAGZXzfW5L1VM9xNUvOolSq0WVdT5V0ZGIqOwVN72FL7zLSdVxPegFfxGJ762NtJ1XF96EpYy0XVcX3oBX8TtUjlWV1jdp63eZaTquJ70OxTbI2gg1CXiRKe9rUeiqqubxY9oGtz0pDnqa+VieLEZl7N7jMJrdOjUupRpOYbkcxy4Iu9inMqG/sTgN7DxrUWbka9L5ZjMyMxMGRmomZPzAwxRiW2rWCrkm/9ngsm2cywVw3unBTxYtArUN+V1Lmm/ZKB5hOB6ktZ2tTD9zh02a+BUQtFnbupqJFbGrDmQoWOKwmLwnJ0Ygfa6eixHTEWrRm8BEywsededS+1/kWd1Dth2ZSXgysuyXl4bWQmJg1qcSIfKsQokalTUGG3M98NWtTpVUA/PjlILB3m2i6tfz+U38x3mWk6rie9v5gWe5hPr/8ApOzfFKZqfKTmXfhvVq9iofe7CjVKk91tqEq6DumGXFUXE9q3dOjVSzUxKy7c8bFHMTpVF4gMOVwxLAljrSO/lr3N7U4/eQtjrRN/lcX3oBdrneR5vXF6KjdnSp6l0yYhz0u6C58XMiKqLimBbgKtehojH9ZNpjSm3W9kZqoWdiysnBdFiqqYNTBDMFsdaR38ri+9AK+a1dBo5G1y7Ci951pG/wAri+9PzNFu2ps5S6LFgz0F0J6xMyIqou9gBaio3r6KP1rNpbit3h0+cqVn3SsjBWLFV6LlRUTexAxQYlg7zrRO/lr/AIm/mO8y0nVcT3oBX8QWFLG2k6ri+9PzC2NtJ1XF96fmBX2eO3tQ3vuSHPWcbJxPEiy6NX3cZkjbHWia9v7ri8ac6GzU9joclBhxG5XJDRFTnRcN8DBKzT41LqEWTmOC6GqomOCYpjx+06ZuNqLNSNel/nm5I7U4EZETFPQvSZzVbBVyTf8As8Fs2zzoapjh7QKoMT0o1BrEN+WJTZpv+hVOctZ2tRorWw6bMe1iogHlqjm+SaLdLRYmd9YjNVrcMkFFT3qfGzd3cw6KyNWHMYxq47ixcVX0YmkysCDKwGwYMPJDYmDUTiRAPsAAAAAAAAAAAQACFQjA5ADiiBTkAOOARDkAABCqAVBh/UMSFe3zkBu5KgIxaQjmjqRzcgccxOIBUIRP1gSikgCFJAHFQiHIjECQRiMTzcFQL+t4jMSqnohEORGIVRuJIVCMRmPN4Eu4yMCUUYnojAYE4kZgGH64jkRiEUCSFJAEYfrFQv638CQAAAAAAAAAAAAAAAAAAAAAAAABB4tpa/J0WXzRHZ4r8ckNONV/A9KozMOVlIsxE8VjVUxatVCNUqhFmo2bfXgpzInQY+q6j91o4aesuDOzIxqd46y9OqWvrU4/5uM2WhcyM4/eqHlOqlQc/hVCbd6d2ch1FQhFJC5lXa53qqnef5TdeRdrq3mqXpS9cq0F+aHUJhHJxZnq5PvLRQLdTDXsg1SGxzeLdGIqL7ijEYn3Yz79md6an9LOZdt1bxU3iUmIc1CbGgxGvhPTFFQ+dViOh0+NEhuwcjFVF6FwM7u5rTpWd+T4jnOgxfFx38q9BodW5JmMv92uws8bNpy8ea45SpLORTfszVHVkq2mrmd37yi/C0hbT17rKN8LfyPIcQpFV5l/in88/wDqaqyLm8/mloV3NWqVQqExDnJp8ZjIe8ioiYLiX4zS6flKa1aGllfo1dVeLTNU7zzUWnVTVYiZndCnSrcWJBpUxEguwexiqi9C4HdU8+0HIs3ql2Glena3V2ddzlTMso75q5wv3lF4/NbgFtNXusovwt/I8hxCH57OTfj/ALn+0hXkXJ3/ADS027Woz1QgzTpyafHyuTDFETA9W281MSdBjRpWIsJ6YYOTBcN/0lfuk+rzvrJsPbvC0XmuxNpXY1yqrT5qmee081BZqqnD3mebOltNXOsovwt4/cO+auO/mUX4UPIcQSEZd/8AfP8A6n/vF2N9qms2AnJqeorYk1GdFfmVMy9p4F4FYqUjXWwZOcfBZuSLlREXf9p7V2Wj/wBopVrz9I/skKXMu106dRXTPPk2r9yqjDirfm8zvmrnWUX4G/kO+eudZRvc1PwPHUIhM/e8iP8Auf7liePc3+KXsLaWvdaRfc1fwPtAtbXoL83d2f0PamH3IeDgSfVGZkRO8Vy+oyLtM7xVO7QaBbrdorINSgtZjvbqzHDHsLzBitiMa5jszVTHHpMEU0y7KqOmpF8nGdmfA8XHjy9BQ6Pqty7X4V1r6fnV11eHc6rmikkIhJSw2pAAegAAAAAAAAAAAAAAAAAAAAAAACq3lTTpez7mtdldFcjfYZSho17MX9klYfMrlUzlSI125vlTH6bJrVKuK/wi8xabPWQmKtJd2OmEgsXHKiJjj6SrGz2Rb/DspwcOAi+0+dGxbeTdnxPpzfOnY9u9cni+jJ67TY1LnXSsZzXO40XpQ6Bb70k/fcLg/wBl+JUDhzLMWL1VEdIcuTbi3dmmHYpsR0GdgxGuy4REXH2mzz7s1Fiu6YKr9xikD6VnrJtNnjp/D7//AF12G3odX+O5DT0uZ4K4Yq8glxBO1/FLGq6yut0/KU1q0NLM0un5SmtWhpZa6J6Sn3U+l+RDi46Ff5Fm9Uuw77joV/kWb1S7DTv+XV2dt34J7MRcQ3xyXEN8c/OK+qKq6tDul+hnfWTYe3eFopN9ibTxLpfoZ31k2Ht3haKTXYm0scX5bPaVNj+j9pZE8glxBGfomPo1S7HR77RxVrz9I26lC03Y6PfaOKrehpG3UoU+b8qo9m9kehp9lVU+9OY2JOy8OI3M1YqIqejE+B2aTynK6xu0m7UcV2mGNb8yN2nTVkKPElHNhy+R6tXBUVePAy2Zh7jMPh+Y5W/fxm6J9F/pMOqfKE1rnbTf12xRRRRVRG0tXVLVu3RTNMPhiWu7GM5toHN8mJBXFPSilTLLdrpKzVuMrTZ4cujZw4Uz49LWkJIRST9CVoAAAAAAAAAAAAAAAAAAAAAAAAQpJCnkdXk9FBvb+rynapn5oF7f1eU7VM/ITWfV1eyX1L1E+yFNqslo7JapDFVNqslo5JatDu+zsf5auzo0jzKuyjXq8twdV+JTzWLT2WbXJ1sxEmFhZW5cETE8rwdwesH+4+c7S8i9kVV0U8pMrAvXbtVVNPJn8H6ZnrJtNnjO/h9//r/9SsMu9gw3td3c92CovioWqoQtxokWHmzZIKpj7Du0zCvY1u54kbbunBxblimuauTEnEEgk69uKdmBV8UrpdPylNatDSzNLp+UprVoaWWuiekp91PpfkQ4uOhX+RZvVLsO+46Ff5Fm9Uuw07/l1dnbd+CezEXBPHaHEN8c/OK+qKq6tDul+ine1Nh7d4Wi817Np4l0v0U72psPbvC0XmvZtLDF+Wz2lS4/o57SyFfyBLiCN/RNfT2apdjo99o4q15+kbdShabsdHvtHFWvP0jbqUKfN+VUezdyPQ0+yqKdmlL+85XXN2nWU5Qnuhva5vBcioqL0KTVNUUV01foxKZ4a4qbo+LDhyjojnYNRuJh86/dJuNE8+K5U7MTtTFaqkxCdBjT0VzF40x3l9B56Glqmo05kUUUxts7c3NjIpimIFLfddLOdWosxl4MNmHtXmKzISM1PRWwZeC97l6EXBDV7HUT5Fp7muXGPE4T16VP6aPiV3L8VzHKH1pliqu7FX0hYAcWnIt1OAAAAAAAAAAAAAAAAAAAAAAAAEKSQp5HV5PRQb2/opTtUz80C9v6vKdqmfKQms+rq9kvqXqJ9kqptFkdH5TVoYubTZJP4dktUh3fZ3zanTo/x1PVGJ5NXtBTaXMJBnIyseqYomVV3jpd+lB//U74FKSvMs0VcNVcRPdtVZNqidqqoWNTp1jkya1bth5CWzoLv/Kd8KnqVKI2NR5iJD4nwVVOzA8nItXaKuCqJ5PPGouU1cM7sQVSFJcQfndXWUfV8UrrdPylNatDSzNLp+UprVoaWW2iekp91PpfkQ4uOhX+RZvVLsO+46Ff5Fm9Uuw07/l1dnbd+CezEXEN8clxDfHPzivrKKq6tDul+hnfWTYe3eFopN9ibTxLpvoZ31kPcvB0Vm+xNpY4vy2e0qbH9J7SyF5BLyCM/RMfRql2Oj32jirXn6Rt1KFpuy0d+0Uq15+kbdShUZvyqj2b2T6Gn2VRQgU7FOY2JOwYcRuZr4qIqejEmKaeKqIjrLE24piHXUNU1WZsXRY0u5sOXyPVPGRy7ymZ1OVdIzsWVicJ0Nypj6DuzNPvYdMVXOcS6MrCrx4iZfWkVacpcVsSViYNTja7fR3aaxZatQ6xT0jNblitwbEb0KYzgWy7KddL1tZdzuBHaqYdCodWj5tVm9FurpLp0/Jm3cij6S1JqnIhCS2UoAAAAAAAAAAAAAAAAAAAAAAAAQpJCnn1eSoN7f1eU7VM/NBvbT9nlO1TPcCE1n1dXsl9S9RPsKbVZHR2S1aGKm1WSX+HJLVId32d82vs6NI8yrso96nLcHVfiU/9cSFvvU5bg6r8Snmbqs/7dbkz/UVJRMzm9qbTZ10a/wDn/wCpjDPHb2ptNndox/8AOv8AxNHQucXezs0z4a2LuIJBgVfFLIq6yul0/KU1q0NLM0un5SmtWhpZa6JP+pT7qfTPTw4uOhX+RZvVLsPQU8+0C/uSb1S7DTv+VV2dt34J7MRcQ3xyXEN8c/N6uczsiqurQ7pfop3tTYe5eDorN9ibTwrpfoZz1kPcvC0VmuxNpZYvy2e0qbG9H7SyJ5DQoQjJ5Jjo1S7HR77RxVrz9I26lC03Y6P/AGjirXn6Rt1KFRm/K6PZvZPoafZVFO1SeU5XXN2nVU7NJ5Tldc3aTdnzKe8Maj447tyh+I3sTYZBbhrW2lm8vSmw15i8BvYZDbjSeb7U2FV9oZ/1qe7d1byIeIerY97odpZF3+IiL2Kh5R6dlUc60Ui1v98hM407X6e7Dx/Np7trQk4tOR+jQswAHoAAAAAAAAAAAAAAAAAAAAABCoSDyRRL2mu7hlX+Sj1RTOzW7wJDu6hPytzPh8JMDI/NIrXbc05HFsm9Uo2vcUuSKa9YqchxrOS2VyYw24Khj6H3lpyal+DLzEaE1eNGrgc2m533O5xzG8S58PKnGrmZjqsN483DmK62HDci7m3BcOnHiKuhyVXO4TnOc5d9VXfXHtOKnLk3/Huzc/Vz3rniXJqlzhJmisb0uTabTMNy2cc3ol/+pkdnJV05W5eXa3NwkVew2Gpty0eYb0QVT7jf0Kja1cra+l0z4dcsQXjIVA4hSaq51T3YtXWV1uo5TmvURfvNJTKYXIVCcp73RJWM6E5UwXDnQ7nfJWusIvuKDT9Xt41mLdUc4a+JqFuzaiiqG0YnSrDFiUyYanCxhrsMk74q11hG+7eNFsJNTE9Z9rpyM6K9VVFVeg18bVbeZVNqmPo0LObRk70RDJovBiuacTv2glHSdYmpdzcuD1VMejHeOgikXcpqt3Jpq+iarommuYXe6uahwZiZl3Owc5EVE6T3LyZ2HDs+6C13CiKiInoMvhRYkN+6QYjmPTiVFVFTsOcxMzEw9rpiYixcE8pyqa1rU/DxJs7O+3ncGP4cQ+SLmIJRfzOUNroj2ta3M564J2mNETVOzNpiZnZqt27MtnIXpcq/eVK8/SNupQ0Kzkr3FR5eXy4KjEx7TPbz9I26pCs1OiaNNpif4UGdTwYcR2VRTs0rlOV1rdp1lJYrmva5rsrkXFF3+MlqKtqon9GDTPDVFTdIszBgy+6RIjWtROdTHLSTbZ6tzUxDdmYrsE9KdJ1Y89ORmZY01Ge3zVcuB11/p4Ow09R1OMumKIjbZ3ZubN+mIhKKe5YSE6JaiUy82L17MOM8LAu91ki509GqDm8FrUY1fScum2/EyKf4l/LBp8S/T/DSEJIQk/Q1aAAAAAAAAAAAAAAAAAAAAAAAAAAD5xmtiMyubi1UVFQyq2tnY1NmHzUvDV0o9cd5McimsHziwmxGK17Uc1eNF3zgz8C3mUcNTlysWnIo4Z6sEUlqO813uU1Gq2Gps1F3SXc+Wcu+qNwVMew8iJd1Gz8GoQnN9MLfJW5omVTO0Ruwa9LyKZ2iN1EU5Ma5z2thtc9yrhgm+poEtd41rk7oqDnN6GQ8pYaNZel0vB0GXR0Xz3b6n3Y0LIrn8/KH3b0u9Vtxcnk2As9Ep7O7pxvz8RN5Fw4KFlq65aZNemG7YdtEPnNQGzEu+C7ea9qtxTmxKu1i02bE2rbet2YtW+Clg7yENIW72Tc769MNTsQnweSfWEx7kJGrRMuapnaE/Vpl+ZnkzZQaT4PJPrCY9yDweSfWEx7kPPwPL/bH9vn8Lv8A7Y/tmyGqXaaOM9ZTpOu8lfJqEx6d5Cy2epEOjyTZWHEdFaiquLsMTV0nTsjGvcdyOTv0/Cu2Lm9XRXrw7PxJ6C2oScPNMQ0wc3DFXIZq9HNxa7guRcFRd7Beg35yZjwazZal1R26RoboUXz4S4L7T+mp6L49U3LU7S/rm6fN6Zqt8pY+nneSC+zF3bs/7PUuD/UzfwOMO7qNn+cqTMvoZipizo2Xvtwsn8Nyd9uFQ0T+prcOPfQuNgLOxJqYZUJqGrYLFxY1U8ZekstKsTSZN7YkbPNPTz+LHpwLPChshsRrW4InEnFgaunaJNuvxLv9NDD0ybdXHcGplwMsvPX+I/skNUchWbQ2Tg1iod1RJiLCXKjcG4YYGlqmNXk2Jooj6u3PsV3bPDR13ZOoQ0jwdyfWEx7kJ8Hkn1hMe5Ca/A8v9sf2xZ0vImecRLNlJRPV96Gjrd5J9YTHuQ+svd/S2vzRpiZip0Y4Ip9UaHlTPPaH1TpeR06M9p0lNVCYbLysNz3PVMcE3k9Jr9mqXDpNMZKt4033L0r0n0pdJkaazc5OXZCT0JvqeihQabpkYkcVfOprYWD93/NV1SADWhoAAPQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=" alt="ESNTLS CLUB" style="height:40px;width:auto;object-fit:contain"></a>
+<!-- Desktop links -->
+<div class="dnav" style="gap:20px;align-items:center">
+<a href="#" onclick="goHome()" class="nl">Home</a>
+<a href="#" onclick="showCat('All')" class="nl">Shop</a>
+<a href="#" onclick="showCat('Footwear')" class="nl">Footwear</a>
+<a href="#" onclick="showCat('Jackets')" class="nl">Jackets</a>
+<a href="#" onclick="showCat('Accessories')" class="nl">Accessories</a>
+<a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
+</div>
+<!-- Right spacer (mobile) to balance hamburger for centered logo -->
+<div class="mbtn" style="width:44px;min-height:44px;pointer-events:none;opacity:0"></div>
+</div>
+<!-- ═══ MOBILE MENU: compact green dropdown ═══ -->
+<div id="mob" style="display:none;position:absolute;top:58px;right:12px;width:220px;background:#00C853;border-radius:16px;padding:12px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:menuDrop .25s cubic-bezier(.22,1,.36,1) both">
+<a href="#" onclick="goHome();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px;transition:background .15s">Home</a>
+<a href="#" onclick="showCat('All');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shop All</a>
+<a href="#" onclick="showCat('Footwear');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Footwear</a>
+<a href="#" onclick="showCat('Jackets');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Jackets</a>
+<a href="#" onclick="showCat('Accessories');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Accessories</a>
+<a href="#" onclick="showCat('Tracksuits');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Tracksuits</a>
+<a href="#" onclick="showCat('Shirts');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shirts</a>
+<div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
+<a href="https://instagram.com/cluesntl" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">📸 Instagram</a>
+<a href="https://t.me/esntlsclub" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">✈️ Telegram</a>
+</div>
+</nav>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="app"></div>
+
+<!-- ═══ PRODUCT MODAL ═══ -->
+<div id="modal" class="modal-bg" style="display:none" onclick="closeModal()"></div>
+
+<!-- ═══ ADMIN PANEL — Full Product Manager ═══ -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:600;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto" onclick="closeAdmin()">
+<div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;width:100%;max-width:560px;margin:20px auto;padding:0;box-shadow:0 24px 64px rgba(0,0,0,.15);overflow:hidden">
+
+<!-- Admin Header -->
+<div style="background:#00C853;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
+<div style="display:flex;align-items:center;gap:10px">
+<div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">⚙️</div>
+<div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:1px">Product Manager</div>
+<div style="font-size:11px;color:rgba(255,255,255,.7)">Add, edit & manage your products</div></div>
+</div>
+<button onclick="closeAdmin()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center">✕</button>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;border-bottom:2px solid #f0f0f0" id="adminTabs">
+<button onclick="showAdminTab('add')" class="atab active" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#00C853;background:none;border:none;border-bottom:2px solid #00C853;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+<button onclick="showAdminTab('list')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">📦 Products</button>
+<button onclick="showAdminTab('fix')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">🔧 Fix Images</button>
+</div>
+
+<!-- ADD PRODUCT TAB -->
+<div id="tabAdd" style="padding:20px 24px">
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Product Name *</label>
+<input id="aName" class="inp" placeholder="e.g. B22 White">
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+<div><label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Price *</label><input id="aPrice" class="inp" placeholder="£129.99"></div>
+<div><label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Brand</label><input id="aBrand" class="inp" placeholder="e.g. B22"></div>
+</div>
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Category *</label>
+<div style="display:flex;flex-wrap:wrap;gap:6px" id="catPicker">
+<button type="button" onclick="pickCat(this,'Footwear')" class="cpill on" data-cat="Footwear" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #00C853;background:#00C853;color:#fff;transition:all .15s">👟 Footwear</button>
+<button type="button" onclick="pickCat(this,'Jackets')" class="cpill" data-cat="Jackets" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">🧥 Jackets</button>
+<button type="button" onclick="pickCat(this,'Accessories')" class="cpill" data-cat="Accessories" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">👜 Accessories</button>
+<button type="button" onclick="pickCat(this,'Tracksuits')" class="cpill" data-cat="Tracksuits" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">🏃 Tracksuits</button>
+<button type="button" onclick="pickCat(this,'Shirts')" class="cpill" data-cat="Shirts" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">👕 Shirts</button>
+</div>
+</div>
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Purchase Link *</label>
+<input id="aLink" class="inp" placeholder="https://www.essentialsblanks.net/...">
+</div>
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:block;margin-bottom:6px">Product Photos * (tap to select from camera roll)</label>
+<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#f5f5f5;border:2px dashed #ddd;border-radius:14px;padding:24px 16px;cursor:pointer;transition:all .2s;min-height:80px" id="uploadLabel">
+<span style="font-size:28px">📷</span>
+<div><div style="font-size:13px;font-weight:600;color:#111">Tap to upload photos</div><div style="font-size:11px;color:#888;margin-top:2px">Select multiple images from your phone</div></div>
+<input type="file" id="aFiles" multiple accept="image/*" style="display:none" onchange="previewFiles(this.files)">
+</label>
+</div>
+<!-- Upload preview -->
+<div id="imgPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+<!-- Upload progress -->
+<div id="uploadProgress" style="display:none;margin-bottom:14px">
+<div style="background:#f0f0f0;border-radius:8px;height:6px;overflow:hidden"><div id="uploadBar" style="background:#00C853;height:100%;width:0%;transition:width .3s;border-radius:8px"></div></div>
+<div id="uploadText" style="font-size:11px;color:#888;text-align:center;margin-top:6px">Uploading...</div>
+</div>
+<button onclick="addProduct()" class="glow-btn" style="width:100%;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px;border-radius:12px;border:none;cursor:pointer;min-height:48px;font-family:'DM Sans',sans-serif;letter-spacing:.3px">Add Product</button>
+<div id="adminMsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:600;min-height:20px"></div>
+</div>
+
+<!-- MY PRODUCTS TAB -->
+<div id="tabList" style="display:none;padding:20px 24px">
+<div id="productList"></div>
+<div style="text-align:center;padding:12px 0;border-top:1px solid #f0f0f0;margin-top:16px">
+<button onclick="if(confirm('Delete ALL custom products?')){customProducts=[];localStorage.removeItem('esntls-custom');renderProductList();render()}" style="background:none;border:none;color:#e53935;font-size:12px;font-weight:600;cursor:pointer;padding:8px 16px;font-family:'DM Sans',sans-serif">🗑️ Clear All Custom Products</button>
+</div>
+</div>
+
+<!-- FIX IMAGES TAB -->
+<div id="tabFix" style="display:none;padding:20px 24px">
+<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:14px;margin-bottom:16px">
+<div style="font-size:13px;font-weight:700;color:#f57f17;margin-bottom:4px">⚠️ Images Need Updating</div>
+<div style="font-size:12px;color:#888;line-height:1.5">Your old product images were hosted on WordPress which is no longer active. Use this tool to re-upload images from your phone for each product.</div>
+</div>
+<div style="font-size:12px;color:#888;margin-bottom:12px">Select a product to update its images:</div>
+<div id="fixList" style="max-height:400px;overflow-y:auto"></div>
+</div>
+
+<!-- Fix Image Upload Modal (inside admin) -->
+<div id="fixUploadPanel" style="display:none;padding:20px 24px">
+<button onclick="document.getElementById('fixUploadPanel').style.display='none';document.getElementById('tabFix').style.display='block'" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer;padding:0;margin-bottom:16px;font-family:'DM Sans',sans-serif">← Back to product list</button>
+<div id="fixProductName" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#111;letter-spacing:1px;margin-bottom:4px"></div>
+<div id="fixProductInfo" style="font-size:12px;color:#888;margin-bottom:16px"></div>
+<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#f5f5f5;border:2px dashed #ddd;border-radius:14px;padding:24px 16px;cursor:pointer;min-height:80px;margin-bottom:14px">
+<span style="font-size:28px">📷</span>
+<div><div style="font-size:13px;font-weight:600;color:#111">Tap to select photos</div><div style="font-size:11px;color:#888;margin-top:2px">Choose all images for this product</div></div>
+<input type="file" id="fixFiles" multiple accept="image/*" style="display:none" onchange="previewFixFiles(this.files)">
+</label>
+<div id="fixPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+<div id="fixProgress" style="display:none;margin-bottom:14px">
+<div style="background:#f0f0f0;border-radius:8px;height:6px;overflow:hidden"><div id="fixBar" style="background:#00C853;height:100%;width:0%;transition:width .3s;border-radius:8px"></div></div>
+<div id="fixText" style="font-size:11px;color:#888;text-align:center;margin-top:6px"></div>
+</div>
+<button onclick="saveFixedImages()" id="fixSaveBtn" class="glow-btn" style="width:100%;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px;border-radius:12px;border:none;cursor:pointer;min-height:48px;font-family:'DM Sans',sans-serif">Upload & Save Images</button>
+<div id="fixMsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:600;min-height:20px"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+/*╔═══════════════════════════════════════════╗
+  ║  PRODUCT DATA — CORRECT PRICES FROM SITE  ║
+  ╚═══════════════════════════════════════════╝*/
+const cardLogoUrl="data:image/jpeg;base64,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";
+const U="https://esntlsclub.com/wp-content/uploads/";
+const P=[
+// ── FOOTWEAR: B22 (£129.99) ──
+{id:1,n:"B22 White",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2026/03/img_8903.jpeg",imgs:[U+"2026/03/img_8903.jpeg",U+"2026/03/img_8909.jpeg",U+"2026/03/img_8904.jpeg",U+"2026/03/img_8907.jpeg",U+"2026/03/img_8906.jpeg",U+"2026/03/img_8905.jpeg",U+"2026/03/img_8902.jpeg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+{id:2,n:"B22 – Dark Blue",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2026/03/IMG_6184.jpg",imgs:[U+"2026/03/IMG_6184.jpg",U+"2026/03/IMG_6185.jpg",U+"2026/03/IMG_6182.jpg",U+"2026/03/IMG_6181.jpg",U+"2026/03/IMG_6186.jpg",U+"2026/03/IMG_6188.jpg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+{id:3,n:"B22 – Black & White",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2026/03/img_0626-1.jpeg",imgs:[U+"2026/03/img_0626-1.jpeg",U+"2026/03/img_0623.jpeg",U+"2026/03/img_0624.jpeg",U+"2026/03/img_0625.jpeg",U+"2026/03/img_0627.jpeg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+{id:4,n:"B22 – Light Blue",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2025/10/img_8745_original.jpeg",imgs:[U+"2025/10/img_8745_original.jpeg",U+"2025/10/img_8746_original.jpeg",U+"2025/10/img_8747_original.jpeg",U+"2025/10/img_8748_original.jpeg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+{id:5,n:"B22 Black",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2025/10/img_9472_original-1-scaled.jpeg",imgs:[U+"2025/10/img_9472_original-1-scaled.jpeg",U+"2025/10/img_9473_original-scaled.jpeg",U+"2025/10/img_9474_original-scaled.jpeg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+{id:6,n:"B22 Grey",cat:"Footwear",brand:"B22",price:"£129.99",img:U+"2025/10/img_9302_original.jpeg",imgs:[U+"2025/10/img_9302_original.jpeg",U+"2025/10/img_9303_original.jpeg",U+"2025/10/img_9304_original.jpeg"],link:"https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch"},
+// ── FOOTWEAR: B30 (£59.99) ──
+{id:7,n:"B30 – White",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_0219.jpeg",imgs:[U+"2025/10/img_0219.jpeg",U+"2025/10/img_0220.jpeg",U+"2025/10/img_0221.jpeg",U+"2025/10/img_0222.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:8,n:"B30 – Blue Lime Soles",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2026/03/img_5205-1-scaled.jpeg",imgs:[U+"2026/03/img_5205-1-scaled.jpeg",U+"2026/03/img_5206-scaled.jpeg",U+"2026/03/img_5207-scaled.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:9,n:"B30 Black",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/11/img_0557.jpeg",imgs:[U+"2025/11/img_0557.jpeg",U+"2025/11/img_0558.jpeg",U+"2025/11/img_0559.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:10,n:"B30 Black and Grey",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_0195-1.jpeg",imgs:[U+"2025/10/img_0195-1.jpeg",U+"2025/10/img_0196.jpeg",U+"2025/10/img_0197.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:11,n:"B30 Black and White",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_0158.jpeg",imgs:[U+"2025/10/img_0158.jpeg",U+"2025/10/img_0159.jpeg",U+"2025/10/img_0160.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:12,n:"B30 Blue and Black",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_4469_original-scaled.jpeg",imgs:[U+"2025/10/img_4469_original-scaled.jpeg",U+"2025/10/img_4470_original-scaled.jpeg",U+"2025/10/img_4471_original-scaled.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:13,n:"B30 Grey",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_4461_original.jpeg",imgs:[U+"2025/10/img_4461_original.jpeg",U+"2025/10/img_4462_original.jpeg",U+"2025/10/img_4463_original.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:14,n:"B30 Grey and Black",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/11/img_0811.jpeg",imgs:[U+"2025/11/img_0811.jpeg",U+"2025/11/img_0812.jpeg",U+"2025/11/img_0813.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:15,n:"B30 Grey and White",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_0244.jpeg",imgs:[U+"2025/10/img_0244.jpeg",U+"2025/10/img_0245.jpeg",U+"2025/10/img_0246.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:16,n:"B30 Light Blue",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/10/img_1748_original.jpeg",imgs:[U+"2025/10/img_1748_original.jpeg",U+"2025/10/img_1749_original.jpeg",U+"2025/10/img_1750_original.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:17,n:"B30 White/Black/Grey",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/11/Gemini_Generated_Image_4zaqcr4zaqcr4zaq.png",imgs:[U+"2025/11/Gemini_Generated_Image_4zaqcr4zaqcr4zaq.png"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:18,n:"B30 x Stxne",cat:"Footwear",brand:"B30",price:"£59.99",img:U+"2025/11/img_0397.jpeg",imgs:[U+"2025/11/img_0397.jpeg",U+"2025/11/img_0398.jpeg",U+"2025/11/img_0399.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment"},
+{id:19,n:"Dior Alpha Sandals",cat:"Footwear",brand:"Other",price:"Out of stock",img:U+"2026/03/img_0965.jpeg",imgs:[U+"2026/03/img_0965.jpeg",U+"2026/03/img_0966.jpeg",U+"2026/03/img_0967.jpeg",U+"2026/03/img_0968.jpeg"],link:"https://www.essentialsblanks.net/product-page/db-tech-sliders"},
+// ── JACKETS: C Goose ──
+{id:20,n:"Grey Wyndham Parka",cat:"Jackets",brand:"C Goose",price:"£119.99",img:U+"2025/12/img_1316.jpeg",imgs:[U+"2025/12/img_1316.jpeg",U+"2025/12/img_1317.jpeg",U+"2025/12/img_1318.jpeg",U+"2025/12/img_1319.jpeg"],link:"https://www.essentialsblanks.net/product-page/wind-parker-coat"},
+{id:21,n:"MacMillan Black Badge",cat:"Jackets",brand:"C Goose",price:"£99.99",img:U+"2025/10/img_0179.jpeg",imgs:[U+"2025/10/img_0179.jpeg",U+"2025/10/img_0180.jpeg",U+"2025/10/img_0181.jpeg",U+"2025/10/img_0182.jpeg"],link:"https://www.essentialsblanks.net/product-page/parker-mac-coat-next-day-batch"},
+{id:22,n:"MacMillan Red Badge",cat:"Jackets",brand:"C Goose",price:"£99.99",img:U+"2025/10/img_0165.jpeg",imgs:[U+"2025/10/img_0165.jpeg",U+"2025/10/img_0166.jpeg",U+"2025/10/img_0167.jpeg",U+"2025/10/img_0168.jpeg"],link:"https://www.essentialsblanks.net/product-page/parker-mac-coat-next-day-batch"},
+{id:23,n:"Wyndham – Red Badge",cat:"Jackets",brand:"C Goose",price:"£119.99",img:U+"2025/10/img_0171.jpeg",imgs:[U+"2025/10/img_0171.jpeg",U+"2025/10/img_0172.jpeg",U+"2025/10/img_0173.jpeg",U+"2025/10/img_0174.jpeg"],link:"https://www.essentialsblanks.net/product-page/wind-parker-coat"},
+{id:24,n:"Wyndham Parka – Black Badge",cat:"Jackets",brand:"C Goose",price:"£119.99",img:U+"2025/10/img_0185.jpeg",imgs:[U+"2025/10/img_0185.jpeg",U+"2025/10/img_0186.jpeg",U+"2025/10/img_0187.jpeg",U+"2025/10/img_0188.jpeg"],link:"https://www.essentialsblanks.net/product-page/wind-parker-coat"},
+// ── JACKETS: Monc ──
+{id:25,n:"Monc Windrunner – Black",cat:"Jackets",brand:"Monc",price:"Out of stock",img:U+"2026/03/img_3596.jpeg",imgs:[U+"2026/03/img_3596.jpeg",U+"2026/03/img_3597.jpeg",U+"2026/03/img_3598.jpeg",U+"2026/03/img_3599.jpeg"],link:"https://www.essentialsblanks.net/product-page/monicle-windrunner-jacket"},
+{id:26,n:"Monc Windrunner – Navy",cat:"Jackets",brand:"Monc",price:"Out of stock",img:U+"2026/03/IMG_0280-1.jpg",imgs:[U+"2026/03/IMG_0280-1.jpg",U+"2026/03/IMG_0281.jpg",U+"2026/03/IMG_0282.jpg",U+"2026/03/IMG_0283.jpg"],link:"https://www.essentialsblanks.net/product-page/monicle-windrunner-jacket"},
+{id:27,n:"Maya Puffer – Grey",cat:"Jackets",brand:"Monc",price:"£99.99",img:U+"2025/11/img_0666.jpeg",imgs:[U+"2025/11/img_0666.jpeg",U+"2025/11/img_0667.jpeg",U+"2025/11/img_0668.jpeg",U+"2025/11/img_0669.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-maja-puffer-jacket-standard-delivery"},
+{id:28,n:"Maya Puffer Jacket",cat:"Jackets",brand:"Monc",price:"£99.99",img:U+"2025/11/img_0536.jpeg",imgs:[U+"2025/11/img_0536.jpeg",U+"2025/11/img_0537.jpeg",U+"2025/11/img_0538.jpeg",U+"2025/11/img_0539.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-maja-puffer-jacket-standard-delivery"},
+{id:29,n:"Burb Puffer Jacket",cat:"Jackets",brand:"Other",price:"£99.99",img:U+"2025/11/img_0528.jpeg",imgs:[U+"2025/11/img_0528.jpeg",U+"2025/11/img_0529.jpeg",U+"2025/11/img_0530.jpeg",U+"2025/11/img_0531.jpeg"],link:"https://www.essentialsblanks.net/product-page/boxberry-puffer-jacket"},
+// ── ACCESSORIES ──
+{id:30,n:"Goyard Bag – Brown",cat:"Accessories",brand:"Other",price:"£79.99",img:U+"2026/03/img_5402-scaled.jpeg",imgs:[U+"2026/03/img_5402-scaled.jpeg",U+"2026/03/img_5403-scaled.jpeg",U+"2026/03/img_5404-scaled.jpeg"],link:"https://www.essentialsblanks.net/product-page/copy-of-the-belvoir-bag-brown"},
+{id:31,n:"Goyard Bag – Grey",cat:"Accessories",brand:"Other",price:"£79.99",img:U+"2026/03/goyard-grey.jpeg",imgs:[U+"2026/03/goyard-grey.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-belvoir-bag-grey"},
+{id:32,n:"Duo Messenger Bag",cat:"Accessories",brand:"Other",price:"£89.99",img:U+"2026/03/img_6184-1.jpeg",imgs:[U+"2026/03/img_6184-1.jpeg",U+"2026/03/img_6185.jpeg",U+"2026/03/img_6186.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-duo-man-bag"},
+{id:33,n:"PM Messenger Bag",cat:"Accessories",brand:"Other",price:"£89.99",img:U+"2025/10/img_0227.jpeg",imgs:[U+"2025/10/img_0227.jpeg",U+"2025/10/img_0228.jpeg",U+"2025/10/img_0229.jpeg"],link:"https://www.essentialsblanks.net/product-page/classic-messenger-bag"},
+{id:34,n:"Trio Messenger Bag",cat:"Accessories",brand:"Other",price:"Out of stock",img:U+"2025/11/img_0406.jpeg",imgs:[U+"2025/11/img_0406.jpeg",U+"2025/11/img_0407.jpeg",U+"2025/11/img_0408.jpeg"],link:"https://www.essentialsblanks.net/product-page/trio-man-bag"},
+{id:35,n:"Corteiz Tracksuit",cat:"Tracksuits",brand:"Corteiz",price:"£99.99",img:U+"2025/11/img_0663.jpeg",imgs:[U+"2025/11/img_0663.jpeg",U+"2025/11/img_0664.jpeg",U+"2025/11/img_0665.jpeg"],link:"https://www.essentialsblanks.net/product-page/contraz-blank-tracksuit"},
+{id:36,n:"Casablanca T-Shirt",cat:"Shirts",brand:"Other",price:"£29.99",img:U+"2025/10/img_0236.jpeg",imgs:[U+"2025/10/img_0236.jpeg",U+"2025/10/img_0237.jpeg",U+"2025/10/img_0238.jpeg"],link:"https://www.essentialsblanks.net/product-page/tangier-t-shirt"},
+];
+
+// Supabase config
+const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
+const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
+
+// Load products from Supabase
+let customProducts=[];
+async function loadSupabaseProducts(){
+try{
+const res=await fetch(SB_URL+'/rest/v1/products?select=*&order=created_at.desc',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+const data=await res.json();
+customProducts=data.map(p=>({id:'sb_'+p.id,dbId:p.id,n:p.name,cat:p.category,brand:p.brand||'Other',price:p.price,link:p.link,img:p.images&&p.images[0]||'',imgs:p.images||[]}));
+render();
+}catch(e){console.log('Supabase load error:',e)}}
+loadSupabaseProducts();
+
+function allProducts(){return[...P,...customProducts]}
+
+const CATS=["All","Footwear","Jackets","Accessories","Tracksuits","Shirts"];
+const CAT_ICONS={Footwear:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕"};
+let currentView="home";
+
+/*╔═══════════════════════════╗
+  ║  PRODUCT CARD (masonry)   ║
+  ╚═══════════════════════════╝*/
+function card(p,i){
+const oos=p.price==='Out of stock';
+const pid=typeof p.id==='string'?"'"+p.id+"'":p.id;
+const priority=i<4?'fetchpriority="high"':'loading="lazy"';
+return `<div class="pc" onclick="openProduct(${pid})" data-delay="${i*.04}">
+<div style="position:relative;overflow:hidden;border-radius:6px">
+<div style="padding-top:120%;background:#1a1a1a"></div>
+<img src="${p.img}" alt="${p.n}" decoding="async" ${priority} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">${p.price}</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">${p.n}</div>
+</div>
+</div></div>`}
+
+/*╔═══════════════════════════╗
+  ║  AUTO-SCROLLING CATEGORIES║
+  ╚═══════════════════════════╝*/
+function catScrollHTML(){
+const items=Object.entries(CAT_ICONS).map(([c,icon])=>{
+const n=allProducts().filter(p=>p.cat===c).length;
+return `<a href="#" onclick="showCat('${c}')" class="cat-item"><div style="font-size:24px;margin-bottom:4px">${icon}</div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#111;letter-spacing:1px">${c}</div><div style="font-size:10px;color:#888;margin-top:2px">${n} items</div></a>`;
+}).join('');
+return `<section style="padding:16px 0 28px;max-width:100vw">
+<div class="cat-wrapper">
+<div class="cat-track">${items}${items}</div>
+</div>
+</section>`}
+
+/*╔═══════════════════════════╗
+  ║  CUSTOMER REVIEWS         ║
+  ╚═══════════════════════════╝*/
+const REVIEWS=[
+{name:"Jordan M.",loc:"London",text:"Received my B22s next day. Quality is insane for the price, my mates thought they were retail. 10/10 will order again.",product:"B22 White",stars:5,date:"Mar 2026"},
+{name:"Kai T.",loc:"Birmingham",text:"Copped the Wyndham parka — fits perfect, warm as anything. The fur hood is proper quality. Already looking at the MacMillan.",product:"Wyndham Parka",stars:5,date:"Feb 2026"},
+{name:"Aisha R.",loc:"Manchester",text:"Was skeptical at first but the B30s are genuinely premium. Comfortable, look amazing. Free shipping was a bonus.",product:"B30 Grey",stars:5,date:"Mar 2026"},
+{name:"Tyler S.",loc:"Leeds",text:"Ordered the Goyard bag on a Friday, had it by Saturday. Communication through Instagram was quick and helpful.",product:"Goyard Bag",stars:5,date:"Jan 2026"},
+{name:"Demi L.",loc:"Liverpool",text:"The Maya puffer is gorgeous. Exactly as pictured on the site. My second order — first was the Corteiz tracksuit which was also fire.",product:"Maya Puffer",stars:5,date:"Feb 2026"},
+{name:"Marcus W.",loc:"Bristol",text:"Third time ordering, never disappointed. The checkout process is different but they explained it well. Always get exactly what I picked.",product:"B22 Black",stars:5,date:"Mar 2026"},
+];
+function reviewsHTML(){
+return REVIEWS.map(r=>`
+<div style="flex:0 0 280px;scroll-snap-align:start;background:#fff;border:1px solid #eee;border-radius:16px;padding:20px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#00C853,#00E676);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">${r.name[0]}</div>
+<div><div style="font-size:13px;font-weight:700;color:#111">${r.name}</div><div style="font-size:10px;color:#aaa">${r.loc} · ${r.date}</div></div>
+</div>
+<div style="color:#FFD700;font-size:13px;margin-bottom:8px;letter-spacing:1px">${'★'.repeat(r.stars)}</div>
+<p style="font-size:13px;color:#555;line-height:1.6;margin:0 0 12px">"${r.text}"</p>
+<div style="display:inline-flex;align-items:center;gap:4px;background:#f5f5f5;padding:4px 10px;border-radius:6px">
+<span style="font-size:10px;color:#00C853;font-weight:700">✓</span>
+<span style="font-size:10px;color:#888;font-weight:600">Verified — ${r.product}</span>
+</div>
+</div>`).join('')}
+
+/*╔═══════════════════════════╗
+  ║  SHOP PAGE                ║
+  ╚═══════════════════════════╝*/
+function shopHTML(cat){
+const all=allProducts();
+const items=cat==='All'?all:all.filter(p=>p.cat===cat);
+const count=c=>c==='All'?all.length:all.filter(p=>p.cat===c).length;
+return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
+<div style="margin-bottom:20px;padding:0 12px">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 16px;letter-spacing:2px">${cat==='All'?'All Items':cat} <span style="color:#888;font-size:clamp(18px,3vw,24px)">(${items.length})</span></h2>
+<div class="hscroll">${CATS.map(c=>`<button class="fb${c===cat?' on':''}" onclick="showCat('${c}')">${c} (${count(c)})</button>`).join('')}</div>
+</div>
+<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>
+</section>`}
+
+/*╔═══════════════════════════╗
+  ║  HOME PAGE                ║
+  ╚═══════════════════════════╝*/
+function homeHTML(){
+const feat=allProducts().slice(0,8);
+return `
+<!-- How To Order — 2 slides -->
+<section style="position:relative;overflow:hidden;padding:0">
+<div style="background:#f8f8f8;border-bottom:1px solid #eee;overflow:hidden">
+<!-- Slide container -->
+<div style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none" class="hero-slider" id="heroSlider">
+<!-- Slide 1: How To Order -->
+<div style="flex:0 0 100%;scroll-snap-align:start;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px)">
+<div class="hero-parallax" style="max-width:720px;margin:0 auto;text-align:center">
+<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px;animation:blurIn .8s ease both">
+<span style="width:5px;height:5px;border-radius:50%;background:#00C853;animation:pulse 2s infinite"></span>
+<span style="font-size:10px;color:#00C853;font-weight:700;letter-spacing:1px;text-transform:uppercase">How It Works</span>
+</div>
+<h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px;animation:slideUp .6s ease .1s both">HOW TO <span style="color:#00C853">ORDER</span></h1>
+<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55;animation:slideUp .6s ease .2s both">4 simple steps. You always receive exactly what you selected.</p>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin:0 auto 16px" class="steps-compact">
+<div style="text-align:center;animation:stepIn .5s ease .2s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease infinite">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .35s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease .5s infinite">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Redirect</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Blank page is normal</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .5s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease 1s infinite">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .65s both"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;margin:0 auto 5px;animation:glowPulse 3s ease 1.5s infinite">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
+</div>
+<p style="font-size:10px;color:#bbb;max-width:380px;margin:0 auto 16px;line-height:1.5">Checkout uses a placeholder for copyright reasons — you always get the real product. Free UK shipping 💚</p>
+<a href="#" onclick="showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
+</div>
+</div>
+<!-- Slide 2: Business Card -->
+<div style="flex:0 0 100%;scroll-snap-align:start;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px);display:flex;flex-direction:column;align-items:center;justify-content:center">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:8px">Our Brand</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#111;margin:0 0 20px;letter-spacing:2px;text-align:center">Spin The Card</h2>
+<div class="card3d-scene" id="cardScene">
+<div class="card3d" id="card3d">
+<div class="card3d-face card3d-front">
+<img src="${cardLogoUrl}" alt="ESNTLS CLUB" style="height:80%;width:auto;object-fit:contain">
+</div>
+<div class="card3d-face card3d-back">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff;letter-spacing:2px">ESNTLS <span style="color:#00C853">CLUB</span></div>
+<div style="width:40px;height:2px;background:#00C853;border-radius:2px;margin:4px 0"></div>
+<div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6">Premium Streetwear</div>
+<div style="font-size:11px;color:rgba(255,255,255,.5)">Manchester, UK</div>
+<div style="font-size:11px;color:#00C853;margin-top:4px">@cluesntl</div>
+<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:8px">esntlsclub.com</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;color:#aaa;margin-top:14px">Swipe or drag to flip</div>
+</div>
+</div>
+<!-- Slide dots -->
+<div style="display:flex;justify-content:center;gap:6px;padding:12px 0;background:#f8f8f8" id="heroDots">
+<div style="width:8px;height:8px;border-radius:50%;background:#00C853;transition:all .3s;cursor:pointer" onclick="document.getElementById('heroSlider').scrollTo({left:0,behavior:'smooth'})"></div>
+<div style="width:8px;height:8px;border-radius:50%;background:#ddd;transition:all .3s;cursor:pointer" onclick="document.getElementById('heroSlider').scrollTo({left:9999,behavior:'smooth'})"></div>
+</div>
+</div>
+</section>
+
+<!-- Auto-scrolling Categories (directly under How To Order) -->
+${catScrollHTML()}
+
+<!-- Featured Products -->
+<section style="padding:16px 4px 48px;max-width:1280px;margin:0 auto">
+<div class="reveal" style="margin-bottom:16px;padding:0 12px">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">Featured Items</h2>
+</div>
+<div class="g2">${feat.map((p,i)=>card(p,i)).join('')}</div>
+<div style="text-align:center;margin-top:28px">
+<a href="#" onclick="showCat('All')" class="view-all-btn" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All ${allProducts().length} Items →</a>
+</div>
+</section>
+
+<!-- Customer Reviews -->
+<section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
+<div class="reveal" style="text-align:center;margin-bottom:24px">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Trusted</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 8px;letter-spacing:2px">What Customers Say</h2>
+<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:4px">
+<span style="color:#FFD700;font-size:18px">★★★★★</span>
+</div>
+<p style="font-size:12px;color:#888">Based on Instagram DMs & reviews</p>
+</div>
+<div style="display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px" style="-webkit-overflow-scrolling:touch">
+${reviewsHTML()}
+</div>
+</section>
+
+<!-- Instagram Feed -->
+<section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
+<div class="reveal" style="background:#111;border-radius:20px;padding:32px 24px;text-align:center;overflow:hidden">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:8px">Follow Us</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;margin:0 0 6px;letter-spacing:2px">@cluesntl</h2>
+<p style="font-size:13px;color:rgba(255,255,255,.5);margin:0 auto 16px;max-width:340px;line-height:1.5">DM us for sizing, stock updates, and exclusive deals. We reply fast.</p>
+<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 20px;text-align:center">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff">1000+</div>
+<div style="font-size:10px;color:rgba(255,255,255,.4)">Happy Customers</div>
+</div>
+<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 20px;text-align:center">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#00C853">4.9★</div>
+<div style="font-size:10px;color:rgba(255,255,255,.4)">Avg Rating</div>
+</div>
+<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 20px;text-align:center">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff">24hr</div>
+<div style="font-size:10px;color:rgba(255,255,255,.4)">DM Response</div>
+</div>
+</div>
+<a href="https://instagram.com/cluesntl" target="_blank" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px;gap:8px"><span>📸</span> Follow on Instagram</a>
+</div>
+</section>
+
+<!-- Telegram CTA -->
+<section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
+<div class="reveal" style="background:#111;border-radius:20px;padding:36px 24px;text-align:center;position:relative;overflow:hidden">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;letter-spacing:2px;margin-bottom:8px;animation:float 4s ease-in-out infinite">Join Our Telegram</div>
+<p style="font-size:13px;color:rgba(255,255,255,.5);max-width:360px;margin:0 auto 20px;line-height:1.6">Early access to drops, exclusive deals, and direct support.</p>
+<a href="https://t.me/esntlsclub" target="_blank" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 36px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">Join Now →</a>
+</div>
+</section>
+
+<!-- Contact -->
+<section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
+<div class="reveal-scale" style="background:#f5f5f5;border-radius:20px;padding:clamp(28px,5vw,44px) 24px;text-align:center">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Contact</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#111;margin:0 0 10px;letter-spacing:2px">Get In Touch</h2>
+<p style="font-size:13px;color:#888;line-height:1.6;margin:0 auto 20px;max-width:360px">DM us on Instagram for sizing, shipping, or order questions.</p>
+<a href="https://instagram.com/cluesntl" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:50px;min-height:48px">DM on Instagram</a>
+</div>
+</section>
+
+<!-- Footer -->
+<footer style="border-top:1px solid #eee;padding:32px 16px 24px;max-width:1280px;margin:0 auto">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;margin-bottom:28px">
+<div>
+<img src="data:image/jpeg;base64,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" alt="ESNTLS CLUB" style="height:34px;width:auto;object-fit:contain;margin-bottom:10px">
+<p style="font-size:12px;color:#888;max-width:240px;line-height:1.6;margin:0">Premium streetwear essentials. UK-based, free shipping.</p>
+</div>
+<div class="fcols">
+<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Shop</div><a href="#" onclick="showCat('Footwear')" class="fl">Footwear</a><a href="#" onclick="showCat('Jackets')" class="fl">Jackets</a><a href="#" onclick="showCat('Accessories')" class="fl">Accessories</a></div>
+<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Info</div><a href="https://instagram.com/cluesntl" target="_blank" class="fl">Instagram</a><a href="https://t.me/esntlsclub" target="_blank" class="fl">Telegram</a><a href="#" onclick="openAdmin()" class="fl" style="color:#00C853">Admin</a></div>
+</div>
+</div>
+<div style="border-top:1px solid #eee;padding-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<span style="font-size:11px;color:#888">© 2026 esntlsclub.com</span>
+<span style="font-size:11px;color:rgba(0,0,0,.2)">Manchester, UK</span>
+</div>
+</footer>`}
+
+/*╔═══════════════════════════╗
+  ║  RENDERING                ║
+  ╚═══════════════════════════╝*/
+function render(){
+const app=document.getElementById('app');
+app.style.animation='none';
+app.offsetHeight; // force reflow
+app.style.animation='blurIn .4s ease both';
+if(currentView==='shop') app.innerHTML=shopHTML(currentView.cat||'All');
+else app.innerHTML=homeHTML();
+window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome(){currentView='home';render();return false}
+function showCat(c){currentView={type:'shop',cat:c};
+const app=document.getElementById('app');
+app.style.animation='none';
+app.offsetHeight;
+app.style.animation='blurIn .4s ease both';
+app.innerHTML=shopHTML(c);
+window.scrollTo({top:0,behavior:'smooth'});return false}
+
+/*╔═══════════════════════════╗
+  ║  PRODUCT DETAIL MODAL     ║
+  ╚═══════════════════════════╝*/
+function openProduct(id){
+const all=allProducts();
+const p=all.find(x=>String(x.id)===String(id));if(!p)return;
+const related=all.filter(x=>x.id!==p.id&&(x.brand===p.brand||x.cat===p.cat)).slice(0,4);
+const oos=p.price==='Out of stock';
+const gallery=p.imgs&&p.imgs.length?p.imgs.filter(u=>u):[p.img];
+const modal=document.getElementById('modal');
+modal.style.display='flex';
+setTimeout(()=>modal.classList.add('open'),10);
+document.body.style.overflow='hidden';
+modal.innerHTML=`<div class="modal-box" onclick="event.stopPropagation()">
+<div style="padding:14px 18px 0;display:flex;justify-content:space-between;align-items:center">
+<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:600">${p.cat} · ${p.brand}</span>
+<button onclick="closeModal()" style="background:none;border:none;font-size:18px;color:#888;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">✕</button>
+</div>
+<div style="padding:8px 18px 0;position:relative;cursor:zoom-in" onclick="openFullscreen(document.getElementById('mainImg').src)">
+<img id="mainImg" src="${gallery[0]}" alt="${p.n}" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f5f5f5">
+<div style="position:absolute;bottom:16px;right:26px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;pointer-events:none">🔍 Tap to zoom</div>
+</div>
+${gallery.length>1?`<div style="padding:8px 18px 0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+${gallery.map((img,i)=>`<img src="${img}" class="gthumb${i===0?' active':''}" onclick="event.stopPropagation();setMain(this,'${img}')">`).join('')}
+</div>`:''}
+<div style="padding:16px 18px 20px">
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111">${p.n}</h2>
+<div style="font-size:20px;font-weight:700;color:${oos?'#888':'#00C853'};margin-bottom:8px">${p.price}</div>
+${gallery.length>1?`<div style="font-size:11px;color:#aaa;margin-bottom:10px">${gallery.length} photos — tap image to view fullscreen</div>`:''}
+<div style="display:flex;gap:6px;margin-bottom:14px">
+<span style="font-size:11px;font-weight:600;color:#00C853;background:rgba(0,200,83,.08);padding:3px 10px;border-radius:6px;text-transform:uppercase">${p.cat}</span>
+<span style="font-size:11px;font-weight:600;color:#888;background:#f5f5f5;padding:3px 10px;border-radius:6px">${p.brand}</span>
+</div>
+<p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">Premium quality ${p.cat.toLowerCase()} from the ${p.brand} collection. Free UK shipping included.</p>
+${oos?`<div style="background:#f5f5f5;color:#888;font-weight:700;font-size:14px;padding:16px;border-radius:12px;text-align:center;min-height:52px;display:flex;align-items:center;justify-content:center">Out of Stock</div>`
+:`<a href="${p.link}" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — ${p.price}</a>`}
+<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:12px;border-radius:12px;min-height:44px;width:100%;margin-top:10px">DM on Instagram</a>
+</div>
+${related.length?`<div style="padding:0 18px 20px">
+<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
+<div style="display:grid;grid-template-columns:repeat(${Math.min(related.length,4)},1fr);gap:8px">
+${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=>openProduct(${rid}),150)">
+<img src="${r.img}" alt="${r.n}" style="width:100%;aspect-ratio:1;object-fit:cover">
+<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${r.price}</div></div>
+</div>`}).join('')}
+</div></div>`:''}</div>`}
+
+function setMain(el,src){
+document.getElementById('mainImg').src=src;
+document.querySelectorAll('.gthumb').forEach(t=>t.classList.remove('active'));
+el.classList.add('active')}
+
+/*╔═══════════════════════════╗
+  ║  FULLSCREEN IMAGE VIEWER  ║
+  ╚═══════════════════════════╝*/
+function openFullscreen(src){
+const fs=document.createElement('div');
+fs.id='fullscreenViewer';
+fs.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:0;animation:fi .2s ease;cursor:zoom-out;-webkit-tap-highlight-color:transparent';
+fs.innerHTML=`
+<button onclick="closeFullscreen()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:none;color:#fff;font-size:20px;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10">✕</button>
+<img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:0;user-select:none;-webkit-user-select:none" onclick="event.stopPropagation()">
+<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.1);backdrop-filter:blur(8px);color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:6px 16px;border-radius:20px;pointer-events:none">Pinch to zoom · Tap ✕ to close</div>`;
+fs.onclick=function(){closeFullscreen()};
+fs.querySelector('img').onclick=function(e){e.stopPropagation()};
+document.body.appendChild(fs);
+document.body.style.overflow='hidden'}
+
+function closeFullscreen(){
+const fs=document.getElementById('fullscreenViewer');
+if(fs){fs.style.opacity='0';fs.style.transition='opacity .2s';setTimeout(()=>fs.remove(),200)}
+if(!document.getElementById('modal')||document.getElementById('modal').style.display==='none'){document.body.style.overflow=''}}
+
+function closeModal(){
+const modal=document.getElementById('modal');
+modal.classList.remove('open');
+setTimeout(()=>{modal.style.display='none';modal.innerHTML=''},300);
+document.body.style.overflow=''}
+
+/*╔═══════════════════════════╗
+  ║  HAMBURGER MENU           ║
+  ╚═══════════════════════════╝*/
+function toggleMenu(){
+const m=document.getElementById('mob');
+if(m.style.display==='none'||m.style.display===''){m.style.display='block'}
+else{m.style.display='none'}}
+// Close menu when clicking outside
+document.addEventListener('click',e=>{
+const m=document.getElementById('mob');
+const b=document.getElementById('menuBtn');
+if(m&&m.style.display==='block'&&!m.contains(e.target)&&!b.contains(e.target)){m.style.display='none'}})
+
+/*╔═══════════════════════════╗
+  ║  ADMIN PANEL (SUPABASE)   ║
+  ╚═══════════════════════════╝*/
+const ADMIN_PASS='esntls2026';
+let selectedCat='Footwear';
+let adminUnlocked=false;
+let pendingFiles=[];
+
+function openAdmin(){
+if(!adminUnlocked){
+const pw=prompt('Enter admin password:');
+if(!pw||pw!==ADMIN_PASS){alert('Incorrect password');return}
+adminUnlocked=true}
+document.getElementById('adminPanel').style.display='flex';document.body.style.overflow='hidden';renderProductList()}
+function closeAdmin(){document.getElementById('adminPanel').style.display='none';document.body.style.overflow=''}
+
+function showAdminTab(tab){
+document.getElementById('tabAdd').style.display=tab==='add'?'block':'none';
+document.getElementById('tabList').style.display=tab==='list'?'block':'none';
+document.getElementById('tabFix').style.display=tab==='fix'?'block':'none';
+document.getElementById('fixUploadPanel').style.display='none';
+document.querySelectorAll('.atab').forEach((t,i)=>{
+const isActive=(tab==='add'&&i===0)||(tab==='list'&&i===1)||(tab==='fix'&&i===2);
+t.style.color=isActive?'#00C853':'#888';
+t.style.borderBottom=isActive?'2px solid #00C853':'2px solid transparent'});
+if(tab==='list')renderProductList();
+if(tab==='fix')renderFixList()}
+
+function pickCat(el,cat){
+selectedCat=cat;
+document.querySelectorAll('.cpill').forEach(p=>{p.style.background='#fff';p.style.color='#888';p.style.borderColor='#e0e0e0'});
+el.style.background='#00C853';el.style.color='#fff';el.style.borderColor='#00C853'}
+
+// File preview
+function previewFiles(files){
+pendingFiles=[...files];
+const prev=document.getElementById('imgPreview');
+prev.innerHTML='';
+for(let i=0;i<Math.min(files.length,8);i++){
+const img=document.createElement('img');
+img.style.cssText='width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid #eee';
+const reader=new FileReader();
+reader.onload=e=>{img.src=e.target.result};
+reader.readAsDataURL(files[i]);
+prev.appendChild(img)}
+if(files.length>8){const sp=document.createElement('span');sp.style.cssText='font-size:11px;color:#888;padding:20px 4px';sp.textContent='+' +(files.length-8)+' more';prev.appendChild(sp)}
+// Update label
+document.getElementById('uploadLabel').querySelector('div>div:first-child').textContent=files.length+' photo'+(files.length>1?'s':'')+' selected'}
+
+// Upload images to Supabase Storage
+async function uploadImages(files){
+const urls=[];
+const prog=document.getElementById('uploadProgress');
+const bar=document.getElementById('uploadBar');
+const txt=document.getElementById('uploadText');
+prog.style.display='block';
+for(let i=0;i<files.length;i++){
+const pct=Math.round((i/files.length)*100);
+bar.style.width=pct+'%';
+txt.textContent='Uploading '+(i+1)+'/'+files.length+'...';
+const file=files[i];
+const ext=file.name.split('.').pop();
+const fname=Date.now()+'_'+i+'.'+ext;
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+body:file});
+if(res.ok){urls.push(SB_STORAGE+fname)}
+else{console.log('Upload failed:',await res.text())}
+}catch(e){console.log('Upload error:',e)}}
+bar.style.width='100%';
+txt.textContent='✓ All photos uploaded!';
+setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000);
+return urls}
+
+// Add product to Supabase
+async function addProduct(){
+const n=document.getElementById('aName').value.trim();
+const price=document.getElementById('aPrice').value.trim();
+const link=document.getElementById('aLink').value.trim();
+const brand=document.getElementById('aBrand').value.trim();
+const msg=document.getElementById('adminMsg');
+const btn=document.querySelector('#tabAdd .glow-btn');
+
+if(!n){msg.style.color='#e53935';msg.textContent='Please enter a product name';return}
+if(!price){msg.style.color='#e53935';msg.textContent='Please enter a price';return}
+if(!link){msg.style.color='#e53935';msg.textContent='Please enter a purchase link';return}
+if(!pendingFiles.length){msg.style.color='#e53935';msg.textContent='Please select at least one photo';return}
+
+btn.textContent='Uploading photos...';btn.style.opacity='.6';btn.style.pointerEvents='none';
+
+// Upload images
+const imageUrls=await uploadImages(pendingFiles);
+if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed. Please try again.';btn.textContent='Add Product';btn.style.opacity='1';btn.style.pointerEvents='auto';return}
+
+btn.textContent='Saving product...';
+
+// Save to Supabase database
+try{
+const res=await fetch(SB_URL+'/rest/v1/products',{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+body:JSON.stringify({name:n,category:selectedCat,brand:brand||'Other',price,link,images:imageUrls})});
+if(res.ok){
+msg.style.color='#00C853';msg.textContent='✓ Product added successfully!';
+['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
+document.getElementById('aFiles').value='';
+document.getElementById('imgPreview').innerHTML='';
+document.getElementById('uploadLabel').querySelector('div>div:first-child').textContent='Tap to upload photos';
+pendingFiles=[];
+await loadSupabaseProducts()}
+else{const err=await res.text();msg.style.color='#e53935';msg.textContent='Save failed: '+err}
+}catch(e){msg.style.color='#e53935';msg.textContent='Error: '+e.message}
+btn.textContent='Add Product';btn.style.opacity='1';btn.style.pointerEvents='auto';
+setTimeout(()=>{msg.textContent=''},4000)}
+
+// Render product list
+function renderProductList(){
+const list=document.getElementById('productList');
+if(!list)return;
+const sbProducts=customProducts.filter(p=>p.dbId);
+if(sbProducts.length===0){
+list.innerHTML=`<div style="text-align:center;padding:40px 20px">
+<div style="font-size:36px;margin-bottom:12px">📦</div>
+<div style="font-size:14px;font-weight:600;color:#111;margin-bottom:4px">No products added yet</div>
+<div style="font-size:12px;color:#888">Tap "Add Product" to upload your first product</div>
+</div>`;return}
+list.innerHTML=`<div style="font-size:12px;color:#888;margin-bottom:12px">${sbProducts.length} product${sbProducts.length>1?'s':''} in database</div>`+
+sbProducts.map(p=>`<div style="display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0">
+<img src="${p.img}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0" onerror="this.style.background='#eee'">
+<div style="flex:1;min-width:0">
+<div style="font-size:13px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.n}</div>
+<div style="font-size:11px;color:#888;margin-top:2px">${p.cat} · ${p.brand} · <span style="color:#00C853;font-weight:700">${p.price}</span></div>
+${p.imgs?`<div style="font-size:10px;color:#aaa;margin-top:2px">${p.imgs.length} photo${p.imgs.length>1?'s':''}</div>`:''}
+</div>
+<button onclick="deleteSupabaseProduct(${p.dbId})" style="background:#fef2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Delete">🗑️</button>
+</div>`).join('')}
+
+// Delete from Supabase
+async function deleteSupabaseProduct(dbId){
+if(!confirm('Delete this product?'))return;
+try{
+await fetch(SB_URL+'/rest/v1/products?id=eq.'+dbId,{
+method:'DELETE',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+await loadSupabaseProducts();
+renderProductList()}
+catch(e){alert('Delete failed: '+e.message)}}
+
+/*╔═══════════════════════════╗
+  ║  FIX IMAGES TOOL          ║
+  ╚═══════════════════════════╝*/
+let fixTargetId=null;
+let fixPendingFiles=[];
+
+// Load saved image overrides from localStorage
+let imageOverrides={};
+try{imageOverrides=JSON.parse(localStorage.getItem('esntls-img-overrides')||'{}')}catch(e){}
+
+// Override allProducts to apply saved images
+const origAllProducts=allProducts;
+allProducts=function(){
+return origAllProducts().map(p=>{
+const key=String(p.id);
+if(imageOverrides[key]){return{...p,img:imageOverrides[key][0],imgs:imageOverrides[key]}}
+return p})}
+
+function renderFixList(){
+const list=document.getElementById('fixList');
+if(!list)return;
+const broken=P.filter(p=>p.img&&p.img.includes('esntlsclub.com'));
+const fixed=P.filter(p=>imageOverrides[String(p.id)]);
+list.innerHTML=`<div style="font-size:11px;color:#00C853;font-weight:600;margin-bottom:8px">${fixed.length} fixed · ${broken.length-fixed.length} remaining</div>`+
+P.map(p=>{
+const hasOverride=imageOverrides[String(p.id)];
+const imgSrc=hasOverride?hasOverride[0]:p.img;
+return `<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="openFixUpload(${p.id})">
+<div style="width:44px;height:44px;border-radius:8px;background:#f5f5f5;flex-shrink:0;overflow:hidden;position:relative">
+<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:18px\\'>📷</div>'">
+</div>
+<div style="flex:1;min-width:0">
+<div style="font-size:13px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.n}</div>
+<div style="font-size:10px;color:#888">${p.cat} · ${p.price}</div>
+</div>
+<div style="flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;${hasOverride?'background:rgba(0,200,83,.1);color:#00C853':'background:#fef2f2;color:#e53935'}">${hasOverride?'✓ Fixed':'Fix →'}</div>
+</div>`}).join('')}
+
+function openFixUpload(id){
+const p=P.find(x=>x.id===id);if(!p)return;
+fixTargetId=id;
+fixPendingFiles=[];
+document.getElementById('tabFix').style.display='none';
+document.getElementById('fixUploadPanel').style.display='block';
+document.getElementById('fixProductName').textContent=p.n;
+document.getElementById('fixProductInfo').textContent=p.cat+' · '+p.brand+' · '+p.price;
+document.getElementById('fixPreview').innerHTML='';
+document.getElementById('fixMsg').textContent='';
+const existing=imageOverrides[String(id)];
+if(existing){
+document.getElementById('fixPreview').innerHTML=existing.map(u=>`<img src="${u}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid #00C853">`).join('')+'<div style="font-size:10px;color:#00C853;padding:16px 4px">Current images — upload new to replace</div>'}}
+
+function previewFixFiles(files){
+fixPendingFiles=[...files];
+const prev=document.getElementById('fixPreview');
+prev.innerHTML='';
+for(let i=0;i<Math.min(files.length,8);i++){
+const img=document.createElement('img');
+img.style.cssText='width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid #eee';
+const reader=new FileReader();
+reader.onload=e=>{img.src=e.target.result};
+reader.readAsDataURL(files[i]);
+prev.appendChild(img)}
+if(files.length>8){const sp=document.createElement('span');sp.style.cssText='font-size:11px;color:#888;padding:16px 4px';sp.textContent='+'+(files.length-8)+' more';prev.appendChild(sp)}}
+
+async function saveFixedImages(){
+if(!fixPendingFiles.length){document.getElementById('fixMsg').style.color='#e53935';document.getElementById('fixMsg').textContent='Please select photos first';return}
+const btn=document.getElementById('fixSaveBtn');
+btn.textContent='Uploading...';btn.style.opacity='.6';btn.style.pointerEvents='none';
+const prog=document.getElementById('fixProgress');
+const bar=document.getElementById('fixBar');
+const txt=document.getElementById('fixText');
+prog.style.display='block';
+const urls=[];
+for(let i=0;i<fixPendingFiles.length;i++){
+bar.style.width=Math.round((i/fixPendingFiles.length)*100)+'%';
+txt.textContent='Uploading '+(i+1)+'/'+fixPendingFiles.length+'...';
+const file=fixPendingFiles[i];
+const ext=file.name.split('.').pop();
+const fname='fix_'+fixTargetId+'_'+Date.now()+'_'+i+'.'+ext;
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
+method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},body:file});
+if(res.ok)urls.push(SB_STORAGE+fname);
+}catch(e){console.log('Upload error:',e)}}
+bar.style.width='100%';txt.textContent='✓ Done!';
+if(urls.length){
+imageOverrides[String(fixTargetId)]=urls;
+localStorage.setItem('esntls-img-overrides',JSON.stringify(imageOverrides));
+document.getElementById('fixMsg').style.color='#00C853';
+document.getElementById('fixMsg').textContent='✓ Images updated! Product will now show new photos.';
+render()}
+else{document.getElementById('fixMsg').style.color='#e53935';document.getElementById('fixMsg').textContent='Upload failed — try again'}
+btn.textContent='Upload & Save Images';btn.style.opacity='1';btn.style.pointerEvents='auto';
+setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000)}
+
+/*╔═══════════════════════════╗
+  ║  NAV SCROLL SHADOW        ║
+  ╚═══════════════════════════╝*/
+window.addEventListener('scroll',()=>{
+const n=document.getElementById('nav');
+if(window.scrollY>30){n.style.boxShadow='0 1px 10px rgba(0,0,0,.06)'}
+else{n.style.boxShadow='none'}},{passive:true})
+
+// ═══ INIT ═══
+render();
+
+/*╔═══════════════════════════════════════╗
+  ║  SCROLL-TRIGGERED ANIMATIONS          ║
+  ╚═══════════════════════════════════════╝*/
+const observer=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{
+if(e.isIntersecting){
+const delay=e.target.dataset.delay||0;
+if(delay>0)setTimeout(()=>e.target.classList.add('vis'),delay*1000);
+else e.target.classList.add('vis');
+observer.unobserve(e.target);
+}})},{threshold:.05,rootMargin:'0px 0px -20px 0px'});
+
+function observeElements(){
+document.querySelectorAll('.pc:not(.vis),.reveal:not(.vis),.reveal-left:not(.vis),.reveal-scale:not(.vis),.reveal-blur:not(.vis)').forEach(el=>observer.observe(el));
+}
+const origRender=render;
+render=function(){origRender();requestAnimationFrame(()=>setTimeout(observeElements,30))};
+const origShowCat=showCat;
+showCat=function(c){origShowCat(c);requestAnimationFrame(()=>setTimeout(observeElements,30));return false};
+
+setTimeout(observeElements,80);
+
+// Parallax - throttled with rAF
+let ticking=false;
+window.addEventListener('scroll',()=>{
+if(!ticking){requestAnimationFrame(()=>{
+const hero=document.querySelector('.hero-parallax');
+if(hero){const y=window.scrollY;if(y<600){hero.style.transform=`translateY(${y*.12}px)`;hero.style.opacity=Math.max(0,1-y/500)}}
+ticking=false});ticking=true}
+},{passive:true});
+
+/*╔═══════════════════════════════════════╗
+  ║  3D BUSINESS CARD INTERACTION         ║
+  ╚═══════════════════════════════════════╝*/
+(function(){
+let rotY=0,rotX=0,dragging=false,lastX=0,lastY=0,velX=0,autoSpin=true;
+
+function initCard(){
+const scene=document.getElementById('cardScene');
+const card=document.getElementById('card3d');
+if(!scene||!card)return;
+
+// Auto-spin idle animation
+function autoAnimate(){
+if(autoSpin&&!dragging){rotY+=0.3;updateCard()}
+requestAnimationFrame(autoAnimate)}
+
+function updateCard(){
+card.style.transform=`rotateY(${rotY}deg) rotateX(${rotX}deg)`}
+
+// Mouse events
+scene.addEventListener('mousedown',e=>{
+dragging=true;autoSpin=false;lastX=e.clientX;lastY=e.clientY;e.preventDefault()});
+window.addEventListener('mousemove',e=>{
+if(!dragging)return;
+const dx=e.clientX-lastX;const dy=e.clientY-lastY;
+rotY+=dx*.6;rotX-=dy*.4;rotX=Math.max(-25,Math.min(25,rotX));
+velX=dx*.6;lastX=e.clientX;lastY=e.clientY;updateCard()});
+window.addEventListener('mouseup',()=>{
+if(dragging){dragging=false;
+// Momentum
+const decay=()=>{if(Math.abs(velX)>.1){rotY+=velX;velX*=.95;updateCard();requestAnimationFrame(decay)}
+else{setTimeout(()=>{autoSpin=true},3000)}};decay()}});
+
+// Touch events
+scene.addEventListener('touchstart',e=>{
+dragging=true;autoSpin=false;
+const t=e.touches[0];lastX=t.clientX;lastY=t.clientY},{passive:true});
+window.addEventListener('touchmove',e=>{
+if(!dragging)return;
+const t=e.touches[0];const dx=t.clientX-lastX;const dy=t.clientY-lastY;
+rotY+=dx*.6;rotX-=dy*.4;rotX=Math.max(-25,Math.min(25,rotX));
+velX=dx*.6;lastX=t.clientX;lastY=t.clientY;updateCard()},{passive:true});
+window.addEventListener('touchend',()=>{
+if(dragging){dragging=false;
+const decay=()=>{if(Math.abs(velX)>.1){rotY+=velX;velX*=.95;updateCard();requestAnimationFrame(decay)}
+else{setTimeout(()=>{autoSpin=true},3000)}};decay()}});
+
+autoAnimate()}
+
+// Init card after render, and re-init on navigation
+const origRender2=render;
+render=function(){origRender2();requestAnimationFrame(()=>setTimeout(initCard,100))};
+setTimeout(initCard,200);
+
+// Hero slider dot indicator
+function initHeroDots(){
+const slider=document.getElementById('heroSlider');
+const dots=document.getElementById('heroDots');
+if(!slider||!dots)return;
+const dotEls=dots.children;
+slider.addEventListener('scroll',()=>{
+const pct=slider.scrollLeft/(slider.scrollWidth-slider.clientWidth);
+const active=pct>.4?1:0;
+for(let i=0;i<dotEls.length;i++){
+dotEls[i].style.background=i===active?'#00C853':'#ddd';
+dotEls[i].style.transform=i===active?'scale(1.2)':'scale(1)'}
+},{passive:true})}
+const origRender3=render;
+render=function(){origRender3();requestAnimationFrame(()=>setTimeout(initHeroDots,150))};
+setTimeout(initHeroDots,300);
+})();
+</script>
+</div>
+</body>
+</html>
