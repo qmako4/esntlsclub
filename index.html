@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/qmako/Downloads/index_43.html -->
+<!-- saved from url=(0047)file:///C:/Users/qmako/Downloads/index_44.html# -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -26,9 +26,12 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .g2>.pc{break-inside:avoid;margin-bottom:4px;display:inline-block;width:100%}
 
 /* ═══ CARDS ═══ */
-.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:all .25s;cursor:pointer;position:relative}
-.pc:hover{transform:scale(1.01);box-shadow:0 8px 24px rgba(0,0,0,.15)}
-.pc img{transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:all .4s cubic-bezier(.22,1,.36,1);cursor:pointer;position:relative;opacity:0;transform:translateY(30px) scale(.97)}
+.pc.vis{opacity:1;transform:translateY(0) scale(1)}
+.pc:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.pc:active{transform:scale(.98);transition:.1s}
+.pc img{transition:transform .6s cubic-bezier(.22,1,.36,1)}
+.pc:hover img{transform:scale(1.08)}
 
 /* ═══ SCROLLING ROWS ═══ */
 .hscroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -40,12 +43,16 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 @media(min-width:769px){.dnav{display:flex!important}.mbtn{display:none!important}}
 
 /* ═══ FILTER BUTTONS ═══ */
-.fb{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:50px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;min-height:44px;flex-shrink:0;border:1.5px solid #e0e0e0;background:transparent;color:#888;transition:all .15s}
-.fb.on{background:#111;color:#fff;border-color:#111}
+.fb{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:50px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;min-height:44px;flex-shrink:0;border:1.5px solid #e0e0e0;background:transparent;color:#888;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.fb:hover{border-color:#00C853;color:#00C853;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,200,83,.15)}
+.fb:active{transform:scale(.95)}
+.fb.on{background:#111;color:#fff;border-color:#111;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 
 /* ═══ NAV LINKS ═══ */
-.nl{color:#777;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;transition:color .2s}
-.nl:hover{color:#111}
+.nl{color:#777;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;transition:color .3s;position:relative}
+.nl::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:#00C853;transition:width .3s cubic-bezier(.22,1,.36,1);border-radius:2px}
+.nl:hover{color:#00C853}
+.nl:hover::after{width:100%}
 
 /* ═══ FOOTER ═══ */
 .fl{display:block;font-size:12px;color:#888;margin-bottom:8px;min-height:32px;line-height:32px;transition:color .2s}
@@ -73,27 +80,86 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .cat-wrapper::after{right:0;background:linear-gradient(to left,#fff,transparent)}
 .cat-track{display:inline-flex;gap:12px;animation:scrollCats 20s linear infinite;white-space:nowrap;will-change:transform}
 .cat-track:hover{animation-play-state:paused}
-.cat-item{flex-shrink:0;background:#f5f5f5;border-radius:14px;padding:16px 24px;text-align:center;min-width:130px;border:1.5px solid transparent;transition:all .2s;cursor:pointer;display:inline-block}
-.cat-item:hover{border-color:#00C853;background:#fff;box-shadow:0 4px 16px rgba(0,200,83,.1)}
+.cat-item{flex-shrink:0;background:#f5f5f5;border-radius:14px;padding:16px 24px;text-align:center;min-width:130px;border:1.5px solid transparent;transition:all .35s cubic-bezier(.22,1,.36,1);cursor:pointer;display:inline-block}
+.cat-item:hover{border-color:#00C853;background:#fff;box-shadow:0 8px 24px rgba(0,200,83,.12);transform:translateY(-4px) scale(1.03)}
 
 /* ═══ MODAL ═══ */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:12px}
 .modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.15)}
 
-/* ═══ GALLERY THUMBS ═══ */
-.gthumb{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:border-color .2s}
-.gthumb.active{border-color:#00C853}
+/* (gallery thumbs and modal styles in animation section) */
+
+/* ═══ MOBILE MENU LINKS ═══ */
+#mob a{transition:all .2s;border-radius:10px}
+#mob a:hover{background:rgba(255,255,255,.15);padding-left:18px}
+#mob a:active{transform:scale(.97)}
+
+/* ═══ PAGE TRANSITIONS ═══ */
+#app{animation:blurIn .4s ease both}
+
+/* ═══ VIEW ALL BUTTON ═══ */
+.view-all-btn{transition:all .3s cubic-bezier(.22,1,.36,1)}
+.view-all-btn:hover{border-color:#00C853;color:#00C853;transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,200,83,.12)}
+.view-all-btn:active{transform:scale(.97)}
 
 /* ═══ INPUTS ═══ */
 .inp{width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:10px;padding:12px 14px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;min-height:48px;transition:border-color .2s;box-sizing:border-box}
 .inp:focus{border-color:#00C853}
 
 /* ═══ ANIMATIONS ═══ */
-@keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fu{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes fi{from{opacity:0}to{opacity:1}}
 @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.2)}}
 @keyframes stepIn{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes blurIn{from{opacity:0;filter:blur(12px);transform:scale(1.05)}to{opacity:1;filter:blur(0);transform:scale(1)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(0,200,83,.2)}50%{box-shadow:0 0 20px rgba(0,200,83,.4)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes modalIn{from{opacity:0;transform:scale(.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes menuDrop{from{opacity:0;transform:translateY(-8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tickerGlow{0%,100%{text-shadow:0 0 4px rgba(255,255,255,.3)}50%{text-shadow:0 0 12px rgba(255,255,255,.6)}}
+
+/* Scroll reveal classes */
+.reveal{opacity:0;transform:translateY(30px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+.reveal.vis{opacity:1;transform:translateY(0)}
+.reveal-left{opacity:0;transform:translateX(-30px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+.reveal-left.vis{opacity:1;transform:translateX(0)}
+.reveal-scale{opacity:0;transform:scale(.9);transition:all .6s cubic-bezier(.22,1,.36,1)}
+.reveal-scale.vis{opacity:1;transform:scale(1)}
+.reveal-blur{opacity:0;filter:blur(8px);transition:all .8s cubic-bezier(.22,1,.36,1)}
+.reveal-blur.vis{opacity:1;filter:blur(0)}
+
+/* Enhanced modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0);z-index:500;display:flex;align-items:center;justify-content:center;padding:12px;transition:all .35s}
+.modal-bg.open{background:rgba(0,0,0,.5);backdrop-filter:blur(12px)}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:modalIn .4s cubic-bezier(.22,1,.36,1) both}
+
+/* Green glow button */
+.glow-btn{position:relative;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.glow-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,200,83,.3)}
+.glow-btn:active{transform:scale(.97)}
+.glow-btn::after{content:'';position:absolute;inset:-50%;background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);transition:transform .6s;transform:translateX(-100%)}
+.glow-btn:hover::after{transform:translateX(100%)}
+
+/* Ticker glow */
+.ticker-text{animation:tickerGlow 3s ease infinite}
+
+/* Floating elements */
+.float-anim{animation:float 3s ease-in-out infinite}
+
+/* Price badge glass */
+.price-glass{background:rgba(0,0,0,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);transition:all .3s}
+.pc:hover .price-glass{background:rgba(0,200,83,.8);transform:scale(1.05)}
+
+/* Gallery thumb enhanced */
+.gthumb{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.gthumb:hover{transform:scale(1.1);border-color:rgba(0,200,83,.4)}
+.gthumb.active{border-color:#00C853;transform:scale(1.05);box-shadow:0 0 12px rgba(0,200,83,.3)}
 </style>
 </head>
 <body style="">
@@ -102,29 +168,29 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <!-- ═══ GREEN TICKER ═══ -->
 <div style="background:#00C853;color:#fff;overflow:hidden;padding:10px 0;white-space:nowrap;width:100%;max-width:100vw">
 <div style="display:inline-flex;animation:marquee 20s linear infinite;will-change:transform">
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
-<span style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Free UK Shipping</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Premium Streetwear</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ 1000+ Customers</span>
+<span class="ticker-text" style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 32px">✦ Next Day Delivery</span>
 </div>
 </div>
 
 <!-- ═══ NAV ═══ -->
-<nav id="nav" style="position: sticky; top: 0px; z-index: 100; background: rgb(255, 255, 255); padding: 0px 16px; transition: 0.3s; max-width: 100vw; overflow: hidden; border-bottom: 1px solid rgb(238, 238, 238); box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 10px;">
+<nav id="nav" style="position: sticky; top: 0px; z-index: 100; background: rgb(255, 255, 255); padding: 0px 16px; transition: 0.3s; max-width: 100vw; overflow: hidden; border-bottom: 1px solid rgb(238, 238, 238); box-shadow: none;">
 <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:58px">
 <!-- Logo: embedded high-res image -->
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="goHome()" style="display:flex;align-items:center;padding:4px 0"><img src="data:image/jpeg;base64,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" alt="ESNTLS CLUB" style="height:40px;width:auto;object-fit:contain"></a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="goHome()" style="display:flex;align-items:center;padding:4px 0"><img src="data:image/jpeg;base64,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" alt="ESNTLS CLUB" style="height:40px;width:auto;object-fit:contain"></a>
 <!-- Desktop links -->
 <div class="dnav" style="gap:20px;align-items:center">
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="goHome()" class="nl">Home</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;All&#39;)" class="nl">Shop</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Footwear&#39;)" class="nl">Footwear</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Jackets&#39;)" class="nl">Jackets</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Accessories&#39;)" class="nl">Accessories</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="goHome()" class="nl">Home</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;All&#39;)" class="nl">Shop</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Footwear&#39;)" class="nl">Footwear</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Jackets&#39;)" class="nl">Jackets</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Accessories&#39;)" class="nl">Accessories</a>
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
 </div>
 <!-- Mobile hamburger -->
@@ -133,14 +199,14 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 </button>
 </div>
 <!-- ═══ MOBILE MENU: compact green dropdown ═══ -->
-<div id="mob" style="display:none;position:absolute;top:58px;right:12px;width:220px;background:#00C853;border-radius:16px;padding:12px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:fi .15s">
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="goHome();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px;transition:background .15s">Home</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;All&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shop All</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Footwear&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Footwear</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Jackets&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Jackets</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Accessories&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Accessories</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Tracksuits&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Tracksuits</a>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Shirts&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shirts</a>
+<div id="mob" style="display:none;position:absolute;top:58px;right:12px;width:220px;background:#00C853;border-radius:16px;padding:12px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:menuDrop .25s cubic-bezier(.22,1,.36,1) both">
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="goHome();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px;transition:background .15s">Home</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;All&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shop All</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Footwear&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Footwear</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Jackets&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Jackets</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Accessories&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Accessories</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Tracksuits&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Tracksuits</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Shirts&#39;);toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shirts</a>
 <div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
 <a href="https://instagram.com/cluesntl" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">📸 Instagram</a>
 <a href="https://t.me/esntlsclub" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">✈️ Telegram</a>
@@ -148,25 +214,25 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 </nav>
 
 <!-- ═══ MAIN CONTENT ═══ -->
-<div id="app">
+<div id="app" style="animation: 0.4s ease 0s 1 normal both running blurIn;">
 <!-- How To Order -->
 <section style="position:relative;overflow:hidden;padding:0">
 <div style="background:#f8f8f8;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px);border-bottom:1px solid #eee">
-<div style="max-width:720px;margin:0 auto;text-align:center">
-<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px">
+<div class="hero-parallax" style="max-width: 720px; margin: 0px auto; text-align: center; transform: translateY(0px); opacity: 1;">
+<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px;animation:blurIn .8s ease both">
 <span style="width:5px;height:5px;border-radius:50%;background:#00C853;animation:pulse 2s infinite"></span>
 <span style="font-size:10px;color:#00C853;font-weight:700;letter-spacing:1px;text-transform:uppercase">How It Works</span>
 </div>
-<h1 style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px">HOW TO <span style="color:#00C853">ORDER</span></h1>
-<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55">4 simple steps. You always receive exactly what you selected.</p>
+<h1 style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px;animation:slideUp .6s ease .1s both">HOW TO <span style="color:#00C853">ORDER</span></h1>
+<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55;animation:slideUp .6s ease .2s both">4 simple steps. You always receive exactly what you selected.</p>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin:0 auto 16px" class="steps-compact">
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Redirect</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Blank page is normal</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:13px;color:#fff;margin:0 auto 5px">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .2s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease infinite">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .35s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease .5s infinite">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Redirect</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Blank page is normal</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .5s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease 1s infinite">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .65s both"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:13px;color:#fff;margin:0 auto 5px;animation:glowPulse 3s ease 1.5s infinite">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
 </div>
 <p style="font-size:10px;color:#bbb;max-width:380px;margin:0 auto 16px;line-height:1.5">Checkout uses a placeholder for copyright reasons — you always get the real product. Free UK shipping 💚</p>
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;All&#39;)" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;All&#39;)" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
 </div>
 </div>
 </section>
@@ -174,98 +240,98 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <!-- Auto-scrolling Categories (directly under How To Order) -->
 <section style="padding:16px 0 28px;max-width:100vw">
 <div class="cat-wrapper">
-<div class="cat-track"><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Footwear&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👟</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Footwear</div><div style="font-size:10px;color:#888;margin-top:2px">19 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Jackets&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🧥</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Jackets</div><div style="font-size:10px;color:#888;margin-top:2px">10 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Accessories&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👜</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Accessories</div><div style="font-size:10px;color:#888;margin-top:2px">5 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Tracksuits&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🏃</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Tracksuits</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Shirts&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👕</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Shirts</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Footwear&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👟</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Footwear</div><div style="font-size:10px;color:#888;margin-top:2px">19 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Jackets&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🧥</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Jackets</div><div style="font-size:10px;color:#888;margin-top:2px">10 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Accessories&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👜</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Accessories</div><div style="font-size:10px;color:#888;margin-top:2px">5 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Tracksuits&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🏃</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Tracksuits</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Shirts&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👕</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Shirts</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a></div>
+<div class="cat-track"><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Footwear&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👟</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Footwear</div><div style="font-size:10px;color:#888;margin-top:2px">19 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Jackets&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🧥</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Jackets</div><div style="font-size:10px;color:#888;margin-top:2px">10 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Accessories&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👜</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Accessories</div><div style="font-size:10px;color:#888;margin-top:2px">5 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Tracksuits&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🏃</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Tracksuits</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Shirts&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👕</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Shirts</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Footwear&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👟</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Footwear</div><div style="font-size:10px;color:#888;margin-top:2px">19 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Jackets&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🧥</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Jackets</div><div style="font-size:10px;color:#888;margin-top:2px">10 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Accessories&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👜</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Accessories</div><div style="font-size:10px;color:#888;margin-top:2px">5 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Tracksuits&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">🏃</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Tracksuits</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Shirts&#39;)" class="cat-item"><div style="font-size:24px;margin-bottom:4px">👕</div><div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:16px;color:#111;letter-spacing:1px">Shirts</div><div style="font-size:10px;color:#888;margin-top:2px">1 items</div></a></div>
 </div>
 </section>
 
 <!-- Featured Products -->
 <section style="padding:16px 4px 48px;max-width:1280px;margin:0 auto">
-<div style="margin-bottom:16px;padding:0 12px">
+<div class="reveal vis" style="margin-bottom:16px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
 <h2 style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">Featured Items</h2>
 </div>
-<div class="g2"><div class="pc" onclick="openProduct(1)" style="animation:fu .35s ease 0s both">
+<div class="g2"><div class="pc vis" onclick="openProduct(1)" data-delay="0">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:125%;background:#eee"></div>
+<div style="padding-top:125%;background:#1a1a1a"></div>
 <img src="./index_files/img_8903.jpeg" alt="B22 White" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 White</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 White</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(2)" style="animation:fu .35s ease 0.025s both">
+</div></div><div class="pc vis" onclick="openProduct(2)" data-delay="0.04">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:100%;background:#eee"></div>
+<div style="padding-top:100%;background:#1a1a1a"></div>
 <img src="./index_files/IMG_6184.jpg" alt="B22 – Dark Blue" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 – Dark Blue</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 – Dark Blue</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(3)" style="animation:fu .35s ease 0.05s both">
+</div></div><div class="pc vis" onclick="openProduct(3)" data-delay="0.08">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:140%;background:#eee"></div>
+<div style="padding-top:140%;background:#1a1a1a"></div>
 <img src="./index_files/img_0626-1.jpeg" alt="B22 – Black &amp; White" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 – Black &amp; White</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 – Black &amp; White</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(4)" style="animation:fu .35s ease 0.07500000000000001s both">
+</div></div><div class="pc vis" onclick="openProduct(4)" data-delay="0.12">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:95%;background:#eee"></div>
+<div style="padding-top:95%;background:#1a1a1a"></div>
 <img src="./index_files/img_8745_original.jpeg" alt="B22 – Light Blue" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 – Light Blue</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 – Light Blue</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(5)" style="animation:fu .35s ease 0.1s both">
+</div></div><div class="pc vis" onclick="openProduct(5)" data-delay="0.16">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:115%;background:#eee"></div>
+<div style="padding-top:115%;background:#1a1a1a"></div>
 <img src="./index_files/img_9472_original-1-scaled.jpeg" alt="B22 Black" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 Black</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 Black</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(6)" style="animation:fu .35s ease 0.125s both">
+</div></div><div class="pc vis" onclick="openProduct(6)" data-delay="0.2">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:145%;background:#eee"></div>
+<div style="padding-top:145%;background:#1a1a1a"></div>
 <img src="./index_files/img_9302_original.jpeg" alt="B22 Grey" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B22 Grey</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£129.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B22 Grey</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(7)" style="animation:fu .35s ease 0.15000000000000002s both">
+</div></div><div class="pc vis" onclick="openProduct(7)" data-delay="0.24">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:105%;background:#eee"></div>
+<div style="padding-top:105%;background:#1a1a1a"></div>
 <img src="./index_files/img_0219.jpeg" alt="B30 – White" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£59.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B30 – White</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£59.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B30 – White</div>
 </div>
-</div></div><div class="pc" onclick="openProduct(8)" style="animation:fu .35s ease 0.17500000000000002s both">
+</div></div><div class="pc vis" onclick="openProduct(8)" data-delay="0.28">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:130%;background:#eee"></div>
+<div style="padding-top:130%;background:#1a1a1a"></div>
 <img src="./index_files/img_5205-1-scaled.jpeg" alt="B30 – Blue Lime Soles" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£59.99</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">B30 – Blue Lime Soles</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">£59.99</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">B30 – Blue Lime Soles</div>
 </div>
 </div></div></div>
 <div style="text-align:center;margin-top:28px">
-<a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;All&#39;)" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All 36 Items →</a>
+<a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;All&#39;)" class="view-all-btn" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All 36 Items →</a>
 </div>
 </section>
 
 <!-- Telegram CTA -->
 <section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
-<div style="background:#111;border-radius:20px;padding:36px 24px;text-align:center;position:relative;overflow:hidden">
-<div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;letter-spacing:2px;margin-bottom:8px">Join Our Telegram</div>
+<div class="reveal" style="background:#111;border-radius:20px;padding:36px 24px;text-align:center;position:relative;overflow:hidden">
+<div style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;letter-spacing:2px;margin-bottom:8px;animation:float 4s ease-in-out infinite">Join Our Telegram</div>
 <p style="font-size:13px;color:rgba(255,255,255,.5);max-width:360px;margin:0 auto 20px;line-height:1.6">Early access to drops, exclusive deals, and direct support.</p>
-<a href="https://t.me/esntlsclub" target="_blank" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 36px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">Join Now →</a>
+<a href="https://t.me/esntlsclub" target="_blank" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 36px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">Join Now →</a>
 </div>
 </section>
 
 <!-- Contact -->
 <section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
-<div style="background:#f5f5f5;border-radius:20px;padding:clamp(28px,5vw,44px) 24px;text-align:center">
+<div class="reveal-scale" style="background:#f5f5f5;border-radius:20px;padding:clamp(28px,5vw,44px) 24px;text-align:center">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Contact</div>
 <h2 style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:clamp(24px,5vw,36px);color:#111;margin:0 0 10px;letter-spacing:2px">Get In Touch</h2>
 <p style="font-size:13px;color:#888;line-height:1.6;margin:0 auto 20px;max-width:360px">DM us on Instagram for sizing, shipping, or order questions.</p>
@@ -281,8 +347,8 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <p style="font-size:12px;color:#888;max-width:240px;line-height:1.6;margin:0">Premium streetwear essentials. UK-based, free shipping.</p>
 </div>
 <div class="fcols">
-<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Shop</div><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Footwear&#39;)" class="fl">Footwear</a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Jackets&#39;)" class="fl">Jackets</a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="showCat(&#39;Accessories&#39;)" class="fl">Accessories</a></div>
-<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Info</div><a href="https://instagram.com/cluesntl" target="_blank" class="fl">Instagram</a><a href="https://t.me/esntlsclub" target="_blank" class="fl">Telegram</a><a href="file:///C:/Users/qmako/Downloads/index_43.html#" onclick="openAdmin()" class="fl" style="color:#00C853">Admin</a></div>
+<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Shop</div><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Footwear&#39;)" class="fl">Footwear</a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Jackets&#39;)" class="fl">Jackets</a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="showCat(&#39;Accessories&#39;)" class="fl">Accessories</a></div>
+<div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:#111">Info</div><a href="https://instagram.com/cluesntl" target="_blank" class="fl">Instagram</a><a href="https://t.me/esntlsclub" target="_blank" class="fl">Telegram</a><a href="file:///C:/Users/qmako/Downloads/index_44.html#" onclick="openAdmin()" class="fl" style="color:#00C853">Admin</a></div>
 </div>
 </div>
 <div style="border-top:1px solid #eee;padding-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -292,44 +358,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 </footer></div>
 
 <!-- ═══ PRODUCT MODAL ═══ -->
-<div id="modal" class="modal-bg" style="display: none;" onclick="closeModal()"><div class="modal-box" onclick="event.stopPropagation()">
-<div style="padding:14px 18px 0;display:flex;justify-content:space-between;align-items:center">
-<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:600">Footwear · B22</span>
-<button onclick="closeModal()" style="background:none;border:none;font-size:18px;color:#888;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">✕</button>
-</div>
-<div style="padding:8px 18px 0"><img id="mainImg" src="./index_files/img_0626-1.jpeg" alt="B22 – Black &amp; White" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f5f5f5"></div>
-<div style="padding:8px 18px 0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
-<img src="./index_files/img_0626-1.jpeg" class="gthumb active" onclick="setMain(this,&#39;https://esntlsclub.com/wp-content/uploads/2026/03/img_0626-1.jpeg&#39;)"><img src="./index_files/img_0623.jpeg" class="gthumb" onclick="setMain(this,&#39;https://esntlsclub.com/wp-content/uploads/2026/03/img_0623.jpeg&#39;)"><img src="./index_files/img_0624.jpeg" class="gthumb" onclick="setMain(this,&#39;https://esntlsclub.com/wp-content/uploads/2026/03/img_0624.jpeg&#39;)"><img src="./index_files/img_0625.jpeg" class="gthumb" onclick="setMain(this,&#39;https://esntlsclub.com/wp-content/uploads/2026/03/img_0625.jpeg&#39;)"><img src="./index_files/img_0627.jpeg" class="gthumb" onclick="setMain(this,&#39;https://esntlsclub.com/wp-content/uploads/2026/03/img_0627.jpeg&#39;)">
-</div>
-<div style="padding:16px 18px 20px">
-<h2 style="font-family:&#39;Bebas Neue&#39;,sans-serif;font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111">B22 – Black &amp; White</h2>
-<div style="font-size:20px;font-weight:700;color:#00C853;margin-bottom:8px">£129.99</div>
-<div style="font-size:11px;color:#aaa;margin-bottom:10px">5 photos</div>
-<div style="display:flex;gap:6px;margin-bottom:14px">
-<span style="font-size:11px;font-weight:600;color:#00C853;background:rgba(0,200,83,.08);padding:3px 10px;border-radius:6px;text-transform:uppercase">Footwear</span>
-<span style="font-size:11px;font-weight:600;color:#888;background:#f5f5f5;padding:3px 10px;border-radius:6px">B22</span>
-</div>
-<p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">Premium quality footwear from the B22 collection. Free UK shipping included.</p>
-<a href="https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — £129.99</a>
-<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:12px;border-radius:12px;min-height:44px;width:100%;margin-top:10px">DM on Instagram</a>
-</div>
-<div style="padding:0 18px 20px">
-<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=&gt;openProduct(1),150)">
-<img src="./index_files/img_8903.jpeg" alt="B22 White" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">B22 White</div><div style="font-size:10px;color:#00C853;font-weight:700">£129.99</div></div>
-</div><div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=&gt;openProduct(2),150)">
-<img src="./index_files/IMG_6184.jpg" alt="B22 – Dark Blue" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">B22 – Dark Blue</div><div style="font-size:10px;color:#00C853;font-weight:700">£129.99</div></div>
-</div><div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=&gt;openProduct(4),150)">
-<img src="./index_files/img_8745_original.jpeg" alt="B22 – Light Blue" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">B22 – Light Blue</div><div style="font-size:10px;color:#00C853;font-weight:700">£129.99</div></div>
-</div><div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=&gt;openProduct(5),150)">
-<img src="./index_files/img_9472_original-1-scaled.jpeg" alt="B22 Black" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">B22 Black</div><div style="font-size:10px;color:#00C853;font-weight:700">£129.99</div></div>
-</div>
-</div></div></div></div>
+<div id="modal" class="modal-bg" style="display: none;" onclick="closeModal()"></div>
 
 <!-- ═══ ADMIN PANEL ═══ -->
 <div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:600;display:none;align-items:center;justify-content:center;padding:12px">
@@ -416,13 +445,13 @@ const RATIOS=[125,100,140,95,115,145,105,130,90,135,110,100,142,92,108,128,98,12
 function card(p,i){
 const r=RATIOS[i%RATIOS.length];
 const oos=p.price==='Out of stock';
-return `<div class="pc" onclick="openProduct(${p.id})" style="animation:fu .35s ease ${i*.025}s both">
+return `<div class="pc" onclick="openProduct(${p.id})" data-delay="${i*.04}">
 <div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:${r}%;background:#eee"></div>
+<div style="padding-top:${r}%;background:#1a1a1a"></div>
 <img src="${p.img}" alt="${p.n}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
-<div style="position:absolute;top:8px;right:8px;background:${oos?'rgba(0,0,0,.5)':'rgba(0,0,0,.65)'};backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">${p.price}</div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)">${p.n}</div>
+<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">${p.price}</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
+<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">${p.n}</div>
 </div>
 </div></div>`}
 
@@ -465,21 +494,21 @@ return `
 <!-- How To Order -->
 <section style="position:relative;overflow:hidden;padding:0">
 <div style="background:#f8f8f8;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px);border-bottom:1px solid #eee">
-<div style="max-width:720px;margin:0 auto;text-align:center">
-<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px">
+<div class="hero-parallax" style="max-width:720px;margin:0 auto;text-align:center">
+<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px;animation:blurIn .8s ease both">
 <span style="width:5px;height:5px;border-radius:50%;background:#00C853;animation:pulse 2s infinite"></span>
 <span style="font-size:10px;color:#00C853;font-weight:700;letter-spacing:1px;text-transform:uppercase">How It Works</span>
 </div>
-<h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px">HOW TO <span style="color:#00C853">ORDER</span></h1>
-<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55">4 simple steps. You always receive exactly what you selected.</p>
+<h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px;animation:slideUp .6s ease .1s both">HOW TO <span style="color:#00C853">ORDER</span></h1>
+<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55;animation:slideUp .6s ease .2s both">4 simple steps. You always receive exactly what you selected.</p>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin:0 auto 16px" class="steps-compact">
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Redirect</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Blank page is normal</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
-<div style="text-align:center"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;margin:0 auto 5px">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .2s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease infinite">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .35s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease .5s infinite">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Redirect</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Blank page is normal</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .5s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease 1s infinite">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
+<div style="text-align:center;animation:stepIn .5s ease .65s both"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;margin:0 auto 5px;animation:glowPulse 3s ease 1.5s infinite">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
 </div>
 <p style="font-size:10px;color:#bbb;max-width:380px;margin:0 auto 16px;line-height:1.5">Checkout uses a placeholder for copyright reasons — you always get the real product. Free UK shipping 💚</p>
-<a href="#" onclick="showCat('All')" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
+<a href="#" onclick="showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
 </div>
 </div>
 </section>
@@ -489,28 +518,28 @@ ${catScrollHTML()}
 
 <!-- Featured Products -->
 <section style="padding:16px 4px 48px;max-width:1280px;margin:0 auto">
-<div style="margin-bottom:16px;padding:0 12px">
+<div class="reveal" style="margin-bottom:16px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">Featured Items</h2>
 </div>
 <div class="g2">${feat.map((p,i)=>card(p,i)).join('')}</div>
 <div style="text-align:center;margin-top:28px">
-<a href="#" onclick="showCat('All')" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All ${allProducts().length} Items →</a>
+<a href="#" onclick="showCat('All')" class="view-all-btn" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All ${allProducts().length} Items →</a>
 </div>
 </section>
 
 <!-- Telegram CTA -->
 <section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
-<div style="background:#111;border-radius:20px;padding:36px 24px;text-align:center;position:relative;overflow:hidden">
-<div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;letter-spacing:2px;margin-bottom:8px">Join Our Telegram</div>
+<div class="reveal" style="background:#111;border-radius:20px;padding:36px 24px;text-align:center;position:relative;overflow:hidden">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#fff;letter-spacing:2px;margin-bottom:8px;animation:float 4s ease-in-out infinite">Join Our Telegram</div>
 <p style="font-size:13px;color:rgba(255,255,255,.5);max-width:360px;margin:0 auto 20px;line-height:1.6">Early access to drops, exclusive deals, and direct support.</p>
-<a href="https://t.me/esntlsclub" target="_blank" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 36px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">Join Now →</a>
+<a href="https://t.me/esntlsclub" target="_blank" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px 36px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">Join Now →</a>
 </div>
 </section>
 
 <!-- Contact -->
 <section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
-<div style="background:#f5f5f5;border-radius:20px;padding:clamp(28px,5vw,44px) 24px;text-align:center">
+<div class="reveal-scale" style="background:#f5f5f5;border-radius:20px;padding:clamp(28px,5vw,44px) 24px;text-align:center">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Contact</div>
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#111;margin:0 0 10px;letter-spacing:2px">Get In Touch</h2>
 <p style="font-size:13px;color:#888;line-height:1.6;margin:0 auto 20px;max-width:360px">DM us on Instagram for sizing, shipping, or order questions.</p>
@@ -541,13 +570,20 @@ ${catScrollHTML()}
   ╚═══════════════════════════╝*/
 function render(){
 const app=document.getElementById('app');
+app.style.animation='none';
+app.offsetHeight; // force reflow
+app.style.animation='blurIn .4s ease both';
 if(currentView==='shop') app.innerHTML=shopHTML(currentView.cat||'All');
 else app.innerHTML=homeHTML();
 window.scrollTo({top:0,behavior:'smooth'});
 }
 function goHome(){currentView='home';render();return false}
 function showCat(c){currentView={type:'shop',cat:c};
-document.getElementById('app').innerHTML=shopHTML(c);
+const app=document.getElementById('app');
+app.style.animation='none';
+app.offsetHeight;
+app.style.animation='blurIn .4s ease both';
+app.innerHTML=shopHTML(c);
 window.scrollTo({top:0,behavior:'smooth'});return false}
 
 /*╔═══════════════════════════╗
@@ -562,6 +598,7 @@ const oos=p.price==='Out of stock';
 const gallery=p.imgs&&p.imgs.length?p.imgs:[p.img];
 const modal=document.getElementById('modal');
 modal.style.display='flex';
+setTimeout(()=>modal.classList.add('open'),10);
 document.body.style.overflow='hidden';
 modal.innerHTML=`<div class="modal-box" onclick="event.stopPropagation()">
 <div style="padding:14px 18px 0;display:flex;justify-content:space-between;align-items:center">
@@ -600,7 +637,9 @@ document.querySelectorAll('.gthumb').forEach(t=>t.classList.remove('active'));
 el.classList.add('active')}
 
 function closeModal(){
-document.getElementById('modal').style.display='none';
+const modal=document.getElementById('modal');
+modal.classList.remove('open');
+setTimeout(()=>{modal.style.display='none';modal.innerHTML=''},300);
 document.body.style.overflow=''}
 
 /*╔═══════════════════════════╗
@@ -646,6 +685,39 @@ else{n.style.boxShadow='none'}})
 
 // ═══ INIT ═══
 render();
+
+/*╔═══════════════════════════════════════╗
+  ║  SCROLL-TRIGGERED ANIMATIONS          ║
+  ╚═══════════════════════════════════════╝*/
+const observer=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{
+if(e.isIntersecting){
+const delay=e.target.dataset.delay||0;
+setTimeout(()=>e.target.classList.add('vis'),delay*1000);
+observer.unobserve(e.target);
+}})},{threshold:.1,rootMargin:'0px 0px -30px 0px'});
+
+function observeElements(){
+document.querySelectorAll('.pc,.reveal,.reveal-left,.reveal-scale,.reveal-blur').forEach(el=>observer.observe(el));
+}
+// Run after render and on navigation
+const origRender=render;
+render=function(){origRender();setTimeout(observeElements,50)};
+const origShowCat=showCat;
+showCat=function(c){origShowCat(c);setTimeout(observeElements,50);return false};
+
+// Initial observe
+setTimeout(observeElements,100);
+
+// Parallax on hero section
+window.addEventListener('scroll',()=>{
+const hero=document.querySelector('.hero-parallax');
+if(hero){
+const y=window.scrollY;
+hero.style.transform=`translateY(${y*.15}px)`;
+hero.style.opacity=Math.max(0,1-y/500);
+}
+});
 </script>
 </div>
 
