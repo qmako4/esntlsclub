@@ -215,6 +215,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="#" onclick="showCat('Footwear')" class="nl">Footwear</a>
 <a href="#" onclick="showCat('Jackets')" class="nl">Jackets</a>
 <a href="#" onclick="showCat('Accessories')" class="nl">Accessories</a>
+<a href="#" onclick="showStock()" class="nl" style="color:#00C853">Stock</a>
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
 </div>
 <!-- Right spacer (mobile) to balance hamburger for centered logo -->
@@ -661,115 +662,227 @@ function goHome(){currentView='home';render();return false}
   ║  PUBLIC STOCK PAGE        ║
   ╚═══════════════════════════╝*/
 const LIVE_STOCK = {
-  "Technical Sneakers (B22)":{price:"£129.99",colors:{
+  "Technical Sneakers (B22)":{price:"£129.99",cat:"shoe",links:{"Light Blue":4,"Black":5,"Dark Blue":2,"White/Black":3},colors:{
     "Light Blue":{emoji:"🩵",sizes:{"UK 7":1,"UK 9":1,"UK 10":1}},
     "Black":{emoji:"⚫",sizes:{"UK 7":2,"UK 10":1,"UK 11":1,"UK 12":2}},
     "Dark Blue":{emoji:"🔵",sizes:{"UK 9":3,"UK 11":1}},
     "White/Black":{emoji:"◻️",sizes:{"UK 10":1}}
   }},
-  "Daily Sneakers (B30)":{price:"£99.99",colors:{
+  "Daily Sneakers (B30)":{price:"£99.99",cat:"shoe",links:{"Black/White":11,"Blue/Black":12,"Lime Soles":16},colors:{
     "Black/White":{emoji:"⚪⚫",sizes:{"UK 5.5":1}},
     "Blue/Black":{emoji:"🔵⚫",sizes:{"UK 6.5":1}},
     "Lime Soles":{emoji:"💚",sizes:{"UK 10":2}}
   }},
-  "Classic Puffer Jacket":{price:"£189.99",colors:{
+  "Classic Puffer Jacket":{price:"£189.99",cat:"clothing",links:{"_":28},colors:{
     "Black":{emoji:"⚫",sizes:{"S":3,"M":1,"L":1,"XL":1}},
     "Grey":{emoji:"🩶",sizes:{"S":3,"M":3,"L":2}}
   }},
-  "The Miller Parka":{price:"£219.99",colors:{
+  "The Miller Parka":{price:"£219.99",cat:"clothing",links:{"_":21},colors:{
     "Black (Black Badge)":{emoji:"⚫",sizes:{"S":2,"L":1}},
     "Black (Red Badge)":{emoji:"🔴",sizes:{"S":1}}
   }},
-  "The Fur Parka":{price:"£229.99",colors:{
+  "The Fur Parka":{price:"£229.99",cat:"clothing",links:{"_":23},colors:{
     "Black (Red Badge)":{emoji:"🔴",sizes:{"XL":1}}
   }},
-  "The Berry Puffer Jacket":{price:"£179.99",colors:{
+  "The Berry Puffer Jacket":{price:"£179.99",cat:"clothing",links:{"_":29},colors:{
     "Black":{emoji:"⚫",sizes:{"XL":1}}
   }},
-  "Blank T Shirt":{price:"£24.99",colors:{
+  "Blank T Shirt":{price:"£24.99",cat:"clothing",links:{"_":36},colors:{
     "Black":{emoji:"⚫",sizes:{"S":4,"M":5,"L":4}},
     "White":{emoji:"⚪",sizes:{"M":3,"L":2}}
   }},
-  "Classic Everyday Tracksuit":{price:"£89.99",colors:{
+  "Classic Everyday Tracksuit":{price:"£89.99",cat:"clothing",links:{"_":35},colors:{
     "Black":{emoji:"⚫",sizes:{"M":2,"L":1}},
     "Grey":{emoji:"🩶",sizes:{"S":1,"M":2,"L":1}}
   }},
-  "Classic Messenger Bag":{price:"£59.99",colors:{
+  "Classic Messenger Bag":{price:"£59.99",cat:"accessory",links:{"_":33},colors:{
     "":{emoji:"👜",sizes:{"One Size":7}}
   }},
-  "Double Pocket Messenger Bag":{price:"£69.99",colors:{
+  "Double Pocket Messenger Bag":{price:"£69.99",cat:"accessory",links:{"_":32},colors:{
     "":{emoji:"👜",sizes:{"One Size":6}}
   }},
-  "The Belvoir Bag - Brown":{price:"£79.99",colors:{
+  "The Belvoir Bag - Brown":{price:"£79.99",cat:"accessory",links:{"_":30},colors:{
     "":{emoji:"🤎",sizes:{"One Size":2}}
   }}
 };
 const STOCK_UPDATED = "13 Apr 2026";
+const SHOE_SIZES = ["UK 5","UK 5.5","UK 6","UK 6.5","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12"];
+const CLOTHING_SIZES = ["XS","S","M","L","XL","XXL"];
+let stockFilter = 'all';
 
-function showStock(){
+// Match a product to its LIVE_STOCK entry and return HTML
+function getProductStockHTML(p){
+  const name = p.n.toLowerCase();
+  let stockEntry = null;
+  for(const [k,v] of Object.entries(LIVE_STOCK)){
+    // Match by product ID in links
+    for(const pid of Object.values(v.links||{})){
+      if(pid === p.id){ stockEntry = {name:k,...v}; break; }
+    }
+    if(stockEntry) break;
+  }
+  if(!stockEntry) return '';
+  
+  let html = '<div style="background:#f9f9f9;border-radius:12px;padding:12px;margin-bottom:14px">';
+  html += '<div style="font-size:11px;font-weight:700;color:#00C853;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📦 Stock Availability</div>';
+  
+  let total = 0;
+  for(const [color, info] of Object.entries(stockEntry.colors)){
+    if(color) html += `<div style="font-size:12px;font-weight:700;color:#333;margin-top:6px;margin-bottom:4px">${info.emoji} ${color}</div>`;
+    for(const [size, qty] of Object.entries(info.sizes)){
+      total += qty;
+      html += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#555">${size}</span><span style="color:#00C853;font-weight:700">${qty} left</span></div>`;
+    }
+  }
+  html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;font-size:12px;font-weight:700;color:#111">${total} total in stock</div>`;
+  html += '</div>';
+  return html;
+}
+
+function getProductIdForStock(product, color){
+  const data = LIVE_STOCK[product];
+  if(!data||!data.links) return null;
+  if(data.links[color]) return data.links[color];
+  if(data.links['_']) return data.links['_'];
+  return Object.values(data.links)[0] || null;
+}
+
+function showStock(filter){
+  if(filter) stockFilter = filter;
   currentView='stock';
+  history.replaceState(null,null,'#stock');
   const app=document.getElementById('app');
   app.style.animation='none';
   app.offsetHeight;
   app.style.animation='blurIn .4s ease both';
   
   let totalItems = 0;
-  let html = `<section style="padding:16px;max-width:700px;margin:0 auto">
-  <div style="text-align:center;margin-bottom:24px">
-    <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Live Availability</div>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,40px);color:#111;margin:0;letter-spacing:2px">Stock Check</h2>
-    <p style="font-size:12px;color:#aaa;margin-top:6px">Last updated: ${STOCK_UPDATED}</p>
+  let totalProducts = 0;
+  
+  // Build filter buttons
+  const filterBtns = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;margin-bottom:12px">
+    <div style="display:flex;gap:6px;justify-content:flex-start;min-width:max-content;padding:0 4px">
+    <button onclick="showStock('all')" style="padding:8px 16px;border-radius:20px;border:2px solid ${stockFilter==='all'?'#00C853':'#eee'};background:${stockFilter==='all'?'#00C853':'#fff'};color:${stockFilter==='all'?'#fff':'#666'};font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">All</button>
+    ${SHOE_SIZES.map(s=>`<button onclick="showStock('${s}')" style="padding:8px 12px;border-radius:20px;border:2px solid ${stockFilter===s?'#00C853':'#eee'};background:${stockFilter===s?'#00C853':'#fff'};color:${stockFilter===s?'#fff':'#666'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">${s}</button>`).join('')}
+    </div>
+  </div>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;margin-bottom:20px">
+    <div style="display:flex;gap:6px;justify-content:center;min-width:max-content;padding:0 4px">
+    ${CLOTHING_SIZES.map(s=>`<button onclick="showStock('${s}')" style="padding:8px 16px;border-radius:20px;border:2px solid ${stockFilter===s?'#00C853':'#eee'};background:${stockFilter===s?'#00C853':'#fff'};color:${stockFilter===s?'#fff':'#666'};font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">${s}</button>`).join('')}
+    <button onclick="showStock('One Size')" style="padding:8px 14px;border-radius:20px;border:2px solid ${stockFilter==='One Size'?'#00C853':'#eee'};background:${stockFilter==='One Size'?'#00C853':'#fff'};color:${stockFilter==='One Size'?'#fff':'#666'};font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">One Size</button>
+    </div>
   </div>`;
+
+  let cardsHtml = '';
 
   for(const [product, data] of Object.entries(LIVE_STOCK)){
     let productTotal = 0;
+    let productMatches = false;
     let colorsHtml = '';
     
     for(const [color, info] of Object.entries(data.colors)){
       let sizesHtml = '';
+      let colorHasMatch = false;
+      
       for(const [size, qty] of Object.entries(info.sizes)){
-        productTotal += qty;
-        totalItems += qty;
-        sizesHtml += `<div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5">
-          <span style="color:#333">${size}</span>
-          <span style="color:#00C853;font-weight:700">${qty} in stock</span>
-        </div>`;
+        const matches = stockFilter==='all' || size===stockFilter;
+        if(matches){
+          productTotal += qty;
+          totalItems += qty;
+          colorHasMatch = true;
+          productMatches = true;
+          const pid = getProductIdForStock(product, color);
+          const linkAttr = pid ? `onclick="closeModal();openProduct(${pid})" style="cursor:pointer"` : '';
+          sizesHtml += `<div ${linkAttr} style="display:flex;justify-content:space-between;padding:10px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;${pid?'cursor:pointer':''}">
+            <span style="color:#333">${size}</span>
+            <span style="color:#00C853;font-weight:700">${qty} in stock</span>
+          </div>`;
+        }
       }
       
-      if(color){
-        colorsHtml += `<div style="margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700;color:#333;padding:8px 12px;background:#f9f9f9;border-radius:8px;margin-bottom:2px">${info.emoji} ${color}</div>
-          ${sizesHtml}
-        </div>`;
-      } else {
-        colorsHtml += sizesHtml;
+      if(colorHasMatch){
+        if(color){
+          const pid = getProductIdForStock(product, color);
+          colorsHtml += `<div style="margin-bottom:12px">
+            <div style="font-size:14px;font-weight:700;color:#333;padding:8px 12px;background:#f9f9f9;border-radius:8px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
+              <span>${info.emoji} ${color}</span>
+              ${pid?`<span onclick="event.stopPropagation();openProduct(${pid})" style="font-size:11px;color:#00C853;cursor:pointer;font-weight:600">View →</span>`:''}
+            </div>
+            ${sizesHtml}
+          </div>`;
+        } else {
+          colorsHtml += sizesHtml;
+        }
       }
     }
 
-    html += `<div style="background:#fff;border-radius:16px;border:1px solid #eee;margin-bottom:16px;overflow:hidden">
-      <div style="padding:16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="this.parentElement.querySelector('.stock-body').style.display=this.parentElement.querySelector('.stock-body').style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=this.parentElement.querySelector('.stock-body').style.display==='none'?'▸':'▾'">
+    if(!productMatches) continue;
+    totalProducts++;
+
+    const firstLink = getProductIdForStock(product, Object.keys(data.colors)[0]);
+
+    cardsHtml += `<div style="background:#fff;border-radius:16px;border:1px solid #eee;margin-bottom:16px;overflow:hidden">
+      <div style="padding:16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="const b=this.parentElement.querySelector('.stock-body');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
         <div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#111">${product}</div>
           <div style="font-size:12px;color:#888;margin-top:2px">${data.price} · ${productTotal} available</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="background:#00C853;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px">${productTotal}</span>
-          <span class="arrow" style="color:#ccc;font-size:18px">▸</span>
+          <span class="arrow" style="color:#ccc;font-size:18px">▾</span>
         </div>
       </div>
-      <div class="stock-body" style="display:none;padding:8px 4px">${colorsHtml}</div>
+      <div class="stock-body" style="display:block;padding:8px 4px">
+        ${colorsHtml}
+        ${firstLink?`<div style="text-align:center;padding:8px 0 4px"><a href="#" onclick="openProduct(${firstLink});return false" style="font-size:12px;color:#00C853;font-weight:700;text-decoration:none">View Product →</a></div>`:''}
+      </div>
     </div>`;
   }
 
-  html += `<div style="text-align:center;padding:20px 0 60px">
-    <div style="font-size:13px;color:#888;margin-bottom:16px">${totalItems} items in stock</div>
-    <a href="https://instagram.com/cluesntl" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:50px;text-decoration:none;min-height:48px">DM to Order</a>
+  // Share link bar
+  const shareBar = `<div style="background:#fff;border:2px solid #eee;border-radius:14px;padding:12px;margin-bottom:20px;display:flex;gap:8px;align-items:center">
+    <input type="text" value="https://esntlsclub.com/#stock" readonly id="stockShareLink" style="flex:1;border:none;font-size:13px;font-family:'DM Sans',sans-serif;color:#555;outline:none;background:transparent;min-width:0">
+    <button onclick="copyStockLink(this)" style="padding:8px 16px;border:none;border-radius:10px;background:#f5f5f5;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:#111">Copy Link</button>
+    <button id="stockShareBtn" onclick="shareStockLink()" style="padding:8px 12px;border:none;border-radius:10px;background:#f5f5f5;font-size:14px;cursor:pointer;display:none">📤</button>
+  </div>`;
+
+  let html = `<section style="padding:16px;max-width:700px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Live Availability</div>
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,40px);color:#111;margin:0;letter-spacing:2px">Stock Check</h2>
+    <p style="font-size:12px;color:#aaa;margin-top:6px">Last updated: ${STOCK_UPDATED} · ${totalItems} items across ${totalProducts} products</p>
+  </div>
+  ${shareBar}
+  <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#888;text-align:center">Filter by size:</div>
+  ${filterBtns}
+  ${stockFilter!=='all'?`<div style="text-align:center;margin-bottom:16px"><span style="background:#00C853;color:#fff;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px">${stockFilter}: ${totalItems} items found</span></div>`:''}
+  ${cardsHtml.length?cardsHtml:`<div style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">😞</div><div style="font-size:14px;font-weight:600;color:#111">No items in ${stockFilter}</div><div style="font-size:12px;color:#888;margin-top:4px">Try a different size or check back later</div></div>`}
+  <div style="text-align:center;padding:20px 0 60px">
+    <a href="https://instagram.com/cluesntl" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:50px;text-decoration:none;min-height:48px">DM to Order 💬</a>
     <div style="margin-top:12px"><a href="#" onclick="goHome()" style="font-size:13px;color:#00C853;text-decoration:none;font-weight:600">← Back to Shop</a></div>
   </div></section>`;
 
   app.innerHTML = html;
+  // Show share button only if native sharing is available (mobile)
+  const shareBtn = document.getElementById('stockShareBtn');
+  if(shareBtn && navigator.share) shareBtn.style.display = 'block';
   window.scrollTo({top:0,behavior:'smooth'});
   return false;
+}
+
+// Cross-platform clipboard copy
+function copyStockLink(btn){
+  const url = 'https://esntlsclub.com/#stock';
+  const done = ()=>{btn.textContent='Copied!';btn.style.background='#00C853';btn.style.color='#fff';setTimeout(()=>{btn.textContent='Copy Link';btn.style.background='#f5f5f5';btn.style.color='#111'},2000)};
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(url).then(done).catch(()=>{fallbackCopy(url);done()});
+  } else { fallbackCopy(url); done(); }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,99999);document.execCommand('copy');document.body.removeChild(ta);
+}
+function shareStockLink(){
+  if(navigator.share){navigator.share({title:'ESNTLS CLUB — Stock Check',text:'Check what\'s in stock!',url:'https://esntlsclub.com/#stock'}).catch(()=>{});}
 }
 function showCat(c){currentView={type:'shop',cat:c};
 const app=document.getElementById('app');
@@ -816,6 +929,7 @@ ${gallery.length>1?`<div style="font-size:11px;color:#aaa;margin-bottom:10px">${
 <span style="font-size:11px;font-weight:600;color:#888;background:#f5f5f5;padding:3px 10px;border-radius:6px">${p.brand}</span>
 </div>
 <p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">Premium quality ${p.cat.toLowerCase()} from the ${p.brand} collection. Free UK shipping included.</p>
+${getProductStockHTML(p)}
 ${oos?`<div style="background:#f5f5f5;color:#888;font-weight:700;font-size:14px;padding:16px;border-radius:12px;text-align:center;min-height:52px;display:flex;align-items:center;justify-content:center">Out of Stock</div>`
 :`<a href="${p.link}" target="_blank" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — ${p.price}</a>`}
 <a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:12px;border-radius:12px;min-height:44px;width:100%;margin-top:10px">DM on Instagram</a>
