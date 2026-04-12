@@ -669,6 +669,9 @@ window.scrollTo({top:0,behavior:'smooth'});return false}
 function openProduct(id){
 const all=allProducts();
 const p=all.find(x=>String(x.id)===String(id));if(!p)return;
+// Set URL hash for direct linking
+const slug=p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+history.replaceState(null,null,'#'+slug+'-'+p.id);
 const related=all.filter(x=>x.id!==p.id&&(x.brand===p.brand||x.cat===p.cat)).slice(0,4);
 const oos=p.price==='Out of stock';
 const gallery=p.imgs&&p.imgs.length?p.imgs.filter(u=>u):[p.img];
@@ -740,7 +743,8 @@ function closeModal(){
 const modal=document.getElementById('modal');
 modal.classList.remove('open');
 setTimeout(()=>{modal.style.display='none';modal.innerHTML=''},300);
-document.body.style.overflow=''}
+document.body.style.overflow='';
+history.replaceState(null,null,' ')}
 
 /*╔═══════════════════════════╗
   ║  HAMBURGER MENU           ║
@@ -1011,6 +1015,22 @@ else{n.style.boxShadow='none'}},{passive:true})
 
 // ═══ INIT ═══
 render();
+
+// Auto-open product from URL hash (e.g. #b22-white-1)
+setTimeout(()=>{
+const hash=window.location.hash.slice(1);
+if(hash){
+const parts=hash.split('-');
+const id=parts[parts.length-1];
+if(id&&!isNaN(id)){openProduct(parseInt(id))}
+else{
+// Try matching by slug
+const all=allProducts();
+const p=all.find(x=>{
+const slug=x.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+return hash===slug+'-'+x.id||hash===slug});
+if(p)openProduct(p.id)}}
+},500);
 
 /*╔═══════════════════════════════════════╗
   ║  SCROLL-TRIGGERED ANIMATIONS          ║
