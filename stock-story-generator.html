@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ESNTLS Stock Story Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #00C853;
+  --dark: #111;
+  --bg: #f8f8f8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--dark);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.header {
+  background: var(--dark);
+  padding: 20px 16px;
+  text-align: center;
+}
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: #fff;
+}
+.header h1 span { color: var(--green); }
+.header p {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.controls {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  min-height: 52px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+.btn-secondary {
+  background: var(--dark);
+  color: #fff;
+}
+.btn-outline {
+  background: #fff;
+  color: var(--dark);
+  border: 2px solid #eee;
+}
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.status {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  color: #888;
+  min-height: 40px;
+}
+.status.error { color: #e53935; }
+.status.success { color: var(--green); }
+
+.progress-bar {
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+  margin: 0 16px;
+  overflow: hidden;
+  display: none;
+}
+.progress-bar .fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width .3s;
+  width: 0%;
+}
+
+/* Stock summary */
+.stock-summary {
+  padding: 0 16px 16px;
+  display: none;
+}
+.stock-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+.stock-card h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.stock-card .variant {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.stock-card .variant:last-child { border: none; }
+.stock-card .qty {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Story previews */
+.stories-grid {
+  padding: 0 16px 100px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media(min-width:600px){
+  .stories-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media(min-width:900px){
+  .stories-grid { grid-template-columns: repeat(4, 1fr); max-width: 960px; margin: 0 auto; }
+}
+.story-preview {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 9/16;
+  background: #222;
+  cursor: pointer;
+}
+.story-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.story-preview .dl-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.story-preview .label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.link-row {
+  display: flex;
+  gap: 4px;
+}
+.link-input {
+  flex: 1;
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 6px 8px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+  color: #555;
+  min-width: 0;
+  outline: none;
+}
+.link-input:focus { border-color: var(--green); }
+.copy-btn {
+  padding: 6px 10px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.copy-btn.copied {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+/* Hidden canvases */
+.hidden { display: none; }
+
+/* Download all bar */
+.download-all-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid #eee;
+  display: none;
+  z-index: 100;
+}
+.download-all-bar > div {
+  max-width: 500px;
+  margin: 0 auto;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ESNTLS <span>CLUB</span></h1>
+  <p>Stock Update Story Generator</p>
+</div>
+
+<div class="controls">
+  <button class="btn btn-primary" id="fetchBtn" onclick="fetchStock()">
+    📦 Pull Live Stock
+  </button>
+</div>
+
+<div class="progress-bar" id="progressBar">
+  <div class="fill" id="progressFill"></div>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="stock-summary" id="stockSummary"></div>
+
+<div class="controls" id="generateControls" style="display:none">
+  <button class="btn btn-secondary" onclick="generateAllStories()">
+    🎨 Generate Story Images
+  </button>
+</div>
+
+<div class="stories-grid" id="storiesGrid"></div>
+
+<div class="download-all-bar" id="downloadBar">
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" style="flex:1" onclick="downloadAll()">
+      ⬇️ Download All
+    </button>
+    <button class="btn btn-secondary" style="flex:1" id="shareAllBtn" onclick="shareAll()">
+      📤 Share All
+    </button>
+  </div>
+</div>
+
+<script>
+// Update share button label based on platform
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('shareAllBtn');
+  if(btn && !navigator.share) btn.textContent = '📋 Copy All Links';
+});
+</script>
+
+<script>
+// ═══ CONFIG ═══
+const WIX_SITE_ID = '7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155';
+const SB_URL = 'https://pccqpmefzeaorgtajdfm.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
+
+// Product image mapping (product name → Supabase image URL)
+const PRODUCT_IMAGES = {
+  "Technical Sneakers": {
+    "Light Blue": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p4_1775923773468_20.jpeg",
+    "Black": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p5_1775923783350_24.jpeg",
+    "Dark blue": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p2_1775923730521_8.jpg",
+    "white/black": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p3_1775923769547_16.jpeg",
+    "White": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p1_1775923723867_0.jpeg",
+    "Grey": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p6_1775923789238_26.jpeg",
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p1_1775923723867_0.jpeg"
+  },
+  "Daily Sneakers": {
+    "Black/White": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p11_1775923824076_41.jpeg",
+    "lime soles": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p16_1775923852903_58.jpeg",
+    "Blue/Black": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p12_1775923828352_43.jpeg",
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p9_1775923806698_34.jpeg"
+  },
+  "Classic Puffer Jacket": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p28_1775923904546_94.jpeg"
+  },
+  "The Miller Parka": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p21_1775923873680_71.jpeg"
+  },
+  "The Fur Parka": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p23_1775923881838_78.jpeg"
+  },
+  "The Berry Puffer Jacket": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p29_1775923909453_98.jpeg"
+  },
+  "Blank T Shirt": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p36_1775923957660_116.jpeg"
+  },
+  "Classic Everyday Tracksuit": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p35_1775923954554_113.jpeg"
+  },
+  "Classic Messenger Bag": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p33_1775923946413_109.jpeg"
+  },
+  "Double Pocket Messenger Bag": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p2_1775923729831_7.jpeg"
+  },
+  "The Belvoir Bag - Brown": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p34_1775923948704_110.jpeg"
+  },
+  "The Belvoir Bag - Grey": {
+    "_default": "https://pccqpmefzeaorgtajdfm.supabase.co/storage/v1/object/public/product-images/p34_1775923948704_110.jpeg"
+  }
+};
+
+// Product links on esntlsclub.com
+const PRODUCT_LINKS = {
+  "Technical Sneakers|Light Blue": "https://esntlsclub.com/#b22-light-blue-4",
+  "Technical Sneakers|Black": "https://esntlsclub.com/#b22-black-5",
+  "Technical Sneakers|Dark blue": "https://esntlsclub.com/#b22-dark-blue-2",
+  "Technical Sneakers|white/black": "https://esntlsclub.com/#b22-black-white-3",
+  "Technical Sneakers|White": "https://esntlsclub.com/#b22-white-1",
+  "Technical Sneakers|Grey": "https://esntlsclub.com/#b22-grey-6",
+  "Daily Sneakers|Black/White": "https://esntlsclub.com/#b30-black-white-11",
+  "Daily Sneakers|Blue/Black": "https://esntlsclub.com/#b30-blue-black-12",
+  "Daily Sneakers|lime soles": "https://esntlsclub.com/#b30-light-blue-16",
+  "Classic Puffer Jacket|": "https://esntlsclub.com/#maya-puffer-jacket-28",
+  "The Miller Parka|": "https://esntlsclub.com/#macmillan-black-badge-21",
+  "The Fur Parka|": "https://esntlsclub.com/#wyndham-parka-black-badge-24",
+  "The Berry Puffer Jacket|": "https://esntlsclub.com/#burb-puffer-jacket-29",
+  "Blank T Shirt|": "https://esntlsclub.com/#casablanca-t-shirt-36",
+  "Classic Everyday Tracksuit|": "https://esntlsclub.com/#corteiz-tracksuit-35",
+  "Classic Messenger Bag|": "https://esntlsclub.com/#pm-messenger-bag-33",
+  "Double Pocket Messenger Bag|": "https://esntlsclub.com/#duo-messenger-bag-32",
+  "The Belvoir Bag - Brown|": "https://esntlsclub.com/#goyard-bag-brown-30",
+  "The Belvoir Bag - Grey|": "https://esntlsclub.com/#goyard-bag-grey-31",
+};
+
+function getProductLink(product, color) {
+  return PRODUCT_LINKS[product + '|' + (color||'')] || PRODUCT_LINKS[product + '|'] || 'https://esntlsclub.com';
+}
+
+const COLOR_EMOJIS = {
+  'black': '⚫', 'Black': '⚫',
+  'white': '⚪', 'White': '⚪',
+  'grey': '🩶', 'Grey': '🩶', 'gray': '🩶',
+  'Light Blue': '🩵', 'light blue': '🩵',
+  'Dark blue': '🔵', 'dark blue': '🔵',
+  'white/black': '◻️', 'Black/White': '⚪⚫',
+  'Red': '🔴', 'red': '🔴',
+  'lime soles': '💚', 'Blue/Black': '🔵⚫'
+};
+
+let stockData = [];
+let storyCanvases = [];
+
+// ═══ STATUS ═══
+function setStatus(msg, type='') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+function setProgress(pct) {
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  bar.style.display = 'block';
+  fill.style.width = pct + '%';
+}
+
+// ═══ FETCH STOCK FROM SUPABASE (synced from Wix by Claude) ═══
+async function fetchStock() {
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Pulling live stock...';
+  setStatus('Connecting to Supabase...');
+  setProgress(20);
+
+  try {
+    const resp = await fetch(SB_URL + '/rest/v1/stock?id=eq.current&select=data,updated_at', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    
+    if (!resp.ok) throw new Error('Supabase error: ' + resp.status);
+    const rows = await resp.json();
+    setProgress(60);
+    
+    if (rows.length && rows[0].data && Object.keys(rows[0].data).length > 0) {
+      const liveStock = rows[0].data;
+      const updatedAt = new Date(rows[0].updated_at);
+      const timeStr = updatedAt.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      
+      // Convert LIVE_STOCK format to stockData array
+      stockData = [];
+      for (const [product, data] of Object.entries(liveStock)) {
+        for (const [color, info] of Object.entries(data.colors || {})) {
+          for (const [size, qty] of Object.entries(info.sizes || {})) {
+            if (qty > 0) {
+              stockData.push({
+                product: product.replace(' (B22)', '').replace(' (B30)', '').trim(),
+                variant: size + ' | ' + color,
+                color: color,
+                size: size,
+                qty: qty,
+                delivery: 'next day'
+              });
+            }
+          }
+        }
+      }
+      
+      setProgress(100);
+      renderStockSummary();
+      document.getElementById('generateControls').style.display = 'block';
+      setStatus('✅ Live stock loaded! Updated: ' + timeStr + ' — ' + stockData.length + ' variants in stock', 'success');
+      btn.textContent = '🔄 Refresh Stock';
+      btn.disabled = false;
+      return;
+    }
+    throw new Error('No stock data found');
+  } catch(e) {
+    console.log('Supabase fetch failed:', e);
+    setStatus('Could not load live stock. Using cached data instead.', '');
+    setProgress(100);
+    btn.textContent = '📦 Pull Live Stock';
+    btn.disabled = false;
+    showManualMode();
+  }
+}
+
+// ═══ MANUAL MODE (paste stock data) ═══
+function showManualMode() {
+  document.getElementById('stockSummary').style.display = 'block';
+  document.getElementById('stockSummary').innerHTML = `
+    <div class="stock-card">
+      <h3>📋 PASTE STOCK DATA</h3>
+      <p style="font-size:12px;color:#888;margin-bottom:12px">
+        Go to Claude and say <strong>"stock update"</strong>. Copy the JSON data and paste it below.
+        Or tap "Use Last Known Stock" to use cached data.
+      </p>
+      <textarea id="stockInput" placeholder='Paste stock JSON here or tap button below...'
+        style="width:100%;min-height:120px;border:2px solid #eee;border-radius:12px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary" style="flex:1;padding:12px" onclick="parseManualStock()">Parse Stock</button>
+        <button class="btn btn-outline" style="flex:1;padding:12px" onclick="useHardcodedStock()">Use Current Stock</button>
+      </div>
+    </div>
+  `;
+  setProgress(100);
+  setStatus('Ready — paste stock data or use current known stock', 'success');
+}
+
+// ═══ HARDCODED CURRENT STOCK (from latest Wix pull) ═══
+function useHardcodedStock() {
+  stockData = [
+    // Technical Sneakers
+    { product: "Technical Sneakers", variant: "UK 7 | Light Blue | next day", color: "Light Blue", size: "UK 7", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 7 | Black | next day", color: "Black", size: "UK 7", qty: 2, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 9 | Light Blue | next day", color: "Light Blue", size: "UK 9", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 9 | Dark blue | next day", color: "Dark blue", size: "UK 9", qty: 3, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 10 | Light Blue | next day", color: "Light Blue", size: "UK 10", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 10 | Black | next day", color: "Black", size: "UK 10", qty: 2, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 10 | white/black | next day", color: "white/black", size: "UK 10", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 11 | Black | next day", color: "Black", size: "UK 11", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 11 | Dark blue | next day", color: "Dark blue", size: "UK 11", qty: 1, delivery: "next day" },
+    { product: "Technical Sneakers", variant: "UK 12 | Black | next day", color: "Black", size: "UK 12", qty: 2, delivery: "next day" },
+    // Daily Sneakers
+    { product: "Daily Sneakers", variant: "UK 5.5 | Black/White | next day", color: "Black/White", size: "UK 5.5", qty: 1, delivery: "next day" },
+    { product: "Daily Sneakers", variant: "UK 6.5 | Blue/Black | next day", color: "Blue/Black", size: "UK 6.5", qty: 1, delivery: "next day" },
+    { product: "Daily Sneakers", variant: "UK 10 | lime soles | next day", color: "lime soles", size: "UK 10", qty: 2, delivery: "next day" },
+    // Classic Puffer Jacket
+    { product: "Classic Puffer Jacket", variant: "S | black", color: "black", size: "S", qty: 3, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "S | grey", color: "grey", size: "S", qty: 3, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "M | black", color: "black", size: "M", qty: 1, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "M | grey", color: "grey", size: "M", qty: 3, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "L | black", color: "black", size: "L", qty: 1, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "L | grey", color: "grey", size: "L", qty: 2, delivery: "next day" },
+    { product: "Classic Puffer Jacket", variant: "XL | black", color: "black", size: "XL", qty: 1, delivery: "next day" },
+    // Miller Parka
+    { product: "The Miller Parka", variant: "S | Black Badge", color: "black", size: "S", qty: 2, delivery: "next day" },
+    { product: "The Miller Parka", variant: "S | Red Badge", color: "black", size: "S", qty: 1, delivery: "next day" },
+    { product: "The Miller Parka", variant: "L | Black Badge", color: "black", size: "L", qty: 1, delivery: "next day" },
+    // Fur Parka
+    { product: "The Fur Parka", variant: "XL | Red Badge", color: "black", size: "XL", qty: 1, delivery: "next day" },
+    // Berry Puffer
+    { product: "The Berry Puffer Jacket", variant: "XL", color: "black", size: "XL", qty: 1, delivery: "next day" },
+    // Blank T Shirt
+    { product: "Blank T Shirt", variant: "S | Black", color: "Black", size: "S", qty: 4, delivery: "next day" },
+    { product: "Blank T Shirt", variant: "M | Black", color: "Black", size: "M", qty: 4, delivery: "next day" },
+    { product: "Blank T Shirt", variant: "M | White", color: "White", size: "M", qty: 3, delivery: "next day" },
+    { product: "Blank T Shirt", variant: "L | Black", color: "Black", size: "L", qty: 4, delivery: "next day" },
+    { product: "Blank T Shirt", variant: "L | White", color: "White", size: "L", qty: 2, delivery: "next day" },
+    // Tracksuit
+    { product: "Classic Everyday Tracksuit", variant: "Black | M", color: "Black", size: "M", qty: 2, delivery: "next day" },
+    { product: "Classic Everyday Tracksuit", variant: "Black | L", color: "Black", size: "L", qty: 1, delivery: "next day" },
+    { product: "Classic Everyday Tracksuit", variant: "Grey | S", color: "Grey", size: "S", qty: 1, delivery: "next day" },
+    { product: "Classic Everyday Tracksuit", variant: "Grey | M", color: "Grey", size: "M", qty: 2, delivery: "next day" },
+    { product: "Classic Everyday Tracksuit", variant: "Grey | L", color: "Grey", size: "L", qty: 1, delivery: "next day" },
+    // Bags
+    { product: "Classic Messenger Bag", variant: "Next Day", color: "", size: "", qty: 7, delivery: "next day" },
+    { product: "Double Pocket Messenger Bag", variant: "Next Day", color: "", size: "", qty: 6, delivery: "next day" },
+    { product: "The Belvoir Bag - Brown", variant: "Brown", color: "Brown", size: "", qty: 2, delivery: "next day" },
+    { product: "The Belvoir Bag - Grey", variant: "Grey", color: "Grey", size: "", qty: 1, delivery: "next day" },
+  ];
+
+  renderStockSummary();
+  document.getElementById('generateControls').style.display = 'block';
+  setStatus(`Loaded ${stockData.length} in-stock variants across ${new Set(stockData.map(s=>s.product)).size} products`, 'success');
+}
+
+function parseManualStock() {
+  try {
+    const raw = document.getElementById('stockInput').value.trim();
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      stockData = data;
+    } else if (data.inventoryItems) {
+      processWixData(data.inventoryItems);
+      return;
+    }
+    renderStockSummary();
+    document.getElementById('generateControls').style.display = 'block';
+    setStatus(`Parsed ${stockData.length} variants`, 'success');
+  } catch(e) {
+    setStatus('Invalid JSON — check the data format', 'error');
+  }
+}
+
+function processWixData(items) {
+  stockData = items
+    .filter(i => i.availabilityStatus === 'IN_STOCK' && i.quantity > 0 && i.product?.variantVisible)
+    .map(i => {
+      const parts = (i.product?.variantName || '').split(' | ');
+      return {
+        product: (i.product?.name || '').trim(),
+        variant: i.product?.variantName || '',
+        color: parts[1] || '',
+        size: parts[0] || '',
+        qty: i.quantity,
+        delivery: parts[2] || 'next day'
+      };
+    });
+  renderStockSummary();
+  document.getElementById('generateControls').style.display = 'block';
+  setStatus(`Found ${stockData.length} in-stock variants`, 'success');
+}
+
+// ═══ RENDER STOCK SUMMARY ═══
+function renderStockSummary() {
+  const grouped = {};
+  stockData.forEach(s => {
+    if (!grouped[s.product]) grouped[s.product] = [];
+    grouped[s.product].push(s);
+  });
+
+  const el = document.getElementById('stockSummary');
+  el.style.display = 'block';
+  el.innerHTML = Object.entries(grouped).map(([name, items]) => {
+    const total = items.reduce((a,b) => a + b.qty, 0);
+    return `<div class="stock-card">
+      <h3>${name} <span style="font-size:14px;color:var(--green)">(${total})</span></h3>
+      ${items.map(i => `
+        <div class="variant">
+          <span>${COLOR_EMOJIS[i.color]||'▪️'} ${i.color} ${i.size}</span>
+          <span class="qty">${i.qty} in stock</span>
+        </div>
+      `).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ═══ GENERATE STORY IMAGES ═══
+async function generateAllStories() {
+  const grid = document.getElementById('storiesGrid');
+  grid.innerHTML = '';
+  storyCanvases = [];
+  setStatus('Generating story images...');
+  setProgress(0);
+
+  // Group by product + color for sneakers, or just product for others
+  const groups = {};
+  stockData.forEach(s => {
+    let key = s.product;
+    if (s.product.includes('Sneakers')) key = s.product + ' - ' + s.color;
+    if (!groups[key]) groups[key] = { product: s.product, color: s.color, items: [] };
+    groups[key].items.push(s);
+  });
+
+  const entries = Object.entries(groups);
+  let done = 0;
+
+  for (const [key, group] of entries) {
+    try {
+      await generateStory(group, grid);
+    } catch(e) {
+      console.error('Error generating story for', key, e);
+    }
+    done++;
+    setProgress(Math.round(done / entries.length * 100));
+  }
+
+  if (storyCanvases.length > 0) {
+    document.getElementById('downloadBar').style.display = 'block';
+  }
+  setStatus(`Generated ${storyCanvases.length} story images — tap to download`, 'success');
+}
+
+async function generateStory(group, grid) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d');
+
+  // Get product image URL
+  const imgMap = PRODUCT_IMAGES[group.product] || {};
+  const imgUrl = imgMap[group.color] || imgMap._default || '';
+
+  // Draw background - use styled gradient since product images can't load from local files
+  const gradients = {
+    'Light Blue': ['#0ea5e9','#0284c7'],
+    'Black': ['#1a1a2e','#16213e'],
+    'Dark blue': ['#1e3a5f','#0d2137'],
+    'Dark Blue': ['#1e3a5f','#0d2137'],
+    'white/black': ['#374151','#1f2937'],
+    'White/Black': ['#374151','#1f2937'],
+    'White': ['#e5e7eb','#d1d5db'],
+    'Grey': ['#4b5563','#374151'],
+    'grey': ['#4b5563','#374151'],
+    'black': ['#1a1a2e','#16213e'],
+    'Black/White': ['#1f2937','#111827'],
+    'Blue/Black': ['#1e3a5f','#111827'],
+    'lime soles': ['#15803d','#166534'],
+    'Lime Soles': ['#15803d','#166534'],
+    'Brown': ['#78350f','#451a03'],
+    '': ['#111827','#0f172a'],
+    '_default': ['#111827','#0f172a']
+  };
+  const colors = gradients[group.color] || gradients['_default'];
+  const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grd.addColorStop(0, colors[0]);
+  grd.addColorStop(1, colors[1]);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Add subtle pattern overlay
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  for(let i = 0; i < 20; i++){
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const r = Math.random() * 200 + 50;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Try loading product image on top (works when hosted, gracefully skips when local)
+  if (imgUrl) {
+    try {
+      const img = await loadImage(imgUrl);
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } catch(e) {
+      // Gradient background already drawn — continue
+    }
+  }
+
+  // Top bar with brand
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  roundRect(ctx, 40, 80, 300, 60, 16);
+  ctx.fill();
+  ctx.font = '700 32px "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.fillText('ESNTLS', 60, 120);
+  ctx.fillStyle = '#00C853';
+  ctx.fillText('CLUB', 60 + ctx.measureText('ESNTLS').width + 8, 120);
+
+  // Product name badge
+  const displayName = group.product.replace('Technical Sneakers', 'B22').replace('Daily Sneakers', 'B30');
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  const nameWidth = measureText(ctx, displayName, '700 44px "Bebas Neue", sans-serif') + 48;
+  roundRect(ctx, 540 - nameWidth/2, 240, nameWidth, 64, 16);
+  ctx.fill();
+  ctx.font = '700 44px "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#111';
+  ctx.textAlign = 'center';
+  ctx.fillText(displayName, 540, 282);
+
+  // Color badge (for sneakers)
+  let y = 340;
+  if (group.color && group.product.includes('Sneakers')) {
+    const emoji = COLOR_EMOJIS[group.color] || '▪️';
+    const colorText = `${emoji} ${group.color.toUpperCase()}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    const cw = measureText(ctx, colorText, '700 36px "DM Sans", sans-serif') + 48;
+    roundRect(ctx, 540 - cw/2, y, cw, 56, 14);
+    ctx.fill();
+    ctx.font = '700 36px "DM Sans", sans-serif';
+    ctx.fillStyle = '#111';
+    ctx.textAlign = 'center';
+    ctx.fillText(colorText, 540, y + 40);
+    y += 80;
+  }
+
+  // Size + quantity lines
+  for (const item of group.items) {
+    const sizeText = `${item.size} — ${item.qty} ${item.qty === 1 ? 'pair' : 'pairs'} left`;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    const sw = measureText(ctx, sizeText, '600 30px "DM Sans", sans-serif') + 40;
+    roundRect(ctx, 540 - sw/2, y, sw, 48, 12);
+    ctx.fill();
+    ctx.font = '600 30px "DM Sans", sans-serif';
+    ctx.fillStyle = '#111';
+    ctx.textAlign = 'center';
+    ctx.fillText(sizeText, 540, y + 34);
+    y += 62;
+  }
+
+  // Total remaining
+  const total = group.items.reduce((a,b) => a + b.qty, 0);
+  y += 20;
+  ctx.fillStyle = 'rgba(0,200,83,0.95)';
+  const totalText = `${total} ${total === 1 ? 'pair' : 'pairs'} remaining ⚡`;
+  const tw = measureText(ctx, totalText, '700 32px "DM Sans", sans-serif') + 40;
+  roundRect(ctx, 540 - tw/2, y, tw, 52, 14);
+  ctx.fill();
+  ctx.font = '700 32px "DM Sans", sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText(totalText, 540, y + 37);
+
+  // Buy now button
+  y += 80;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  roundRect(ctx, 540 - 120, y, 240, 52, 26);
+  ctx.fill();
+  ctx.font = '700 26px "DM Sans", sans-serif';
+  ctx.fillStyle = '#111';
+  ctx.fillText('🔗 BUY NOW', 540, y + 36);
+
+  // Bottom - website
+  ctx.font = '600 24px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText('esntlsclub.com', 540, 1860);
+
+  // Add to grid
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  const slug = (group.product + '-' + (group.color || '')).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  const productLink = getProductLink(group.product, group.color);
+  storyCanvases.push({ dataUrl, name: `esntls-stock-${slug}.jpg`, link: productLink });
+
+  const preview = document.createElement('div');
+  preview.className = 'story-preview-wrap';
+  preview.innerHTML = `
+    <div class="story-preview" onclick="downloadSingle('${dataUrl.replace(/'/g,"\\'")}', 'esntls-stock-${slug}.jpg')">
+      <img src="${dataUrl}">
+      <span class="label">${displayName} ${group.color || ''}</span>
+      <span class="dl-badge">⬇️</span>
+    </div>
+    <div class="link-row">
+      <input type="text" value="${productLink}" readonly class="link-input" id="link-${slug}">
+      <button class="copy-btn" onclick="copyLink('link-${slug}', this)">📋</button>
+      <button class="copy-btn" onclick="shareStory(${storyCanvases.length - 1}, this)" title="${navigator.share ? 'Share' : 'Download + Copy Link'}">📤</button>
+    </div>
+  `;
+  grid.appendChild(preview);
+}
+
+// ═══ HELPERS ═══
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    // Method 1: Try fetch as blob (works on mobile, avoids CORS canvas taint)
+    fetch(url, { mode: 'cors' })
+      .then(res => {
+        if (!res.ok) throw new Error('Fetch failed');
+        return res.blob();
+      })
+      .then(blob => {
+        const objUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => { resolve(img); URL.revokeObjectURL(objUrl); };
+        img.onerror = () => { URL.revokeObjectURL(objUrl); tryDirect(url, resolve, reject); };
+        img.src = objUrl;
+      })
+      .catch(() => tryDirect(url, resolve, reject));
+  });
+}
+
+function tryDirect(url, resolve, reject) {
+  // Method 2: Direct load without crossOrigin (image shows but canvas may be tainted)
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = () => {
+    // Method 3: Try with crossOrigin
+    const img2 = new Image();
+    img2.crossOrigin = 'anonymous';
+    img2.onload = () => resolve(img2);
+    img2.onerror = () => reject(new Error('All image load methods failed'));
+    img2.src = url;
+  };
+  img.src = url;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function measureText(ctx, text, font) {
+  ctx.save();
+  ctx.font = font;
+  const w = ctx.measureText(text).width;
+  ctx.restore();
+  return w;
+}
+
+function downloadSingle(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// Cross-platform clipboard copy
+function copyLink(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const text = input.value;
+  const done = () => {
+    btn.textContent = '✅';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 2000);
+  };
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{fallbackCopy(text);done()});
+  } else {
+    fallbackCopy(text);
+    done();
+  }
+}
+
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
+// Share story — native share on mobile, download + copy link on desktop
+async function shareStory(index, btn) {
+  const story = storyCanvases[index];
+  if (!story) return;
+  
+  try {
+    if (navigator.share) {
+      // Try sharing with file (mobile)
+      const res = await fetch(story.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], story.name, { type: 'image/jpeg' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'ESNTLS CLUB Stock Update',
+          text: 'Check out what\'s in stock! ' + story.link,
+          files: [file]
+        });
+        btn.textContent = '✅';
+        setTimeout(() => { btn.textContent = '📤'; }, 2000);
+        return;
+      }
+      
+      // Share link only (some mobile browsers)
+      await navigator.share({
+        title: 'ESNTLS CLUB Stock Update',
+        text: 'Check out what\'s in stock!',
+        url: story.link
+      });
+      btn.textContent = '✅';
+      setTimeout(() => { btn.textContent = '📤'; }, 2000);
+    } else {
+      // Desktop fallback — download image + copy link
+      downloadSingle(story.dataUrl, story.name);
+      fallbackCopy(story.link);
+      btn.textContent = '✅ Saved + Link Copied';
+      btn.style.fontSize = '10px';
+      setTimeout(() => { btn.textContent = '📤'; btn.style.fontSize = ''; }, 2500);
+    }
+  } catch(e) {
+    if (e.name !== 'AbortError') {
+      // Fallback on any error
+      downloadSingle(story.dataUrl, story.name);
+      btn.textContent = '⬇️';
+      setTimeout(() => { btn.textContent = '📤'; }, 2000);
+    }
+  }
+}
+
+async function shareAll() {
+  try {
+    if (navigator.share) {
+      const files = [];
+      for (const story of storyCanvases) {
+        const res = await fetch(story.dataUrl);
+        const blob = await res.blob();
+        files.push(new File([blob], story.name, { type: 'image/jpeg' }));
+      }
+      if (navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({
+          title: 'ESNTLS CLUB Stock Update',
+          text: 'Full stock update! esntlsclub.com/#stock',
+          files
+        });
+        return;
+      }
+    }
+    // Desktop or no file share support — download all
+    downloadAll();
+  } catch(e) {
+    if (e.name !== 'AbortError') downloadAll();
+  }
+}
+
+function downloadAll() {
+  storyCanvases.forEach((s, i) => {
+    setTimeout(() => downloadSingle(s.dataUrl, s.name), i * 500);
+  });
+}
+</script>
+</body>
+</html>
