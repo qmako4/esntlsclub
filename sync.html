@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESNTLS Stock Sync</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#111;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{text-align:center;max-width:400px}
+.logo{font-size:28px;font-weight:900;letter-spacing:4px;margin-bottom:8px}
+.logo span{color:#00C853}
+.status{font-size:16px;margin:20px 0}
+.sub{font-size:12px;color:#888}
+.spinner{width:40px;height:40px;border:3px solid #333;border-top-color:#00C853;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success{color:#00C853;font-size:48px;margin:20px 0}
+.error{color:#e53935;font-size:48px;margin:20px 0}
+a{color:#00C853}
+</style>
+</head>
+<body>
+<div class="box">
+<div class="logo">ESNTLS <span>CLUB</span></div>
+<div class="sub">Stock Sync Tool</div>
+<div id="output">
+<div class="spinner"></div>
+<div class="status">Syncing stock data...</div>
+</div>
+</div>
+
+<script>
+const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
+
+async function sync(){
+  const out = document.getElementById('output');
+  try {
+    // Get data from URL hash
+    const hash = window.location.hash.slice(1);
+    if(!hash){
+      out.innerHTML = '<div class="error">❌</div><div class="status">No stock data in URL</div><div class="sub">This page is called automatically from Claude</div>';
+      return;
+    }
+    
+    const data = JSON.parse(decodeURIComponent(hash));
+    
+    // Check if row exists
+    const check = await fetch(SB_URL+'/rest/v1/live_stock?select=id&id=eq.1',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    const rows = await check.json();
+    
+    let res;
+    if(rows.length > 0){
+      // Update existing row
+      res = await fetch(SB_URL+'/rest/v1/live_stock?id=eq.1',{
+        method:'PATCH',
+        headers:{
+          'apikey':SB_KEY,
+          'Authorization':'Bearer '+SB_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'return=representation'
+        },
+        body: JSON.stringify({data: data, updated_at: new Date().toISOString()})
+      });
+    } else {
+      // Insert new row
+      res = await fetch(SB_URL+'/rest/v1/live_stock',{
+        method:'POST',
+        headers:{
+          'apikey':SB_KEY,
+          'Authorization':'Bearer '+SB_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'return=representation'
+        },
+        body: JSON.stringify({id:1, data: data, updated_at: new Date().toISOString()})
+      });
+    }
+    
+    if(res.ok){
+      const products = Object.keys(data).length;
+      let items = 0;
+      for(const p of Object.values(data)){
+        if(p.colors) for(const c of Object.values(p.colors)){
+          if(c.sizes) for(const q of Object.values(c.sizes)) items += q;
+        }
+      }
+      out.innerHTML = `<div class="success">✅</div>
+        <div class="status">Stock synced!</div>
+        <div class="sub">${products} products · ${items} items in stock<br>
+        Updated: ${new Date().toLocaleString('en-GB')}<br><br>
+        <a href="https://esntlsclub.com/#stock">View Stock Page →</a></div>`;
+    } else {
+      const err = await res.text();
+      throw new Error(err);
+    }
+  } catch(e) {
+    out.innerHTML = `<div class="error">❌</div>
+      <div class="status">Sync failed</div>
+      <div class="sub">${e.message}<br><br>Try again or contact support</div>`;
+  }
+}
+
+sync();
+</script>
+</body>
+</html>
