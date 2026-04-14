@@ -399,7 +399,7 @@ const P=[
 {id:30,n:"Goyard Bag – Brown",cat:"Accessories",brand:"Other",price:"£79.99",img:U+"2026/03/img_5402-scaled.jpeg",imgs:[U+"2026/03/img_5402-scaled.jpeg",U+"2026/03/img_5403-scaled.jpeg",U+"2026/03/img_5404-scaled.jpeg"],link:"https://www.essentialsblanks.net/product-page/copy-of-the-belvoir-bag-brown"},
 {id:31,n:"Goyard Bag – Grey",cat:"Accessories",brand:"Other",price:"£79.99",img:U+"2026/03/goyard-grey.jpeg",imgs:[U+"2026/03/goyard-grey.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-belvoir-bag-grey"},
 {id:32,n:"Duo Messenger Bag",cat:"Accessories",brand:"Other",price:"£89.99",img:U+"2026/03/img_6184-1.jpeg",imgs:[U+"2026/03/img_6184-1.jpeg",U+"2026/03/img_6185.jpeg",U+"2026/03/img_6186.jpeg"],link:"https://www.essentialsblanks.net/product-page/the-duo-man-bag"},
-{id:33,n:"PM Messenger Bag",cat:"Accessories",brand:"Other",price:"£89.99",img:U+"2025/10/img_0227.jpeg",imgs:[U+"2025/10/img_0227.jpeg",U+"2025/10/img_0228.jpeg",U+"2025/10/img_0229.jpeg"],link:"https://www.essentialsblanks.net/product-page/classic-messenger-bag"},
+{id:33,n:"PM Messenger Bag",cat:"Accessories",brand:"Other",price:"£49.99",img:U+"2025/10/img_0227.jpeg",imgs:[U+"2025/10/img_0227.jpeg",U+"2025/10/img_0228.jpeg",U+"2025/10/img_0229.jpeg"],link:"https://www.essentialsblanks.net/product-page/classic-messenger-bag"},
 {id:34,n:"Trio Messenger Bag",cat:"Accessories",brand:"Other",price:"Out of stock",img:U+"2025/11/img_0406.jpeg",imgs:[U+"2025/11/img_0406.jpeg",U+"2025/11/img_0407.jpeg",U+"2025/11/img_0408.jpeg"],link:"https://www.essentialsblanks.net/product-page/trio-man-bag"},
 {id:35,n:"Corteiz Tracksuit",cat:"Tracksuits",brand:"Corteiz",price:"£99.99",img:U+"2025/11/img_0663.jpeg",imgs:[U+"2025/11/img_0663.jpeg",U+"2025/11/img_0664.jpeg",U+"2025/11/img_0665.jpeg"],link:"https://www.essentialsblanks.net/product-page/contraz-blank-tracksuit"},
 {id:36,n:"Casablanca T-Shirt",cat:"Shirts",brand:"Other",price:"£29.99",img:U+"2025/10/img_0236.jpeg",imgs:[U+"2025/10/img_0236.jpeg",U+"2025/10/img_0237.jpeg",U+"2025/10/img_0238.jpeg"],link:"https://www.essentialsblanks.net/product-page/tangier-t-shirt"},
@@ -720,26 +720,22 @@ let LIVE_STOCK = {...FALLBACK_STOCK};
 let STOCK_UPDATED = "13 Apr 2026";
 let stockLoaded = false;
 
-// Load stock from Supabase on page load
+// Load stock LIVE from Wix via Supabase Edge Function
 async function loadLiveStock(){
   try{
-    const res = await fetch(SB_URL+'/rest/v1/stock?id=eq.current&select=data,updated_at',{
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
-    });
+    const res = await fetch(SB_URL+'/functions/v1/wix-stock');
     if(!res.ok) throw new Error('HTTP '+res.status);
-    const rows = await res.json();
-    if(rows.length && rows[0].data && Object.keys(rows[0].data).length > 0){
-      LIVE_STOCK = rows[0].data;
-      const d = new Date(rows[0].updated_at);
+    const data = await res.json();
+    if(data.stock && Object.keys(data.stock).length > 0){
+      LIVE_STOCK = data.stock;
+      const d = new Date(data.updated);
       STOCK_UPDATED = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
       stockLoaded = true;
-      console.log('Stock loaded from Supabase, updated:', STOCK_UPDATED);
+      console.log('Live stock loaded from Wix, items:', data.itemCount);
       if(currentView === 'stock') showStock();
     } else {
-      // Table exists but empty — push current fallback data
-      console.log('Supabase stock empty, initializing...');
-      await saveStockToSupabase();
-      stockLoaded = true;
+      console.log('No stock returned from Wix, using fallback');
+      STOCK_UPDATED = "Fallback";
     }
   }catch(e){
     console.log('Using fallback stock data:',e.message);
@@ -1218,27 +1214,161 @@ else{const err=await res.text();msg.style.color='#e53935';msg.textContent='Save 
 btn.textContent='Add Product';btn.style.opacity='1';btn.style.pointerEvents='auto';
 setTimeout(()=>{msg.textContent=''},4000)}
 
-// Render product list
+// Render product list — shows ALL products (hardcoded + Supabase)
 function renderProductList(){
 const list=document.getElementById('productList');
 if(!list)return;
-const sbProducts=customProducts.filter(p=>p.dbId);
-if(sbProducts.length===0){
+const all=allProducts();
+if(all.length===0){
 list.innerHTML=`<div style="text-align:center;padding:40px 20px">
 <div style="font-size:36px;margin-bottom:12px">📦</div>
-<div style="font-size:14px;font-weight:600;color:#111;margin-bottom:4px">No products added yet</div>
-<div style="font-size:12px;color:#888">Tap "Add Product" to upload your first product</div>
+<div style="font-size:14px;font-weight:600;color:#111;margin-bottom:4px">No products yet</div>
 </div>`;return}
-list.innerHTML=`<div style="font-size:12px;color:#888;margin-bottom:12px">${sbProducts.length} product${sbProducts.length>1?'s':''} in database</div>`+
-sbProducts.map(p=>`<div style="display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0">
+// Supabase products first, then hardcoded
+const sbProds=all.filter(p=>p.dbId);
+const hcProds=all.filter(p=>!p.dbId);
+const sorted=[...sbProds,...hcProds];
+list.innerHTML=`<div style="font-size:12px;color:#888;margin-bottom:12px">${all.length} products total (${sbProds.length} custom, ${hcProds.length} built-in)</div>`+
+sorted.map(p=>{
+const uid=p.dbId||('hc_'+p.id); // unique id for DOM
+const isSb=!!p.dbId;
+return `<div style="padding:12px 0;border-bottom:1px solid #f0f0f0">
+<div style="display:flex;gap:12px;align-items:center">
 <img src="${p.img}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0" onerror="this.style.background='#eee'">
 <div style="flex:1;min-width:0">
 <div style="font-size:13px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.n}</div>
-<div style="font-size:11px;color:#888;margin-top:2px">${p.cat} · ${p.brand} · <span style="color:#00C853;font-weight:700">${p.price}</span></div>
+<div style="font-size:11px;color:#888;margin-top:2px">${p.cat} · ${p.price} ${isSb?'':'· <span style="color:#aaa">built-in</span>'}</div>
 ${p.imgs?`<div style="font-size:10px;color:#aaa;margin-top:2px">${p.imgs.length} photo${p.imgs.length>1?'s':''}</div>`:''}
 </div>
-<button onclick="deleteSupabaseProduct(${p.dbId})" style="background:#fef2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Delete">🗑️</button>
+<button onclick="openImageManagerAll('${uid}',${isSb?p.dbId:'null'},${p.id||'null'})" style="background:#f0fdf4;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Edit Images">✏️</button>
+${isSb?`<button onclick="deleteSupabaseProduct(${p.dbId})" style="background:#fef2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Delete">🗑️</button>`:''}
+</div>
+<div id="imgMgr_${uid}" style="display:none"></div>
+</div>`}).join('')}
+
+// Image Manager — works for both Supabase and hardcoded products
+let dragSrcIdx=null;
+function openImageManagerAll(uid,dbId,hcId){
+const el=document.getElementById('imgMgr_'+uid);
+if(el.style.display==='block'){el.style.display='none';return}
+document.querySelectorAll('[id^="imgMgr_"]').forEach(e=>e.style.display='none');
+el.style.display='block';
+let imgs=[];
+if(dbId){
+const p=customProducts.find(x=>x.dbId===dbId);
+if(p)imgs=p.imgs||[];
+}else if(hcId){
+const p=allProducts().find(x=>x.id===hcId);
+if(p)imgs=p.imgs||[p.img];
+}
+renderImageManagerAll(uid,dbId,hcId,imgs)
+}
+
+function renderImageManagerAll(uid,dbId,hcId,imgs){
+const el=document.getElementById('imgMgr_'+uid);
+el.innerHTML=`<div style="margin-top:10px;padding:12px;background:#f9f9f9;border-radius:12px">
+<div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px">EDIT IMAGES · Hold & drag to reorder</div>
+<div id="imgGrid_${uid}" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+${imgs.map((url,i)=>`<div draggable="true" data-idx="${i}" style="position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid ${i===0?'#00C853':'#eee'};cursor:grab;flex-shrink:0"
+ondragstart="imgDragStart(event,${i})" ondragover="event.preventDefault()" ondrop="imgDropAll(event,'${uid}',${dbId||'null'},${hcId||'null'},${i})" ontouchstart="imgTouchStartAll(event,${i},'${uid}',${dbId||'null'},${hcId||'null'})" ontouchmove="imgTouchMove(event)" ontouchend="imgTouchEndAll(event,'${uid}',${dbId||'null'},${hcId||'null'})">
+<img src="${url}" style="width:100%;height:100%;object-fit:cover">
+<div onclick="imgDeleteAll('${uid}',${dbId||'null'},${hcId||'null'},${i})" style="position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#fff">✕</div>
+${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;background:#00C853;color:#fff;font-size:8px;text-align:center;padding:1px;font-weight:700">MAIN</div>':''}
 </div>`).join('')}
+</div>
+<div style="display:flex;gap:8px">
+<label style="flex:1;padding:10px;background:#00C853;color:#fff;border-radius:10px;text-align:center;font-size:12px;font-weight:700;cursor:pointer">
++ Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAddPhotosAll(event,'${uid}',${dbId||'null'},${hcId||'null'})">
+</label>
+</div>
+<div id="imgMgrMsg_${uid}" style="text-align:center;margin-top:8px;font-size:11px;min-height:16px"></div>
+</div>`}
+
+// Get current images for a product
+function getProductImgs(dbId,hcId){
+if(dbId){const p=customProducts.find(x=>x.dbId===dbId);return p?[...(p.imgs||[])]:[]}
+if(hcId){const p=allProducts().find(x=>x.id===hcId);return p?[...(p.imgs||[p.img])]:[]}
+return[]
+}
+
+// Drag & drop
+function imgDragStart(e,idx){dragSrcIdx=idx}
+function imgDropAll(e,uid,dbId,hcId,targetIdx){
+e.preventDefault();
+if(dragSrcIdx===null||dragSrcIdx===targetIdx)return;
+const imgs=getProductImgs(dbId,hcId);
+const[moved]=imgs.splice(dragSrcIdx,1);
+imgs.splice(targetIdx,0,moved);
+imgSaveAll(uid,dbId,hcId,imgs)}
+
+// Touch drag for mobile
+let touchIdx=null,touchUid=null,touchDbId2=null,touchHcId2=null;
+function imgTouchStartAll(e,idx,uid,dbId,hcId){touchIdx=idx;touchUid=uid;touchDbId2=dbId;touchHcId2=hcId}
+function imgTouchMove(e){e.preventDefault()}
+function imgTouchEndAll(e,uid,dbId,hcId){
+if(touchIdx===null)return;
+const touch=e.changedTouches[0];
+const el=document.elementFromPoint(touch.clientX,touch.clientY);
+if(el){const container=el.closest('[data-idx]');
+if(container){const targetIdx=parseInt(container.dataset.idx);
+if(targetIdx!==touchIdx){const imgs=getProductImgs(dbId,hcId);
+const[moved]=imgs.splice(touchIdx,1);imgs.splice(targetIdx,0,moved);
+imgSaveAll(uid,dbId,hcId,imgs)}}}
+touchIdx=null}
+
+// Delete image
+function imgDeleteAll(uid,dbId,hcId,idx){
+const imgs=getProductImgs(dbId,hcId);
+if(imgs.length<=1){alert('Must keep at least 1 image');return}
+if(!confirm('Delete this image?'))return;
+imgs.splice(idx,1);
+imgSaveAll(uid,dbId,hcId,imgs)}
+
+// Add photos
+async function imgAddPhotosAll(e,uid,dbId,hcId){
+const files=e.target.files;
+if(!files.length)return;
+const msg=document.getElementById('imgMgrMsg_'+uid);
+msg.style.color='#888';msg.textContent='Uploading...';
+const imgs=getProductImgs(dbId,hcId);
+const pid=dbId||hcId;
+for(let i=0;i<files.length;i++){
+const file=files[i];
+const ext=file.name.split('.').pop().toLowerCase()||'jpeg';
+const fname='p'+pid+'_'+Date.now()+'_'+i+'.'+ext;
+const res=await fetch(SB_STORAGE+fname,{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+body:file});
+if(res.ok){imgs.push(SB_STORAGE+fname)}
+else{msg.style.color='#e53935';msg.textContent='Upload failed';return}}
+imgSaveAll(uid,dbId,hcId,imgs);
+msg.style.color='#00C853';msg.textContent='Photos added!';
+setTimeout(()=>{msg.textContent=''},3000)}
+
+// Save images — Supabase products update DB, hardcoded products update localStorage overrides
+async function imgSaveAll(uid,dbId,hcId,imgs){
+const msg=document.getElementById('imgMgrMsg_'+uid);
+try{
+if(dbId){
+// Supabase product — update database
+const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+dbId,{
+method:'PATCH',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+body:JSON.stringify({images:imgs})});
+if(!res.ok)throw new Error('Save failed');
+await loadSupabaseProducts();
+}else if(hcId){
+// Hardcoded product — save to IMG_OVERRIDES + localStorage
+IMG_OVERRIDES[String(hcId)]=imgs;
+imageOverrides[String(hcId)]=imgs;
+try{localStorage.setItem('esntls-img-overrides',JSON.stringify(imageOverrides))}catch(e){}
+}
+// Re-render
+renderImageManagerAll(uid,dbId,hcId,imgs);
+render();
+if(msg){msg.style.color='#00C853';msg.textContent='Saved!';setTimeout(()=>{msg.textContent=''},2000)}
+}catch(e){if(msg){msg.style.color='#e53935';msg.textContent='Error: '+e.message}}}
 
 // Delete from Supabase
 async function deleteSupabaseProduct(dbId){
