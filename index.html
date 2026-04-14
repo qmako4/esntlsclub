@@ -261,7 +261,8 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div style="display:flex;border-bottom:2px solid #f0f0f0" id="adminTabs">
 <button onclick="showAdminTab('add')" class="atab active" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#00C853;background:none;border:none;border-bottom:2px solid #00C853;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
 <button onclick="showAdminTab('list')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">📦 Products</button>
-<button onclick="showAdminTab('fix')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">🔧 Fix Images</button>
+<button onclick="showAdminTab('fix')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">🔧 Fix</button>
+<button onclick="showAdminTab('stock')" class="atab" style="flex:1;padding:14px;font-size:12px;font-weight:700;color:#888;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif">📊 Stock</button>
 </div>
 
 <!-- ADD PRODUCT TAB -->
@@ -342,6 +343,13 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 </div>
 <button onclick="saveFixedImages()" id="fixSaveBtn" class="glow-btn" style="width:100%;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px;border-radius:12px;border:none;cursor:pointer;min-height:48px;font-family:'DM Sans',sans-serif">Upload & Save Images</button>
 <div id="fixMsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:600;min-height:20px"></div>
+</div>
+
+<!-- STOCK MANAGER TAB -->
+<div id="tabStock" style="display:none;padding:20px 24px">
+<div style="font-size:12px;color:#888;margin-bottom:12px">Update stock levels. Changes go live instantly on esntlsclub.com/#stock</div>
+<div id="stockManagerList"></div>
+<div id="stockSaveMsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:600;min-height:20px"></div>
 </div>
 
 </div>
@@ -689,7 +697,7 @@ const FALLBACK_STOCK = {
     "Black":{emoji:"⚫",sizes:{"XL":1}}
   }},
   "Blank T Shirt":{price:"£24.99",cat:"clothing",links:{"_":36},colors:{
-    "Black":{emoji:"⚫",sizes:{"S":4,"M":5,"L":4}},
+    "Black":{emoji:"⚫",sizes:{"S":4,"M":4,"L":4}},
     "White":{emoji:"⚪",sizes:{"M":3,"L":2}}
   }},
   "Classic Everyday Tracksuit":{price:"£89.99",cat:"clothing",links:{"_":35},colors:{
@@ -715,7 +723,7 @@ let stockLoaded = false;
 // Load stock from Supabase on page load
 async function loadLiveStock(){
   try{
-    const res = await fetch(SB_URL+'/rest/v1/live_stock?select=data,updated_at&id=eq.1',{
+    const res = await fetch(SB_URL+'/rest/v1/stock?id=eq.current&select=data,updated_at',{
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
@@ -723,15 +731,91 @@ async function loadLiveStock(){
     if(rows.length && rows[0].data && Object.keys(rows[0].data).length > 0){
       LIVE_STOCK = rows[0].data;
       const d = new Date(rows[0].updated_at);
-      STOCK_UPDATED = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      STOCK_UPDATED = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
       stockLoaded = true;
       console.log('Stock loaded from Supabase, updated:', STOCK_UPDATED);
-      // Re-render stock page if currently viewing it
       if(currentView === 'stock') showStock();
+    } else {
+      // Table exists but empty — push current fallback data
+      console.log('Supabase stock empty, initializing...');
+      await saveStockToSupabase();
+      stockLoaded = true;
     }
-  }catch(e){console.log('Using fallback stock data:',e.message)}
+  }catch(e){
+    console.log('Using fallback stock data:',e.message);
+    STOCK_UPDATED = "Offline";
+  }
 }
 loadLiveStock();
+
+// Save current LIVE_STOCK to Supabase
+async function saveStockToSupabase(){
+  try{
+    const res = await fetch(SB_URL+'/rest/v1/stock?id=eq.current',{
+      method:'PATCH',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({data:LIVE_STOCK,updated_at:new Date().toISOString()})
+    });
+    if(res.ok){
+      STOCK_UPDATED = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      console.log('Stock saved to Supabase');
+      return true;
+    }
+    return false;
+  }catch(e){console.log('Save failed:',e);return false}
+}
+
+// Stock Manager in Admin Panel
+function renderStockManager(){
+  const list = document.getElementById('stockManagerList');
+  if(!list) return;
+  let html = '';
+  for(const [product, data] of Object.entries(LIVE_STOCK)){
+    html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#111;margin-bottom:8px">${product} <span style="font-size:12px;color:#00C853">${data.price}</span></div>`;
+    for(const [color, info] of Object.entries(data.colors)){
+      if(color) html += `<div style="font-size:12px;font-weight:700;color:#555;margin:6px 0 4px">${info.emoji} ${color}</div>`;
+      for(const [size, qty] of Object.entries(info.sizes)){
+        const key = encodeURIComponent(product)+'|'+encodeURIComponent(color)+'|'+encodeURIComponent(size);
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+          <span style="flex:1;font-size:12px;color:#333">${size}</span>
+          <button onclick="adjustStock('${key}',-1)" style="width:28px;height:28px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          <span style="width:28px;text-align:center;font-size:14px;font-weight:700;color:#00C853" id="sq_${key}">${qty}</span>
+          <button onclick="adjustStock('${key}',1)" style="width:28px;height:28px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+  html += `<button onclick="saveStockChanges()" class="glow-btn" style="width:100%;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:14px;border-radius:12px;border:none;cursor:pointer;min-height:48px;font-family:'DM Sans',sans-serif;margin-top:8px">💾 Save Stock to Cloud</button>`;
+  list.innerHTML = html;
+}
+
+function adjustStock(key, delta){
+  const [product, color, size] = key.split('|').map(decodeURIComponent);
+  if(LIVE_STOCK[product]?.colors[color]?.sizes[size] !== undefined){
+    let val = LIVE_STOCK[product].colors[color].sizes[size] + delta;
+    if(val < 0) val = 0;
+    LIVE_STOCK[product].colors[color].sizes[size] = val;
+    const el = document.getElementById('sq_'+key);
+    if(el) el.textContent = val;
+  }
+}
+
+async function saveStockChanges(){
+  const msg = document.getElementById('stockSaveMsg');
+  msg.style.color = '#888';
+  msg.textContent = 'Saving to cloud...';
+  const ok = await saveStockToSupabase();
+  if(ok){
+    msg.style.color = '#00C853';
+    msg.textContent = '✅ Stock updated live! Customers can see it now.';
+  } else {
+    msg.style.color = '#e53935';
+    msg.textContent = '❌ Save failed. Check your connection.';
+  }
+  setTimeout(()=>{msg.textContent=''},4000);
+}
 const SHOE_SIZES = ["UK 5","UK 5.5","UK 6","UK 6.5","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12"];
 const CLOTHING_SIZES = ["XS","S","M","L","XL","XXL"];
 let stockFilter = 'all';
@@ -1035,13 +1119,15 @@ function showAdminTab(tab){
 document.getElementById('tabAdd').style.display=tab==='add'?'block':'none';
 document.getElementById('tabList').style.display=tab==='list'?'block':'none';
 document.getElementById('tabFix').style.display=tab==='fix'?'block':'none';
+document.getElementById('tabStock').style.display=tab==='stock'?'block':'none';
 document.getElementById('fixUploadPanel').style.display='none';
 document.querySelectorAll('.atab').forEach((t,i)=>{
-const isActive=(tab==='add'&&i===0)||(tab==='list'&&i===1)||(tab==='fix'&&i===2);
+const isActive=(tab==='add'&&i===0)||(tab==='list'&&i===1)||(tab==='fix'&&i===2)||(tab==='stock'&&i===3);
 t.style.color=isActive?'#00C853':'#888';
 t.style.borderBottom=isActive?'2px solid #00C853':'2px solid transparent'});
 if(tab==='list')renderProductList();
-if(tab==='fix')renderFixList()}
+if(tab==='fix')renderFixList();
+if(tab==='stock')renderStockManager()}
 
 function pickCat(el,cat){
 selectedCat=cat;
