@@ -505,7 +505,7 @@ return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
   ║  HOME PAGE                ║
   ╚═══════════════════════════╝*/
 function homeHTML(){
-const feat=allProducts().slice(0,8);
+const feat=[...allProducts()].reverse().slice(0,8);
 return `
 <!-- How To Order — 2 slides -->
 <section style="position:relative;overflow:hidden;padding:0">
@@ -567,8 +567,8 @@ ${catScrollHTML()}
 <!-- Featured Products -->
 <section style="padding:16px 4px 48px;max-width:1280px;margin:0 auto">
 <div class="reveal" style="margin-bottom:16px;padding:0 12px">
-<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
-<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">Featured Items</h2>
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Just Dropped</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">New Arrivals</h2>
 </div>
 <div class="g2">${feat.map((p,i)=>card(p,i)).join('')}</div>
 <div style="text-align:center;margin-top:28px">
@@ -1230,8 +1230,10 @@ const hcProds=all.filter(p=>!p.dbId);
 const sorted=[...sbProds,...hcProds];
 list.innerHTML=`<div style="font-size:12px;color:#888;margin-bottom:12px">${all.length} products total (${sbProds.length} custom, ${hcProds.length} built-in)</div>`+
 sorted.map(p=>{
-const uid=p.dbId||('hc_'+p.id); // unique id for DOM
+const uid=p.dbId?('db_'+p.dbId):('hc_'+p.id); // unique id for DOM
 const isSb=!!p.dbId;
+const hcIdParam=p.dbId?'null':p.id;
+const dbIdParam=p.dbId||'null';
 return `<div style="padding:12px 0;border-bottom:1px solid #f0f0f0">
 <div style="display:flex;gap:12px;align-items:center">
 <img src="${p.img}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0" onerror="this.style.background='#eee'">
@@ -1240,7 +1242,7 @@ return `<div style="padding:12px 0;border-bottom:1px solid #f0f0f0">
 <div style="font-size:11px;color:#888;margin-top:2px">${p.cat} · ${p.price} ${isSb?'':'· <span style="color:#aaa">built-in</span>'}</div>
 ${p.imgs?`<div style="font-size:10px;color:#aaa;margin-top:2px">${p.imgs.length} photo${p.imgs.length>1?'s':''}</div>`:''}
 </div>
-<button onclick="openImageManagerAll('${uid}',${isSb?p.dbId:'null'},${p.id||'null'})" style="background:#f0fdf4;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Edit Images">✏️</button>
+<button onclick="openImageManagerAll('${uid}',${dbIdParam},${hcIdParam})" style="background:#f0fdf4;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Edit Images">✏️</button>
 ${isSb?`<button onclick="deleteSupabaseProduct(${p.dbId})" style="background:#fef2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Delete">🗑️</button>`:''}
 </div>
 <div id="imgMgr_${uid}" style="display:none"></div>
@@ -1266,23 +1268,91 @@ renderImageManagerAll(uid,dbId,hcId,imgs)
 
 function renderImageManagerAll(uid,dbId,hcId,imgs){
 const el=document.getElementById('imgMgr_'+uid);
+const db=dbId||'null';
+const hc=hcId||'null';
 el.innerHTML=`<div style="margin-top:10px;padding:12px;background:#f9f9f9;border-radius:12px">
-<div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px">EDIT IMAGES · Hold & drag to reorder</div>
+<div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px">EDIT IMAGES · Drag to reorder · ✕ to delete</div>
 <div id="imgGrid_${uid}" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-${imgs.map((url,i)=>`<div draggable="true" data-idx="${i}" style="position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid ${i===0?'#00C853':'#eee'};cursor:grab;flex-shrink:0"
-ondragstart="imgDragStart(event,${i})" ondragover="event.preventDefault()" ondrop="imgDropAll(event,'${uid}',${dbId||'null'},${hcId||'null'},${i})" ontouchstart="imgTouchStartAll(event,${i},'${uid}',${dbId||'null'},${hcId||'null'})" ontouchmove="imgTouchMove(event)" ontouchend="imgTouchEndAll(event,'${uid}',${dbId||'null'},${hcId||'null'})">
-<img src="${url}" style="width:100%;height:100%;object-fit:cover">
-<div onclick="imgDeleteAll('${uid}',${dbId||'null'},${hcId||'null'},${i})" style="position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#fff">✕</div>
-${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;background:#00C853;color:#fff;font-size:8px;text-align:center;padding:1px;font-weight:700">MAIN</div>':''}
+${imgs.map((url,i)=>`<div draggable="true" data-idx="${i}" data-uid="${uid}" data-db="${db}" data-hc="${hc}" class="imgDragItem" style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid ${i===0?'#00C853':'#eee'};cursor:grab;flex-shrink:0;transition:transform .15s,opacity .15s">
+<img src="${url}" style="width:100%;height:100%;object-fit:cover;pointer-events:none">
+<div onclick="event.stopPropagation();imgDeleteAll('${uid}',${db},${hc},${i})" style="position:absolute;top:3px;right:3px;width:24px;height:24px;background:rgba(229,57,53,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#fff;font-weight:700;z-index:2">✕</div>
+${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;background:#00C853;color:#fff;font-size:9px;text-align:center;padding:2px;font-weight:700">MAIN</div>':''}
+${i>0?`<div onclick="event.stopPropagation();imgMoveFirst('${uid}',${db},${hc},${i})" style="position:absolute;bottom:3px;left:3px;width:22px;height:22px;background:rgba(0,200,83,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#fff;z-index:2">★</div>`:''}
 </div>`).join('')}
 </div>
 <div style="display:flex;gap:8px">
-<label style="flex:1;padding:10px;background:#00C853;color:#fff;border-radius:10px;text-align:center;font-size:12px;font-weight:700;cursor:pointer">
-+ Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAddPhotosAll(event,'${uid}',${dbId||'null'},${hcId||'null'})">
+<label style="flex:1;padding:12px;background:#00C853;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer">
++ Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAddPhotosAll(event,'${uid}',${db},${hc})">
 </label>
 </div>
 <div id="imgMgrMsg_${uid}" style="text-align:center;margin-top:8px;font-size:11px;min-height:16px"></div>
-</div>`}
+</div>`;
+// Attach drag events to the grid
+setupDragDrop('imgGrid_'+uid,uid,dbId,hcId)}
+
+// Desktop drag & drop + mobile touch reorder
+function setupDragDrop(gridId,uid,dbId,hcId){
+const grid=document.getElementById(gridId);
+if(!grid)return;
+let dragEl=null,dragIdx=null;
+// Desktop drag
+grid.addEventListener('dragstart',e=>{
+const item=e.target.closest('.imgDragItem');
+if(!item)return;
+dragEl=item;dragIdx=parseInt(item.dataset.idx);
+item.style.opacity='0.4';
+e.dataTransfer.effectAllowed='move'});
+grid.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move'});
+grid.addEventListener('dragend',e=>{if(dragEl)dragEl.style.opacity='1';dragEl=null;dragIdx=null});
+grid.addEventListener('drop',e=>{
+e.preventDefault();
+const target=e.target.closest('.imgDragItem');
+if(!target||dragIdx===null)return;
+const targetIdx=parseInt(target.dataset.idx);
+if(dragIdx===targetIdx)return;
+const imgs=getProductImgs(dbId,hcId);
+const[moved]=imgs.splice(dragIdx,1);
+imgs.splice(targetIdx,0,moved);
+imgSaveAll(uid,dbId,hcId,imgs)});
+// Mobile touch reorder
+let tIdx=null,tEl=null,tClone=null,tStartX=0,tStartY=0;
+grid.addEventListener('touchstart',e=>{
+const item=e.target.closest('.imgDragItem');
+if(!item)return;
+// Don't interfere with delete/star buttons
+if(e.target.closest('[onclick]'))return;
+tIdx=parseInt(item.dataset.idx);tEl=item;
+tStartX=e.touches[0].clientX;tStartY=e.touches[0].clientY;
+// Long press to start drag
+item._longPress=setTimeout(()=>{
+item.style.opacity='0.4';
+tClone=item.cloneNode(true);
+tClone.style.position='fixed';tClone.style.zIndex='9999';tClone.style.pointerEvents='none';
+tClone.style.opacity='0.8';tClone.style.transform='scale(1.15)';
+tClone.style.left=(tStartX-40)+'px';tClone.style.top=(tStartY-40)+'px';
+document.body.appendChild(tClone)},200)},{passive:false});
+grid.addEventListener('touchmove',e=>{
+if(tClone){
+e.preventDefault();
+tClone.style.left=(e.touches[0].clientX-40)+'px';
+tClone.style.top=(e.touches[0].clientY-40)+'px'}},{passive:false});
+grid.addEventListener('touchend',e=>{
+if(tEl){clearTimeout(tEl._longPress);tEl.style.opacity='1'}
+if(tClone){
+const touch=e.changedTouches[0];
+tClone.style.display='none';
+const dropTarget=document.elementFromPoint(touch.clientX,touch.clientY);
+tClone.remove();tClone=null;
+if(dropTarget){
+const targetItem=dropTarget.closest('.imgDragItem');
+if(targetItem&&tIdx!==null){
+const targetIdx=parseInt(targetItem.dataset.idx);
+if(targetIdx!==tIdx){
+const imgs=getProductImgs(dbId,hcId);
+const[moved]=imgs.splice(tIdx,1);
+imgs.splice(targetIdx,0,moved);
+imgSaveAll(uid,dbId,hcId,imgs)}}}}
+tIdx=null;tEl=null})}
 
 // Get current images for a product
 function getProductImgs(dbId,hcId){
@@ -1291,37 +1361,19 @@ if(hcId){const p=allProducts().find(x=>x.id===hcId);return p?[...(p.imgs||[p.img
 return[]
 }
 
-// Drag & drop
-function imgDragStart(e,idx){dragSrcIdx=idx}
-function imgDropAll(e,uid,dbId,hcId,targetIdx){
-e.preventDefault();
-if(dragSrcIdx===null||dragSrcIdx===targetIdx)return;
-const imgs=getProductImgs(dbId,hcId);
-const[moved]=imgs.splice(dragSrcIdx,1);
-imgs.splice(targetIdx,0,moved);
-imgSaveAll(uid,dbId,hcId,imgs)}
-
-// Touch drag for mobile
-let touchIdx=null,touchUid=null,touchDbId2=null,touchHcId2=null;
-function imgTouchStartAll(e,idx,uid,dbId,hcId){touchIdx=idx;touchUid=uid;touchDbId2=dbId;touchHcId2=hcId}
-function imgTouchMove(e){e.preventDefault()}
-function imgTouchEndAll(e,uid,dbId,hcId){
-if(touchIdx===null)return;
-const touch=e.changedTouches[0];
-const el=document.elementFromPoint(touch.clientX,touch.clientY);
-if(el){const container=el.closest('[data-idx]');
-if(container){const targetIdx=parseInt(container.dataset.idx);
-if(targetIdx!==touchIdx){const imgs=getProductImgs(dbId,hcId);
-const[moved]=imgs.splice(touchIdx,1);imgs.splice(targetIdx,0,moved);
-imgSaveAll(uid,dbId,hcId,imgs)}}}
-touchIdx=null}
-
 // Delete image
 function imgDeleteAll(uid,dbId,hcId,idx){
 const imgs=getProductImgs(dbId,hcId);
 if(imgs.length<=1){alert('Must keep at least 1 image');return}
 if(!confirm('Delete this image?'))return;
 imgs.splice(idx,1);
+imgSaveAll(uid,dbId,hcId,imgs)}
+
+// Move image to first position (make it the main image)
+function imgMoveFirst(uid,dbId,hcId,idx){
+const imgs=getProductImgs(dbId,hcId);
+const[moved]=imgs.splice(idx,1);
+imgs.unshift(moved);
 imgSaveAll(uid,dbId,hcId,imgs)}
 
 // Add photos
