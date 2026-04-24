@@ -283,6 +283,8 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <button type="button" onclick="pickCat(this,'Accessories')" class="cpill" data-cat="Accessories" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">👜 Accessories</button>
 <button type="button" onclick="pickCat(this,'Tracksuits')" class="cpill" data-cat="Tracksuits" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">🏃 Tracksuits</button>
 <button type="button" onclick="pickCat(this,'Shirts')" class="cpill" data-cat="Shirts" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">👕 Shirts</button>
+<button type="button" onclick="pickCat(this,'Summer')" class="cpill" data-cat="Summer" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">☀️ Summer</button>
+<button type="button" onclick="pickCat(this,'Shorts')" class="cpill" data-cat="Shorts" style="font-family:'DM Sans',sans-serif;padding:8px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#888;transition:all .15s">🩳 Shorts</button>
 </div>
 </div>
 <div style="margin-bottom:14px">
@@ -1242,11 +1244,72 @@ return `<div style="padding:12px 0;border-bottom:1px solid #f0f0f0">
 <div style="font-size:11px;color:#888;margin-top:2px">${p.cat} · ${p.price} ${isSb?'':'· <span style="color:#aaa">built-in</span>'}</div>
 ${p.imgs?`<div style="font-size:10px;color:#aaa;margin-top:2px">${p.imgs.length} photo${p.imgs.length>1?'s':''}</div>`:''}
 </div>
+<button onclick="toggleEditDetails('${uid}',${dbIdParam},${hcIdParam})" style="background:#f0f4ff;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Edit Details">⚙️</button>
 <button onclick="openImageManagerAll('${uid}',${dbIdParam},${hcIdParam})" style="background:#f0fdf4;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Edit Images">✏️</button>
 ${isSb?`<button onclick="deleteSupabaseProduct(${p.dbId})" style="background:#fef2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Delete">🗑️</button>`:''}
 </div>
+<div id="editDet_${uid}" style="display:none"></div>
 <div id="imgMgr_${uid}" style="display:none"></div>
 </div>`}).join('')}
+
+// Edit Details panel
+function toggleEditDetails(uid,dbId,hcId){
+const el=document.getElementById('editDet_'+uid);
+if(el.style.display==='block'){el.style.display='none';return}
+document.querySelectorAll('[id^="editDet_"]').forEach(e=>e.style.display='none');
+document.querySelectorAll('[id^="imgMgr_"]').forEach(e=>e.style.display='none');
+el.style.display='block';
+let p;
+if(dbId) p=customProducts.find(x=>x.dbId===dbId);
+else if(hcId) p=allProducts().find(x=>x.id===hcId);
+if(!p)return;
+const cats=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
+el.innerHTML=`<div style="margin-top:10px;padding:14px;background:#f9f9f9;border-radius:12px">
+<div style="font-size:11px;font-weight:600;color:#888;margin-bottom:10px">EDIT DETAILS</div>
+<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Name</label>
+<input id="ed_name_${uid}" value="${p.n}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
+<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Price</label>
+<input id="ed_price_${uid}" value="${p.price}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
+<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Category</label>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+${cats.map(c=>`<button type="button" onclick="document.getElementById('ed_cat_${uid}').value='${c}';this.parentElement.querySelectorAll('button').forEach(b=>{b.style.background='#fff';b.style.color='#888';b.style.borderColor='#e0e0e0'});this.style.background='#00C853';this.style.color='#fff';this.style.borderColor='#00C853'" style="padding:6px 14px;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${p.cat===c?'#00C853':'#e0e0e0'};background:${p.cat===c?'#00C853':'#fff'};color:${p.cat===c?'#fff':'#888'};font-family:inherit">${c}</button>`).join('')}
+</div>
+<input type="hidden" id="ed_cat_${uid}" value="${p.cat}"></div>
+<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Brand</label>
+<input id="ed_brand_${uid}" value="${p.brand||''}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
+<div style="margin-bottom:10px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Buy Link</label>
+<input id="ed_link_${uid}" value="${p.link||''}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
+<button onclick="saveDetails('${uid}',${dbId||'null'},${hcId||'null'})" style="width:100%;padding:12px;background:#00C853;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Save Changes</button>
+<div id="ed_msg_${uid}" style="text-align:center;margin-top:8px;font-size:11px;min-height:16px"></div>
+</div>`}
+
+async function saveDetails(uid,dbId,hcId){
+const name=document.getElementById('ed_name_'+uid).value.trim();
+const price=document.getElementById('ed_price_'+uid).value.trim();
+const cat=document.getElementById('ed_cat_'+uid).value;
+const brand=document.getElementById('ed_brand_'+uid).value.trim();
+const link=document.getElementById('ed_link_'+uid).value.trim();
+const msg=document.getElementById('ed_msg_'+uid);
+if(!name||!price){msg.style.color='#e53935';msg.textContent='Name and price required';return}
+try{
+if(dbId){
+const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+dbId,{
+method:'PATCH',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+body:JSON.stringify({name,price,category:cat,brand:brand||'Other',link})});
+if(!res.ok)throw new Error('Save failed');
+await loadSupabaseProducts();
+}else if(hcId){
+// For hardcoded products save edits to localStorage
+let edits=JSON.parse(localStorage.getItem('esntls-product-edits')||'{}');
+edits[String(hcId)]={n:name,price,cat,brand:brand||'Other',link};
+localStorage.setItem('esntls-product-edits',JSON.stringify(edits));
+}
+msg.style.color='#00C853';msg.textContent='Saved!';
+renderProductList();
+render();
+setTimeout(()=>{if(msg)msg.textContent=''},2000);
+}catch(e){msg.style.color='#e53935';msg.textContent='Error: '+e.message}}
 
 // Image Manager — works for both Supabase and hardcoded products
 let dragSrcIdx=null;
@@ -1443,13 +1506,19 @@ let fixPendingFiles=[];
 let imageOverrides={...IMG_OVERRIDES};
 try{const ls=JSON.parse(localStorage.getItem('esntls-img-overrides')||'{}');for(const[k,v]of Object.entries(ls))imageOverrides[k]=v}catch(e){}
 
-// Override allProducts to apply saved images
+// Load product detail edits from localStorage
+let productEdits={};
+try{productEdits=JSON.parse(localStorage.getItem('esntls-product-edits')||'{}')}catch(e){}
+
+// Override allProducts to apply saved images and detail edits
 const origAllProducts=allProducts;
 allProducts=function(){
 return origAllProducts().map(p=>{
 const key=String(p.id);
-if(imageOverrides[key]){return{...p,img:imageOverrides[key][0],imgs:imageOverrides[key]}}
-return p})}
+let updated={...p};
+if(imageOverrides[key]){updated.img=imageOverrides[key][0];updated.imgs=imageOverrides[key]}
+if(productEdits[key]){updated={...updated,...productEdits[key]}}
+return updated})}
 
 function renderFixList(){
 const list=document.getElementById('fixList');

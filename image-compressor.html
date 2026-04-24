@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESNTLS Image Compressor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#111;color:#fff;min-height:100vh;padding:20px}
+h1{font-size:20px;text-align:center;margin-bottom:4px}
+.sub{text-align:center;color:#888;font-size:12px;margin-bottom:20px}
+.btn{display:block;width:100%;padding:16px;background:#00C853;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn2{background:#333}
+.btn3{background:#e53935}
+#status{text-align:center;color:#00C853;font-size:13px;min-height:20px;margin-bottom:12px}
+.card{background:#1a1a1a;border-radius:12px;padding:16px;margin-bottom:12px}
+.card h3{font-size:14px;margin-bottom:8px}
+.progress{width:100%;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-bar{height:100%;background:#00C853;border-radius:4px;transition:width .3s}
+.stat{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px}
+.stat span:last-child{color:#fff;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid #333}
+.grid .done{border-color:#00C853}
+.grid .fail{border-color:#e53935}
+.opts{display:flex;gap:8px;margin-bottom:12px}
+.opts label{flex:1;text-align:center;padding:10px;background:#222;border-radius:10px;font-size:12px;cursor:pointer;border:2px solid #333}
+.opts input:checked+label{border-color:#00C853;background:#0a2e14}
+.opts input{display:none}
+</style>
+</head><body>
+
+<h1>🗜️ ESNTLS Image Compressor</h1>
+<p class="sub">Resize product images for faster loading</p>
+
+<div class="card">
+<h3>Settings</h3>
+<div class="opts">
+<input type="radio" name="size" id="s400" value="400"><label for="s400">400px<br><span style="color:#888;font-size:10px">Fastest</span></label>
+<input type="radio" name="size" id="s600" value="600" checked><label for="s600">600px<br><span style="color:#888;font-size:10px">Balanced</span></label>
+<input type="radio" name="size" id="s800" value="800"><label for="s800">800px<br><span style="color:#888;font-size:10px">Quality</span></label>
+</div>
+<div class="opts">
+<input type="radio" name="quality" id="q70" value="0.7"><label for="q70">70%<br><span style="color:#888;font-size:10px">Smallest</span></label>
+<input type="radio" name="quality" id="q80" value="0.8" checked><label for="q80">80%<br><span style="color:#888;font-size:10px">Balanced</span></label>
+<input type="radio" name="quality" id="q90" value="0.9"><label for="q90">90%<br><span style="color:#888;font-size:10px">Best</span></label>
+</div>
+</div>
+
+<button class="btn" onclick="scanImages()">1. Scan Current Images</button>
+<button class="btn btn2" id="compressBtn" onclick="compressAll()" disabled>2. Compress & Re-upload All</button>
+
+<div id="status"></div>
+
+<div class="card" id="statsCard" style="display:none">
+<h3>Progress</h3>
+<div class="progress"><div class="progress-bar" id="progressBar" style="width:0"></div></div>
+<div class="stat"><span>Processed</span><span id="statProcessed">0/0</span></div>
+<div class="stat"><span>Original size</span><span id="statOriginal">0 MB</span></div>
+<div class="stat"><span>Compressed size</span><span id="statCompressed">0 MB</span></div>
+<div class="stat"><span>Saved</span><span id="statSaved" style="color:#00C853">0%</span></div>
+</div>
+
+<div class="card" id="previewCard" style="display:none">
+<h3>Images</h3>
+<div class="grid" id="imageGrid"></div>
+</div>
+
+<script>
+const SB='https://pccqpmefzeaorgtajdfm.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
+const SB_STORAGE=SB+'/storage/v1/object/public/product-images/';
+
+let allImages=[];
+let totalOriginal=0;
+let totalCompressed=0;
+
+async function scanImages(){
+const status=document.getElementById('status');
+status.textContent='Scanning Supabase storage...';
+
+try{
+// List all files in the bucket
+const res=await fetch(SB+'/storage/v1/object/list/product-images',{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+body:JSON.stringify({limit:500,sortBy:{column:'name',order:'asc'}})
+});
+const files=await res.json();
+
+if(!Array.isArray(files)||files.length===0){
+status.textContent='No images found in storage';return}
+
+// Filter only image files
+allImages=files.filter(f=>f.name&&(f.name.endsWith('.jpeg')||f.name.endsWith('.jpg')||f.name.endsWith('.png')));
+status.textContent=`Found ${allImages.length} images. Checking sizes...`;
+
+// Show grid
+const grid=document.getElementById('imageGrid');
+const previewCard=document.getElementById('previewCard');
+previewCard.style.display='block';
+grid.innerHTML='';
+
+let totalSize=0;
+for(const f of allImages){
+totalSize+=(f.metadata?.size||0);
+const img=document.createElement('img');
+img.src=SB_STORAGE+f.name;
+img.id='img_'+f.name.replace(/[^a-zA-Z0-9]/g,'_');
+img.title=f.name+'\n'+formatSize(f.metadata?.size||0);
+grid.appendChild(img);
+}
+
+totalOriginal=totalSize;
+status.textContent=`${allImages.length} images found · Total: ${formatSize(totalSize)}`;
+document.getElementById('compressBtn').disabled=false;
+document.getElementById('statsCard').style.display='block';
+document.getElementById('statOriginal').textContent=formatSize(totalSize);
+document.getElementById('statProcessed').textContent=`0/${allImages.length}`;
+}catch(e){
+status.textContent='Error: '+e.message;
+}}
+
+async function compressAll(){
+const maxWidth=parseInt(document.querySelector('input[name="size"]:checked').value);
+const quality=parseFloat(document.querySelector('input[name="quality"]:checked').value);
+const status=document.getElementById('status');
+const progressBar=document.getElementById('progressBar');
+
+document.getElementById('compressBtn').disabled=true;
+totalCompressed=0;
+let processed=0;
+let failed=0;
+
+for(const f of allImages){
+const imgId='img_'+f.name.replace(/[^a-zA-Z0-9]/g,'_');
+const imgEl=document.getElementById(imgId);
+
+try{
+status.textContent=`Compressing ${f.name}...`;
+
+// Load original image
+const img=new Image();
+img.crossOrigin='anonymous';
+await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=SB_STORAGE+f.name+'?t='+Date.now()});
+
+// Skip if already small enough
+if(img.width<=maxWidth){
+if(imgEl)imgEl.classList.add('done');
+processed++;
+totalCompressed+=(f.metadata?.size||0);
+updateStats(processed,failed);
+continue;
+}
+
+// Resize with canvas
+const canvas=document.createElement('canvas');
+const ratio=maxWidth/img.width;
+canvas.width=maxWidth;
+canvas.height=Math.round(img.height*ratio);
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingQuality='high';
+ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+// Convert to blob
+const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',quality));
+
+// Upload back to same path (overwrite)
+const uploadRes=await fetch(SB+'/storage/v1/object/product-images/'+f.name,{
+method:'PUT',
+headers:{
+'apikey':SB_KEY,
+'Authorization':'Bearer '+SB_KEY,
+'Content-Type':'image/jpeg',
+'x-upsert':'true'
+},
+body:blob
+});
+
+if(uploadRes.ok){
+totalCompressed+=blob.size;
+if(imgEl){imgEl.classList.add('done');imgEl.src=URL.createObjectURL(blob)}
+}else{
+totalCompressed+=(f.metadata?.size||0);
+if(imgEl)imgEl.classList.add('fail');
+failed++;
+}
+}catch(e){
+totalCompressed+=(f.metadata?.size||0);
+if(imgEl)imgEl.classList.add('fail');
+failed++;
+}
+
+processed++;
+updateStats(processed,failed);
+}
+
+const saved=totalOriginal>0?Math.round((1-totalCompressed/totalOriginal)*100):0;
+status.textContent=`✅ Done! ${processed-failed}/${allImages.length} compressed. Saved ${saved}% (${formatSize(totalOriginal-totalCompressed)})`;
+}
+
+function updateStats(processed,failed){
+const total=allImages.length;
+document.getElementById('progressBar').style.width=(processed/total*100)+'%';
+document.getElementById('statProcessed').textContent=`${processed}/${total}${failed?' ('+failed+' failed)':''}`;
+document.getElementById('statCompressed').textContent=formatSize(totalCompressed);
+const saved=totalOriginal>0?Math.round((1-totalCompressed/totalOriginal)*100):0;
+document.getElementById('statSaved').textContent=saved+'%';
+}
+
+function formatSize(bytes){
+if(bytes<1024)return bytes+'B';
+if(bytes<1048576)return(bytes/1024).toFixed(1)+'KB';
+return(bytes/1048576).toFixed(1)+'MB';
+}
+</script>
+</body></html>
