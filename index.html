@@ -428,6 +428,8 @@ function allProducts(){return[...P,...customProducts]}
 
 const CATS=["All","Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
 const CAT_ICONS={Footwear:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Shorts:"🩳"};
+// Check if product belongs to a category (supports comma-separated multi-cat)
+function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
 let currentView="home";
 
 /*╔═══════════════════════════╗
@@ -452,7 +454,7 @@ return `<div class="pc" onclick="openProduct(${pid})" data-delay="${i*.04}">
   ╚═══════════════════════════╝*/
 function catScrollHTML(){
 const items=Object.entries(CAT_ICONS).map(([c,icon])=>{
-const n=allProducts().filter(p=>p.cat===c).length;
+const n=allProducts().filter(p=>catMatch(p,c)).length;
 return `<a href="#" onclick="showCat('${c}')" class="cat-item"><div style="font-size:24px;margin-bottom:4px">${icon}</div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#111;letter-spacing:1px">${c}</div><div style="font-size:10px;color:#888;margin-top:2px">${n} items</div></a>`;
 }).join('');
 return `<section style="padding:16px 0 28px;max-width:100vw">
@@ -492,8 +494,8 @@ return REVIEWS.map(r=>`
   ╚═══════════════════════════╝*/
 function shopHTML(cat){
 const all=allProducts();
-const items=cat==='All'?all:all.filter(p=>p.cat===cat);
-const count=c=>c==='All'?all.length:all.filter(p=>p.cat===c).length;
+const items=cat==='All'?all:all.filter(p=>catMatch(p,cat));
+const count=c=>c==='All'?all.length:all.filter(p=>catMatch(p,c)).length;
 return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
 <div style="margin-bottom:20px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
@@ -1128,9 +1130,14 @@ if(tab==='fix')renderFixList();
 if(tab==='stock')renderStockManager()}
 
 function pickCat(el,cat){
-selectedCat=cat;
-document.querySelectorAll('.cpill').forEach(p=>{p.style.background='#fff';p.style.color='#888';p.style.borderColor='#e0e0e0'});
-el.style.background='#00C853';el.style.color='#fff';el.style.borderColor='#00C853'}
+// Toggle this pill
+const isOn=el.style.borderColor==='rgb(0, 200, 83)';
+if(isOn){el.style.background='#fff';el.style.color='#888';el.style.borderColor='#e0e0e0'}
+else{el.style.background='#00C853';el.style.color='#fff';el.style.borderColor='#00C853'}
+// Build comma-separated list of selected categories
+const selected=[];
+document.querySelectorAll('.cpill').forEach(p=>{if(p.style.borderColor==='rgb(0, 200, 83)')selected.push(p.dataset.cat)});
+selectedCat=selected.join(',')||'Footwear'}
 
 // File preview
 function previewFiles(files){
@@ -1264,17 +1271,17 @@ if(dbId) p=customProducts.find(x=>x.dbId===dbId);
 else if(hcId) p=allProducts().find(x=>x.id===hcId);
 if(!p)return;
 const cats=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
+const pCats=(p.cat||'').split(',').map(c=>c.trim());
 el.innerHTML=`<div style="margin-top:10px;padding:14px;background:#f9f9f9;border-radius:12px">
 <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:10px">EDIT DETAILS</div>
 <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Name</label>
 <input id="ed_name_${uid}" value="${p.n}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
 <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Price</label>
 <input id="ed_price_${uid}" value="${p.price}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
-<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Category</label>
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-${cats.map(c=>`<button type="button" onclick="document.getElementById('ed_cat_${uid}').value='${c}';this.parentElement.querySelectorAll('button').forEach(b=>{b.style.background='#fff';b.style.color='#888';b.style.borderColor='#e0e0e0'});this.style.background='#00C853';this.style.color='#fff';this.style.borderColor='#00C853'" style="padding:6px 14px;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${p.cat===c?'#00C853':'#e0e0e0'};background:${p.cat===c?'#00C853':'#fff'};color:${p.cat===c?'#fff':'#888'};font-family:inherit">${c}</button>`).join('')}
-</div>
-<input type="hidden" id="ed_cat_${uid}" value="${p.cat}"></div>
+<div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Categories (tap multiple)</label>
+<div id="ed_cats_${uid}" style="display:flex;flex-wrap:wrap;gap:6px">
+${cats.map(c=>`<button type="button" onclick="toggleCatPill(this,'${uid}')" data-cat="${c}" style="padding:6px 14px;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${pCats.includes(c)?'#00C853':'#e0e0e0'};background:${pCats.includes(c)?'#00C853':'#fff'};color:${pCats.includes(c)?'#fff':'#888'};font-family:inherit">${c}</button>`).join('')}
+</div></div>
 <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Brand</label>
 <input id="ed_brand_${uid}" value="${p.brand||''}" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit"></div>
 <div style="margin-bottom:10px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Buy Link</label>
@@ -1283,10 +1290,21 @@ ${cats.map(c=>`<button type="button" onclick="document.getElementById('ed_cat_${
 <div id="ed_msg_${uid}" style="text-align:center;margin-top:8px;font-size:11px;min-height:16px"></div>
 </div>`}
 
+function toggleCatPill(btn,uid){
+const isOn=btn.style.background==='rgb(0, 200, 83)'||btn.style.borderColor==='rgb(0, 200, 83)';
+if(isOn){btn.style.background='#fff';btn.style.color='#888';btn.style.borderColor='#e0e0e0'}
+else{btn.style.background='#00C853';btn.style.color='#fff';btn.style.borderColor='#00C853'}}
+
+function getSelectedCats(uid){
+const btns=document.querySelectorAll('#ed_cats_'+uid+' button');
+const selected=[];
+btns.forEach(b=>{if(b.style.borderColor==='rgb(0, 200, 83)')selected.push(b.dataset.cat)});
+return selected.join(',')}
+
 async function saveDetails(uid,dbId,hcId){
 const name=document.getElementById('ed_name_'+uid).value.trim();
 const price=document.getElementById('ed_price_'+uid).value.trim();
-const cat=document.getElementById('ed_cat_'+uid).value;
+const cat=getSelectedCats(uid);
 const brand=document.getElementById('ed_brand_'+uid).value.trim();
 const link=document.getElementById('ed_link_'+uid).value.trim();
 const msg=document.getElementById('ed_msg_'+uid);
