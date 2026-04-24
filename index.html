@@ -6,7 +6,7 @@
 <title>ESNTLS CLUB — Premium Streetwear</title>
 <meta name="description" content="Curated designer footwear, jackets & accessories. Free UK shipping.">
 <meta name="theme-color" content="#00C853">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://esntlsclub.com">
@@ -29,11 +29,11 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 @media(min-width:1024px){.g2{grid-template-columns:repeat(4,1fr);gap:6px}}
 
 /* ═══ CARDS ═══ */
-.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease;cursor:pointer;position:relative;opacity:0;transform:translateY(30px) scale(.97);contain:layout style paint}
+.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s ease;cursor:pointer;position:relative;opacity:0;transform:translateY(30px) scale(.97);contain:layout style paint;will-change:transform,opacity}
 .pc.vis{opacity:1;transform:translateY(0) scale(1)}
 .pc:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.2)}
 .pc:active{transform:scale(.98);transition:.1s}
-.pc img{transition:transform .5s cubic-bezier(.22,1,.36,1);will-change:transform}
+.pc img{transition:transform .4s cubic-bezier(.22,1,.36,1)}
 .pc:hover img{transform:scale(1.08)}
 
 /* ═══ SCROLLING ROWS ═══ */
@@ -424,8 +424,8 @@ loadSupabaseProducts();
 
 function allProducts(){return[...P,...customProducts]}
 
-const CATS=["All","Footwear","Jackets","Accessories","Tracksuits","Shirts"];
-const CAT_ICONS={Footwear:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕"};
+const CATS=["All","Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
+const CAT_ICONS={Footwear:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Shorts:"🩳"};
 let currentView="home";
 
 /*╔═══════════════════════════╗
@@ -434,11 +434,13 @@ let currentView="home";
 function card(p,i){
 const oos=p.price==='Out of stock';
 const pid=typeof p.id==='string'?"'"+p.id+"'":p.id;
+// Use Supabase image transform for grid thumbnails (400px wide)
+const thumbUrl=p.img&&p.img.includes('supabase.co')?p.img.replace('/object/public/','/render/image/public/')+'?width=400&quality=75':p.img;
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
 return `<div class="pc" onclick="openProduct(${pid})" data-delay="${i*.04}">
 <div style="position:relative;overflow:hidden;border-radius:6px">
 <div style="padding-top:120%;background:#1a1a1a"></div>
-<img src="${p.img}" alt="${p.n}" decoding="async" ${priority} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
+<img src="${thumbUrl}" alt="${p.n}" decoding="async" ${priority} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
 <div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">${p.price}</div>
 <div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
 <div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">${p.n}</div>
@@ -1019,12 +1021,12 @@ modal.innerHTML=`<div class="modal-box" onclick="event.stopPropagation()">
 <span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:600">${p.cat} · ${p.brand}</span>
 <button onclick="closeModal()" style="background:none;border:none;font-size:18px;color:#888;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">✕</button>
 </div>
-<div style="padding:8px 18px 0;position:relative;cursor:zoom-in" onclick="openFullscreen(document.getElementById('mainImg').src)">
-<img id="mainImg" src="${gallery[0]}" alt="${p.n}" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f5f5f5">
+<div style="padding:8px 18px 0;position:relative;cursor:zoom-in" onclick="openFullscreen('${gallery[0]}')">
+<img id="mainImg" src="${gallery[0].includes('supabase.co')?gallery[0].replace('/object/public/','/render/image/public/')+'?width=800&quality=80':gallery[0]}" data-full="${gallery[0]}" alt="${p.n}" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f5f5f5">
 <div style="position:absolute;bottom:16px;right:26px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;pointer-events:none">🔍 Tap to zoom</div>
 </div>
 ${gallery.length>1?`<div style="padding:8px 18px 0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
-${gallery.map((img,i)=>`<img src="${img}" class="gthumb${i===0?' active':''}" onclick="event.stopPropagation();setMain(this,'${img}')">`).join('')}
+${gallery.map((img,i)=>{const thumbImg=img.includes('supabase.co')?img.replace('/object/public/','/render/image/public/')+'?width=150&quality=70':img;return `<img src="${thumbImg}" class="gthumb${i===0?' active':''}" onclick="event.stopPropagation();setMain(this,'${img}')">`}).join('')}
 </div>`:''}
 <div style="padding:16px 18px 20px">
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111">${p.n}</h2>
@@ -1043,14 +1045,19 @@ ${oos?`<div style="background:#f5f5f5;color:#888;font-weight:700;font-size:14px;
 ${related.length?`<div style="padding:0 18px 20px">
 <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
 <div style="display:grid;grid-template-columns:repeat(${Math.min(related.length,4)},1fr);gap:8px">
-${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=>openProduct(${rid}),150)">
-<img src="${r.img}" alt="${r.n}" style="width:100%;aspect-ratio:1;object-fit:cover">
+${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;const rThumb=r.img&&r.img.includes('supabase.co')?r.img.replace('/object/public/','/render/image/public/')+'?width=200&quality=70':r.img;return `<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=>openProduct(${rid}),150)">
+<img src="${rThumb}" alt="${r.n}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover">
 <div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${r.price}</div></div>
 </div>`}).join('')}
 </div></div>`:''}</div>`}
 
 function setMain(el,src){
-document.getElementById('mainImg').src=src;
+const mainImg=document.getElementById('mainImg');
+const optimized=src.includes('supabase.co')?src.replace('/object/public/','/render/image/public/')+'?width=800&quality=80':src;
+mainImg.src=optimized;
+mainImg.dataset.full=src;
+// Update fullscreen click
+mainImg.parentElement.onclick=function(){openFullscreen(src)};
 document.querySelectorAll('.gthumb').forEach(t=>t.classList.remove('active'));
 el.classList.add('active')}
 
