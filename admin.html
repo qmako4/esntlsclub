@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESNTLS Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--g:#00C853;--g2:#00E676;--bg:#f7f8fa;--card:#fff;--text:#111;--sub:#888;--border:#e8eaed;--r:14px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0a1a0f 0%,#111 50%,#0a1a0f 100%);padding:20px}
+#loginScreen h1{color:#fff;font-size:28px;margin-bottom:6px;letter-spacing:2px}
+#loginScreen .sub{color:var(--g);font-size:13px;margin-bottom:32px;letter-spacing:3px;text-transform:uppercase}
+#loginScreen input{width:100%;max-width:320px;padding:14px 18px;border:2px solid #333;border-radius:var(--r);background:#1a1a1a;color:#fff;font-size:15px;font-family:inherit;text-align:center;margin-bottom:12px;outline:none;transition:border .2s}
+#loginScreen input:focus{border-color:var(--g)}
+#loginScreen button{width:100%;max-width:320px;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,background .15s}
+#loginScreen button:active{transform:scale(.97)}
+#loginErr{color:#e53935;font-size:12px;margin-top:8px;min-height:18px}
+
+#app{display:none}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:18px;color:var(--g);letter-spacing:2px}
+.topbar .logout{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--sub);cursor:pointer;font-family:inherit}
+
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:0;padding:14px 8px;text-align:center;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--g);border-bottom-color:var(--g)}
+
+.page{display:none;padding:16px;max-width:600px;margin:0 auto}
+.page.active{display:block}
+
+.card{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)}
+
+label.field{display:block;margin-bottom:14px}
+label.field span{display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+label.field input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border .2s}
+label.field input:focus{border-color:var(--g)}
+
+.cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.cat-pill{padding:7px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--sub);transition:all .15s;font-family:inherit}
+.cat-pill.on{background:var(--g);color:#fff;border-color:var(--g)}
+
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:border .2s}
+.upload-zone:hover{border-color:var(--g)}
+.upload-zone .icon{font-size:28px;margin-bottom:6px}
+.upload-zone .label{font-size:13px;font-weight:600;color:var(--text)}
+.upload-zone .hint{font-size:11px;color:var(--sub);margin-top:4px}
+
+.img-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.img-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
+
+.btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:transparent;color:var(--g);border:1.5px solid var(--g)}
+.btn-danger{background:#fef2f2;color:#e53935;border:1.5px solid #fecaca}
+
+.progress{width:100%;height:6px;background:#eee;border-radius:3px;overflow:hidden;margin:8px 0;display:none}
+.progress-bar{height:100%;background:var(--g);border-radius:3px;transition:width .3s}
+
+.msg{text-align:center;font-size:12px;min-height:18px;margin-top:8px}
+
+.product-item{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.product-item:last-child{border-bottom:none}
+.product-item img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#f5f5f5;flex-shrink:0}
+.product-item .info{flex:1;min-width:0}
+.product-item .name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.product-item .meta{font-size:11px;color:var(--sub);margin-top:2px}
+.product-item .actions{display:flex;gap:6px;flex-shrink:0}
+.action-btn{width:34px;height:34px;border:none;border-radius:8px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.edit-panel{margin-top:10px;padding:16px;background:var(--bg);border-radius:var(--r);display:none}
+
+.img-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.img-thumb{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
+.img-thumb.main{border-color:var(--g)}
+.img-thumb img{width:100%;height:100%;object-fit:cover}
+.img-thumb .del{position:absolute;top:2px;right:2px;width:22px;height:22px;background:rgba(229,57,53,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;font-weight:700}
+.img-thumb .star{position:absolute;bottom:2px;left:2px;width:20px;height:20px;background:rgba(0,200,83,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#fff}
+.img-thumb .main-label{position:absolute;bottom:0;left:0;right:0;background:var(--g);color:#fff;font-size:8px;text-align:center;padding:1px;font-weight:700}
+
+.empty{text-align:center;padding:40px 20px}
+.empty .icon{font-size:36px;margin-bottom:8px}
+.empty .title{font-size:14px;font-weight:600;margin-bottom:4px}
+.empty .hint{font-size:12px;color:var(--sub)}
+
+@media(max-width:400px){
+.tab{font-size:11px;padding:12px 4px}
+}
+</style>
+</head><body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+<h1>ESNTLS</h1>
+<div class="sub">Admin Panel</div>
+<input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()">
+<button onclick="login()">Log In</button>
+<div id="loginErr"></div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="app">
+<div class="topbar">
+<h1>ESNTLS ADMIN</h1>
+<button class="logout" onclick="logout()">Log out</button>
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="showTab('add')">➕ Add</div>
+<div class="tab" onclick="showTab('products')">📦 Products</div>
+<div class="tab" onclick="showTab('stock')">📊 Stock</div>
+<div class="tab" onclick="showTab('tools')">🔧 Tools</div>
+</div>
+
+<!-- ADD PRODUCT -->
+<div class="page active" id="pageAdd">
+<div class="card">
+<h3>Add New Product</h3>
+<label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
+<label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. £129.99"></label>
+<label class="field"><span>Buy Link</span><input id="aLink" placeholder="essentialsblanks.net/product-page/..."></label>
+<label class="field"><span>Brand</span><input id="aBrand" placeholder="e.g. B22, B30, Other"></label>
+<div style="margin-bottom:14px">
+<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories (tap multiple)</span>
+<div class="cats" id="addCats"></div>
+</div>
+<label class="upload-zone" id="uploadZone">
+<input type="file" accept="image/*" multiple style="display:none" id="aFiles" onchange="previewFiles(this.files)">
+<div class="icon">📷</div>
+<div class="label">Tap to upload photos</div>
+<div class="hint">Select multiple images from camera roll</div>
+</label>
+<div class="img-preview" id="imgPreview"></div>
+<div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
+<div style="height:14px"></div>
+<button class="btn" onclick="addProduct()">Add Product</button>
+<div class="msg" id="addMsg"></div>
+</div>
+</div>
+
+<!-- PRODUCTS LIST -->
+<div class="page" id="pageProducts">
+<div class="card">
+<h3>All Products</h3>
+<div id="productList"></div>
+</div>
+</div>
+
+<!-- STOCK CHECK -->
+<div class="page" id="pageStock">
+<div class="card">
+<h3>Live Stock (from Wix)</h3>
+<button class="btn" onclick="loadStock()" id="stockBtn">Check Stock</button>
+<div id="stockData" style="margin-top:14px"></div>
+</div>
+</div>
+
+<!-- TOOLS -->
+<div class="page" id="pageTools">
+<div class="card">
+<h3>Quick Actions</h3>
+<button class="btn btn-outline" onclick="window.open('https://esntlsclub.com','_blank')" style="margin-bottom:10px">🌐 View Live Site</button>
+<button class="btn btn-outline" onclick="window.open('https://instagram.com/cluesntl','_blank')" style="margin-bottom:10px">📸 Instagram</button>
+<button class="btn btn-outline" onclick="window.open('https://www.essentialsblanks.net','_blank')" style="margin-bottom:10px">🛒 Wix Checkout Site</button>
+</div>
+<div class="card">
+<h3>Image Storage</h3>
+<p style="font-size:12px;color:var(--sub);margin-bottom:10px">Images hosted on Cloudflare R2 (free, unlimited)</p>
+<div style="font-size:11px;color:var(--sub)">Bucket: esntls-images</div>
+</div>
+</div>
+</div>
+
+<script>
+const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
+const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
+const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const ADMIN_PASS='esntls2026';
+const CATS=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
+
+let products=[];
+let selectedCats=[];
+let pendingFiles=[];
+
+// LOGIN
+function login(){
+const pw=document.getElementById('pwInput').value;
+if(pw===ADMIN_PASS){
+document.getElementById('loginScreen').style.display='none';
+document.getElementById('app').style.display='block';
+loadProducts();
+initCatPills();
+}else{
+document.getElementById('loginErr').textContent='Incorrect password';
+}}
+function logout(){document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('pwInput').value=''}
+
+// TABS
+function showTab(tab){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.getElementById('page'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+event.target.classList.add('active');
+if(tab==='products')renderProductList();
+}
+
+// CATEGORY PILLS
+function initCatPills(){
+const el=document.getElementById('addCats');
+el.innerHTML=CATS.map(c=>`<div class="cat-pill" onclick="toggleAddCat(this,'${c}')" data-cat="${c}">${c}</div>`).join('');
+}
+function toggleAddCat(el,cat){
+el.classList.toggle('on');
+selectedCats=[];
+document.querySelectorAll('#addCats .cat-pill.on').forEach(p=>selectedCats.push(p.dataset.cat));
+}
+
+// FILE PREVIEW
+function previewFiles(files){
+pendingFiles=[...files];
+const prev=document.getElementById('imgPreview');
+prev.innerHTML='';
+for(let i=0;i<Math.min(files.length,6);i++){
+const img=document.createElement('img');
+const reader=new FileReader();
+reader.onload=e=>{img.src=e.target.result};
+reader.readAsDataURL(files[i]);
+prev.appendChild(img)}
+if(files.length>6){const sp=document.createElement('span');sp.style.cssText='font-size:11px;color:var(--sub);padding:20px 4px';sp.textContent='+'+(files.length-6)+' more';prev.appendChild(sp)}
+document.querySelector('#uploadZone .label').textContent=files.length+' photo'+(files.length>1?'s':'')+' selected';
+}
+
+// UPLOAD IMAGES TO R2 VIA SUPABASE (temporary) - images go to Supabase storage then site references R2
+async function uploadImages(files){
+const urls=[];
+const prog=document.getElementById('uploadProgress');
+const bar=document.getElementById('uploadBar');
+prog.style.display='block';
+for(let i=0;i<files.length;i++){
+bar.style.width=Math.round((i/files.length)*100)+'%';
+const file=files[i];
+const ext=file.name.split('.').pop();
+const fname=Date.now()+'_'+i+'.'+ext;
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+body:file});
+if(res.ok){urls.push(SB_STORAGE+fname)}
+}catch(e){console.log('Upload error:',e)}}
+bar.style.width='100%';
+setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000);
+return urls}
+
+// ADD PRODUCT
+async function addProduct(){
+const n=document.getElementById('aName').value.trim();
+const price=document.getElementById('aPrice').value.trim();
+const link=document.getElementById('aLink').value.trim();
+const brand=document.getElementById('aBrand').value.trim();
+const msg=document.getElementById('addMsg');
+const cat=selectedCats.join(',')||'Footwear';
+
+if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
+if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
+if(!pendingFiles.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
+
+const imageUrls=await uploadImages(pendingFiles);
+if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
+
+try{
+const res=await fetch(SB_URL+'/rest/v1/products',{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+body:JSON.stringify({name:n,category:cat,brand:brand||'Other',price,link,images:imageUrls})});
+if(res.ok){
+msg.style.color='var(--g)';msg.textContent='Product added!';
+['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
+document.getElementById('aFiles').value='';
+document.getElementById('imgPreview').innerHTML='';
+document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
+pendingFiles=[];
+selectedCats=[];
+document.querySelectorAll('#addCats .cat-pill').forEach(p=>p.classList.remove('on'));
+await loadProducts()}
+else{msg.style.color='#e53935';msg.textContent='Save failed'}
+}catch(e){msg.style.color='#e53935';msg.textContent='Error: '+e.message}
+setTimeout(()=>{msg.textContent=''},4000)}
+
+// LOAD PRODUCTS FROM SUPABASE
+async function loadProducts(){
+try{
+const res=await fetch(SB_URL+'/rest/v1/products?select=*&order=created_at.desc',{
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+products=await res.json();
+}catch(e){console.log('Load error:',e)}}
+
+// RENDER PRODUCT LIST
+function renderProductList(){
+const list=document.getElementById('productList');
+if(!products.length){
+list.innerHTML=`<div class="empty"><div class="icon">📦</div><div class="title">No products yet</div><div class="hint">Add your first product above</div></div>`;return}
+list.innerHTML=products.map(p=>`<div>
+<div class="product-item">
+<img src="${p.images&&p.images[0]||''}" onerror="this.style.background='#eee'">
+<div class="info">
+<div class="name">${p.name}</div>
+<div class="meta">${p.category} · <span style="color:var(--g);font-weight:700">${p.price}</span></div>
+<div class="meta">${p.images?p.images.length:0} photos</div>
+</div>
+<div class="actions">
+<button class="action-btn" style="background:#f0f4ff" onclick="toggleEdit(${p.id})" title="Edit">⚙️</button>
+<button class="action-btn" style="background:#f0fdf4" onclick="toggleImgEdit(${p.id})" title="Images">✏️</button>
+<button class="action-btn" style="background:#fef2f2" onclick="deleteProduct(${p.id})" title="Delete">🗑️</button>
+</div>
+</div>
+<div class="edit-panel" id="edit_${p.id}"></div>
+<div class="edit-panel" id="imgs_${p.id}"></div>
+</div>`).join('')}
+
+// TOGGLE EDIT DETAILS
+function toggleEdit(id){
+const el=document.getElementById('edit_'+id);
+if(el.style.display==='block'){el.style.display='none';return}
+document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
+el.style.display='block';
+const p=products.find(x=>x.id===id);
+if(!p)return;
+const pCats=(p.category||'').split(',').map(c=>c.trim());
+el.innerHTML=`
+<label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
+<label class="field"><span>Price</span><input id="ep_${id}" value="${p.price}"></label>
+<div style="margin-bottom:14px">
+<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
+<div class="cats" id="ec_${id}">
+${CATS.map(c=>`<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${c}">${c}</div>`).join('')}
+</div></div>
+<label class="field"><span>Brand</span><input id="eb_${id}" value="${p.brand||''}"></label>
+<label class="field"><span>Buy Link</span><input id="el_${id}" value="${p.link||''}"></label>
+<button class="btn" onclick="saveEdit(${id})">Save Changes</button>
+<div class="msg" id="em_${id}"></div>`}
+
+async function saveEdit(id){
+const name=document.getElementById('en_'+id).value.trim();
+const price=document.getElementById('ep_'+id).value.trim();
+const brand=document.getElementById('eb_'+id).value.trim();
+const link=document.getElementById('el_'+id).value.trim();
+const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
+const cat=cats.join(',')||'Footwear';
+const msg=document.getElementById('em_'+id);
+try{
+const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
+method:'PATCH',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+body:JSON.stringify({name,price,category:cat,brand:brand||'Other',link})});
+if(res.ok){msg.style.color='var(--g)';msg.textContent='Saved!';await loadProducts();renderProductList()}
+else{msg.style.color='#e53935';msg.textContent='Save failed'}
+}catch(e){msg.style.color='#e53935';msg.textContent=e.message}}
+
+// TOGGLE IMAGE EDITOR
+function toggleImgEdit(id){
+const el=document.getElementById('imgs_'+id);
+if(el.style.display==='block'){el.style.display='none';return}
+document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
+el.style.display='block';
+const p=products.find(x=>x.id===id);
+if(!p)return;
+renderImgEditor(id,p.images||[])}
+
+function renderImgEditor(id,imgs){
+const el=document.getElementById('imgs_'+id);
+el.innerHTML=`
+<div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px">EDIT IMAGES</div>
+<div class="img-grid">
+${imgs.map((url,i)=>`<div class="img-thumb${i===0?' main':''}">
+<img src="${url}">
+<div class="del" onclick="imgDel(${id},${i})">✕</div>
+${i===0?'<div class="main-label">MAIN</div>':'<div class="star" onclick="imgFirst('+id+','+i+')">★</div>'}
+</div>`).join('')}
+</div>
+<label style="display:block;padding:12px;background:var(--g);color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer">
++ Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAdd(event,${id})">
+</label>
+<div class="msg" id="im_${id}"></div>`}
+
+function imgDel(id,idx){
+const p=products.find(x=>x.id===id);
+if(!p||!p.images)return;
+if(p.images.length<=1){alert('Must keep at least 1 image');return}
+if(!confirm('Delete this image?'))return;
+const imgs=[...p.images];
+imgs.splice(idx,1);
+imgSave(id,imgs)}
+
+function imgFirst(id,idx){
+const p=products.find(x=>x.id===id);
+if(!p||!p.images)return;
+const imgs=[...p.images];
+const[moved]=imgs.splice(idx,1);
+imgs.unshift(moved);
+imgSave(id,imgs)}
+
+async function imgAdd(e,id){
+const files=e.target.files;
+if(!files.length)return;
+const msg=document.getElementById('im_'+id);
+msg.style.color='var(--sub)';msg.textContent='Uploading...';
+const p=products.find(x=>x.id===id);
+const imgs=[...(p.images||[])];
+for(let i=0;i<files.length;i++){
+const file=files[i];
+const ext=file.name.split('.').pop();
+const fname='p'+id+'_'+Date.now()+'_'+i+'.'+ext;
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+body:file});
+if(res.ok){imgs.push(SB_STORAGE+fname)}
+else{msg.style.color='#e53935';msg.textContent='Upload failed';return}}
+imgSave(id,imgs);
+msg.style.color='var(--g)';msg.textContent='Added!';
+setTimeout(()=>{msg.textContent=''},2000)}
+
+async function imgSave(id,imgs){
+try{
+const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
+method:'PATCH',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+body:JSON.stringify({images:imgs})});
+if(res.ok){await loadProducts();renderImgEditor(id,imgs)}
+}catch(e){console.log(e)}}
+
+// DELETE PRODUCT
+async function deleteProduct(id){
+if(!confirm('Delete this product?'))return;
+try{
+const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
+method:'DELETE',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+if(res.ok){await loadProducts();renderProductList()}
+}catch(e){alert('Error: '+e.message)}}
+
+// STOCK CHECK
+async function loadStock(){
+const btn=document.getElementById('stockBtn');
+const el=document.getElementById('stockData');
+btn.disabled=true;btn.textContent='Loading...';
+try{
+const res=await fetch(SB_URL+'/functions/v1/wix-stock');
+const data=await res.json();
+if(data.stock){
+let html='<div style="font-size:11px;color:var(--sub);margin-bottom:12px">Updated: '+new Date(data.updated).toLocaleString()+'</div>';
+for(const[name,info]of Object.entries(data.stock)){
+html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${name}</div>`;
+for(const[color,colorData]of Object.entries(info.colors||{})){
+html+=`<div style="font-size:12px;font-weight:600;color:var(--g);margin:4px 0">${color||'All'}</div>`;
+for(const[size,qty]of Object.entries(colorData.sizes||{})){
+html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>${size}</span><span style="font-weight:600">${qty}</span></div>`}}
+html+='</div>'}
+el.innerHTML=html}
+else{el.innerHTML='<div style="font-size:12px;color:#e53935">No stock data returned</div>'}
+}catch(e){el.innerHTML='<div style="font-size:12px;color:#e53935">Error: '+e.message+'</div>'}
+btn.disabled=false;btn.textContent='Check Stock'}
+</script>
+</body></html>
