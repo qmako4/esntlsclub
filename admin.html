@@ -77,12 +77,13 @@ label.field input:focus{border-color:var(--g)}
 .edit-panel{margin-top:10px;padding:16px;background:var(--bg);border-radius:var(--r);display:none}
 
 .img-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.img-thumb{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
+.img-thumb{position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
 .img-thumb.main{border-color:var(--g)}
 .img-thumb img{width:100%;height:100%;object-fit:cover}
-.img-thumb .del{position:absolute;top:2px;right:2px;width:22px;height:22px;background:rgba(229,57,53,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;font-weight:700}
-.img-thumb .star{position:absolute;bottom:2px;left:2px;width:20px;height:20px;background:rgba(0,200,83,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#fff}
-.img-thumb .main-label{position:absolute;bottom:0;left:0;right:0;background:var(--g);color:#fff;font-size:8px;text-align:center;padding:1px;font-weight:700}
+.img-thumb .del{position:absolute;top:3px;right:3px;width:24px;height:24px;background:rgba(229,57,53,.92);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#fff;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.img-thumb .star{position:absolute;top:3px;left:3px;width:28px;height:28px;background:rgba(0,0,0,.65);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.img-thumb .star:hover{background:var(--g)}
+.img-thumb .main-label{position:absolute;bottom:0;left:0;right:0;background:var(--g);color:#fff;font-size:9px;text-align:center;padding:2px;font-weight:700;letter-spacing:.5px}
 
 .empty{text-align:center;padding:40px 20px}
 .empty .icon{font-size:36px;margin-bottom:8px}
@@ -101,11 +102,6 @@ label.field input:focus{border-color:var(--g)}
 .media-item.selected .check{display:flex;background:var(--g);color:#fff}
 .media-item .used{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700;letter-spacing:.4px;z-index:2}
 .media-item .trash{position:absolute;top:6px;left:6px;width:26px;height:26px;background:rgba(229,57,53,.92);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;font-weight:700;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.25)}
-
-.lib-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.lib-preview .item{position:relative}
-.lib-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--g);display:block}
-.lib-preview .x{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#e53935;color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid #fff}
 
 #mediaPicker{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-end;justify-content:center}
 .picker-sheet{background:#fff;width:100%;max-width:600px;height:92vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
@@ -408,16 +404,40 @@ document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelive
 // FILE PREVIEW
 function previewFiles(files){
 pendingFiles=[...files];
+renderPendingPreview();
+}
+
+function renderPendingPreview(){
 const prev=document.getElementById('imgPreview');
 prev.innerHTML='';
-for(let i=0;i<Math.min(files.length,6);i++){
+pendingFiles.forEach((file,i)=>{
+const wrap=document.createElement('div');
+wrap.className='img-thumb'+(i===0?' main':'');
 const img=document.createElement('img');
 const reader=new FileReader();
 reader.onload=e=>{img.src=e.target.result};
-reader.readAsDataURL(files[i]);
-prev.appendChild(img)}
-if(files.length>6){const sp=document.createElement('span');sp.style.cssText='font-size:11px;color:var(--sub);padding:20px 4px';sp.textContent='+'+(files.length-6)+' more';prev.appendChild(sp)}
-document.querySelector('#uploadZone .label').textContent=files.length+' photo'+(files.length>1?'s':'')+' selected';
+reader.readAsDataURL(file);
+wrap.appendChild(img);
+if(i===0){
+const lbl=document.createElement('div');lbl.className='main-label';lbl.textContent='MAIN';
+wrap.appendChild(lbl);
+}else{
+const star=document.createElement('div');
+star.className='star';star.title='Set as main image';star.textContent='★';
+star.onclick=()=>setPendingMain(i);
+wrap.appendChild(star);
+}
+prev.appendChild(wrap);
+});
+const lbl=pendingFiles.length+' photo'+(pendingFiles.length===1?'':'s')+' selected'+(pendingFiles.length>1?' · ★ to set main':'');
+document.querySelector('#uploadZone .label').textContent=pendingFiles.length?lbl:'Tap to upload photos';
+}
+
+function setPendingMain(idx){
+if(idx<=0||idx>=pendingFiles.length)return;
+const[moved]=pendingFiles.splice(idx,1);
+pendingFiles.unshift(moved);
+renderPendingPreview();
 }
 
 // IMAGE COMPRESSION (resize to 1600px wide, re-encode JPEG ~82% quality)
@@ -625,7 +645,7 @@ el.innerHTML=`
 ${imgs.map((url,i)=>`<div class="img-thumb${i===0?' main':''}">
 <img src="${url}">
 <div class="del" onclick="imgDel(${id},${i})">✕</div>
-${i===0?'<div class="main-label">MAIN</div>':'<div class="star" onclick="imgFirst('+id+','+i+')">★</div>'}
+${i===0?'<div class="main-label">MAIN</div>':'<div class="star" title="Set as main image" onclick="imgFirst('+id+','+i+')">★</div>'}
 </div>`).join('')}
 </div>
 <label style="display:block;padding:12px;background:var(--g);color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer">
@@ -834,8 +854,19 @@ renderAddLibPreview()})}
 function renderAddLibPreview(){
 const div=document.getElementById('addLibPreview');
 if(!addLibraryUrls.length){div.innerHTML='';return}
-div.innerHTML='<div style="font-size:11px;font-weight:600;color:var(--sub);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">From Library ('+addLibraryUrls.length+')</div><div class="lib-preview">'+
-addLibraryUrls.map((u,i)=>`<div class="item"><img src="${u}"><div class="x" onclick="removeAddLib(${i})">×</div></div>`).join('')+'</div>'}
+const note=addLibraryUrls.length>1?' · ★ to set main':'';
+div.innerHTML='<div style="font-size:11px;font-weight:600;color:var(--sub);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">From Library ('+addLibraryUrls.length+')'+note+'</div><div class="img-grid">'+
+addLibraryUrls.map((u,i)=>`<div class="img-thumb${i===0?' main':''}">
+<img src="${u}">
+<div class="del" onclick="removeAddLib(${i})">✕</div>
+${i===0?'<div class="main-label">MAIN</div>':`<div class="star" title="Set as main" onclick="setLibMain(${i})">★</div>`}
+</div>`).join('')+'</div>'}
+
+function setLibMain(idx){
+if(idx<=0||idx>=addLibraryUrls.length)return;
+const[moved]=addLibraryUrls.splice(idx,1);
+addLibraryUrls.unshift(moved);
+renderAddLibPreview()}
 
 function removeAddLib(i){
 addLibraryUrls.splice(i,1);
