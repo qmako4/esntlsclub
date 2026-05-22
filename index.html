@@ -416,17 +416,20 @@ const IMG_OVERRIDES={"1": ["https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/
 const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
 const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
+const R2_BASE='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 
-// Load products from Supabase
+// Load products from R2 (products.json managed by admin.html)
 let customProducts=[];
-async function loadSupabaseProducts(){
+async function loadR2Products(){
 try{
-const res=await fetch(SB_URL+'/rest/v1/products?select=*&order=created_at.desc',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+const res=await fetch(R2_BASE+'products.json?t='+Math.floor(Date.now()/60000));
+if(!res.ok){if(res.status!==404)console.log('products.json HTTP',res.status);return}
 const data=await res.json();
-customProducts=data.map(p=>({id:'sb_'+p.id,dbId:p.id,n:p.name,cat:p.category,brand:p.brand||'Other',price:p.price,link:p.link,img:p.images&&p.images[0]||'',imgs:p.images||[]}));
+const arr=Array.isArray(data)?data:[];
+customProducts=arr.map(p=>({id:'r2_'+p.id,dbId:p.id,n:p.name,cat:p.category,brand:p.brand||'Other',price:p.price,link:p.link,img:(p.images&&p.images[0])||'',imgs:p.images||[]}));
 render();
-}catch(e){console.log('Supabase load error:',e)}}
-loadSupabaseProducts();
+}catch(e){console.log('R2 products load error:',e)}}
+loadR2Products();
 
 function allProducts(){return[...P,...customProducts]}
 

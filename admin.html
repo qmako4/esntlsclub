@@ -443,12 +443,22 @@ imageUrls=[...imageUrls,...newUrls];
 }
 if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
 
+const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
+const newProduct={
+id:newId,
+name:n,
+category:cat,
+brand:brand||'Other',
+price,
+link,
+images:imageUrls,
+created_at:new Date().toISOString()
+};
+products.unshift(newProduct);
+
 try{
-const res=await fetch(SB_URL+'/rest/v1/products',{
-method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-body:JSON.stringify({name:n,category:cat,brand:brand||'Other',price,link,images:imageUrls})});
-if(res.ok){
+msg.style.color='var(--sub)';msg.textContent='Saving...';
+await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Product added!';
 ['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('aFiles').value='';
@@ -459,18 +469,30 @@ addLibraryUrls=[];
 renderAddLibPreview();
 selectedCats=[];
 document.querySelectorAll('#addCats .cat-pill').forEach(p=>p.classList.remove('on'));
-await loadProducts()}
-else{msg.style.color='#e53935';msg.textContent='Save failed'}
-}catch(e){msg.style.color='#e53935';msg.textContent='Error: '+e.message}
+}catch(e){
+products.shift();
+msg.style.color='#e53935';msg.textContent='Save failed: '+e.message;
+}
 setTimeout(()=>{msg.textContent=''},4000)}
 
-// LOAD PRODUCTS FROM SUPABASE
+// LOAD PRODUCTS FROM R2 JSON
 async function loadProducts(){
 try{
-const res=await fetch(SB_URL+'/rest/v1/products?select=*&order=created_at.desc',{
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-products=await res.json();
-}catch(e){console.log('Load error:',e)}}
+const res=await fetch(R2_PUBLIC+'products.json?t='+Date.now());
+if(res.ok){
+const data=await res.json();
+products=Array.isArray(data)?data:[];
+}else if(res.status===404){
+products=[];
+}else{
+console.error('loadProducts HTTP',res.status);
+}
+}catch(e){console.error('Load error:',e)}}
+
+// PERSIST FULL PRODUCT LIST TO R2
+async function saveProducts(){
+const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
+await r2Upload(blob,'products.json')}
 
 // RENDER PRODUCT LIST
 function renderProductList(){
@@ -525,14 +547,18 @@ const link=document.getElementById('el_'+id).value.trim();
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
 const msg=document.getElementById('em_'+id);
+const p=products.find(x=>x.id===id);
+if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link};
+Object.assign(p,{name,price,category:cat,brand:brand||'Other',link});
 try{
-const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
-method:'PATCH',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-body:JSON.stringify({name,price,category:cat,brand:brand||'Other',link})});
-if(res.ok){msg.style.color='var(--g)';msg.textContent='Saved!';await loadProducts();renderProductList()}
-else{msg.style.color='#e53935';msg.textContent='Save failed'}
-}catch(e){msg.style.color='#e53935';msg.textContent=e.message}}
+await saveProducts();
+msg.style.color='var(--g)';msg.textContent='Saved!';
+renderProductList();
+}catch(e){
+Object.assign(p,orig);
+msg.style.color='#e53935';msg.textContent='Save failed: '+e.message;
+}}
 
 // TOGGLE IMAGE EDITOR
 function toggleImgEdit(id){
@@ -598,23 +624,32 @@ const m=document.getElementById('im_'+id);
 if(m){m.style.color='var(--g)';m.textContent='Added!';setTimeout(()=>{const x=document.getElementById('im_'+id);if(x)x.textContent=''},2000)}}
 
 async function imgSave(id,imgs){
+const p=products.find(x=>x.id===id);
+if(!p)return;
+const orig=[...(p.images||[])];
+p.images=imgs;
 try{
-const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
-method:'PATCH',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-body:JSON.stringify({images:imgs})});
-if(res.ok){await loadProducts();renderImgEditor(id,imgs)}
-}catch(e){console.log(e)}}
+await saveProducts();
+renderImgEditor(id,imgs);
+}catch(e){
+p.images=orig;
+console.error('imgSave failed:',e);
+alert('Save failed: '+e.message);
+}}
 
 // DELETE PRODUCT
 async function deleteProduct(id){
 if(!confirm('Delete this product?'))return;
+const idx=products.findIndex(p=>p.id===id);
+if(idx<0)return;
+const removed=products.splice(idx,1)[0];
 try{
-const res=await fetch(SB_URL+'/rest/v1/products?id=eq.'+id,{
-method:'DELETE',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-if(res.ok){await loadProducts();renderProductList()}
-}catch(e){alert('Error: '+e.message)}}
+await saveProducts();
+renderProductList();
+}catch(e){
+products.splice(idx,0,removed);
+alert('Delete failed: '+e.message);
+}}
 
 // MEDIA LIBRARY (R2)
 async function loadMedia(){
