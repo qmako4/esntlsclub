@@ -250,6 +250,12 @@ const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
 const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const R2_ACCOUNT='2cd63a3dc8a97fd3d54da09e423ab769';
+const R2_BUCKET='esntls-images';
+const R2_HOST=R2_ACCOUNT+'.r2.cloudflarestorage.com';
+const R2_ENDPOINT='https://'+R2_HOST;
+const R2_ACCESS_KEY='dc536b58cf237e0d95da9b91cb62a9cb';
+const R2_SECRET_KEY='61d0f77d798067438039743ec8851668fb2e5714ee82af5fe40ed36f4d6ea6e4';
 const ADMIN_PASS='esntls2026';
 const CATS=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
 
@@ -260,6 +266,70 @@ let mediaImages=[];
 let pickerSelected=new Set();
 let pickerCallback=null;
 let addLibraryUrls=[];
+
+// R2 S3-COMPATIBLE API (AWS SIG V4 BROWSER SIGNER)
+async function _sha256Hex(data){
+const buf=typeof data==='string'?new TextEncoder().encode(data):data;
+const h=await crypto.subtle.digest('SHA-256',buf);
+return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+
+async function _hmac(key,data){
+const kb=typeof key==='string'?new TextEncoder().encode(key):key;
+const ck=await crypto.subtle.importKey('raw',kb,{name:'HMAC',hash:'SHA-256'},false,['sign']);
+const db=typeof data==='string'?new TextEncoder().encode(data):data;
+return new Uint8Array(await crypto.subtle.sign('HMAC',ck,db))}
+
+async function _hmacHex(key,data){
+const s=await _hmac(key,data);
+return Array.from(s).map(b=>b.toString(16).padStart(2,'0')).join('')}
+
+async function r2Fetch(method,key,body,query){
+const now=new Date();
+const amz=now.toISOString().replace(/[:-]|\.\d{3}/g,'');
+const ds=amz.slice(0,8);
+const encKey=key?encodeURIComponent(key).replace(/%2F/g,'/'):'';
+const path='/'+R2_BUCKET+(encKey?'/'+encKey:'');
+const q=query||'';
+const payloadHash=body?'UNSIGNED-PAYLOAD':await _sha256Hex('');
+const canonHeaders='host:'+R2_HOST+'\nx-amz-content-sha256:'+payloadHash+'\nx-amz-date:'+amz+'\n';
+const signedHeaders='host;x-amz-content-sha256;x-amz-date';
+const canonReq=method+'\n'+path+'\n'+q+'\n'+canonHeaders+'\n'+signedHeaders+'\n'+payloadHash;
+const scope=ds+'/auto/s3/aws4_request';
+const sts='AWS4-HMAC-SHA256\n'+amz+'\n'+scope+'\n'+await _sha256Hex(canonReq);
+const k1=await _hmac('AWS4'+R2_SECRET_KEY,ds);
+const k2=await _hmac(k1,'auto');
+const k3=await _hmac(k2,'s3');
+const kS=await _hmac(k3,'aws4_request');
+const sig=await _hmacHex(kS,sts);
+const auth='AWS4-HMAC-SHA256 Credential='+R2_ACCESS_KEY+'/'+scope+', SignedHeaders='+signedHeaders+', Signature='+sig;
+const headers={'Authorization':auth,'x-amz-content-sha256':payloadHash,'x-amz-date':amz};
+if(body&&body.type)headers['Content-Type']=body.type;
+return fetch(R2_ENDPOINT+path+(q?'?'+q:''),{method,headers,body})}
+
+async function r2Upload(file,key){
+const res=await r2Fetch('PUT',key,file);
+if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+return R2_PUBLIC+key}
+
+async function r2Delete(key){
+const res=await r2Fetch('DELETE',key);
+if(!res.ok&&res.status!==204&&res.status!==404){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+return true}
+
+async function r2List(){
+const res=await r2Fetch('GET',null,null,'list-type=2');
+if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+const xml=await res.text();
+const doc=new DOMParser().parseFromString(xml,'text/xml');
+const contents=doc.getElementsByTagName('Contents');
+const out=[];
+for(const c of contents){
+const k=c.getElementsByTagName('Key')[0]?.textContent;
+const sz=parseInt(c.getElementsByTagName('Size')[0]?.textContent||'0');
+const lm=c.getElementsByTagName('LastModified')[0]?.textContent||'';
+if(k)out.push({name:k,url:R2_PUBLIC+k,size:sz,created:lm})}
+out.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+return out}
 
 // LOGIN
 function login(){
@@ -334,7 +404,7 @@ if(files.length>6){const sp=document.createElement('span');sp.style.cssText='fon
 document.querySelector('#uploadZone .label').textContent=files.length+' photo'+(files.length>1?'s':'')+' selected';
 }
 
-// UPLOAD IMAGES TO R2 VIA SUPABASE (temporary) - images go to Supabase storage then site references R2
+// UPLOAD IMAGES TO R2
 async function uploadImages(files){
 const urls=[];
 const prog=document.getElementById('uploadProgress');
@@ -343,15 +413,12 @@ prog.style.display='block';
 for(let i=0;i<files.length;i++){
 bar.style.width=Math.round((i/files.length)*100)+'%';
 const file=files[i];
-const ext=file.name.split('.').pop();
+const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
 const fname=Date.now()+'_'+i+'.'+ext;
 try{
-const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
-method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
-body:file});
-if(res.ok){urls.push(SB_STORAGE+fname)}
-}catch(e){console.log('Upload error:',e)}}
+const url=await r2Upload(file,fname);
+urls.push(url);
+}catch(e){console.error('Upload error:',fname,e)}}
 bar.style.width='100%';
 setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000);
 return urls}
@@ -520,17 +587,15 @@ const p=products.find(x=>x.id===id);
 const imgs=[...(p.images||[])];
 for(let i=0;i<files.length;i++){
 const file=files[i];
-const ext=file.name.split('.').pop();
+const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
 const fname='p'+id+'_'+Date.now()+'_'+i+'.'+ext;
-const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
-method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
-body:file});
-if(res.ok){imgs.push(SB_STORAGE+fname)}
-else{msg.style.color='#e53935';msg.textContent='Upload failed';return}}
+try{
+const url=await r2Upload(file,fname);
+imgs.push(url);
+}catch(err){msg.style.color='#e53935';msg.textContent='Upload failed: '+err.message;return}}
 imgSave(id,imgs);
-msg.style.color='var(--g)';msg.textContent='Added!';
-setTimeout(()=>{msg.textContent=''},2000)}
+const m=document.getElementById('im_'+id);
+if(m){m.style.color='var(--g)';m.textContent='Added!';setTimeout(()=>{const x=document.getElementById('im_'+id);if(x)x.textContent=''},2000)}}
 
 async function imgSave(id,imgs){
 try{
@@ -551,19 +616,10 @@ headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
 if(res.ok){await loadProducts();renderProductList()}
 }catch(e){alert('Error: '+e.message)}}
 
-// MEDIA LIBRARY
+// MEDIA LIBRARY (R2)
 async function loadMedia(){
-try{
-const res=await fetch(SB_URL+'/storage/v1/object/list/product-images',{
-method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-body:JSON.stringify({limit:1000,offset:0,sortBy:{column:'created_at',order:'desc'}})});
-if(res.ok){
-const data=await res.json();
-const arr=Array.isArray(data)?data:[];
-mediaImages=arr.filter(f=>f&&f.name&&f.id&&!f.name.endsWith('/')).map(f=>({name:f.name,url:SB_STORAGE+f.name,created:f.created_at}));
-}
-}catch(e){console.log('Media load error:',e)}}
+try{mediaImages=await r2List()}
+catch(e){console.error('Media load error:',e);mediaImages=[]}}
 
 function getUsedUrls(){
 const set=new Set();
@@ -590,21 +646,14 @@ const prog=document.getElementById('mediaProgress');
 const bar=document.getElementById('mediaBar');
 prog.style.display='block';
 msg.style.color='var(--sub)';msg.textContent='Uploading '+files.length+'...';
-let ok=0;
-let lastErr='';
+let ok=0,lastErr='';
 for(let i=0;i<files.length;i++){
 bar.style.width=Math.round((i/files.length)*100)+'%';
 const file=files[i];
 const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
 const fname=Date.now()+'_'+i+'.'+ext;
-try{
-const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
-method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
-body:file});
-if(res.ok){ok++}
-else{lastErr='HTTP '+res.status+': '+(await res.text()).slice(0,150);console.error('Upload failed:',fname,lastErr)}
-}catch(e){lastErr=e.message;console.error('Upload error:',fname,e)}}
+try{await r2Upload(file,fname);ok++}
+catch(e){lastErr=e.message;console.error('Upload error:',fname,e)}}
 bar.style.width='100%';
 setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},1500);
 if(ok===files.length){msg.style.color='var(--g)';msg.textContent=ok+' uploaded'}
@@ -615,16 +664,14 @@ await loadMedia();renderMedia()}
 
 async function deleteMedia(name){
 const used=getUsedUrls();
-const url=SB_STORAGE+name;
+const url=R2_PUBLIC+name;
 let warn='Delete this image from library?';
 if(used.has(url))warn='⚠️ This image is USED by a product. Delete anyway?';
 if(!confirm(warn))return;
 try{
-const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+name,{
-method:'DELETE',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-if(res.ok){mediaImages=mediaImages.filter(m=>m.name!==name);renderMedia()}
-else{alert('Delete failed')}
+await r2Delete(name);
+mediaImages=mediaImages.filter(m=>m.name!==name);
+renderMedia();
 }catch(e){alert('Delete failed: '+e.message)}}
 
 // PICKER MODAL
