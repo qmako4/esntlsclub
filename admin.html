@@ -203,7 +203,10 @@ label.field input:focus{border-color:var(--g)}
 <div style="height:14px"></div>
 <div class="media-toolbar">
 <div class="count" id="mediaCount">Loading…</div>
+<div style="display:flex;gap:6px">
+<button class="action-btn" style="background:#fff3cd" onclick="compressLibraryAll()" title="Compress all to save space">🗜️</button>
 <button class="action-btn" style="background:#f0f4ff" onclick="loadMedia().then(renderMedia)" title="Refresh">🔄</button>
+</div>
 </div>
 <div id="mediaList"></div>
 </div>
@@ -333,7 +336,7 @@ for(const c of contents){
 const k=c.getElementsByTagName('Key')[0]?.textContent;
 const sz=parseInt(c.getElementsByTagName('Size')[0]?.textContent||'0');
 const lm=c.getElementsByTagName('LastModified')[0]?.textContent||'';
-if(k)out.push({name:k,url:R2_PUBLIC+k,size:sz,created:lm})}
+if(k&&/\.(jpe?g|png|webp|gif|avif)$/i.test(k))out.push({name:k,url:R2_PUBLIC+k,size:sz,created:lm})}
 out.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
 return out}
 
@@ -417,6 +420,27 @@ if(files.length>6){const sp=document.createElement('span');sp.style.cssText='fon
 document.querySelector('#uploadZone .label').textContent=files.length+' photo'+(files.length>1?'s':'')+' selected';
 }
 
+// IMAGE COMPRESSION (resize to 1600px wide, re-encode JPEG ~82% quality)
+async function compressImage(file,maxWidth=1600,quality=0.82){
+if(!file||!file.type||!file.type.startsWith('image/'))return file;
+if(file.type==='image/gif'||file.type==='image/svg+xml')return file;
+try{
+const url=URL.createObjectURL(file);
+const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+const ratio=Math.min(1,maxWidth/img.naturalWidth);
+const w=Math.round(img.naturalWidth*ratio);
+const h=Math.round(img.naturalHeight*ratio);
+const canvas=document.createElement('canvas');
+canvas.width=w;canvas.height=h;
+const ctx=canvas.getContext('2d');
+ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+ctx.drawImage(img,0,0,w,h);
+const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',quality));
+URL.revokeObjectURL(url);
+if(!blob||blob.size>=file.size)return file;
+return new File([blob],file.name,{type:'image/jpeg'});
+}catch(e){console.error('Compress failed:',file.name,e);return file}}
+
 // UPLOAD IMAGES TO R2
 async function uploadImages(files){
 const urls=[];
@@ -425,9 +449,8 @@ const bar=document.getElementById('uploadBar');
 prog.style.display='block';
 for(let i=0;i<files.length;i++){
 bar.style.width=Math.round((i/files.length)*100)+'%';
-const file=files[i];
-const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-const fname=Date.now()+'_'+i+'.'+ext;
+const file=await compressImage(files[i]);
+const fname=Date.now()+'_'+i+'.jpg';
 try{
 const url=await r2Upload(file,fname);
 urls.push(url);
@@ -636,9 +659,8 @@ msg.style.color='var(--sub)';msg.textContent='Uploading...';
 const p=products.find(x=>x.id===id);
 const imgs=[...(p.images||[])];
 for(let i=0;i<files.length;i++){
-const file=files[i];
-const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-const fname='p'+id+'_'+Date.now()+'_'+i+'.'+ext;
+const file=await compressImage(files[i]);
+const fname='p'+id+'_'+Date.now()+'_'+i+'.jpg';
 try{
 const url=await r2Upload(file,fname);
 imgs.push(url);
@@ -708,9 +730,8 @@ msg.style.color='var(--sub)';msg.textContent='Uploading '+files.length+'...';
 let ok=0,lastErr='';
 for(let i=0;i<files.length;i++){
 bar.style.width=Math.round((i/files.length)*100)+'%';
-const file=files[i];
-const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-const fname=Date.now()+'_'+i+'.'+ext;
+const file=await compressImage(files[i]);
+const fname=Date.now()+'_'+i+'.jpg';
 try{await r2Upload(file,fname);ok++}
 catch(e){lastErr=e.message;console.error('Upload error:',fname,e)}}
 bar.style.width='100%';
@@ -719,6 +740,38 @@ if(ok===files.length){msg.style.color='var(--g)';msg.textContent=ok+' uploaded'}
 else if(ok>0){msg.style.color='var(--g)';msg.textContent=ok+'/'+files.length+' uploaded · '+lastErr}
 else{msg.style.color='#e53935';msg.textContent='Upload failed: '+lastErr}
 setTimeout(()=>{msg.textContent=''},8000);
+await loadMedia();renderMedia()}
+
+async function compressLibraryAll(){
+if(!mediaImages.length)return alert('No images in library');
+if(!confirm('Compress all '+mediaImages.length+' images? This will overwrite the originals on R2 (the URLs stay the same, so live products keep working). This may take a few minutes.'))return;
+const msg=document.getElementById('mediaMsg');
+const prog=document.getElementById('mediaProgress');
+const bar=document.getElementById('mediaBar');
+prog.style.display='block';
+let ok=0,skipped=0,failed=0,savedBytes=0;
+for(let i=0;i<mediaImages.length;i++){
+const m=mediaImages[i];
+bar.style.width=Math.round((i/mediaImages.length)*100)+'%';
+msg.style.color='var(--sub)';msg.textContent='Compressing '+(i+1)+'/'+mediaImages.length+'...';
+try{
+const res=await r2Fetch('GET',m.name);
+if(!res.ok){failed++;continue}
+const blob=await res.blob();
+const origSize=blob.size;
+const tmpFile=new File([blob],m.name,{type:blob.type||'image/jpeg'});
+const compressed=await compressImage(tmpFile);
+if(compressed===tmpFile||compressed.size>=origSize){skipped++;continue}
+await r2Upload(compressed,m.name);
+savedBytes+=origSize-compressed.size;
+ok++;
+}catch(e){console.error('Compress fail:',m.name,e);failed++}}
+bar.style.width='100%';
+setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000);
+const savedMb=(savedBytes/1024/1024).toFixed(1);
+msg.style.color=ok?'var(--g)':'#e53935';
+msg.textContent=ok+' compressed ('+savedMb+' MB saved) · '+skipped+' skipped · '+failed+' failed';
+setTimeout(()=>{msg.textContent=''},20000);
 await loadMedia();renderMedia()}
 
 async function deleteMedia(name){
