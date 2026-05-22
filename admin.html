@@ -43,9 +43,11 @@ label.field input:focus{border-color:var(--g)}
 .cat-pill{padding:7px 16px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--sub);transition:all .15s;font-family:inherit}
 .cat-pill.on{background:var(--g);color:#fff;border-color:var(--g)}
 
-.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:border .2s}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:border .15s,background .15s;display:block}
 .upload-zone:hover{border-color:var(--g)}
-.upload-zone .icon{font-size:28px;margin-bottom:6px}
+.upload-zone.dragover{border-color:var(--g);background:#f0fdf4}
+.upload-zone .icon{font-size:28px;margin-bottom:6px;transition:transform .15s}
+.upload-zone.dragover .icon{transform:scale(1.15)}
 .upload-zone .label{font-size:13px;font-weight:600;color:var(--text)}
 .upload-zone .hint{font-size:11px;color:var(--sub);margin-top:4px}
 
@@ -186,7 +188,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="page" id="pageMedia">
 <div class="card">
 <h3>Media Library</h3>
-<label class="upload-zone">
+<label class="upload-zone" id="mediaZone">
 <input type="file" accept="image/*" multiple style="display:none" id="mediaFiles" onchange="uploadToMedia(this.files);this.value=''">
 <div class="icon">⬆️</div>
 <div class="label">Tap to upload to library</div>
@@ -267,9 +269,33 @@ document.getElementById('loginScreen').style.display='none';
 document.getElementById('app').style.display='block';
 loadProducts();
 initCatPills();
+initDropZones();
 }else{
 document.getElementById('loginErr').textContent='Incorrect password';
 }}
+
+// DRAG-AND-DROP
+function setupDropZone(el,handler){
+if(!el||el._dropBound)return;
+el._dropBound=true;
+el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';el.classList.add('dragover')});
+el.addEventListener('dragleave',e=>{if(e.target===el)el.classList.remove('dragover')});
+el.addEventListener('drop',e=>{
+e.preventDefault();
+el.classList.remove('dragover');
+const files=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('image/'));
+if(files.length)handler(files)})}
+
+function initDropZones(){
+setupDropZone(document.getElementById('uploadZone'),files=>{
+const dt=new DataTransfer();
+files.forEach(f=>dt.items.add(f));
+document.getElementById('aFiles').files=dt.files;
+previewFiles(dt.files)});
+setupDropZone(document.getElementById('mediaZone'),files=>uploadToMedia(files));
+// Block browser from opening dropped files anywhere else
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault())}
 function logout(){document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('pwInput').value=''}
 
 // TABS
