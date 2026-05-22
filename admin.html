@@ -189,7 +189,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="card">
 <h3>Media Library</h3>
 <label class="upload-zone" id="mediaZone">
-<input type="file" accept="image/*" multiple style="display:none" id="mediaFiles" onchange="uploadToMedia(this.files);this.value=''">
+<input type="file" accept="image/*" multiple style="display:none" id="mediaFiles" onchange="uploadToMedia([...this.files]);this.value=''">
 <div class="icon">⬆️</div>
 <div class="label">Tap to upload to library</div>
 <div class="hint">Photos saved here can be reused across products</div>
@@ -591,21 +591,26 @@ const bar=document.getElementById('mediaBar');
 prog.style.display='block';
 msg.style.color='var(--sub)';msg.textContent='Uploading '+files.length+'...';
 let ok=0;
+let lastErr='';
 for(let i=0;i<files.length;i++){
 bar.style.width=Math.round((i/files.length)*100)+'%';
 const file=files[i];
-const ext=file.name.split('.').pop();
-const fname='lib_'+Date.now()+'_'+i+'.'+ext;
+const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+const fname=Date.now()+'_'+i+'.'+ext;
 try{
 const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
 method:'POST',
-headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
 body:file});
-if(res.ok)ok++}catch(e){}}
+if(res.ok){ok++}
+else{lastErr='HTTP '+res.status+': '+(await res.text()).slice(0,150);console.error('Upload failed:',fname,lastErr)}
+}catch(e){lastErr=e.message;console.error('Upload error:',fname,e)}}
 bar.style.width='100%';
 setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},1500);
-msg.style.color='var(--g)';msg.textContent=ok+' uploaded';
-setTimeout(()=>{msg.textContent=''},3000);
+if(ok===files.length){msg.style.color='var(--g)';msg.textContent=ok+' uploaded'}
+else if(ok>0){msg.style.color='var(--g)';msg.textContent=ok+'/'+files.length+' uploaded · '+lastErr}
+else{msg.style.color='#e53935';msg.textContent='Upload failed: '+lastErr}
+setTimeout(()=>{msg.textContent=''},8000);
 await loadMedia();renderMedia()}
 
 async function deleteMedia(name){
