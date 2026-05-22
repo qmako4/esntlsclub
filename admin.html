@@ -160,6 +160,10 @@ label.field input:focus{border-color:var(--g)}
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories (tap multiple)</span>
 <div class="cats" id="addCats"></div>
 </div>
+<div style="margin-bottom:14px">
+<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery (tap one or both)</span>
+<div class="cats" id="addDelivery"></div>
+</div>
 <label class="upload-zone" id="uploadZone">
 <input type="file" accept="image/*" multiple style="display:none" id="aFiles" onchange="previewFiles(this.files)">
 <div class="icon">📷</div>
@@ -258,9 +262,11 @@ const R2_ACCESS_KEY='dc536b58cf237e0d95da9b91cb62a9cb';
 const R2_SECRET_KEY='61d0f77d798067438039743ec8851668fb2e5714ee82af5fe40ed36f4d6ea6e4';
 const ADMIN_PASS='esntls2026';
 const CATS=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
+const DELIVERY=["Next Day","7-12 Days"];
 
 let products=[];
 let selectedCats=[];
+let selectedDelivery=[];
 let pendingFiles=[];
 let mediaImages=[];
 let pickerSelected=new Set();
@@ -378,15 +384,22 @@ if(tab==='products')renderProductList();
 if(tab==='media'){loadMedia().then(renderMedia)}
 }
 
-// CATEGORY PILLS
+// CATEGORY / DELIVERY PILLS
 function initCatPills(){
-const el=document.getElementById('addCats');
-el.innerHTML=CATS.map(c=>`<div class="cat-pill" onclick="toggleAddCat(this,'${c}')" data-cat="${c}">${c}</div>`).join('');
+const cats=document.getElementById('addCats');
+cats.innerHTML=CATS.map(c=>`<div class="cat-pill" onclick="toggleAddCat(this)" data-cat="${c}">${c}</div>`).join('');
+const del=document.getElementById('addDelivery');
+del.innerHTML=DELIVERY.map(d=>`<div class="cat-pill" onclick="toggleAddDelivery(this)" data-cat="${d}">${d}</div>`).join('');
 }
-function toggleAddCat(el,cat){
+function toggleAddCat(el){
 el.classList.toggle('on');
 selectedCats=[];
 document.querySelectorAll('#addCats .cat-pill.on').forEach(p=>selectedCats.push(p.dataset.cat));
+}
+function toggleAddDelivery(el){
+el.classList.toggle('on');
+selectedDelivery=[];
+document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelivery.push(p.dataset.cat));
 }
 
 // FILE PREVIEW
@@ -451,6 +464,7 @@ category:cat,
 brand:brand||'Other',
 price,
 link,
+delivery:selectedDelivery.join(','),
 images:imageUrls,
 created_at:new Date().toISOString()
 };
@@ -468,7 +482,9 @@ pendingFiles=[];
 addLibraryUrls=[];
 renderAddLibPreview();
 selectedCats=[];
+selectedDelivery=[];
 document.querySelectorAll('#addCats .cat-pill').forEach(p=>p.classList.remove('on'));
+document.querySelectorAll('#addDelivery .cat-pill').forEach(p=>p.classList.remove('on'));
 }catch(e){
 products.shift();
 msg.style.color='#e53935';msg.textContent='Save failed: '+e.message;
@@ -526,6 +542,7 @@ el.style.display='block';
 const p=products.find(x=>x.id===id);
 if(!p)return;
 const pCats=(p.category||'').split(',').map(c=>c.trim());
+const pDel=(p.delivery||'').split(',').map(d=>d.trim());
 el.innerHTML=`
 <label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
 <label class="field"><span>Price</span><input id="ep_${id}" value="${p.price}"></label>
@@ -533,6 +550,11 @@ el.innerHTML=`
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
 <div class="cats" id="ec_${id}">
 ${CATS.map(c=>`<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${c}">${c}</div>`).join('')}
+</div></div>
+<div style="margin-bottom:14px">
+<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery</span>
+<div class="cats" id="ed_${id}">
+${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${d}">${d}</div>`).join('')}
 </div></div>
 <label class="field"><span>Brand</span><input id="eb_${id}" value="${p.brand||''}"></label>
 <label class="field"><span>Buy Link</span><input id="el_${id}" value="${p.link||''}"></label>
@@ -546,11 +568,13 @@ const brand=document.getElementById('eb_'+id).value.trim();
 const link=document.getElementById('el_'+id).value.trim();
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
+const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
+const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
-const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link};
-Object.assign(p,{name,price,category:cat,brand:brand||'Other',link});
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
+Object.assign(p,{name,price,category:cat,brand:brand||'Other',link,delivery});
 try{
 await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Saved!';
