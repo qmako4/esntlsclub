@@ -87,8 +87,37 @@ label.field input:focus{border-color:var(--g)}
 .empty .title{font-size:14px;font-weight:600;margin-bottom:4px}
 .empty .hint{font-size:12px;color:var(--sub)}
 
+.media-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.media-toolbar .count{font-size:12px;color:var(--sub);font-weight:600}
+.media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:500px){.media-grid{grid-template-columns:repeat(4,1fr)}}
+.media-item{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid var(--border);background:#f5f5f5;cursor:pointer;transition:border .15s}
+.media-item img{width:100%;height:100%;object-fit:cover;display:block}
+.media-item.selected{border-color:var(--g)}
+.media-item.selected::after{content:'';position:absolute;inset:0;background:rgba(0,200,83,.18);pointer-events:none}
+.media-item .check{position:absolute;top:6px;right:6px;width:24px;height:24px;background:#fff;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--g);box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2}
+.media-item.selected .check{display:flex;background:var(--g);color:#fff}
+.media-item .used{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700;letter-spacing:.4px;z-index:2}
+.media-item .trash{position:absolute;top:6px;left:6px;width:26px;height:26px;background:rgba(229,57,53,.92);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;font-weight:700;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+
+.lib-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lib-preview .item{position:relative}
+.lib-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--g);display:block}
+.lib-preview .x{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#e53935;color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid #fff}
+
+#mediaPicker{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-end;justify-content:center}
+.picker-sheet{background:#fff;width:100%;max-width:600px;height:92vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.picker-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.picker-header h3{font-size:15px;font-weight:700}
+.picker-header .close{background:none;border:none;font-size:22px;color:var(--sub);cursor:pointer;padding:4px 10px;font-family:inherit;line-height:1}
+.picker-body{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.picker-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:#fff}
+.picker-footer .btn{margin:0;padding:12px}
+.picker-footer .btn:first-child{flex:0 0 90px}
+.picker-footer .btn:last-child{flex:1}
+
 @media(max-width:400px){
-.tab{font-size:11px;padding:12px 4px}
+.tab{font-size:10px;padding:12px 2px}
 }
 </style>
 </head><body>
@@ -112,6 +141,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="tabs">
 <div class="tab active" onclick="showTab('add')">➕ Add</div>
 <div class="tab" onclick="showTab('products')">📦 Products</div>
+<div class="tab" onclick="showTab('media')">📚 Media</div>
 <div class="tab" onclick="showTab('stock')">📊 Stock</div>
 <div class="tab" onclick="showTab('tools')">🔧 Tools</div>
 </div>
@@ -136,6 +166,8 @@ label.field input:focus{border-color:var(--g)}
 </label>
 <div class="img-preview" id="imgPreview"></div>
 <div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
+<button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">📚 Pick from Library</button>
+<div id="addLibPreview"></div>
 <div style="height:14px"></div>
 <button class="btn" onclick="addProduct()">Add Product</button>
 <div class="msg" id="addMsg"></div>
@@ -147,6 +179,27 @@ label.field input:focus{border-color:var(--g)}
 <div class="card">
 <h3>All Products</h3>
 <div id="productList"></div>
+</div>
+</div>
+
+<!-- MEDIA LIBRARY -->
+<div class="page" id="pageMedia">
+<div class="card">
+<h3>Media Library</h3>
+<label class="upload-zone">
+<input type="file" accept="image/*" multiple style="display:none" id="mediaFiles" onchange="uploadToMedia(this.files);this.value=''">
+<div class="icon">⬆️</div>
+<div class="label">Tap to upload to library</div>
+<div class="hint">Photos saved here can be reused across products</div>
+</label>
+<div class="progress" id="mediaProgress"><div class="progress-bar" id="mediaBar"></div></div>
+<div class="msg" id="mediaMsg"></div>
+<div style="height:14px"></div>
+<div class="media-toolbar">
+<div class="count" id="mediaCount">Loading…</div>
+<button class="action-btn" style="background:#f0f4ff" onclick="loadMedia().then(renderMedia)" title="Refresh">🔄</button>
+</div>
+<div id="mediaList"></div>
 </div>
 </div>
 
@@ -173,6 +226,21 @@ label.field input:focus{border-color:var(--g)}
 <div style="font-size:11px;color:var(--sub)">Bucket: esntls-images</div>
 </div>
 </div>
+
+<!-- MEDIA PICKER MODAL -->
+<div id="mediaPicker" onclick="if(event.target===this)closePicker()">
+<div class="picker-sheet">
+<div class="picker-header">
+<h3>Select from Library</h3>
+<button class="close" onclick="closePicker()">✕</button>
+</div>
+<div class="picker-body" id="pickerBody"></div>
+<div class="picker-footer">
+<button class="btn btn-outline" onclick="closePicker()">Cancel</button>
+<button class="btn" id="pickerConfirm" onclick="confirmPicker()"><span id="pickerCount">Tap to select</span></button>
+</div>
+</div>
+</div>
 </div>
 
 <script>
@@ -186,6 +254,10 @@ const CATS=["Footwear","Jackets","Accessories","Tracksuits","Shirts","Summer","S
 let products=[];
 let selectedCats=[];
 let pendingFiles=[];
+let mediaImages=[];
+let pickerSelected=new Set();
+let pickerCallback=null;
+let addLibraryUrls=[];
 
 // LOGIN
 function login(){
@@ -207,6 +279,7 @@ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
 document.getElementById('page'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
 event.target.classList.add('active');
 if(tab==='products')renderProductList();
+if(tab==='media'){loadMedia().then(renderMedia)}
 }
 
 // CATEGORY PILLS
@@ -268,9 +341,13 @@ const cat=selectedCats.join(',')||'Footwear';
 
 if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
 if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
-if(!pendingFiles.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
+if(!pendingFiles.length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
 
-const imageUrls=await uploadImages(pendingFiles);
+let imageUrls=[...addLibraryUrls];
+if(pendingFiles.length){
+const newUrls=await uploadImages(pendingFiles);
+imageUrls=[...imageUrls,...newUrls];
+}
 if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
 
 try{
@@ -285,6 +362,8 @@ document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
 pendingFiles=[];
+addLibraryUrls=[];
+renderAddLibPreview();
 selectedCats=[];
 document.querySelectorAll('#addCats .cat-pill').forEach(p=>p.classList.remove('on'));
 await loadProducts()}
@@ -386,6 +465,7 @@ ${i===0?'<div class="main-label">MAIN</div>':'<div class="star" onclick="imgFirs
 <label style="display:block;padding:12px;background:var(--g);color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer">
 + Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAdd(event,${id})">
 </label>
+<button class="btn btn-outline" onclick="openPickerForEdit(${id})" style="margin-top:8px">📚 Pick from Library</button>
 <div class="msg" id="im_${id}"></div>`}
 
 function imgDel(id,idx){
@@ -444,6 +524,142 @@ method:'DELETE',
 headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
 if(res.ok){await loadProducts();renderProductList()}
 }catch(e){alert('Error: '+e.message)}}
+
+// MEDIA LIBRARY
+async function loadMedia(){
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/list/product-images',{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+body:JSON.stringify({limit:1000,offset:0,sortBy:{column:'created_at',order:'desc'}})});
+if(res.ok){
+const data=await res.json();
+const arr=Array.isArray(data)?data:[];
+mediaImages=arr.filter(f=>f&&f.name&&f.id&&!f.name.endsWith('/')).map(f=>({name:f.name,url:SB_STORAGE+f.name,created:f.created_at}));
+}
+}catch(e){console.log('Media load error:',e)}}
+
+function getUsedUrls(){
+const set=new Set();
+products.forEach(p=>(p.images||[]).forEach(u=>set.add(u)));
+return set}
+
+function renderMedia(){
+const list=document.getElementById('mediaList');
+const count=document.getElementById('mediaCount');
+count.textContent=mediaImages.length+' image'+(mediaImages.length===1?'':'s');
+if(!mediaImages.length){
+list.innerHTML=`<div class="empty"><div class="icon">📷</div><div class="title">No images yet</div><div class="hint">Upload above or via Add Product</div></div>`;return}
+const used=getUsedUrls();
+list.innerHTML='<div class="media-grid">'+mediaImages.map(m=>`<div class="media-item">
+<img src="${m.url}" loading="lazy">
+<div class="trash" onclick="deleteMedia('${m.name}')">🗑</div>
+${used.has(m.url)?'<div class="used">USED</div>':''}
+</div>`).join('')+'</div>'}
+
+async function uploadToMedia(files){
+if(!files||!files.length)return;
+const msg=document.getElementById('mediaMsg');
+const prog=document.getElementById('mediaProgress');
+const bar=document.getElementById('mediaBar');
+prog.style.display='block';
+msg.style.color='var(--sub)';msg.textContent='Uploading '+files.length+'...';
+let ok=0;
+for(let i=0;i<files.length;i++){
+bar.style.width=Math.round((i/files.length)*100)+'%';
+const file=files[i];
+const ext=file.name.split('.').pop();
+const fname='lib_'+Date.now()+'_'+i+'.'+ext;
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+fname,{
+method:'POST',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type,'x-upsert':'true'},
+body:file});
+if(res.ok)ok++}catch(e){}}
+bar.style.width='100%';
+setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},1500);
+msg.style.color='var(--g)';msg.textContent=ok+' uploaded';
+setTimeout(()=>{msg.textContent=''},3000);
+await loadMedia();renderMedia()}
+
+async function deleteMedia(name){
+const used=getUsedUrls();
+const url=SB_STORAGE+name;
+let warn='Delete this image from library?';
+if(used.has(url))warn='⚠️ This image is USED by a product. Delete anyway?';
+if(!confirm(warn))return;
+try{
+const res=await fetch(SB_URL+'/storage/v1/object/product-images/'+name,{
+method:'DELETE',
+headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+if(res.ok){mediaImages=mediaImages.filter(m=>m.name!==name);renderMedia()}
+else{alert('Delete failed')}
+}catch(e){alert('Delete failed: '+e.message)}}
+
+// PICKER MODAL
+async function openPicker(callback){
+pickerCallback=callback;
+pickerSelected=new Set();
+document.getElementById('mediaPicker').style.display='flex';
+document.getElementById('pickerBody').innerHTML='<div class="empty"><div class="icon">⏳</div><div class="hint">Loading…</div></div>';
+await loadMedia();
+renderPicker()}
+
+function closePicker(){
+document.getElementById('mediaPicker').style.display='none';
+pickerCallback=null;
+pickerSelected=new Set()}
+
+function renderPicker(){
+const body=document.getElementById('pickerBody');
+const cnt=document.getElementById('pickerCount');
+const n=pickerSelected.size;
+cnt.textContent=n?'Add '+n+' photo'+(n===1?'':'s'):'Tap to select';
+if(!mediaImages.length){
+body.innerHTML='<div class="empty"><div class="icon">📷</div><div class="title">Library is empty</div><div class="hint">Upload via the Media tab first</div></div>';return}
+const used=getUsedUrls();
+body.innerHTML='<div class="media-grid">'+mediaImages.map(m=>`<div class="media-item${pickerSelected.has(m.url)?' selected':''}" onclick="togglePick('${m.url}')">
+<img src="${m.url}" loading="lazy">
+<div class="check">✓</div>
+${used.has(m.url)?'<div class="used">USED</div>':''}
+</div>`).join('')+'</div>'}
+
+function togglePick(url){
+if(pickerSelected.has(url))pickerSelected.delete(url);
+else pickerSelected.add(url);
+renderPicker()}
+
+function confirmPicker(){
+const urls=Array.from(pickerSelected);
+const cb=pickerCallback;
+closePicker();
+if(urls.length&&cb)cb(urls)}
+
+// ADD-PRODUCT PICKER HOOK
+function openPickerForAdd(){
+openPicker(urls=>{
+urls.forEach(u=>{if(!addLibraryUrls.includes(u))addLibraryUrls.push(u)});
+renderAddLibPreview()})}
+
+function renderAddLibPreview(){
+const div=document.getElementById('addLibPreview');
+if(!addLibraryUrls.length){div.innerHTML='';return}
+div.innerHTML='<div style="font-size:11px;font-weight:600;color:var(--sub);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">From Library ('+addLibraryUrls.length+')</div><div class="lib-preview">'+
+addLibraryUrls.map((u,i)=>`<div class="item"><img src="${u}"><div class="x" onclick="removeAddLib(${i})">×</div></div>`).join('')+'</div>'}
+
+function removeAddLib(i){
+addLibraryUrls.splice(i,1);
+renderAddLibPreview()}
+
+// EDIT-PRODUCT PICKER HOOK
+function openPickerForEdit(id){
+openPicker(async urls=>{
+const p=products.find(x=>x.id===id);
+if(!p)return;
+const imgs=[...(p.images||[]),...urls.filter(u=>!(p.images||[]).includes(u))];
+await imgSave(id,imgs);
+const m=document.getElementById('im_'+id);
+if(m){m.style.color='var(--g)';m.textContent='Added '+urls.length+' from library';setTimeout(()=>{const x=document.getElementById('im_'+id);if(x)x.textContent=''},2500)}})}
 
 // STOCK CHECK
 async function loadStock(){
