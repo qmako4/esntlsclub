@@ -2,7 +2,7 @@
   {
     "id": 1,
     "name": "B22 White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -21,7 +21,7 @@
   {
     "id": 2,
     "name": "B22 – Dark Blue",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -39,7 +39,7 @@
   {
     "id": 3,
     "name": "B22 – Black & White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -55,7 +55,7 @@
   {
     "id": 4,
     "name": "B22 – Light Blue",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -71,7 +71,7 @@
   {
     "id": 5,
     "name": "B22 Black",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -85,7 +85,7 @@
   {
     "id": 6,
     "name": "B22 Grey",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B22",
     "brand": "B22",
     "price": "£129.99",
     "link": "https://www.essentialsblanks.net/product-page/22b-runner-shoes-next-day-batch",
@@ -101,7 +101,7 @@
   {
     "id": 7,
     "name": "B30 – White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -117,7 +117,7 @@
   {
     "id": 8,
     "name": "B30 – Blue Lime Soles",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -132,7 +132,7 @@
   {
     "id": 9,
     "name": "B30 Black",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -147,7 +147,7 @@
   {
     "id": 10,
     "name": "B30 Black and Grey",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -163,7 +163,7 @@
   {
     "id": 11,
     "name": "B30 Black and White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -177,7 +177,7 @@
   {
     "id": 12,
     "name": "B30 Blue and Black",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -190,7 +190,7 @@
   {
     "id": 13,
     "name": "B30 Grey",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -203,7 +203,7 @@
   {
     "id": 14,
     "name": "B30 Grey and Black",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -219,7 +219,7 @@
   {
     "id": 15,
     "name": "B30 Grey and White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -240,7 +240,7 @@
   {
     "id": 16,
     "name": "B30 Light Blue",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -255,7 +255,7 @@
   {
     "id": 17,
     "name": "B30 Grey and White",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
@@ -269,7 +269,7 @@
   {
     "id": 18,
     "name": "B30 x Stxne",
-    "category": "Footwear,Summer",
+    "category": "Footwear,Summer,B30",
     "brand": "B30",
     "price": "£99.99",
     "link": "https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",
