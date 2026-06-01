@@ -449,7 +449,9 @@ render();
 }catch(e){console.log('R2 products load error:',e)}}
 loadR2Products();
 
-function allProducts(){return[...P,...customProducts]}
+// Prefer the live products.json (customProducts) when it loaded.
+// Fall back to the inline P list only if R2 is unreachable so the site still works offline.
+function allProducts(){return customProducts.length?customProducts:P}
 
 const CATS=["All","Footwear","B22","B30","Asics","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
 const CAT_ICONS={Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Shorts:"🩳"};
