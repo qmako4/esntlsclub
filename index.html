@@ -433,7 +433,18 @@ const res=await fetch(R2_BASE+'products.json?t='+Math.floor(Date.now()/60000));
 if(!res.ok){if(res.status!==404)console.log('products.json HTTP',res.status);return}
 const data=await res.json();
 const arr=Array.isArray(data)?data:[];
-customProducts=arr.map(p=>({id:'r2_'+p.id,dbId:p.id,n:p.name,cat:p.category,brand:p.brand||'Other',price:p.price,link:p.link,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]}));
+customProducts=arr.map(p=>{
+const cats=(p.category||'').split(',').map(c=>c.trim()).filter(Boolean);
+const brand=p.brand||'Other';
+// Auto-tag: brand → category for shoe brands
+if(['B22','B30','Asics'].includes(brand)&&!cats.includes(brand)) cats.push(brand);
+// Auto-tag: any product whose name starts with "ASICS Gel Kayano" → Asics category
+if(/^\s*asics\s+gel\s+kayano/i.test(p.name||'')){
+  if(!cats.includes('Asics')) cats.push('Asics');
+  if(!cats.includes('Footwear')) cats.push('Footwear');
+}
+return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,link:p.link,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]};
+});
 render();
 }catch(e){console.log('R2 products load error:',e)}}
 loadR2Products();
