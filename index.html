@@ -594,7 +594,8 @@ ${items.length?`<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>`:`
 function homeHTML(){
 const inStock=allProducts().filter(p=>p.price!=='Out of stock');
 const feat=[...inStock].reverse().slice(0,8);
-const hero=inStock.find(p=>p.brand==='B22')||inStock.find(p=>p.brand==='B30')||inStock[0]||{n:'ESNTLS CLUB',price:'',img:'',id:0};
+const b30s=inStock.filter(p=>p.brand==='B30');
+const hero=b30s.length?b30s[Math.floor(Math.random()*b30s.length)]:(inStock[0]||{n:'ESNTLS CLUB',price:'',img:'',id:0});
 const heroPid=typeof hero.id==='string'?"'"+hero.id+"'":hero.id;
 return `
 <!-- Hero: Featured product showcase -->
