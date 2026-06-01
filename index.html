@@ -458,13 +458,23 @@ const PRICE_LABELS={'all':'All Prices','under50':'Under £50','50-100':'£50 –
 let priceFilter='all';
 function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='shop')showCat(cv.cat||'All')}
 // Total stock count for a product (returns null if not tracked)
+// LIVE_STOCK groups by parent product; links maps colour-name → pid for each variant
 function getProductStockCount(p){
   for(const v of Object.values(LIVE_STOCK)){
-    for(const pid of Object.values(v.links||{})){
+    for(const [colorName,pid] of Object.entries(v.links||{})){
       if(pid===p.id||pid===p.dbId){
+        // Single-colour product ("_" placeholder): sum all sizes
+        if(colorName==='_'){
+          let total=0;
+          for(const c of Object.values(v.colors||{}))
+            for(const q of Object.values(c.sizes||{})) total+=q;
+          return total;
+        }
+        // Variant-specific: sum only the matching colour's sizes
+        const ce=v.colors&&v.colors[colorName];
+        if(!ce) return null;
         let total=0;
-        for(const c of Object.values(v.colors||{}))
-          for(const q of Object.values(c.sizes||{})) total+=q;
+        for(const q of Object.values(ce.sizes||{})) total+=q;
         return total;
       }
     }
