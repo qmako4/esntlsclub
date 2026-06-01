@@ -75,6 +75,10 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .cgrid{display:grid;grid-template-columns:1fr;gap:24px}
 @media(min-width:768px){.cgrid{grid-template-columns:1fr 1fr;gap:32px}}
 
+/* ═══ HERO ═══ */
+.hero-grid{display:grid;grid-template-columns:1fr;gap:20px;align-items:center}
+@media(min-width:768px){.hero-grid{grid-template-columns:1.05fr 1fr;gap:40px}}
+
 /* ═══ STEPS GRID ═══ */
 .sgrid{display:grid;grid-template-columns:1fr;gap:24px}
 @media(min-width:640px){.sgrid{grid-template-columns:repeat(3,1fr);gap:28px}}
@@ -588,58 +592,34 @@ ${items.length?`<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>`:`
   ║  HOME PAGE                ║
   ╚═══════════════════════════╝*/
 function homeHTML(){
-const feat=[...allProducts()].filter(p=>p.price!=='Out of stock').reverse().slice(0,8);
+const inStock=allProducts().filter(p=>p.price!=='Out of stock');
+const feat=[...inStock].reverse().slice(0,8);
+const hero=inStock.find(p=>p.brand==='B22')||inStock.find(p=>p.brand==='B30')||inStock[0]||{n:'ESNTLS CLUB',price:'',img:'',id:0};
+const heroPid=typeof hero.id==='string'?"'"+hero.id+"'":hero.id;
 return `
-<!-- How To Order — 2 slides -->
-<section style="position:relative;overflow:hidden;padding:0">
-<div style="background:#f8f8f8;border-bottom:1px solid #eee;overflow:hidden">
-<!-- Slide container -->
-<div style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none" class="hero-slider" id="heroSlider">
-<!-- Slide 1: How To Order -->
-<div style="flex:0 0 100%;scroll-snap-align:start;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px)">
-<div class="hero-parallax" style="max-width:720px;margin:0 auto;text-align:center">
+<!-- Hero: Featured product showcase -->
+<section style="background:linear-gradient(180deg,#fafafa 0%,#fff 100%);padding:clamp(20px,4vw,40px) 16px clamp(30px,5vw,48px);border-bottom:1px solid #eee">
+<div class="hero-grid" style="max-width:1180px;margin:0 auto">
+<div style="position:relative;border-radius:18px;overflow:hidden;background:#f5f5f5;aspect-ratio:1;animation:blurIn .8s ease both;cursor:pointer" onclick="openProduct(${heroPid})">
+<img src="${hero.img}" alt="${hero.n}" style="width:100%;height:100%;object-fit:cover" fetchpriority="high" decoding="async">
+<div style="position:absolute;top:14px;left:14px;background:#00C853;color:#fff;font-size:10px;font-weight:700;padding:5px 14px;border-radius:50px;letter-spacing:1.5px;text-transform:uppercase">⚡ Featured Drop</div>
+<div style="position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);padding:10px 16px;border-radius:12px;text-align:right">
+<div style="font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1.5px;color:#888;text-transform:uppercase">${hero.n}</div>
+<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#00C853">${hero.price}</div>
+</div>
+</div>
+<div style="text-align:center;padding:4px">
 <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px;animation:blurIn .8s ease both">
 <span style="width:5px;height:5px;border-radius:50%;background:#00C853;animation:pulse 2s infinite"></span>
-<span style="font-size:10px;color:#00C853;font-weight:700;letter-spacing:1px;text-transform:uppercase">How It Works</span>
+<span style="font-size:10px;color:#00C853;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Free Next-Day UK</span>
 </div>
-<h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,56px);color:#111;line-height:.92;margin:0;letter-spacing:2px;animation:slideUp .6s ease .1s both">HOW TO <span style="color:#00C853">ORDER</span></h1>
-<p style="font-size:clamp(12px,1.8vw,14px);color:#999;max-width:380px;margin:10px auto 20px;line-height:1.55;animation:slideUp .6s ease .2s both">4 simple steps. You always receive exactly what you selected.</p>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin:0 auto 16px" class="steps-compact">
-<div style="text-align:center;animation:stepIn .5s ease .2s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease infinite">1</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Select</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Choose your item</p></div>
-<div style="text-align:center;animation:stepIn .5s ease .35s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease .5s infinite">2</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Continue</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">To secure checkout</p></div>
-<div style="text-align:center;animation:stepIn .5s ease .5s both"><div style="width:30px;height:30px;border-radius:10px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;margin:0 auto 5px;animation:glowPulse 3s ease 1s infinite">3</div><h3 style="font-size:11px;font-weight:700;color:#111;margin:0 0 2px">Pay</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Secure checkout</p></div>
-<div style="text-align:center;animation:stepIn .5s ease .65s both"><div style="width:30px;height:30px;border-radius:10px;background:#00C853;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;margin:0 auto 5px;animation:glowPulse 3s ease 1.5s infinite">✓</div><h3 style="font-size:11px;font-weight:700;color:#00C853;margin:0 0 2px">Receive</h3><p style="font-size:9px;color:#aaa;margin:0;line-height:1.4">Exact item delivered</p></div>
+<h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,9vw,68px);color:#111;line-height:.92;margin:0 0 12px;letter-spacing:2px;animation:slideUp .6s ease .1s both">PREMIUM<br><span style="color:#00C853">STREETWEAR</span></h1>
+<p style="font-size:clamp(13px,1.8vw,15px);color:#666;max-width:420px;margin:0 auto 22px;line-height:1.55;animation:slideUp .6s ease .2s both">Curated essentials from Manchester. Sneakers, jackets and accessories — quality first.</p>
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:slideUp .6s ease .3s both">
+<a href="#" onclick="showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:14px 30px;border-radius:50px;display:inline-flex;align-items:center;gap:6px;min-height:48px;letter-spacing:.5px">Shop All →</a>
+<a href="#" onclick="showCat('Footwear')" style="background:#fff;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:14px 26px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px;letter-spacing:.5px">👟 Footwear</a>
 </div>
-<p style="font-size:10px;color:#bbb;max-width:380px;margin:0 auto 16px;line-height:1.5">Free UK shipping 💚</p>
-<a href="#" onclick="showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:12px 32px;border-radius:50px;display:inline-flex;align-items:center;min-height:44px">Shop Now →</a>
-</div>
-</div>
-<!-- Slide 2: Business Card -->
-<div style="flex:0 0 100%;scroll-snap-align:start;padding:clamp(28px,5vw,48px) 16px clamp(24px,4vw,40px);display:flex;flex-direction:column;align-items:center;justify-content:center">
-<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:8px">Our Brand</div>
-<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,36px);color:#111;margin:0 0 20px;letter-spacing:2px;text-align:center">Spin The Card</h2>
-<div class="card3d-scene" id="cardScene">
-<div class="card3d" id="card3d">
-<div class="card3d-face card3d-front">
-<img src="${cardLogoUrl}" alt="ESNTLS CLUB" style="height:80%;width:auto;object-fit:contain">
-</div>
-<div class="card3d-face card3d-back">
-<div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff;letter-spacing:2px">ESNTLS <span style="color:#00C853">CLUB</span></div>
-<div style="width:40px;height:2px;background:#00C853;border-radius:2px;margin:4px 0"></div>
-<div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6">Premium Streetwear</div>
-<div style="font-size:11px;color:rgba(255,255,255,.5)">Manchester, UK</div>
-<div style="font-size:11px;color:#00C853;margin-top:4px">@cluesntl</div>
-<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:8px">esntlsclub.com</div>
-</div>
-</div>
-</div>
-<div style="font-size:11px;color:#aaa;margin-top:14px">Swipe or drag to flip</div>
-</div>
-</div>
-<!-- Slide dots -->
-<div style="display:flex;justify-content:center;gap:6px;padding:12px 0;background:#f8f8f8" id="heroDots">
-<div style="width:8px;height:8px;border-radius:50%;background:#00C853;transition:all .3s;cursor:pointer" onclick="document.getElementById('heroSlider').scrollTo({left:0,behavior:'smooth'})"></div>
-<div style="width:8px;height:8px;border-radius:50%;background:#ddd;transition:all .3s;cursor:pointer" onclick="document.getElementById('heroSlider').scrollTo({left:9999,behavior:'smooth'})"></div>
+<div style="font-size:11px;color:#aaa;margin-top:16px">${inStock.length} items in stock · DM @cluesntl for help</div>
 </div>
 </div>
 </section>
