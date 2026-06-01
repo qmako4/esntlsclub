@@ -440,6 +440,37 @@ const CATS=["All","Footwear","B22","B30","Asics","Jackets","Accessories","Tracks
 const CAT_ICONS={Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
 function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
+// Per-brand product blurb (replaces generic "from the X collection")
+const BRAND_BLURB={
+  'B22':'Premium technical runner with a lightweight mesh upper and clean silhouette. Sized true to UK.',
+  'B30':'Daily-wear sneaker in 12+ colourways. Comfortable, versatile, easy to style.',
+  'Asics':'Performance-focused runner from a heritage brand. Built for everyday comfort.',
+  'C Goose':'Heavyweight winter outerwear with a premium down filling and refined finish.',
+  'Monc':'Technical jacket with a refined silhouette and weather-ready construction.',
+  'Corteiz':'Streetwear essential from our blanks line — perfect for everyday wear.',
+  'Other':'A curated piece from our premium essentials collection.'
+};
+function getBrandBlurb(p){return BRAND_BLURB[p.brand]||BRAND_BLURB['Other']}
+// Price parsing + filter state
+function parsePrice(s){if(!s||s==='Out of stock')return null;const m=String(s).match(/[\d.]+/);return m?parseFloat(m[0]):null}
+const PRICE_RANGES={'all':null,'under50':v=>v<50,'50-100':v=>v>=50&&v<100,'100-150':v=>v>=100&&v<150,'150plus':v=>v>=150};
+const PRICE_LABELS={'all':'All Prices','under50':'Under £50','50-100':'£50 – £100','100-150':'£100 – £150','150plus':'£150+'};
+let priceFilter='all';
+function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='shop')showCat(cv.cat||'All')}
+// Total stock count for a product (returns null if not tracked)
+function getProductStockCount(p){
+  for(const v of Object.values(LIVE_STOCK)){
+    for(const pid of Object.values(v.links||{})){
+      if(pid===p.id||pid===p.dbId){
+        let total=0;
+        for(const c of Object.values(v.colors||{}))
+          for(const q of Object.values(c.sizes||{})) total+=q;
+        return total;
+      }
+    }
+  }
+  return null;
+}
 let currentView="home";
 
 /*╔═══════════════════════════╗
@@ -449,10 +480,16 @@ function card(p,i){
 const oos=p.price==='Out of stock';
 const pid=typeof p.id==='string'?"'"+p.id+"'":p.id;
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
+const sc=oos?null:getProductStockCount(p);
+const lowStock=sc!==null&&sc>0&&sc<=4;
+const stockBadge=oos
+  ?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">Sold Out</div>`
+  :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">🔥 Only ${sc} left</div>`:'';
 return `<div class="pc" onclick="openProduct(${pid})" ontouchstart="preloadProduct(${pid})" onmouseenter="preloadProduct(${pid})" data-delay="${i*.04}">
 <div style="position:relative;overflow:hidden;border-radius:6px">
 <div style="padding-top:120%;background:#1a1a1a"></div>
 <img src="${p.img}" alt="${p.n}" decoding="async" ${priority} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
+${stockBadge}
 <div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">${p.price}</div>
 <div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
 <div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">${p.n}</div>
@@ -517,22 +554,31 @@ return REVIEWS.map(r=>`
   ╚═══════════════════════════╝*/
 function shopHTML(cat){
 const all=allProducts();
-const items=cat==='All'?all:all.filter(p=>catMatch(p,cat));
+const byCat=cat==='All'?all:all.filter(p=>catMatch(p,cat));
+const priceFn=PRICE_RANGES[priceFilter];
+const byPrice=priceFn?byCat.filter(p=>{const v=parsePrice(p.price);return v!==null&&priceFn(v)}):byCat;
+// Sort: in-stock first, OOS pushed to the end
+const items=[...byPrice].sort((a,b)=>(a.price==='Out of stock'?1:0)-(b.price==='Out of stock'?1:0));
 const count=c=>c==='All'?all.length:all.filter(p=>catMatch(p,c)).length;
+const priceKeys=Object.keys(PRICE_RANGES);
 return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
 <div style="margin-bottom:20px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
-<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 16px;letter-spacing:2px">${cat==='All'?'All Items':cat} <span style="color:#888;font-size:clamp(18px,3vw,24px)">(${items.length})</span></h2>
-<div class="hscroll">${CATS.map(c=>`<button class="fb${c===cat?' on':''}" onclick="showCat('${c}')">${c} (${count(c)})</button>`).join('')}</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 12px;letter-spacing:2px">${cat==='All'?'All Items':cat} <span style="color:#888;font-size:clamp(18px,3vw,24px)">(${items.length})</span></h2>
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:#f8f8f8;border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:11px;color:#555;font-weight:600">
+<span>⚡ Free Next-Day UK Shipping</span><span style="color:#ddd">·</span><span>🔒 Secure Checkout</span><span style="color:#ddd">·</span><span>↩️ 30-Day Returns</span>
 </div>
-<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>
+<div class="hscroll">${CATS.map(c=>`<button class="fb${c===cat?' on':''}" onclick="showCat('${c}')">${c} (${count(c)})</button>`).join('')}</div>
+<div class="hscroll" style="margin-top:8px">${priceKeys.map(k=>`<button class="fb${priceFilter===k?' on':''}" onclick="setPriceFilter('${k}')">${PRICE_LABELS[k]}</button>`).join('')}</div>
+</div>
+${items.length?`<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>`:`<div style="text-align:center;padding:60px 20px"><div style="font-size:40px;margin-bottom:10px">🔍</div><div style="font-size:14px;font-weight:600;color:#111">No items match this filter</div><div style="font-size:12px;color:#888;margin-top:6px">Try a different price range or category</div></div>`}
 </section>`}
 
 /*╔═══════════════════════════╗
   ║  HOME PAGE                ║
   ╚═══════════════════════════╝*/
 function homeHTML(){
-const feat=[...allProducts()].reverse().slice(0,8);
+const feat=[...allProducts()].filter(p=>p.price!=='Out of stock').reverse().slice(0,8);
 return `
 <!-- How To Order — 2 slides -->
 <section style="position:relative;overflow:hidden;padding:0">
@@ -685,6 +731,21 @@ ${reviewsHTML()}
 
 <a href="https://instagram.com/cluesntl" target="_blank" style="display:inline-block;padding:14px 40px;background:#00C853;color:#fff;border-radius:50px;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:1px">DM US TO START EARNING</a>
 <p style="font-size:11px;color:#aaa;margin-top:12px">Minimum payout £10 · Unlimited referrals · Real cash, not store credit</p>
+</div>
+</section>
+
+<!-- FAQ -->
+<section style="padding:0 16px 40px;max-width:780px;margin:0 auto">
+<div class="reveal" style="text-align:center;margin-bottom:18px">
+<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Got Questions?</div>
+<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,34px);color:#111;margin:0;letter-spacing:2px">FAQ</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout is handled by our trusted UK payment partner. After tapping Buy Now you'll be sent to their secure page to complete the order — same product, same price, free UK delivery. The product name on that page may look slightly different for technical reasons, but you'll receive the exact item shown here.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How fast is shipping?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Most orders ship next-day with free UK delivery. Some items follow a 7–12 day fulfilment window — this is shown on the product page. You'll get a tracking number via email once your order ships.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">What's your returns policy?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">30-day returns on all unworn items in original packaging. DM us on Instagram (@cluesntl) to start a return and we'll send you the next steps within 24 hours.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How do I know my size?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">All shoes are listed in UK sizes and run true-to-size. If you're between sizes, DM us your usual brand size (Nike / Adidas / etc.) and we'll recommend the right fit. Clothing follows standard UK sizing — S, M, L, XL.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">Item out of stock — when's it back?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">DM us on Instagram with the item name and we'll let you know the next restock date. We also post restock alerts to our Telegram channel.</p></details>
 </div>
 </section>
 
@@ -1092,12 +1153,8 @@ const fast=d.toLowerCase().includes('next');
 return `<span style="font-size:11px;font-weight:700;color:${fast?'#fff':'#333'};background:${fast?'#00C853':'#fff3cd'};padding:3px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px">${fast?'⚡':'📦'} ${d}</span>`;
 }).join('')}
 </div>
-<p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">Premium quality ${p.cat.toLowerCase()} from the ${p.brand} collection. Free UK shipping included.</p>
+<p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">${getBrandBlurb(p)}</p>
 ${getProductStockHTML(p)}
-${oos?`<div style="background:#f5f5f5;color:#888;font-weight:700;font-size:14px;padding:16px;border-radius:12px;text-align:center;min-height:52px;display:flex;align-items:center;justify-content:center">Out of Stock</div>`
-:`<a href="${p.link}" target="_blank" rel="noreferrer noopener" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — ${p.price}</a>
-<div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">🔒 Secure checkout via our payment partner · same item</div>`}
-<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:12px;border-radius:12px;min-height:44px;width:100%;margin-top:10px">DM on Instagram</a>
 </div>
 ${related.length?`<div style="padding:0 18px 20px">
 <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
@@ -1106,7 +1163,15 @@ ${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<di
 <img src="${r.img}" alt="${r.n}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover">
 <div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${r.price}</div></div>
 </div>`}).join('')}
-</div></div>`:''}</div>`}
+</div></div>`:''}
+<!-- Sticky CTA bar (must be last child for sticky-bottom to work) -->
+<div style="position:sticky;bottom:0;background:#fff;padding:14px 18px 16px;border-top:1px solid #eee;z-index:5;box-shadow:0 -4px 12px rgba(0,0,0,.04)">
+${oos?`<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%"><span>🔔</span> DM Us When Back In Stock</a>
+<div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">Currently sold out · we'll DM you when restocked</div>`
+:`<a href="${p.link}" target="_blank" rel="noreferrer noopener" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — ${p.price}</a>
+<div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">🔒 Secure checkout via our payment partner · same item</div>`}
+<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:600;font-size:12px;padding:10px;border-radius:10px;min-height:40px;width:100%;margin-top:8px">💬 Questions? DM on Instagram</a>
+</div></div>`}
 
 function setMain(el,src){
 document.getElementById('mainImg').src=src;
