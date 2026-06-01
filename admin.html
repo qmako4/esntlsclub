@@ -224,6 +224,10 @@ label.field input:focus{border-color:var(--g)}
 <p style="font-size:12px;color:var(--sub);margin-bottom:10px">One-time: imports the 36 hardcoded products into R2 so you can edit, reorder, or delete them like new ones.</p>
 <button class="btn" id="migrateBtn" onclick="migrateHardcoded()">Import 36 Hardcoded Products</button>
 <div class="msg" id="migrateMsg"></div>
+<h3 style="margin-top:24px">Sync Prices & Categories From Repo</h3>
+<p style="font-size:12px;color:var(--sub);margin-bottom:10px">For products that already exist on R2 (matched by ID), updates <code>price</code>, <code>originalPrice</code>, <code>category</code>, and <code>brand</code> from the repo's <code>products.json</code>. Names, images, and links on R2 are kept as-is.</p>
+<button class="btn" id="syncBtn" onclick="syncPricesFromRepo()">Sync From Repo</button>
+<div class="msg" id="syncMsg"></div>
 </div>
 <div class="card">
 <h3>Quick Actions</h3>
@@ -558,6 +562,40 @@ console.error('loadProducts HTTP',res.status);
 async function saveProducts(){
 const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
 await r2Upload(blob,'products.json')}
+
+// SYNC PRICE / CATEGORY / BRAND FROM REPO products.json INTO R2 (existing IDs only)
+async function syncPricesFromRepo(){
+const msg=document.getElementById('syncMsg');
+const btn=document.getElementById('syncBtn');
+if(!confirm('Update price, originalPrice, category, and brand on R2 for products that match by ID? Names, images, and links are not touched.'))return;
+btn.disabled=true;
+msg.style.color='var(--sub)';msg.textContent='Fetching repo products.json...';
+try{
+const res=await fetch('/products.json?t='+Date.now());
+if(!res.ok)throw new Error('repo products.json HTTP '+res.status);
+const repo=await res.json();
+if(!Array.isArray(repo))throw new Error('repo products.json not an array');
+const byId=Object.fromEntries(repo.map(p=>[p.id,p]));
+await loadProducts();
+let updated=0;
+for(const p of products){
+const r=byId[p.id];if(!r)continue;
+let changed=false;
+if(r.price!==undefined&&p.price!==r.price){p.price=r.price;changed=true}
+const ro=r.originalPrice||'';if((p.originalPrice||'')!==ro){p.originalPrice=ro;changed=true}
+if(r.category&&p.category!==r.category){p.category=r.category;changed=true}
+if(r.brand&&p.brand!==r.brand){p.brand=r.brand;changed=true}
+if(changed)updated++;
+}
+if(!updated){msg.style.color='var(--g)';msg.textContent='Already in sync — no changes needed.'}
+else{
+msg.style.color='var(--sub)';msg.textContent='Saving '+updated+' updates to R2...';
+await saveProducts();
+msg.style.color='var(--g)';msg.textContent='Synced '+updated+' products to R2. Hard-refresh the site to see new prices.';
+}
+}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;console.error(e)}
+btn.disabled=false;
+}
 
 // ONE-TIME MIGRATION OF HARDCODED PRODUCTS INTO R2
 async function migrateHardcoded(){
