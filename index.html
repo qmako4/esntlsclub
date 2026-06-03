@@ -83,14 +83,14 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .sgrid{display:grid;grid-template-columns:1fr;gap:24px}
 @media(min-width:640px){.sgrid{grid-template-columns:repeat(3,1fr);gap:28px}}
 
-/* ═══ AUTO-SCROLL CATEGORIES ═══ */
-@keyframes scrollCats{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.cat-wrapper{overflow:hidden;width:100%;max-width:100vw;position:relative}
+/* ═══ AUTO-SCROLL CATEGORIES (with drag-to-scroll) ═══ */
+.cat-wrapper{overflow-x:auto;overflow-y:hidden;width:100%;max-width:100vw;position:relative;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-wrapper::-webkit-scrollbar{display:none}
 .cat-wrapper::before,.cat-wrapper::after{content:'';position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
 .cat-wrapper::before{left:0;background:linear-gradient(to right,#fff,transparent)}
 .cat-wrapper::after{right:0;background:linear-gradient(to left,#fff,transparent)}
-.cat-track{display:inline-flex;gap:12px;animation:scrollCats 20s linear infinite;white-space:nowrap;will-change:transform}
-.cat-track:hover{animation-play-state:paused}
+.cat-track{display:inline-flex;gap:12px;white-space:nowrap;will-change:scroll-position;padding:0 24px;cursor:grab;user-select:none}
+.cat-track.grabbing{cursor:grabbing}
 .cat-item{flex-shrink:0;background:#f5f5f5;border-radius:14px;padding:16px 24px;text-align:center;min-width:130px;border:1.5px solid transparent;transition:all .35s cubic-bezier(.22,1,.36,1);cursor:pointer;display:inline-block}
 .cat-item:hover{border-color:#00C853;background:#fff;box-shadow:0 8px 24px rgba(0,200,83,.12);transform:translateY(-4px) scale(1.03)}
 
@@ -783,6 +783,66 @@ app.style.animation='blurIn .4s ease both';
 if(currentView==='shop') app.innerHTML=shopHTML(currentView.cat||'All');
 else app.innerHTML=homeHTML();
 window.scrollTo({top:0,behavior:'smooth'});
+initCategoryScroll();
+}
+
+// Drag-to-scroll + auto-scroll for the category strip.
+// Touch swipes use native horizontal scrolling. Mouse drag uses pointer events
+// scoped to the wrap (no window-level listeners, so no leak on re-render).
+// A rAF loop scrolls slowly when the user isn't interacting, looping at the
+// halfway point (cat-track renders items twice, so jumping back is invisible).
+function initCategoryScroll(){
+const wrap=document.querySelector('.cat-wrapper');
+if(!wrap||wrap._catScrollInit)return;
+wrap._catScrollInit=true;
+const track=wrap.querySelector('.cat-track');
+let paused=false,resumeT=null,dragging=false,startX=0,startScroll=0,prefersReduced=false;
+try{prefersReduced=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+const pause=()=>{paused=true;clearTimeout(resumeT)};
+const resumeLater=ms=>{clearTimeout(resumeT);resumeT=setTimeout(()=>paused=false,ms)};
+if(!prefersReduced){
+  const tick=()=>{
+    if(!wrap.isConnected)return;
+    requestAnimationFrame(tick);
+    if(paused||dragging)return;
+    wrap.scrollLeft+=0.4;
+    const half=wrap.scrollWidth/2;
+    if(wrap.scrollLeft>=half) wrap.scrollLeft-=half;
+  };
+  requestAnimationFrame(tick);
+}
+// Touch: native scrolling handles the swipe; we just pause the auto-loop
+wrap.addEventListener('touchstart',()=>pause(),{passive:true});
+wrap.addEventListener('touchend',()=>resumeLater(1800),{passive:true});
+wrap.addEventListener('touchcancel',()=>resumeLater(1800),{passive:true});
+// Mouse / trackpad drag via Pointer Events (captured to the wrap → no window listeners needed)
+let suppressClickUntil=0;
+wrap.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse')return;
+  dragging=true;startX=e.clientX;startScroll=wrap.scrollLeft;
+  try{wrap.setPointerCapture(e.pointerId)}catch(_){}
+  pause();track&&track.classList.add('grabbing');
+});
+wrap.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  wrap.scrollLeft=startScroll-(e.clientX-startX);
+});
+const endDrag=e=>{
+  if(!dragging)return;
+  const moved=Math.abs((e.clientX||startX)-startX);
+  dragging=false;track&&track.classList.remove('grabbing');
+  try{wrap.releasePointerCapture(e.pointerId)}catch(_){}
+  if(moved>5)suppressClickUntil=Date.now()+250; // swallow the click that would follow a real drag
+  resumeLater(1800);
+};
+wrap.addEventListener('pointerup',endDrag);
+wrap.addEventListener('pointercancel',endDrag);
+// Wheel / trackpad horizontal scroll also pauses
+wrap.addEventListener('wheel',()=>{pause();resumeLater(1500)},{passive:true});
+// If the mouse just finished a real drag, swallow the synthetic click so we don't navigate
+wrap.addEventListener('click',e=>{
+  if(Date.now()<suppressClickUntil){e.preventDefault();e.stopPropagation()}
+},true);
 }
 function goHome(){currentView='home';render();return false}
 
