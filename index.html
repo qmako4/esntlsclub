@@ -162,6 +162,14 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0);z-index:500;display:flex;align-items:center;justify-content:center;padding:12px;transition:all .35s}
 .modal-bg.open{background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
 .modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:modalIn .4s cubic-bezier(.22,1,.36,1) both}
+.checkout-bg{position:fixed;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0);z-index:800;display:flex;align-items:center;justify-content:center;padding:14px;transition:all .25s}
+.checkout-bg.open{background:rgba(0,0,0,.52);backdrop-filter:blur(8px)}
+.checkout-box{background:#fff;border-radius:18px;width:100%;max-width:440px;box-shadow:0 24px 70px rgba(0,0,0,.24);animation:modalIn .28s cubic-bezier(.22,1,.36,1) both;overflow:hidden}
+.checkout-select,.checkout-input{width:100%;border:1.5px solid #e0e0e0;border-radius:12px;background:#fff;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:13px 14px;min-height:50px;outline:none}
+.checkout-select:focus,.checkout-input:focus{border-color:#00C853;box-shadow:0 0 0 3px rgba(0,200,83,.08)}
+.checkout-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #f1f1f1;font-size:13px}
+.checkout-row:last-child{border-bottom:none}
+.checkout-error{display:none;color:#d32f2f;font-size:11px;font-weight:700;margin-top:7px}
 
 /* Green glow button */
 .glow-btn{position:relative;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
@@ -355,6 +363,50 @@ const BRAND_BLURB={
   'Other':'A curated piece from our premium essentials collection.'
 };
 function getBrandBlurb(p){return BRAND_BLURB[p.brand]||BRAND_BLURB['Other']}
+function productSourceId(p){return p&&p.dbId!=null?p.dbId:String(p&&p.id||'').replace(/^r2_/,'')}
+function escapeHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function jsString(v){return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function getStockEntryForProduct(p){
+  const productId=String(productSourceId(p));
+  for(const [name,v] of Object.entries(LIVE_STOCK)){
+    for(const pid of Object.values(v.links||{})){
+      if(String(pid)===productId)return{name,...v};
+    }
+  }
+  return null;
+}
+function sortSizes(sizes){
+  const order=[...SHOE_SIZES,...CLOTHING_SIZES,'One Size'];
+  return sizes.sort((a,b)=>{
+    const ai=order.indexOf(a),bi=order.indexOf(b);
+    if(ai!==-1||bi!==-1)return(ai===-1?999:ai)-(bi===-1?999:bi);
+    return String(a).localeCompare(String(b),undefined,{numeric:true});
+  });
+}
+function getCheckoutSizes(p){
+  const stockEntry=getStockEntryForProduct(p);
+  const seen=new Set(),sizes=[];
+  if(stockEntry){
+    for(const info of Object.values(stockEntry.colors||{})){
+      for(const [size,qty] of Object.entries(info.sizes||{})){
+        if(qty>0&&!seen.has(size)){seen.add(size);sizes.push(size)}
+      }
+    }
+  }
+  if(sizes.length)return sortSizes(sizes);
+  const cat=String(p.cat||'').toLowerCase();
+  if(cat.includes('footwear')||['B22','B30','Asics'].includes(p.brand))return SHOE_SIZES;
+  if(cat.includes('jacket')||cat.includes('tracksuit')||cat.includes('shirt')||cat.includes('short'))return CLOTHING_SIZES;
+  if(cat.includes('accessor'))return['One Size'];
+  return[];
+}
+function checkoutSizeLabel(size){
+  if(!size)return'';
+  if(size==='One Size')return'One Size';
+  if(/^UK\s*/i.test(size))return'UK size '+size.replace(/^UK\s*/i,'');
+  if(/^\d/.test(size))return'UK size '+size;
+  return'Size '+size;
+}
 // Price parsing + filter state
 function parsePrice(s){if(!s||s==='Out of stock')return null;const m=String(s).match(/[\d.]+/);return m?parseFloat(m[0]):null}
 const PRICE_RANGES={'all':null,'under50':v=>v<50,'50-100':v=>v>=50&&v<100,'100-150':v=>v>=100&&v<150,'150plus':v=>v>=150};
@@ -364,9 +416,10 @@ function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='
 // Total stock count for a product (returns null if not tracked)
 // LIVE_STOCK groups by parent product; links maps colour-name → pid for each variant
 function getProductStockCount(p){
+  const productId=String(productSourceId(p));
   for(const v of Object.values(LIVE_STOCK)){
     for(const [colorName,pid] of Object.entries(v.links||{})){
-      if(pid===p.id||pid===p.dbId){
+      if(String(pid)===productId){
         // Single-colour product ("_" placeholder): sum all sizes
         if(colorName==='_'){
           let total=0;
@@ -633,7 +686,7 @@ ${reviewsHTML()}
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,34px);color:#111;margin:0;letter-spacing:2px">FAQ</h2>
 </div>
 <div style="display:flex;flex-direction:column;gap:8px">
-<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout is handled by our trusted UK payment partner. After tapping Buy Now you'll be sent to their secure page to complete the order — same product, same price, free UK delivery. The product name on that page may look slightly different for technical reasons, but you'll receive the exact item shown here.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Before checkout, we show a quick confirmation with the exact item, size, and price. Checkout is handled by our trusted UK payment partner. If their page shows a blank item, or a generic/different product name, it is still linked to the ESNTLS Club item you confirmed. You will receive the original item shown on our site.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How fast is shipping?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Most orders ship next-day with free UK delivery. Some items follow a 7–12 day fulfilment window — this is shown on the product page. You'll get a tracking number via email once your order ships.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">Issue with your order?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">If anything's wrong with your order, DM us on Instagram (@cluesntl) and we'll sort it for you. We reply within 24 hours.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How do I know my size?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">All shoes are listed in UK sizes and run true-to-size. If you're between sizes, DM us your usual brand size (Nike / Adidas / etc.) and we'll recommend the right fit. Clothing follows standard UK sizing — S, M, L, XL.</p></details>
@@ -818,15 +871,7 @@ let stockFilter = 'all';
 
 // Match a product to its LIVE_STOCK entry and return HTML
 function getProductStockHTML(p){
-  const name = p.n.toLowerCase();
-  let stockEntry = null;
-  for(const [k,v] of Object.entries(LIVE_STOCK)){
-    // Match by product ID in links
-    for(const pid of Object.values(v.links||{})){
-      if(pid === p.id){ stockEntry = {name:k,...v}; break; }
-    }
-    if(stockEntry) break;
-  }
+  const stockEntry = getStockEntryForProduct(p);
   if(!stockEntry) return '';
   
   let html = '<div style="background:#f9f9f9;border-radius:12px;padding:12px;margin-bottom:14px">';
@@ -1010,6 +1055,22 @@ history.replaceState(null,null,'#'+slug+'-'+p.id);
 const related=all.filter(x=>x.id!==p.id&&(x.brand===p.brand||x.cat===p.cat)).slice(0,4);
 const oos=p.price==='Out of stock';
 const gallery=p.imgs&&p.imgs.length?p.imgs.filter(u=>u):[p.img];
+const checkoutSizes=getCheckoutSizes(p);
+const checkoutId=jsString(p.id);
+const checkoutSizeControl=checkoutSizes.length
+?`<label style="display:block;margin:0 0 12px">
+<span style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:7px">Choose Size</span>
+<select id="checkoutSize" class="checkout-select" aria-label="Choose size">
+${checkoutSizes.length>1?'<option value="">Select your size</option>':''}
+${checkoutSizes.map(s=>`<option value="${escapeHTML(s)}">${escapeHTML(checkoutSizeLabel(s))}</option>`).join('')}
+</select>
+<div id="checkoutSizeMsg" class="checkout-error">Please choose your size before checkout.</div>
+</label>`
+:`<label style="display:block;margin:0 0 12px">
+<span style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:7px">Choose Size</span>
+<input id="checkoutSize" class="checkout-input" placeholder="e.g. UK 9 or M" aria-label="Choose size">
+<div id="checkoutSizeMsg" class="checkout-error">Please enter your size before checkout.</div>
+</label>`;
 const modal=document.getElementById('modal');
 modal.style.display='flex';
 setTimeout(()=>modal.classList.add('open'),10);
@@ -1044,6 +1105,7 @@ return `<span style="font-size:11px;font-weight:700;color:${fast?'#fff':'#333'};
 </div>
 <p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">${getBrandBlurb(p)}</p>
 ${getProductStockHTML(p)}
+${!oos?checkoutSizeControl:''}
 </div>
 ${related.length?`<div style="padding:0 18px 20px">
 <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
@@ -1057,8 +1119,8 @@ ${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<di
 <div style="position:sticky;bottom:0;background:#fff;padding:14px 18px 16px;border-top:1px solid #eee;z-index:5;box-shadow:0 -4px 12px rgba(0,0,0,.04)">
 ${oos?`<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%"><span>🔔</span> DM Us When Back In Stock</a>
 <div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">Currently sold out · we'll DM you when restocked</div>`
-:`<a href="${p.link}" target="_blank" rel="noreferrer noopener" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%">Buy Now — ${p.price}</a>
-<div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">🔒 Secure checkout via our payment partner · same item</div>`}
+:`<button type="button" onclick="openCheckoutConfirm('${checkoutId}');return false" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;padding:16px;border:none;border-radius:12px;min-height:52px;width:100%;cursor:pointer">Buy Now - ${p.price}</button>
+<div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">Review item before secure partner checkout</div>`}
 <a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:600;font-size:12px;padding:10px;border-radius:10px;min-height:40px;width:100%;margin-top:8px">💬 Questions? DM on Instagram</a>
 </div></div>`}
 
@@ -1066,6 +1128,64 @@ function setMain(el,src){
 document.getElementById('mainImg').src=src;
 document.querySelectorAll('.gthumb').forEach(t=>t.classList.remove('active'));
 el.classList.add('active')}
+
+let checkoutTargetUrl='';
+function openCheckoutConfirm(id){
+const all=allProducts();
+const p=all.find(x=>String(x.id)===String(id));if(!p||!p.link)return false;
+const sizeEl=document.getElementById('checkoutSize');
+const size=sizeEl?String(sizeEl.value||'').trim():'';
+const sizeMsg=document.getElementById('checkoutSizeMsg');
+if(!size){
+  if(sizeMsg)sizeMsg.style.display='block';
+  if(sizeEl)sizeEl.focus();
+  return false;
+}
+if(sizeMsg)sizeMsg.style.display='none';
+checkoutTargetUrl=p.link;
+closeCheckoutConfirm(true);
+const confirm=document.createElement('div');
+confirm.id='checkoutConfirm';
+confirm.className='checkout-bg';
+confirm.onclick=function(){closeCheckoutConfirm()};
+confirm.innerHTML=`<div class="checkout-box" onclick="event.stopPropagation()">
+<div style="padding:18px 18px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
+<div>
+<div style="font-size:11px;color:#00C853;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:5px">Checkout Check</div>
+<h3 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:#111;margin:0">Confirm Your Item</h3>
+</div>
+<button type="button" onclick="closeCheckoutConfirm()" style="background:none;border:none;color:#777;font-size:18px;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">x</button>
+</div>
+<div style="padding:16px 18px 18px">
+<div style="background:#f8f8f8;border-radius:14px;padding:12px 14px;margin-bottom:14px">
+<div class="checkout-row"><span style="color:#777">You're buying</span><strong style="color:#111;text-align:right">${escapeHTML(p.n)}</strong></div>
+<div class="checkout-row"><span style="color:#777">Size</span><strong style="color:#111;text-align:right">${escapeHTML(checkoutSizeLabel(size))}</strong></div>
+<div class="checkout-row"><span style="color:#777">Price</span><strong style="color:#00C853;text-align:right">${escapeHTML(p.price)}</strong></div>
+</div>
+<p style="font-size:13px;color:#333;line-height:1.55;margin:0 0 10px;font-weight:700">Checkout opens securely with our payment partner.</p>
+<p style="font-size:12px;color:#666;line-height:1.6;margin:0 0 16px"><strong style="color:#111">Partner page note:</strong> if the checkout page shows a blank item, or a generic/different product name, it is still linked to this ESNTLS Club item. You will receive the original item shown here in ${escapeHTML(checkoutSizeLabel(size))}.</p>
+<button type="button" onclick="confirmCheckout()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:none;border-radius:12px;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Open Secure Checkout</button>
+<button type="button" onclick="closeCheckoutConfirm()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:10px">Back to item</button>
+</div>
+</div>`;
+document.body.appendChild(confirm);
+requestAnimationFrame(()=>confirm.classList.add('open'));
+return false;
+}
+function closeCheckoutConfirm(immediate){
+const confirm=document.getElementById('checkoutConfirm');
+if(!confirm)return;
+confirm.classList.remove('open');
+if(immediate){confirm.remove();return}
+setTimeout(()=>confirm.remove(),220);
+}
+function confirmCheckout(){
+if(!checkoutTargetUrl)return;
+const win=window.open(checkoutTargetUrl,'_blank','noopener,noreferrer');
+if(win)win.opener=null;
+else window.location.href=checkoutTargetUrl;
+closeCheckoutConfirm();
+}
 
 /*╔═══════════════════════════╗
   ║  FULLSCREEN IMAGE VIEWER  ║
@@ -1089,6 +1209,7 @@ if(fs){fs.style.opacity='0';fs.style.transition='opacity .2s';setTimeout(()=>fs.
 if(!document.getElementById('modal')||document.getElementById('modal').style.display==='none'){document.body.style.overflow=''}}
 
 function closeModal(){
+closeCheckoutConfirm(true);
 const modal=document.getElementById('modal');
 modal.classList.remove('open');
 setTimeout(()=>{modal.style.display='none';modal.innerHTML=''},300);
