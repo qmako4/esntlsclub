@@ -5,14 +5,16 @@
 //   1. R2 Bucket binding:
 //        Variable name: BUCKET
 //        Bucket:        esntls-images
-//   2. Environment variable (encrypted):
-//        Variable name: ADMIN_SECRET
-//        Value:         any random string you choose (used by admin.html to authenticate)
+//   2. Environment variables (encrypted):
+//        ADMIN_SECRET   any random string (used by admin.html to authenticate)
+//        WIX_API_TOKEN  Wix API key with WIX_STORES.PRODUCT_READ scope (for /wix-sync)
+//        WIX_SITE_ID    7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155 (for /wix-sync)
 //
 // Endpoints (all require header  X-Admin-Secret: <ADMIN_SECRET>):
 //   GET    /list             → { objects: [{key, url, size, uploaded}, ...] }
 //   PUT    /upload/<key>     → request body = file bytes, Content-Type = file mime
 //   DELETE /delete/<key>     → removes <key> from the bucket
+//   POST   /wix-sync         → refreshes wix-products.json on R2 from the Wix Stores API
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 
@@ -71,6 +73,58 @@ export default {
       if (!key) return json({ error: 'Missing key' }, 400);
       await env.BUCKET.delete(key);
       return json({ ok: true });
+    }
+
+    if (req.method === 'POST' && parts[0] === 'wix-sync') {
+      if (!env.WIX_API_TOKEN) return json({ error: 'WIX_API_TOKEN env var not set' }, 500);
+      if (!env.WIX_SITE_ID)   return json({ error: 'WIX_SITE_ID env var not set' }, 500);
+
+      const all = [];
+      let cursor = null;
+      let pages = 0;
+      do {
+        const body = JSON.stringify({ search: { paging: { limit: 100, cursor } } });
+        const r = await fetch('https://www.wixapis.com/stores/v3/products/search', {
+          method: 'POST',
+          headers: {
+            'Authorization': env.WIX_API_TOKEN,
+            'wix-site-id': env.WIX_SITE_ID,
+            'Content-Type': 'application/json'
+          },
+          body
+        });
+        if (!r.ok) {
+          const t = await r.text().catch(() => '');
+          return json({ error: 'Wix API ' + r.status, detail: t.slice(0, 500) }, 502);
+        }
+        const data = await r.json();
+        for (const p of data.products || []) {
+          all.push({
+            id: p.id,
+            name: (p.name || '').trim(),
+            slug: p.slug,
+            url: 'https://www.essentialsblanks.net/product-page/' + p.slug,
+            image: (p.media && p.media.main && p.media.main.image && p.media.main.image.url) || '',
+            priceMin:   (p.actualPriceRange    && p.actualPriceRange.minValue    && p.actualPriceRange.minValue.amount)    || '',
+            priceMax:   (p.actualPriceRange    && p.actualPriceRange.maxValue    && p.actualPriceRange.maxValue.amount)    || '',
+            compareMin: (p.compareAtPriceRange && p.compareAtPriceRange.minValue && p.compareAtPriceRange.minValue.amount) || '',
+            visible: p.visible !== false,
+            availability: (p.inventory && p.inventory.availabilityStatus) || ''
+          });
+        }
+        cursor = (data.pagingMetadata && data.pagingMetadata.cursors && data.pagingMetadata.cursors.next) || null;
+        pages++;
+      } while (cursor && pages < 50);
+
+      const payload = JSON.stringify({
+        updatedAt: new Date().toISOString(),
+        count: all.length,
+        products: all
+      });
+      await env.BUCKET.put('wix-products.json', payload, {
+        httpMetadata: { contentType: 'application/json' }
+      });
+      return json({ ok: true, count: all.length, updatedAt: new Date().toISOString() });
     }
 
     return json({ error: 'Not found' }, 404);

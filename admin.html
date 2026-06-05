@@ -268,6 +268,11 @@ const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjY3FwbWVmemVhb3JndGFqZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTM4NDEsImV4cCI6MjA5MTQyOTg0MX0.m-Agr5LQelcXq7XbhTZ7vRlvw77Qn8RLECwnWN2qbcE';
 const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+// Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
+//   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
+//   2. ADMIN_SECRET  = the value of the ADMIN_SECRET env var you set on the worker
+const WORKER_URL='';
+const ADMIN_SECRET='';
 const R2_ACCOUNT='2cd63a3dc8a97fd3d54da09e423ab769';
 const R2_BUCKET='esntls-images';
 const R2_HOST=R2_ACCOUNT+'.r2.cloudflarestorage.com';
@@ -1018,7 +1023,7 @@ m.innerHTML=`
 <div id="wixPickerList" style="flex:1;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch"></div>
 <div style="padding:10px 16px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888">
 <span id="wixPickerCount"></span>
-<button onclick="loadWixCatalog(true).then(()=>renderWixPicker(document.getElementById('wixPickerSearch').value))" style="background:none;border:none;color:#00C853;font-weight:700;cursor:pointer;font-size:11px">↻ Refresh</button>
+<button onclick="refreshWixCatalog()" id="wixPickerRefreshBtn" style="background:none;border:none;color:#00C853;font-weight:700;cursor:pointer;font-size:11px">↻ Refresh from Wix</button>
 </div>
 </div>`;
 document.body.appendChild(m);
@@ -1086,6 +1091,28 @@ if(priceEl&&!priceEl.value&&p.priceMin)priceEl.value='£'+p.priceMin;
 }
 }
 closeWixPicker();
+}
+// Pull a fresh Wix catalog by hitting the worker's /wix-sync, then re-reading from R2.
+// Falls back gracefully if WORKER_URL/ADMIN_SECRET aren't configured yet — UI tells the user how to set them up.
+async function refreshWixCatalog(){
+const btn=document.getElementById('wixPickerRefreshBtn');
+const status=document.getElementById('wixPickerStatus');
+if(!WORKER_URL||!ADMIN_SECRET){
+status.textContent='Worker not configured — fill in WORKER_URL + ADMIN_SECRET in admin.html (lines 270–274), then deploy.';
+return;
+}
+const prevTxt=btn.textContent;btn.disabled=true;btn.textContent='⏳ Syncing…';
+status.textContent='Asking worker to pull latest from Wix…';
+try{
+const r=await fetch(WORKER_URL+'/wix-sync',{method:'POST',headers:{'X-Admin-Secret':ADMIN_SECRET}});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+status.textContent=`Synced ${data.count} products from Wix · loading…`;
+await loadWixCatalog(true);
+renderWixPicker(document.getElementById('wixPickerSearch').value);
+status.textContent=`${data.count} products · last sync just now`;
+}catch(e){status.textContent='Sync failed: '+e.message}
+btn.disabled=false;btn.textContent=prevTxt;
 }
 // Warm the cache when admin loads so the picker opens instantly
 loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
