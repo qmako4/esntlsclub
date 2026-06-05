@@ -151,10 +151,12 @@ label.field input:focus{border-color:var(--g)}
 <label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. £129.99"></label>
 <label class="field"><span>Buy Link</span>
-<div style="display:flex;gap:8px;align-items:stretch">
-<input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('aLink')" style="flex-shrink:0;padding:0 14px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
+<div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
+<input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1;min-width:160px">
+<button type="button" class="btn" onclick="openWixPicker('aLink')" style="flex-shrink:0;padding:0 12px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
+<button type="button" class="btn" onclick="createWixPlaceholder()" style="flex-shrink:0;padding:0 12px;font-size:12px;background:#111;color:#fff;border:none" title="Create a new Wix placeholder product using the Name & Price above, then auto-fill this link">🆕 Create on Wix</button>
 </div>
+<div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
 <label class="field"><span>Brand</span><input id="aBrand" placeholder="e.g. B22, B30, Other"></label>
 <div style="margin-bottom:14px">
@@ -1113,6 +1115,89 @@ renderWixPicker(document.getElementById('wixPickerSearch').value);
 status.textContent=`${data.count} products · last sync just now`;
 }catch(e){status.textContent='Sync failed: '+e.message}
 btn.disabled=false;btn.textContent=prevTxt;
+}
+// Create a new placeholder product on Wix using the Name + Price typed into the Add form.
+// Pops a small confirmation modal where the user can tweak the Wix-side name (often a generic
+// 'placeholder' name distinct from the esntlsclub product name) before submitting.
+function createWixPlaceholder(){
+const nameEl=document.getElementById('aName');
+const priceEl=document.getElementById('aPrice');
+const linkEl=document.getElementById('aLink');
+const msg=document.getElementById('aLinkMsg');
+const setMsg=(t,col)=>{msg.textContent=t;msg.style.color=col||'var(--sub)'};
+if(!WORKER_URL||!ADMIN_SECRET){
+setMsg('Worker not configured — set WORKER_URL + ADMIN_SECRET in admin.html (lines 270–274) and redeploy.','#e53935');return;
+}
+const initialName=(nameEl.value||'').trim();
+const initialPrice=(priceEl.value||'').trim();
+if(!initialName){setMsg('Type a product Name first, then click Create on Wix.','#e53935');return}
+if(!initialPrice){setMsg('Type a Price first (e.g. £89.99).','#e53935');return}
+let m=document.getElementById('wixCreateModal');
+if(!m){
+m=document.createElement('div');m.id='wixCreateModal';
+m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px';
+m.onclick=e=>{if(e.target===m)closeWixCreateModal()};
+m.innerHTML=`
+<div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+<div style="background:#111;padding:18px 22px;color:#fff">
+<div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700">Create Wix Placeholder Product</div>
+<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Creates a new product on Wix and auto-fills the Buy Link.</div>
+</div>
+<div style="padding:18px 20px">
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Wix product name (placeholder)</label>
+<input id="wcNamePh" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:12px">
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sale price (£)</label>
+<input id="wcPricePh" placeholder="89.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:12px">
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Compare-at price (optional, £)</label>
+<input id="wcComparePh" placeholder="109.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:14px">
+<div id="wcMsg" style="font-size:12px;margin-bottom:10px;min-height:14px"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end">
+<button onclick="closeWixCreateModal()" style="background:#f5f5f5;border:none;color:#111;font-weight:700;font-size:12px;padding:10px 16px;border-radius:8px;cursor:pointer">Cancel</button>
+<button id="wcSubmit" onclick="submitWixCreate()" style="background:var(--g);border:none;color:#fff;font-weight:700;font-size:12px;padding:10px 18px;border-radius:8px;cursor:pointer">Create Product</button>
+</div>
+</div>
+</div>`;
+document.body.appendChild(m);
+}
+m.style.display='flex';
+document.getElementById('wcNamePh').value=initialName;
+const cleanPrice=initialPrice.replace(/[£$,\s]/g,'');
+document.getElementById('wcPricePh').value=cleanPrice;
+document.getElementById('wcComparePh').value='';
+document.getElementById('wcMsg').textContent='';
+setTimeout(()=>document.getElementById('wcNamePh').focus(),50);
+}
+function closeWixCreateModal(){const m=document.getElementById('wixCreateModal');if(m)m.style.display='none'}
+async function submitWixCreate(){
+const name=document.getElementById('wcNamePh').value.trim();
+const price=document.getElementById('wcPricePh').value.trim();
+const compare=document.getElementById('wcComparePh').value.trim();
+const wcMsg=document.getElementById('wcMsg');
+const submit=document.getElementById('wcSubmit');
+if(!name){wcMsg.textContent='Name required';wcMsg.style.color='#e53935';return}
+if(!price||isNaN(parseFloat(price))){wcMsg.textContent='Sale price must be a number';wcMsg.style.color='#e53935';return}
+submit.disabled=true;submit.textContent='Creating…';
+wcMsg.style.color='var(--sub)';wcMsg.textContent='Creating on Wix…';
+try{
+const r=await fetch(WORKER_URL+'/wix-create-product',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify({name,priceAmount:price,comparePriceAmount:compare})
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+const linkEl=document.getElementById('aLink');
+linkEl.value=data.url||'';
+const aMsg=document.getElementById('aLinkMsg');
+aMsg.style.color='var(--g)';
+aMsg.textContent=`✓ Created "${data.name}" on Wix — link filled in. Picker cache will refresh on next sync.`;
+closeWixCreateModal();
+// Invalidate the in-memory catalog so the next picker open re-fetches
+wixCatalog=null;wixCatalogPromise=null;
+}catch(e){
+wcMsg.style.color='#e53935';wcMsg.textContent='Failed: '+e.message;
+submit.disabled=false;submit.textContent='Create Product';
+}
 }
 // Warm the cache when admin loads so the picker opens instantly
 loadWixCatalog().catch(()=>{/* no-op; UI will retry */});

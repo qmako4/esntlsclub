@@ -15,6 +15,8 @@
 //   PUT    /upload/<key>     → request body = file bytes, Content-Type = file mime
 //   DELETE /delete/<key>     → removes <key> from the bucket
 //   POST   /wix-sync         → refreshes wix-products.json on R2 from the Wix Stores API
+//   POST   /wix-create-product → creates a minimal Wix placeholder product and returns its URL.
+//                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 
@@ -125,6 +127,56 @@ export default {
         httpMetadata: { contentType: 'application/json' }
       });
       return json({ ok: true, count: all.length, updatedAt: new Date().toISOString() });
+    }
+
+    if (req.method === 'POST' && parts[0] === 'wix-create-product') {
+      if (!env.WIX_API_TOKEN) return json({ error: 'WIX_API_TOKEN env var not set' }, 500);
+      if (!env.WIX_SITE_ID)   return json({ error: 'WIX_SITE_ID env var not set' }, 500);
+
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+
+      const name = (body.name || '').trim();
+      const priceAmount   = String(body.priceAmount   || '').replace(/[£$,\s]/g, '');
+      const compareAmount = String(body.comparePriceAmount || '').replace(/[£$,\s]/g, '');
+
+      if (!name) return json({ error: 'Missing name' }, 400);
+      if (!priceAmount || isNaN(parseFloat(priceAmount))) {
+        return json({ error: 'Missing or invalid price (expected a number like 89.99)' }, 400);
+      }
+
+      const variantPrice = { actualPrice: { amount: priceAmount } };
+      if (compareAmount && !isNaN(parseFloat(compareAmount))) {
+        variantPrice.compareAtPrice = { amount: compareAmount };
+      }
+
+      const product = {
+        name,
+        visible: true,
+        productType: 'PHYSICAL',
+        physicalProperties: {},
+        variantsInfo: {
+          variants: [{ price: variantPrice, physicalProperties: {} }]
+        }
+      };
+
+      const r = await fetch('https://www.wixapis.com/stores/v3/products', {
+        method: 'POST',
+        headers: {
+          'Authorization': env.WIX_API_TOKEN,
+          'wix-site-id': env.WIX_SITE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ product })
+      });
+      if (!r.ok) {
+        const t = await r.text().catch(() => '');
+        return json({ error: 'Wix API ' + r.status, detail: t.slice(0, 500) }, 502);
+      }
+      const data = await r.json();
+      const p = data.product || {};
+      const publicUrl = p.slug ? ('https://www.essentialsblanks.net/product-page/' + p.slug) : '';
+      return json({ ok: true, id: p.id, slug: p.slug, name: p.name, url: publicUrl });
     }
 
     return json({ error: 'Not found' }, 404);
