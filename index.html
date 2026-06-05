@@ -651,7 +651,7 @@ ${reviewsHTML()}
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,34px);color:#111;margin:0;letter-spacing:2px">FAQ</h2>
 </div>
 <div style="display:flex;flex-direction:column;gap:8px">
-<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout opens with our payment partner as a blank checkout item. Pick your size on the payment page. The blank item is linked to the ESNTLS item and price you confirmed, and you receive the original item shown on our site.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout may show a blank placeholder item. It is only the payment link. You still receive the ESNTLS item you selected, and choose your size on the payment page.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How fast is shipping?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Most orders ship next-day with free UK delivery. Some items follow a 7–12 day fulfilment window — this is shown on the product page. You'll get a tracking number via email once your order ships.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">Issue with your order?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">If anything's wrong with your order, DM us on Instagram (@cluesntl) and we'll sort it for you. We reply within 24 hours.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How do I know my size?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">All shoes are listed in UK sizes and run true-to-size. If you're between sizes, DM us your usual brand size (Nike / Adidas / etc.) and we'll recommend the right fit. Clothing follows standard UK sizing — S, M, L, XL.</p></details>
@@ -1091,23 +1091,23 @@ confirm.onclick=function(){closeCheckoutConfirm()};
 confirm.innerHTML=`<div class="checkout-box" onclick="event.stopPropagation()">
 <div style="padding:18px 18px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
 <div>
-<div style="font-size:11px;color:#00C853;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:5px">Blank Item Checkout</div>
-<h3 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:#111;margin:0">Confirm Before Paying</h3>
+<div style="font-size:11px;color:#00C853;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:5px">Checkout Note</div>
+<h3 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:#111;margin:0">You Are Buying This Item</h3>
 </div>
 <button type="button" onclick="closeCheckoutConfirm()" style="background:none;border:none;color:#777;font-size:18px;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">x</button>
 </div>
 <div style="padding:16px 18px 18px">
 <div style="background:#f8f8f8;border-radius:14px;padding:12px 14px;margin-bottom:14px">
 <div class="checkout-row"><span style="color:#777">ESNTLS item</span><strong style="color:#111;text-align:right">${escapeHTML(p.n)}</strong></div>
-<div class="checkout-row"><span style="color:#777">Payment page item</span><strong style="color:#111;text-align:right">Blank checkout item</strong></div>
+<div class="checkout-row"><span style="color:#777">Payment page item</span><strong style="color:#111;text-align:right">Blank placeholder item</strong></div>
 <div class="checkout-row"><span style="color:#777">Size</span><strong style="color:#111;text-align:right">Choose on payment page</strong></div>
 <div class="checkout-row"><span style="color:#777">Price</span><strong style="color:#00C853;text-align:right">${escapeHTML(p.price)}</strong></div>
 </div>
 <div style="border:2px solid #111;border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#fff">
-<div style="font-size:12px;font-weight:900;color:#111;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">You are purchasing a blank item</div>
-<div style="font-size:12px;color:#555;line-height:1.55">This is normal. Pick your size on the payment page. The blank item is linked to ${escapeHTML(p.n)} and you receive the original item shown here.</div>
+<div style="font-size:12px;font-weight:900;color:#111;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Blank item = payment placeholder</div>
+<div style="font-size:12px;color:#555;line-height:1.55">You will receive ${escapeHTML(p.n)}. Choose your size on the payment page.</div>
 </div>
-<button type="button" onclick="confirmCheckout()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:none;border-radius:12px;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer">I Understand - Open Checkout</button>
+<button type="button" onclick="confirmCheckout()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:none;border-radius:12px;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Open Checkout</button>
 <button type="button" onclick="closeCheckoutConfirm()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:10px">Back to item</button>
 </div>
 </div>`;
