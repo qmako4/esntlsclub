@@ -150,7 +150,12 @@ label.field input:focus{border-color:var(--g)}
 <h3>Add New Product</h3>
 <label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. £129.99"></label>
-<label class="field"><span>Buy Link</span><input id="aLink" placeholder="essentialsblanks.net/product-page/..."></label>
+<label class="field"><span>Buy Link</span>
+<div style="display:flex;gap:8px;align-items:stretch">
+<input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1;min-width:0">
+<button type="button" class="btn" onclick="openWixPicker('aLink')" style="flex-shrink:0;padding:0 14px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
+</div>
+</label>
 <label class="field"><span>Brand</span><input id="aBrand" placeholder="e.g. B22, B30, Other"></label>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories (tap multiple)</span>
@@ -670,7 +675,12 @@ ${CATS.map(c=>`<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.
 ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${d}">${d}</div>`).join('')}
 </div></div>
 <label class="field"><span>Brand</span><input id="eb_${id}" value="${p.brand||''}"></label>
-<label class="field"><span>Buy Link</span><input id="el_${id}" value="${p.link||''}"></label>
+<label class="field"><span>Buy Link</span>
+<div style="display:flex;gap:8px;align-items:stretch">
+<input id="el_${id}" value="${p.link||''}" style="flex:1;min-width:0">
+<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="flex-shrink:0;padding:0 12px;font-size:11px;background:var(--g);color:#fff;border:none">📦 Pick</button>
+</div>
+</label>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
 <div class="msg" id="em_${id}"></div>`}
 
@@ -973,5 +983,111 @@ el.innerHTML=html}
 else{el.innerHTML='<div style="font-size:12px;color:#e53935">No stock data returned</div>'}
 }catch(e){el.innerHTML='<div style="font-size:12px;color:#e53935">Error: '+e.message+'</div>'}
 btn.disabled=false;btn.textContent='Check Stock'}
+
+/* ═══ WIX PRODUCT PICKER ═══ */
+// Loads a cached snapshot of the Wix catalog from R2 (wix-products.json) and shows
+// a searchable modal. Selecting a product writes its URL into the given target input.
+let wixCatalog=null,wixCatalogPromise=null,wixPickerTargetId=null;
+async function loadWixCatalog(force){
+if(wixCatalog&&!force)return wixCatalog;
+if(wixCatalogPromise&&!force)return wixCatalogPromise;
+wixCatalogPromise=(async()=>{
+const res=await fetch(R2_PUBLIC+'wix-products.json?t='+Date.now());
+if(!res.ok)throw new Error('wix-products.json HTTP '+res.status);
+const data=await res.json();
+wixCatalog=Array.isArray(data.products)?data.products:[];
+return wixCatalog;
+})();
+return wixCatalogPromise;
+}
+function openWixPicker(targetInputId){
+wixPickerTargetId=targetInputId;
+let m=document.getElementById('wixPicker');
+if(!m){
+m=document.createElement('div');m.id='wixPicker';
+m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px';
+m.onclick=e=>{if(e.target===m)closeWixPicker()};
+m.innerHTML=`
+<div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+<div style="background:#00C853;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;color:#fff">
+<div><div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700">Pick a Wix Product</div>
+<div style="font-size:11px;opacity:.85" id="wixPickerStatus">Loading catalog…</div></div>
+<button onclick="closeWixPicker()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:18px;cursor:pointer;width:34px;height:34px;border-radius:50%">✕</button>
+</div>
+<div style="padding:14px 16px 8px"><input id="wixPickerSearch" placeholder="🔍 Search by name…" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box"></div>
+<div id="wixPickerList" style="flex:1;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch"></div>
+<div style="padding:10px 16px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888">
+<span id="wixPickerCount"></span>
+<button onclick="loadWixCatalog(true).then(()=>renderWixPicker(document.getElementById('wixPickerSearch').value))" style="background:none;border:none;color:#00C853;font-weight:700;cursor:pointer;font-size:11px">↻ Refresh</button>
+</div>
+</div>`;
+document.body.appendChild(m);
+document.getElementById('wixPickerSearch').addEventListener('input',e=>renderWixPicker(e.target.value));
+// Event delegation for row click + hover styles (avoids inline handlers)
+const listEl=document.getElementById('wixPickerList');
+listEl.addEventListener('click',e=>{const row=e.target.closest('.wix-pick-row');if(row)selectWixProduct(row.dataset.id)});
+listEl.addEventListener('mouseover',e=>{const row=e.target.closest('.wix-pick-row');if(row){row.style.background='#f5f5f5';row.style.borderColor='#eee'}});
+listEl.addEventListener('mouseout',e=>{const row=e.target.closest('.wix-pick-row');if(row){row.style.background='';row.style.borderColor='transparent'}});
+}
+m.style.display='flex';
+const status=document.getElementById('wixPickerStatus');
+status.textContent='Loading catalog…';
+loadWixCatalog().then(list=>{
+status.textContent=list.length+' products available · tap to pick';
+renderWixPicker('');
+document.getElementById('wixPickerSearch').focus();
+}).catch(e=>{
+status.textContent='Failed: '+e.message;
+document.getElementById('wixPickerList').innerHTML=`<div style="padding:24px;text-align:center;color:#e53935;font-size:13px">Couldn't load the Wix catalog. Try again or paste the link manually.</div>`;
+});
+}
+function closeWixPicker(){const m=document.getElementById('wixPicker');if(m)m.style.display='none';wixPickerTargetId=null}
+function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderWixPicker(query){
+const list=document.getElementById('wixPickerList');
+const count=document.getElementById('wixPickerCount');
+if(!wixCatalog||!wixCatalog.length){list.innerHTML='';return}
+const q=(query||'').toLowerCase().trim();
+const filtered=q?wixCatalog.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.slug||'').toLowerCase().includes(q)):wixCatalog;
+count.textContent=filtered.length+' / '+wixCatalog.length+' shown';
+if(!filtered.length){list.innerHTML=`<div style="padding:24px;text-align:center;color:#888;font-size:13px">No matches for "${escHtml(q)}"</div>`;return}
+list.innerHTML=filtered.map(p=>{
+const oos=p.availability==='OUT_OF_STOCK';
+const partial=p.availability==='PARTIALLY_OUT_OF_STOCK';
+const priceTxt=p.priceMin===p.priceMax?`£${escHtml(p.priceMin)}`:`£${escHtml(p.priceMin)} – £${escHtml(p.priceMax)}`;
+const cmpTxt=p.compareMin?`<span style="text-decoration:line-through;color:#aaa;margin-left:6px">£${escHtml(p.compareMin)}</span>`:'';
+const status=oos?'<span style="background:#ffebee;color:#c62828;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">OOS</span>':(partial?'<span style="background:#fff8e1;color:#f57c00;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">LOW</span>':'');
+return `<div class="wix-pick-row" data-id="${escHtml(p.id)}" style="display:flex;gap:12px;align-items:center;padding:10px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s">
+<img src="${escHtml(p.image||'')}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#f5f5f5;flex-shrink:0">
+<div style="flex:1;min-width:0">
+<div style="font-size:13px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name||'(no name)')}${status}</div>
+<div style="font-size:11px;color:#00C853;font-weight:700;margin-top:2px">${priceTxt}${cmpTxt}</div>
+<div style="font-size:10px;color:#aaa;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">/${escHtml(p.slug||'')}</div>
+</div>
+<div style="color:#00C853;font-weight:700;font-size:18px;flex-shrink:0">›</div>
+</div>`;
+}).join('');
+}
+function selectWixProduct(id){
+if(!wixCatalog||!wixPickerTargetId)return;
+const p=wixCatalog.find(x=>x.id===id);
+if(!p)return;
+const inp=document.getElementById(wixPickerTargetId);
+if(inp){
+inp.value=p.url;
+inp.dispatchEvent(new Event('input',{bubbles:true}));
+inp.dispatchEvent(new Event('change',{bubbles:true}));
+// If we're on the Add form and Name/Price are blank, pre-fill them as a courtesy
+if(wixPickerTargetId==='aLink'){
+const nameEl=document.getElementById('aName');
+const priceEl=document.getElementById('aPrice');
+if(nameEl&&!nameEl.value)nameEl.value=p.name||'';
+if(priceEl&&!priceEl.value&&p.priceMin)priceEl.value='£'+p.priceMin;
+}
+}
+closeWixPicker();
+}
+// Warm the cache when admin loads so the picker opens instantly
+loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
 </script>
 </body></html>
