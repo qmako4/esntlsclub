@@ -829,6 +829,175 @@ async function loadLiveStock(){
 }
 loadLiveStock();
 
+/*╔═══════════════════════════════════════════╗
+  ║  LIVE WIX VARIANT STOCK (size picker data) ║
+  ╚═══════════════════════════════════════════╝*/
+// wix-stock.json on R2 contains real Wix inventory: per product, per color, per size, in/out of stock.
+// Used by the modal size picker so customers know what's available before clicking through.
+let WIX_STOCK = null; // { productCount, products: { wixProductId: { name, slug, url, colors: { colorName: [{n,s}] } } } }
+let WIX_STOCK_BY_SLUG = {}; // slug → product entry
+async function loadWixVariantStock(){
+  try{
+    const res = await fetch(R2_BASE+'wix-stock.json?t='+Math.floor(Date.now()/60000));
+    if(!res.ok)return;
+    const data = await res.json();
+    WIX_STOCK = data;
+    WIX_STOCK_BY_SLUG = {};
+    for(const [pid,p] of Object.entries(data.products||{})){
+      if(p.slug) WIX_STOCK_BY_SLUG[p.slug] = p;
+    }
+    console.log('Wix variant stock loaded:', Object.keys(WIX_STOCK_BY_SLUG).length, 'products');
+  }catch(e){console.log('Wix stock load failed:',e.message)}
+}
+loadWixVariantStock();
+
+// Mutable selection state used by the modal picker. Set when a modal opens, read at checkout time.
+let modalPicker = null; // { card, wixProduct, sizeOptionName, colorOptionName, color, size, availableSizes, availableColors, requiresSize }
+function escAttr(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderModalPicker(card){
+  const ctx = getCardWixContext(card);
+  if(!ctx||!ctx.wixProduct){ modalPicker = null; return getProductStockHTML(card); }
+  const wp = ctx.wixProduct;
+  const colors = Object.keys(wp.colors||{});
+  const onlyColor = colors.length===1 ? colors[0] : null;
+  const matched = ctx.matchedColor;
+  const initialColor = matched || onlyColor || null;
+  const availableSizes = initialColor && wp.colors[initialColor] ? wp.colors[initialColor] : [];
+  // Detect "no real sizes" — a single placeholder "_" means the product is one-size or untracked
+  const hasSizes = availableSizes.length > 0 && !(availableSizes.length===1 && availableSizes[0].n==='_');
+  modalPicker = {
+    cardId: String(card.id),
+    wixProduct: wp,
+    sizeOptionName: wp.sizeOptionName || '',
+    colorOptionName: wp.colorOptionName || '',
+    baseUrl: card.link,
+    color: initialColor,
+    size: null,
+    availableSizes,
+    availableColors: colors.filter(c => c !== '_'),
+    requiresSize: hasSizes
+  };
+  return renderPickerInner();
+}
+function renderPickerInner(){
+  if(!modalPicker) return '';
+  const m = modalPicker;
+  const wp = m.wixProduct;
+  const showColors = m.availableColors.length > 1 && !getCardWixContext({n:'',brand:''}); // always show colors when multiple
+  // Always show colors when there are multiple AND no match was auto-detected, OR when matched is one of many
+  const showColorPicker = m.availableColors.length > 1;
+  let html = '<div id="modalPicker" style="background:#f9f9f9;border-radius:12px;padding:14px;margin-bottom:14px">';
+  html += '<div style="font-size:11px;font-weight:700;color:#00C853;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📦 Live Availability</div>';
+
+  if(showColorPicker){
+    html += `<div style="font-size:11px;font-weight:700;color:#666;margin:0 0 6px;text-transform:uppercase;letter-spacing:.5px">${escAttr(m.colorOptionName||'Colour')}: <span style="color:#111;text-transform:none;letter-spacing:0">${escAttr(m.color||'pick one')}</span></div>`;
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+    for(const c of m.availableColors){
+      const active = c === m.color;
+      // A colour is fully sold out if every size for it is s===0
+      const sizes = wp.colors[c]||[];
+      const cOos = sizes.length>0 && sizes.every(s => !s.s);
+      html += `<button type="button" data-pick-color="${escAttr(c)}" style="padding:7px 12px;font-size:12px;font-weight:600;border-radius:8px;border:2px solid ${active?'#00C853':'#e0e0e0'};background:${active?'rgba(0,200,83,.08)':'#fff'};color:${cOos?'#bbb':'#111'};cursor:${cOos?'not-allowed':'pointer'};text-decoration:${cOos?'line-through':'none'};font-family:'DM Sans',sans-serif">${escAttr(c)}</button>`;
+    }
+    html += '</div>';
+  }
+
+  if(m.requiresSize){
+    html += `<div style="font-size:11px;font-weight:700;color:#666;margin:0 0 6px;text-transform:uppercase;letter-spacing:.5px">${escAttr(m.sizeOptionName||'Size')}: <span style="color:#111;text-transform:none;letter-spacing:0">${m.size?escAttr(m.size):'pick one'}</span></div>`;
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px">';
+    for(const sz of m.availableSizes){
+      const oos = !sz.s;
+      const active = sz.n === m.size;
+      html += `<button type="button" data-pick-size="${escAttr(sz.n)}" ${oos?'disabled':''} style="padding:10px 4px;font-size:12px;font-weight:700;border-radius:8px;border:2px solid ${active?'#00C853':(oos?'#eee':'#e0e0e0')};background:${active?'rgba(0,200,83,.08)':(oos?'#f8f8f8':'#fff')};color:${oos?'#ccc':'#111'};cursor:${oos?'not-allowed':'pointer'};text-decoration:${oos?'line-through':'none'};font-family:'DM Sans',sans-serif;text-align:center">${escAttr(sz.n)}${oos?'':''}</button>`;
+    }
+    html += '</div>';
+    html += `<div id="pickerHint" style="font-size:11px;color:#999;margin-top:8px;line-height:1.4">${m.size?'✓ Selected — Buy Now will pre-pick this on checkout':'Pick a size to enable Buy Now'}</div>`;
+  } else {
+    html += '<div style="font-size:11px;color:#999">One size · stock confirmed live from Wix</div>';
+  }
+
+  html += `<div style="font-size:10px;color:#bbb;margin-top:8px;border-top:1px solid #eee;padding-top:8px">Synced ${WIX_STOCK&&WIX_STOCK.updatedAt?new Date(WIX_STOCK.updatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'just now'}</div>`;
+  html += '</div>';
+  return html;
+}
+function pickModalColor(c){
+  if(!modalPicker) return;
+  const sizes = modalPicker.wixProduct.colors[c] || [];
+  if(sizes.length && sizes.every(s=>!s.s)) return; // sold out colour
+  modalPicker.color = c;
+  modalPicker.availableSizes = sizes;
+  modalPicker.size = null;
+  rerenderPicker();
+  updateBuyNowState();
+}
+function pickModalSize(s){
+  if(!modalPicker) return;
+  const sz = modalPicker.availableSizes.find(x => x.n === s);
+  if(!sz || !sz.s) return;
+  modalPicker.size = s;
+  rerenderPicker();
+  updateBuyNowState();
+}
+function rerenderPicker(){
+  const el = document.getElementById('modalPicker');
+  if(!el) return;
+  el.outerHTML = renderPickerInner();
+  bindPickerEvents();
+}
+function bindPickerEvents(){
+  const el = document.getElementById('modalPicker');
+  if(!el) return;
+  el.querySelectorAll('[data-pick-color]').forEach(b => b.addEventListener('click', e => pickModalColor(b.dataset.pickColor)));
+  el.querySelectorAll('[data-pick-size]').forEach(b => b.addEventListener('click', e => pickModalSize(b.dataset.pickSize)));
+}
+function updateBuyNowState(){
+  const btn = document.getElementById('buyNowBtn');
+  if(!btn) return;
+  const needsSize = modalPicker && modalPicker.requiresSize;
+  const haveSize = modalPicker && (!modalPicker.requiresSize || modalPicker.size);
+  btn.disabled = !haveSize;
+  btn.style.opacity = haveSize ? '1' : '.5';
+  btn.style.cursor = haveSize ? 'pointer' : 'not-allowed';
+  btn.title = haveSize ? '' : 'Pick a size above first';
+}
+function buildPickedCheckoutUrl(){
+  if(!modalPicker || !modalPicker.baseUrl) return null;
+  const u = modalPicker.baseUrl;
+  const params = [];
+  if(modalPicker.color && modalPicker.color !== '_' && modalPicker.colorOptionName){
+    params.push(encodeURIComponent(modalPicker.colorOptionName) + '=' + encodeURIComponent(modalPicker.color));
+  }
+  if(modalPicker.size && modalPicker.size !== '_' && modalPicker.sizeOptionName){
+    params.push(encodeURIComponent(modalPicker.sizeOptionName) + '=' + encodeURIComponent(modalPicker.size));
+  }
+  if(!params.length) return u;
+  return u + (u.indexOf('?')>=0?'&':'?') + params.join('&');
+}
+
+// Given a card, find its matching Wix product (by slug from the Buy link) + the matching colour entry.
+// Falls back to showing all colours if we can't infer one from the card name.
+function getCardWixContext(card){
+  if(!WIX_STOCK_BY_SLUG||!card||!card.link) return null;
+  const m = String(card.link).match(/\/product-page\/([^/?#]+)/);
+  if(!m) return null;
+  const wixProduct = WIX_STOCK_BY_SLUG[m[1]];
+  if(!wixProduct) return null;
+  // Try to match the card to a single colour. Strip brand prefix, lowercase, normalise separators.
+  const cardName = (card.n||'').toLowerCase().replace(new RegExp('^\\s*'+String(card.brand||'').toLowerCase()+'[\\s\\-–]*'), '').trim();
+  const normalise = s => String(s||'').toLowerCase().replace(/[\s\-–_/&]+/g,'').replace(/and/g,'');
+  const cardNorm = normalise(cardName);
+  let matchedColor = null;
+  if(wixProduct.colors && cardNorm){
+    for(const wixColor of Object.keys(wixProduct.colors)){
+      if(wixColor==='_') continue;
+      const wixNorm = normalise(wixColor);
+      if(wixNorm===cardNorm || wixNorm.includes(cardNorm) || cardNorm.includes(wixNorm)){
+        matchedColor = wixColor; break;
+      }
+    }
+  }
+  return { wixProduct, matchedColor };
+}
 
 const SHOE_SIZES = ["UK 5","UK 5.5","UK 6","UK 6.5","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12"];
 const CLOTHING_SIZES = ["XS","S","M","L","XL","XXL"];
@@ -1054,7 +1223,7 @@ return `<span style="font-size:11px;font-weight:700;color:${fast?'#fff':'#333'};
 }).join('')}
 </div>
 <p style="font-size:13px;color:#888;line-height:1.6;margin:0 0 16px">${getBrandBlurb(p)}</p>
-${getProductStockHTML(p)}
+${renderModalPicker(p)}
 </div>
 ${related.length?`<div style="padding:0 18px 20px">
 <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">You might also like</div>
@@ -1068,10 +1237,13 @@ ${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<di
 <div style="position:sticky;bottom:0;background:#fff;padding:14px 18px 16px;border-top:1px solid #eee;z-index:5;box-shadow:0 -4px 12px rgba(0,0,0,.04)">
 ${oos?`<a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:12px;min-height:52px;width:100%"><span>🔔</span> DM Us When Back In Stock</a>
 <div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">Currently sold out · we'll DM you when restocked</div>`
-:`<button type="button" onclick="openCheckoutConfirm('${checkoutId}');return false" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;padding:16px;border:none;border-radius:12px;min-height:52px;width:100%;cursor:pointer">Buy Now - ${p.price}</button>
+:`<button type="button" id="buyNowBtn" onclick="openCheckoutConfirm('${checkoutId}');return false" style="display:flex;align-items:center;justify-content:center;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;padding:16px;border:none;border-radius:12px;min-height:52px;width:100%;cursor:pointer">Buy Now - ${p.price}</button>
 <div style="font-size:11px;color:#888;text-align:center;margin:8px 0 0;line-height:1.4">Review item before secure partner checkout</div>`}
 <a href="https://instagram.com/cluesntl" target="_blank" style="display:flex;align-items:center;justify-content:center;border:1.5px solid #e0e0e0;color:#111;font-weight:600;font-size:12px;padding:10px;border-radius:10px;min-height:40px;width:100%;margin-top:8px">💬 Questions? DM on Instagram</a>
-</div></div>`}
+</div></div>`;
+// Wire picker buttons + initial Buy Now state after the modal's HTML lands in the DOM
+setTimeout(()=>{bindPickerEvents();updateBuyNowState()},0);
+}
 
 function setMain(el,src){
 document.getElementById('mainImg').src=src;
@@ -1082,7 +1254,17 @@ let checkoutTargetUrl='';
 function openCheckoutConfirm(id){
 const all=allProducts();
 const p=all.find(x=>String(x.id)===String(id));if(!p||!p.link)return false;
-checkoutTargetUrl=p.link;
+// If we have a live picker for this card and a size is required but not picked, nudge the user instead.
+if(modalPicker && String(modalPicker.cardId)===String(id) && modalPicker.requiresSize && !modalPicker.size){
+  const hint = document.getElementById('pickerHint');
+  if(hint){ hint.style.color='#e53935'; hint.textContent='Pick a size above first 👆'; }
+  const picker = document.getElementById('modalPicker');
+  if(picker) picker.scrollIntoView({behavior:'smooth',block:'center'});
+  return false;
+}
+// Compose the final URL with ?Color=X&Size=Y when a picker selection exists
+const pickedUrl = (modalPicker && String(modalPicker.cardId)===String(id)) ? buildPickedCheckoutUrl() : null;
+checkoutTargetUrl = pickedUrl || p.link;
 closeCheckoutConfirm(true);
 const confirm=document.createElement('div');
 confirm.id='checkoutConfirm';
@@ -1100,7 +1282,10 @@ confirm.innerHTML=`<div class="checkout-box" onclick="event.stopPropagation()">
 <div style="background:#f8f8f8;border-radius:14px;padding:12px 14px;margin-bottom:14px">
 <div class="checkout-row"><span style="color:#777">ESNTLS item</span><strong style="color:#111;text-align:right">${escapeHTML(p.n)}</strong></div>
 <div class="checkout-row"><span style="color:#777">Payment page item</span><strong style="color:#111;text-align:right">Blank placeholder item</strong></div>
-<div class="checkout-row"><span style="color:#777">Size</span><strong style="color:#111;text-align:right">Choose on payment page</strong></div>
+${(modalPicker && String(modalPicker.cardId)===String(id) && (modalPicker.color || modalPicker.size)) ? `
+${modalPicker.color && modalPicker.color!=='_' ? `<div class="checkout-row"><span style="color:#777">${escapeHTML(modalPicker.colorOptionName||'Colour')}</span><strong style="color:#111;text-align:right">${escapeHTML(modalPicker.color)}</strong></div>` : ''}
+${modalPicker.size && modalPicker.size!=='_' ? `<div class="checkout-row"><span style="color:#777">${escapeHTML(modalPicker.sizeOptionName||'Size')}</span><strong style="color:#111;text-align:right">${escapeHTML(modalPicker.size)}</strong></div>` : ''}
+` : `<div class="checkout-row"><span style="color:#777">Size</span><strong style="color:#111;text-align:right">Choose on payment page</strong></div>`}
 <div class="checkout-row"><span style="color:#777">Price</span><strong style="color:#00C853;text-align:right">${escapeHTML(p.price)}</strong></div>
 </div>
 <div style="border:2px solid #111;border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#fff">
