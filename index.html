@@ -839,7 +839,7 @@ let WIX_STOCK_BY_SLUG = {}; // slug → product entry
 async function loadWixVariantStock(){
   try{
     const res = await fetch(R2_BASE+'wix-stock.json?t='+Math.floor(Date.now()/60000));
-    if(!res.ok)return;
+    if(!res.ok){console.log('wix-stock.json HTTP',res.status);return}
     const data = await res.json();
     WIX_STOCK = data;
     WIX_STOCK_BY_SLUG = {};
@@ -847,6 +847,19 @@ async function loadWixVariantStock(){
       if(p.slug) WIX_STOCK_BY_SLUG[p.slug] = p;
     }
     console.log('Wix variant stock loaded:', Object.keys(WIX_STOCK_BY_SLUG).length, 'products');
+    // If a modal is open right now and used the fallback (no picker), upgrade it in place.
+    if(typeof currentlyOpenProductId !== 'undefined' && currentlyOpenProductId){
+      const all=allProducts();const p=all.find(x=>String(x.id)===String(currentlyOpenProductId));
+      if(p){
+        const newHtml = renderModalPicker(p);
+        // Replace either the existing #modalPicker or the legacy static-stock div if present
+        const existing = document.querySelector('#modalPicker, #modalLegacyStock');
+        if(existing && newHtml){
+          const tmp=document.createElement('div');tmp.innerHTML=newHtml;const incoming=tmp.firstElementChild;
+          if(incoming){existing.replaceWith(incoming);bindPickerEvents();updateBuyNowState();}
+        }
+      }
+    }
   }catch(e){console.log('Wix stock load failed:',e.message)}
 }
 loadWixVariantStock();
@@ -856,7 +869,12 @@ let modalPicker = null; // { card, wixProduct, sizeOptionName, colorOptionName, 
 function escAttr(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderModalPicker(card){
   const ctx = getCardWixContext(card);
-  if(!ctx||!ctx.wixProduct){ modalPicker = null; return getProductStockHTML(card); }
+  if(!ctx||!ctx.wixProduct){
+    modalPicker = null;
+    // Wrap the legacy stock HTML in an identifiable div so the picker can replace it once data arrives
+    const legacy = getProductStockHTML(card);
+    return legacy ? `<div id="modalLegacyStock">${legacy}</div>` : '<div id="modalLegacyStock" style="font-size:11px;color:#aaa;padding:8px 0">Loading live availability…</div>';
+  }
   const wp = ctx.wixProduct;
   const colors = Object.keys(wp.colors||{});
   const onlyColor = colors.length===1 ? colors[0] : null;
@@ -1180,9 +1198,11 @@ window.scrollTo({top:0,behavior:'smooth'});return false}
 /*╔═══════════════════════════╗
   ║  PRODUCT DETAIL MODAL     ║
   ╚═══════════════════════════╝*/
+let currentlyOpenProductId=null;
 function openProduct(id){
 const all=allProducts();
 const p=all.find(x=>String(x.id)===String(id));if(!p)return;
+currentlyOpenProductId=id;
 // Set URL hash for direct linking
 const slug=p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
 history.replaceState(null,null,'#'+slug+'-'+p.id);
@@ -1337,6 +1357,7 @@ if(fs){fs.style.opacity='0';fs.style.transition='opacity .2s';setTimeout(()=>fs.
 if(!document.getElementById('modal')||document.getElementById('modal').style.display==='none'){document.body.style.overflow=''}}
 
 function closeModal(){
+currentlyOpenProductId=null;modalPicker=null;
 closeCheckoutConfirm(true);
 const modal=document.getElementById('modal');
 modal.classList.remove('open');
