@@ -983,8 +983,15 @@ function bindPickerEvents(){
 function updateBuyNowState(){
   const btn = document.getElementById('buyNowBtn');
   if(!btn) return;
-  const needsSize = modalPicker && modalPicker.requiresSize;
-  const haveSize = modalPicker && (!modalPicker.requiresSize || modalPicker.size);
+  // Picker disabled (or none active for this card) → button always enabled
+  if(!modalPicker){
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.title = '';
+    return;
+  }
+  const haveSize = !modalPicker.requiresSize || modalPicker.size;
   btn.disabled = !haveSize;
   btn.style.opacity = haveSize ? '1' : '.5';
   btn.style.cursor = haveSize ? 'pointer' : 'not-allowed';
