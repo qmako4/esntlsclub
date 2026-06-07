@@ -874,6 +874,12 @@ loadWixVariantStock();
 let modalPicker = null; // { card, wixProduct, sizeOptionName, colorOptionName, color, size, availableSizes, availableColors, requiresSize }
 function escAttr(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderModalPicker(card){
+  // Picker disabled while the Wix-side variant preselect is unreliable.
+  // Show only the static stock summary — customer picks size/colour on Wix as before.
+  modalPicker = null;
+  return getProductStockHTML(card);
+}
+function _renderModalPicker_DISABLED(card){
   const ctx = getCardWixContext(card);
   if(!ctx||!ctx.wixProduct){
     modalPicker = null;
