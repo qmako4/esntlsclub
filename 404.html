@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0; url=/">
+<title>ESNTLS CLUB</title>
+<style>html,body{background:#fff;color:#111;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-size:14px}</style>
+</head>
+<body>
+<script>
+// GitHub Pages serves this file for any unknown path (e.g. /products/b30-white-7).
+// Stash the original path in sessionStorage, then redirect to /. The main app
+// will read that on boot, restore the URL bar, and route to the right product.
+(function(){
+  try{
+    var path = location.pathname + location.search + location.hash;
+    if (path && path !== '/' && path !== '/index.html') {
+      sessionStorage.setItem('esntlsRoute', path);
+    }
+  } catch (e) {}
+  location.replace('/');
+})();
+</script>
+<noscript>Redirecting to <a href="/">esntlsclub.com</a>…</noscript>
+</body>
+</html>
