@@ -221,10 +221,13 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div class="dnav" style="gap:20px;align-items:center">
 <a href="#" onclick="goHome()" class="nl">Home</a>
 <a href="#" onclick="showCat('All')" class="nl">Shop</a>
+<a href="#" onclick="showCat('Essentials')" class="nl">Essentials</a>
 <a href="#" onclick="showCat('Footwear')" class="nl">Footwear</a>
 <a href="#" onclick="showCat('Jackets')" class="nl">Jackets</a>
+<a href="#" onclick="showCat('Hoodies')" class="nl">Hoodies</a>
 <a href="#" onclick="showCat('Accessories')" class="nl">Accessories</a>
 <a href="#" onclick="showCat('Summer')" class="nl">Summer</a>
+<a href="#" onclick="showCat('Winter')" class="nl">Winter</a>
 <a href="#" onclick="showCat('Shorts')" class="nl">Shorts</a>
 <a href="#" onclick="showStock()" class="nl" style="color:#00C853">Stock</a>
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
@@ -236,12 +239,15 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div id="mob" style="display:none;position:absolute;top:58px;right:12px;width:220px;background:#00C853;border-radius:16px;padding:12px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:menuDrop .25s cubic-bezier(.22,1,.36,1) both">
 <a href="#" onclick="goHome();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px;transition:background .15s">Home</a>
 <a href="#" onclick="showCat('All');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shop All</a>
+<a href="#" onclick="showCat('Essentials');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">⭐ Essentials</a>
 <a href="#" onclick="showCat('Footwear');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Footwear</a>
 <a href="#" onclick="showCat('Jackets');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Jackets</a>
+<a href="#" onclick="showCat('Hoodies');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">🥷 Hoodies</a>
 <a href="#" onclick="showCat('Accessories');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Accessories</a>
 <a href="#" onclick="showCat('Tracksuits');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Tracksuits</a>
 <a href="#" onclick="showCat('Shirts');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shirts</a>
 <a href="#" onclick="showCat('Summer');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">☀️ Summer</a>
+<a href="#" onclick="showCat('Winter');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">❄️ Winter</a>
 <a href="#" onclick="showCat('Shorts');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">🩳 Shorts</a>
 <div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
 <a href="#" onclick="showStock();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">📦 Stock Check</a>
@@ -345,8 +351,8 @@ const imgs=IMG_OVERRIDES[String(p.id)];
 return imgs?{...p,img:imgs[0],imgs}:p
 })}
 
-const CATS=["All","Footwear","B22","B30","Asics","Jackets","Accessories","Tracksuits","Shirts","Summer","Shorts"];
-const CAT_ICONS={Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Shorts:"🩳"};
+const CATS=["All","Essentials","Footwear","B22","B30","Asics","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Summer","Winter","Shorts"];
+const CAT_ICONS={Essentials:"⭐",Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
 function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
 // Per-brand product blurb (replaces generic "from the X collection")
