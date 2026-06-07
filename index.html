@@ -1209,19 +1209,9 @@ function openProduct(id){
 const all=allProducts();
 const p=all.find(x=>String(x.id)===String(id));if(!p)return;
 currentlyOpenProductId=id;
-// Push a proper product URL so the page can be deep-linked/shared
-const slug=p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-const cleanId=(typeof p.dbId==='number'?p.dbId:p.id);
-const productPath='/products/'+slug+'-'+cleanId;
-if(location.pathname!==productPath){history.pushState({type:'product',id:p.id},'',productPath)}
-document.title=p.n+' · ESNTLS CLUB';
-// Open Graph tags for shareable previews (Instagram, WhatsApp, etc.)
-const setMeta=(p2,c)=>{let m=document.querySelector('meta[property="'+p2+'"]');if(!m){m=document.createElement('meta');m.setAttribute('property',p2);document.head.appendChild(m)}m.setAttribute('content',c)};
-setMeta('og:title',p.n+' · ESNTLS CLUB');
-setMeta('og:description','Premium streetwear — '+p.n+(p.price?(' · '+p.price):''));
-if(p.img)setMeta('og:image',p.img);
-setMeta('og:url',location.origin+productPath);
-setMeta('og:type','product');
+// Set URL hash for direct linking
+const slug=p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+history.replaceState(null,null,'#'+slug+'-'+p.id);
 const related=all.filter(x=>x.id!==p.id&&(x.brand===p.brand||x.cat===p.cat)).slice(0,4);
 const oos=p.price==='Out of stock';
 const gallery=p.imgs&&p.imgs.length?p.imgs.filter(u=>u):[p.img];
@@ -1379,12 +1369,7 @@ const modal=document.getElementById('modal');
 modal.classList.remove('open');
 setTimeout(()=>{modal.style.display='none';modal.innerHTML=''},300);
 document.body.style.overflow='';
-// Return URL to root and reset title/OG when modal closes (only if we're on a product URL)
-if(location.pathname.indexOf('/products/')===0){
-  history.pushState({type:'home'},'','/');
-}
-document.title='ESNTLS CLUB';
-}
+history.replaceState(null,null,' ')}
 
 /*╔═══════════════════════════╗
   ║  HAMBURGER MENU           ║
@@ -1408,70 +1393,24 @@ if(window.scrollY>30){n.style.boxShadow='0 1px 10px rgba(0,0,0,.06)'}
 else{n.style.boxShadow='none'}},{passive:true})
 
 // ═══ INIT ═══
-// 404.html on GitHub Pages stashes the original path in sessionStorage and redirects to /.
-// Restore the URL bar so deep links look right before the router runs.
-(function(){
-  try{
-    const saved=sessionStorage.getItem('esntlsRoute');
-    if(saved){sessionStorage.removeItem('esntlsRoute');history.replaceState(null,'',saved)}
-  }catch(e){}
-})();
 render();
 
-// Unified router — runs on initial load and on browser back/forward.
-function findProductByCleanId(idStr){
-  const all=allProducts();
-  // Try numeric match against dbId/id, then string match
-  const idNum=parseInt(idStr,10);
-  return all.find(x=>{
-    if(!isNaN(idNum)&&(x.dbId===idNum||x.id===idNum))return true;
-    return String(x.id)===String(idStr);
-  });
-}
-function handleRoute(){
-  const path=location.pathname;
-  if(path.indexOf('/products/')===0){
-    const slug=decodeURIComponent(path.slice('/products/'.length));
-    // Extract trailing -<id> (numeric or r2_<n>)
-    const m=slug.match(/-((?:r2_)?\d+)$/);
-    const idStr=m?m[1]:null;
-    if(idStr){
-      const p=findProductByCleanId(idStr);
-      if(p){openProduct(p.id);return}
-    }
-    // Fallback: match by slug alone (no id)
-    const baseSlug=slug.replace(/-((?:r2_)?\d+)$/,'');
-    const all=allProducts();
-    const p2=all.find(x=>{
-      const xs=x.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-      return xs===baseSlug||xs===slug;
-    });
-    if(p2){openProduct(p2.id);return}
-  }
-  // Legacy hash route for back-compat
-  const hash=location.hash.slice(1);
-  if(hash==='stock'){showStock();return}
-  if(hash){
-    const parts=hash.split('-');
-    const id=parts[parts.length-1];
-    if(id&&!isNaN(id)){openProduct(parseInt(id));return}
-    const all=allProducts();
-    const p=all.find(x=>{
-      const xs=x.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
-      return hash===xs+'-'+x.id||hash===xs;
-    });
-    if(p)openProduct(p.id);
-  }
-}
-// Wait briefly for products to load, then route
-setTimeout(handleRoute,500);
-
-// Back/forward button support
-window.addEventListener('popstate',function(){
-  const onProduct=location.pathname.indexOf('/products/')===0;
-  if(!onProduct&&currentlyOpenProductId){closeModal();return}
-  if(onProduct){handleRoute()}
-});
+// Auto-open product from URL hash (e.g. #b22-white-1) or stock page (#stock)
+setTimeout(()=>{
+const hash=window.location.hash.slice(1);
+if(hash==='stock'){showStock()}
+else if(hash){
+const parts=hash.split('-');
+const id=parts[parts.length-1];
+if(id&&!isNaN(id)){openProduct(parseInt(id))}
+else{
+// Try matching by slug
+const all=allProducts();
+const p=all.find(x=>{
+const slug=x.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+return hash===slug+'-'+x.id||hash===slug});
+if(p)openProduct(p.id)}}
+},500);
 
 /*╔═══════════════════════════════════════╗
   ║  SCROLL-TRIGGERED ANIMATIONS          ║
