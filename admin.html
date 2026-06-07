@@ -143,6 +143,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="tab active" onclick="showTab('add')">➕ Add</div>
 <div class="tab" onclick="showTab('products')">📦 Products</div>
 <div class="tab" onclick="showTab('media')">📚 Media</div>
+<div class="tab" onclick="showTab('studio')">📸 Studio</div>
 <div class="tab" onclick="showTab('stock')">📊 Stock</div>
 <div class="tab" onclick="showTab('tools')">🔧 Tools</div>
 </div>
@@ -215,6 +216,78 @@ label.field input:focus{border-color:var(--g)}
 </div>
 </div>
 <div id="mediaList"></div>
+</div>
+</div>
+
+<!-- PHOTO STUDIO -->
+<div class="page" id="pageStudio">
+<div class="card">
+<h2 style="font-size:18px;margin-bottom:6px">📸 Photo Studio</h2>
+<p style="font-size:12px;color:var(--sub);margin-bottom:14px">Drop a phone photo of a product → AI cuts it out, places it on your brand background, adds a realistic shadow, ready to use on any product card.</p>
+
+<!-- Settings (collapsible) -->
+<details style="background:#f8f9fa;border-radius:10px;padding:10px 14px;margin-bottom:14px">
+<summary style="font-size:13px;font-weight:600;cursor:pointer;color:#555">⚙️ Settings (one-time setup)</summary>
+<div style="margin-top:12px">
+<label class="field"><span>OpenAI API key (stored in this browser only, never committed)</span>
+<input id="psOpenaiKey" type="password" placeholder="sk-proj-..." style="font-family:monospace;font-size:12px">
+</label>
+<div style="font-size:11px;color:var(--sub);margin-bottom:10px">
+<a href="https://platform.openai.com/settings/organization/limits" target="_blank" style="color:#00C853">Set a $20 hard spending limit ↗</a> ·
+<a href="https://platform.openai.com/api-keys" target="_blank" style="color:#00C853">Get/rotate a key ↗</a>
+</div>
+<label class="field"><span>Brand background image URL (your grass)</span>
+<input id="psBrandBg" placeholder="https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/grass-...">
+</label>
+<label class="field"><span>Default style preset</span>
+<select id="psStylePreset" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit">
+<option value="sneaker">Sneaker on grass · centred · soft shadow</option>
+<option value="sneaker-card">Sneaker on grass · with business card bottom-right</option>
+<option value="flatlay">Flat lay on grass · top-down view</option>
+<option value="lifestyle">Lifestyle · grass with natural lighting</option>
+<option value="custom">Custom (use the prompt field below)</option>
+</select>
+</label>
+<button type="button" class="btn" onclick="psSaveSettings()" style="font-size:12px">Save settings</button>
+<div class="msg" id="psSettingsMsg"></div>
+</div>
+</details>
+
+<!-- Upload + generate -->
+<label class="upload-zone" id="psUploadZone" style="margin-bottom:12px">
+<input type="file" accept="image/*" id="psFile" style="display:none" onchange="psHandleFile(this.files)">
+<div class="icon">📷</div>
+<div class="label">Tap to upload a product photo</div>
+<div class="hint">Or drag & drop · phone photo is fine</div>
+</label>
+
+<div id="psOriginalPreview" style="display:none;margin-bottom:12px">
+<div style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Original photo</div>
+<img id="psOriginalImg" style="width:100%;border-radius:10px;background:#f5f5f5">
+</div>
+
+<label class="field"><span>Prompt (optional — overrides preset)</span>
+<textarea id="psPrompt" rows="3" placeholder="e.g. 'Place the sneaker centred on the grass at a slight angle, soft natural shadow underneath, clean professional product shot'" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+</label>
+
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="psQuality" value="medium" checked> Standard ($0.04)</label>
+<label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="psQuality" value="high"> High ($0.17)</label>
+</div>
+
+<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">✨ Generate</button>
+<div class="msg" id="psGenerateMsg"></div>
+
+<div id="psResultPreview" style="display:none;margin-top:14px">
+<div style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Generated</div>
+<img id="psResultImg" style="width:100%;border-radius:10px;background:#f5f5f5;margin-bottom:10px">
+<div style="display:flex;gap:8px">
+<button type="button" class="btn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">💾 Save to Library</button>
+<button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">🔄 Try again</button>
+</div>
+<div class="msg" id="psSaveMsg"></div>
+</div>
+
 </div>
 </div>
 
@@ -1316,5 +1389,137 @@ submit.disabled=false;submit.textContent='Create Product';
 }
 // Warm the cache when admin loads so the picker opens instantly
 loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
+
+/* ═══════════════ PHOTO STUDIO ═══════════════ */
+// Settings live in localStorage so the OpenAI API key never lands in the repo.
+const PS_LS_KEY='esntlsPhotoStudio';
+const PS_STYLE_PROMPTS={
+  sneaker:'Place this product centred on a soft natural grass background, slightly angled three-quarter view, soft natural shadow underneath, clean professional product photograph, e-commerce ready, no text or watermarks, sharp focus on the product, 1024x1024.',
+  'sneaker-card':'Place this product centred on a soft natural grass background, slightly angled three-quarter view, soft natural shadow underneath, with a small premium minimal business card placed flat on the grass in the bottom-right corner. Clean professional product photograph, e-commerce ready, no extra text.',
+  flatlay:'Place this product as a clean flat lay (top-down view) on a soft natural grass background, even diffuse lighting, subtle soft shadow, professional minimal product photograph, no text or watermarks.',
+  lifestyle:'Place this product naturally on grass as if shot outdoors in the early evening, with realistic ambient lighting and a soft cast shadow. Professional lifestyle product photo, no text, no models, sharp on product.'
+};
+let psState={file:null,fileDataUrl:null,resultBlob:null,resultDataUrl:null};
+
+function psLoadSettings(){
+  let s={};try{s=JSON.parse(localStorage.getItem(PS_LS_KEY)||'{}')}catch(e){}
+  document.getElementById('psOpenaiKey').value=s.openaiKey||'';
+  document.getElementById('psBrandBg').value=s.brandBg||'';
+  if(s.stylePreset)document.getElementById('psStylePreset').value=s.stylePreset;
+}
+function psSaveSettings(){
+  const s={
+    openaiKey:document.getElementById('psOpenaiKey').value.trim(),
+    brandBg:document.getElementById('psBrandBg').value.trim(),
+    stylePreset:document.getElementById('psStylePreset').value
+  };
+  localStorage.setItem(PS_LS_KEY,JSON.stringify(s));
+  const m=document.getElementById('psSettingsMsg');
+  m.style.color='var(--g)';m.textContent='✓ Saved to this browser only';
+  setTimeout(()=>{m.textContent=''},2500);
+  psUpdateGenerateState();
+}
+function psGetSettings(){try{return JSON.parse(localStorage.getItem(PS_LS_KEY)||'{}')}catch(e){return{}}}
+
+function psHandleFile(files){
+  if(!files||!files.length)return;
+  const f=files[0];
+  if(!f.type.startsWith('image/')){alert('Please drop an image file');return}
+  psState.file=f;
+  const r=new FileReader();
+  r.onload=function(e){
+    psState.fileDataUrl=e.target.result;
+    const img=document.getElementById('psOriginalImg');
+    img.src=e.target.result;
+    document.getElementById('psOriginalPreview').style.display='block';
+    document.getElementById('psResultPreview').style.display='none';
+    psUpdateGenerateState();
+  };
+  r.readAsDataURL(f);
+}
+function psUpdateGenerateState(){
+  const s=psGetSettings();
+  const ready=!!(psState.file&&s.openaiKey&&s.brandBg);
+  const btn=document.getElementById('psGenerateBtn');
+  btn.disabled=!ready;
+  btn.style.opacity=ready?'1':'.5';
+  btn.title=ready?'':'Need: upload a photo + set OpenAI key + set brand background URL in Settings';
+}
+async function psFetchAsBlob(url){
+  const r=await fetch(url);
+  if(!r.ok)throw new Error('Brand background fetch failed: HTTP '+r.status);
+  return await r.blob();
+}
+function psBuildPrompt(){
+  const custom=document.getElementById('psPrompt').value.trim();
+  if(custom)return custom;
+  const preset=document.getElementById('psStylePreset').value;
+  if(preset==='custom')return 'Place this product on the provided grass background, realistic shadow, professional product photo.';
+  return PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
+}
+async function psGenerate(){
+  const s=psGetSettings();
+  if(!s.openaiKey||!s.brandBg||!psState.file){psUpdateGenerateState();return}
+  const btn=document.getElementById('psGenerateBtn');
+  const msg=document.getElementById('psGenerateMsg');
+  const quality=document.querySelector('input[name="psQuality"]:checked').value;
+  btn.disabled=true;btn.textContent='⏳ Generating… (~10–20s)';
+  msg.style.color='var(--sub)';msg.textContent='Calling OpenAI gpt-image-1…';
+  try{
+    const bgBlob=await psFetchAsBlob(s.brandBg);
+    const form=new FormData();
+    form.append('model','gpt-image-1');
+    form.append('image[]',psState.file,psState.file.name||'product.jpg');
+    form.append('image[]',bgBlob,'grass.jpg');
+    form.append('prompt',psBuildPrompt());
+    form.append('size','1024x1024');
+    form.append('quality',quality);
+    form.append('n','1');
+    const r=await fetch('https://api.openai.com/v1/images/edits',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+s.openaiKey},
+      body:form
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error((data.error&&data.error.message)||('HTTP '+r.status));
+    const b64=data.data&&data.data[0]&&data.data[0].b64_json;
+    if(!b64)throw new Error('No image returned in response');
+    psState.resultDataUrl='data:image/png;base64,'+b64;
+    document.getElementById('psResultImg').src=psState.resultDataUrl;
+    document.getElementById('psResultPreview').style.display='block';
+    msg.style.color='var(--g)';msg.textContent='✓ Generated — review below, save if happy';
+  }catch(e){
+    msg.style.color='#e53935';msg.textContent='Failed: '+e.message;
+  }
+  btn.disabled=false;btn.textContent='✨ Generate';
+  psUpdateGenerateState();
+}
+function psRegenerate(){document.getElementById('psResultPreview').style.display='none';psGenerate()}
+async function psSaveToLibrary(){
+  if(!psState.resultDataUrl)return;
+  const msg=document.getElementById('psSaveMsg');
+  msg.style.color='var(--sub)';msg.textContent='Uploading to R2…';
+  try{
+    // Convert data URL to blob
+    const res=await fetch(psState.resultDataUrl);
+    const blob=await res.blob();
+    const fname='studio_'+Date.now()+'_'+Math.floor(Math.random()*9999)+'.png';
+    const file=new File([blob],fname,{type:'image/png'});
+    const url=await r2Upload(file,fname);
+    msg.style.color='var(--g)';msg.innerHTML='✓ Saved · <a href="'+url+'" target="_blank" style="color:#00C853">view</a>';
+  }catch(e){
+    msg.style.color='#e53935';msg.textContent='Upload failed: '+e.message;
+  }
+}
+
+// Wire up Studio drag-and-drop
+setupDropZone(document.getElementById('psUploadZone'),psHandleFile);
+
+// Initialise Studio when its tab opens (lazy)
+const _origShowTab=showTab;
+window.showTab=function(t){
+  _origShowTab.apply(this,arguments);
+  if(t==='studio'){psLoadSettings();psUpdateGenerateState()}
+};
 </script>
 </body></html>
