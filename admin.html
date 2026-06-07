@@ -1150,23 +1150,56 @@ m=document.createElement('div');m.id='wixCreateModal';
 m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px';
 m.onclick=e=>{if(e.target===m)closeWixCreateModal()};
 m.innerHTML=`
-<div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2)">
-<div style="background:#111;padding:18px 22px;color:#fff">
+<div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+<div style="background:#111;padding:16px 20px;color:#fff;flex-shrink:0">
 <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700">Create Wix Placeholder Product</div>
-<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Creates a new product on Wix and auto-fills the Buy Link.</div>
+<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Pick sizes + colours · creates the Wix product + auto-fills the Buy Link.</div>
 </div>
-<div style="padding:18px 20px">
+<div style="padding:16px 18px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch">
 <label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Wix product name (placeholder)</label>
-<input id="wcNamePh" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:12px">
+<input id="wcNamePh" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:10px">
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<div style="flex:1">
 <label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sale price (£)</label>
-<input id="wcPricePh" placeholder="89.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:12px">
-<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Compare-at price (optional, £)</label>
-<input id="wcComparePh" placeholder="109.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:14px">
+<input id="wcPricePh" placeholder="89.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
+</div>
+<div style="flex:1">
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Compare-at (£)</label>
+<input id="wcComparePh" placeholder="109.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
+</div>
+</div>
+
+<div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+<label style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+<span>Sizes</span>
+<select id="wcSizePreset" onchange="wcApplySizePreset()" style="font-size:11px;font-weight:600;border:1px solid #e0e0e0;border-radius:6px;background:#fff;padding:3px 6px;text-transform:none;letter-spacing:0;color:#111">
+<option value="">— Preset —</option>
+<option value="ukShoes">UK Shoes (5 → 13)</option>
+<option value="ukShoesShort">UK Shoes (5 → 11)</option>
+<option value="clothing">Clothing (S → XXL)</option>
+<option value="oneSize">One Size</option>
+<option value="clear">Clear</option>
+</select>
+</label>
+<div id="wcSizesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px"></div>
+<input id="wcSizeAdd" placeholder="Type a size + press Enter" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;margin-top:7px;box-sizing:border-box">
+</div>
+
+<div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+<label style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+<span>Colours</span>
+<span style="font-size:10px;font-weight:500;color:#aaa;text-transform:none;letter-spacing:0">optional · skip = no colour option</span>
+</label>
+<div id="wcColoursList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
+<input id="wcColourAdd" placeholder="Type a colour + press Enter (e.g. Black, White, Grey)" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
+</div>
+
+<div id="wcVariantCount" style="font-size:11px;color:#888;margin-bottom:8px;text-align:right"></div>
 <div id="wcMsg" style="font-size:12px;margin-bottom:10px;min-height:14px"></div>
-<div style="display:flex;gap:8px;justify-content:flex-end">
+</div>
+<div style="padding:12px 18px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:#fff">
 <button onclick="closeWixCreateModal()" style="background:#f5f5f5;border:none;color:#111;font-weight:700;font-size:12px;padding:10px 16px;border-radius:8px;cursor:pointer">Cancel</button>
 <button id="wcSubmit" onclick="submitWixCreate()" style="background:var(--g);border:none;color:#fff;font-weight:700;font-size:12px;padding:10px 18px;border-radius:8px;cursor:pointer">Create Product</button>
-</div>
 </div>
 </div>`;
 document.body.appendChild(m);
@@ -1177,9 +1210,71 @@ const cleanPrice=initialPrice.replace(/[£$,\s]/g,'');
 document.getElementById('wcPricePh').value=cleanPrice;
 document.getElementById('wcComparePh').value='';
 document.getElementById('wcMsg').textContent='';
+// Reset the size/colour picker every open + wire the "type + Enter to add" inputs
+wcSizes=[];wcColours=[];
+wcRenderSizes();wcRenderColours();wcUpdateVariantCount();
+const sizeAdd=document.getElementById('wcSizeAdd');
+const colourAdd=document.getElementById('wcColourAdd');
+if(sizeAdd&&!sizeAdd._wired){
+  sizeAdd._wired=true;
+  sizeAdd.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    e.preventDefault();
+    const v=sizeAdd.value.trim();
+    if(!v)return;
+    v.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{if(!wcSizes.includes(x))wcSizes.push(x)});
+    sizeAdd.value='';
+    wcRenderSizes();wcUpdateVariantCount();
+  });
+}
+if(colourAdd&&!colourAdd._wired){
+  colourAdd._wired=true;
+  colourAdd.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    e.preventDefault();
+    const v=colourAdd.value.trim();
+    if(!v)return;
+    v.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{if(!wcColours.includes(x))wcColours.push(x)});
+    colourAdd.value='';
+    wcRenderColours();wcUpdateVariantCount();
+  });
+}
 setTimeout(()=>document.getElementById('wcNamePh').focus(),50);
 }
 function closeWixCreateModal(){const m=document.getElementById('wixCreateModal');if(m)m.style.display='none'}
+
+// ── Picker state for Sizes + Colours inside the Create-Wix modal ──
+let wcSizes=[],wcColours=[];
+const WC_SIZE_PRESETS={
+  ukShoes:['UK 5','UK 5.5','UK 6','UK 6.5','UK 7','UK 7.5','UK 8','UK 8.5','UK 9','UK 9.5','UK 10','UK 11','UK 12','UK 13'],
+  ukShoesShort:['UK 5','UK 6','UK 7','UK 8','UK 9','UK 10','UK 11'],
+  clothing:['S','M','L','XL','XXL'],
+  oneSize:['One Size']
+};
+function wcApplySizePreset(){
+  const sel=document.getElementById('wcSizePreset');
+  if(!sel)return;
+  if(sel.value==='clear')wcSizes=[];
+  else if(WC_SIZE_PRESETS[sel.value])wcSizes=[...WC_SIZE_PRESETS[sel.value]];
+  sel.value='';
+  wcRenderSizes();wcUpdateVariantCount();
+}
+function wcRenderSizes(){
+  const grid=document.getElementById('wcSizesGrid');if(!grid)return;
+  grid.innerHTML=wcSizes.map((s,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:7px 4px;font-size:11px;font-weight:700;text-align:center;color:#111;position:relative">${escHtml(s)}<span onclick="wcRemoveSize(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#111;color:#fff;border-radius:50%;font-size:10px;line-height:16px;text-align:center;cursor:pointer;font-weight:700">×</span></div>`).join('')||'<div style="font-size:11px;color:#aaa;grid-column:1/-1;text-align:center;padding:4px">No sizes — Wix product will have a single default variant</div>';
+}
+function wcRemoveSize(i){wcSizes.splice(i,1);wcRenderSizes();wcUpdateVariantCount()}
+function wcRenderColours(){
+  const list=document.getElementById('wcColoursList');if(!list)return;
+  list.innerHTML=wcColours.map((c,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#111;display:inline-flex;align-items:center;gap:6px">${escHtml(c)}<span onclick="wcRemoveColour(${i})" style="cursor:pointer;color:#888;font-weight:700">×</span></div>`).join('')||'';
+}
+function wcRemoveColour(i){wcColours.splice(i,1);wcRenderColours();wcUpdateVariantCount()}
+function wcUpdateVariantCount(){
+  const el=document.getElementById('wcVariantCount');if(!el)return;
+  const s=Math.max(wcSizes.length,1),c=Math.max(wcColours.length,1);
+  const n=s*c;
+  el.textContent=`Will create ${n} variant${n===1?'':'s'} · all at the same price`;
+}
 async function submitWixCreate(){
 const name=document.getElementById('wcNamePh').value.trim();
 const price=document.getElementById('wcPricePh').value.trim();
@@ -1188,13 +1283,21 @@ const wcMsg=document.getElementById('wcMsg');
 const submit=document.getElementById('wcSubmit');
 if(!name){wcMsg.textContent='Name required';wcMsg.style.color='#e53935';return}
 if(!price||isNaN(parseFloat(price))){wcMsg.textContent='Sale price must be a number';wcMsg.style.color='#e53935';return}
+const payload={name,priceAmount:price,comparePriceAmount:compare,sizes:wcSizes.slice(),colours:wcColours.slice()};
+// If the worker is not configured, give the user a copy-this-config fallback so they can hand it to whoever has the Wix API access.
+if(!WORKER_URL||!ADMIN_SECRET){
+  const j=JSON.stringify(payload,null,2);
+  wcMsg.innerHTML=`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;color:#5d4037;line-height:1.5">Worker not deployed yet. Copy the config below and send it to me in chat — I'll create the Wix product:</div><textarea readonly onclick="this.select()" style="width:100%;height:140px;margin-top:8px;padding:8px;font-family:monospace;font-size:11px;border:1px solid #ccc;border-radius:6px;resize:vertical">${escHtml(j)}</textarea>`;
+  wcMsg.style.color='var(--sub)';
+  return;
+}
 submit.disabled=true;submit.textContent='Creating…';
 wcMsg.style.color='var(--sub)';wcMsg.textContent='Creating on Wix…';
 try{
 const r=await fetch(WORKER_URL+'/wix-create-product',{
 method:'POST',
 headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
-body:JSON.stringify({name,priceAmount:price,comparePriceAmount:compare})
+body:JSON.stringify(payload)
 });
 const data=await r.json().catch(()=>({}));
 if(!r.ok)throw new Error(data.error||('HTTP '+r.status));

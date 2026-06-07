@@ -139,6 +139,8 @@ export default {
       const name = (body.name || '').trim();
       const priceAmount   = String(body.priceAmount   || '').replace(/[£$,\s]/g, '');
       const compareAmount = String(body.comparePriceAmount || '').replace(/[£$,\s]/g, '');
+      const sizes   = Array.isArray(body.sizes)   ? body.sizes.map(s => String(s).trim()).filter(Boolean)   : [];
+      const colours = Array.isArray(body.colours) ? body.colours.map(c => String(c).trim()).filter(Boolean) : [];
 
       if (!name) return json({ error: 'Missing name' }, 400);
       if (!priceAmount || isNaN(parseFloat(priceAmount))) {
@@ -150,14 +152,46 @@ export default {
         variantPrice.compareAtPrice = { amount: compareAmount };
       }
 
+      // Build options + variants from sizes/colours. Wix requires a variant entry for every combination.
+      const options = [];
+      if (sizes.length) {
+        options.push({
+          name: 'Size',
+          optionRenderType: 'TEXT_CHOICES',
+          choicesSettings: { choices: sizes.map(s => ({ choiceType: 'CHOICE_TEXT', name: s })) }
+        });
+      }
+      if (colours.length) {
+        options.push({
+          name: 'Color',
+          optionRenderType: 'TEXT_CHOICES',
+          choicesSettings: { choices: colours.map(c => ({ choiceType: 'CHOICE_TEXT', name: c })) }
+        });
+      }
+      const sizeList   = sizes.length   ? sizes   : [null];
+      const colourList = colours.length ? colours : [null];
+      const variants = [];
+      for (const sz of sizeList) {
+        for (const co of colourList) {
+          const choices = [];
+          if (sz) choices.push({ optionChoiceNames: { optionName: 'Size',  choiceName: sz, renderType: 'TEXT_CHOICES' } });
+          if (co) choices.push({ optionChoiceNames: { optionName: 'Color', choiceName: co, renderType: 'TEXT_CHOICES' } });
+          variants.push({
+            visible: true,
+            choices,
+            price: variantPrice,
+            physicalProperties: {}
+          });
+        }
+      }
+
       const product = {
         name,
         visible: true,
         productType: 'PHYSICAL',
         physicalProperties: {},
-        variantsInfo: {
-          variants: [{ price: variantPrice, physicalProperties: {} }]
-        }
+        options,
+        variantsInfo: { variants }
       };
 
       const r = await fetch('https://www.wixapis.com/stores/v3/products', {
