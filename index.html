@@ -165,6 +165,10 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .mob-item.hidden{display:none}
 .mob-section.hidden{display:none}
 .mob-divider{height:1px;background:#eee;margin:10px 4px}
+.mob-result{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:inherit;transition:background .12s;margin:2px 0}
+.mob-result:hover,.mob-result:active{background:#f5f5f5}
+#menuResults{padding:0 4px 8px;border-bottom:1px solid #eee;margin-bottom:6px}
+#menuResults .mob-section-head{font-size:13px;letter-spacing:1.5px}
 @keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(0,200,83,.2)}50%{box-shadow:0 0 20px rgba(0,200,83,.4)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -265,8 +269,9 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#111">MENU</div>
       <button onclick="toggleMenu()" class="mob-x" aria-label="Close menu">✕</button>
     </div>
-    <input id="menuSearch" class="mob-search" placeholder="🔍 Search categories…" oninput="filterMenu(this.value)">
+    <input id="menuSearch" class="mob-search" placeholder="🔍 Search products, brands or sizes…" oninput="filterMenu(this.value)">
     <div class="mob-scroll" id="menuScroll">
+      <div id="menuResults" style="display:none"></div>
       <a href="#" class="mob-quick" onclick="goHome();toggleMenu()">🏠 Home</a>
       <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu()">🛍️ Shop All</a>
       <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">📦 Live Stock</a>
@@ -1491,21 +1496,77 @@ if(opening){
   document.body.style.overflow='';
 }}
 
-// Live-filter the menu by category name / brand / keyword tags
+// Live-search the menu: matches PRODUCTS by name/brand/category, plus filters the category
+// sections by name/keyword tags. Product matches show as tappable rows at the top.
 function filterMenu(q){
 const query=(q||'').toLowerCase().trim();
+const results=document.getElementById('menuResults');
 const items=document.querySelectorAll('#mob .mob-item');
+const sections=document.querySelectorAll('#mob .mob-section');
+const quicks=document.querySelectorAll('#mob .mob-quick');
+
+if(!query){
+  // No query → show menu as-is, hide results pane
+  items.forEach(it=>it.classList.remove('hidden'));
+  sections.forEach(s=>s.classList.remove('hidden'));
+  quicks.forEach(q=>q.style.display='');
+  if(results){results.style.display='none';results.innerHTML=''}
+  return;
+}
+
+// Filter category items + sections
 items.forEach(it=>{
   const txt=it.textContent.toLowerCase();
   const tags=(it.getAttribute('data-keywords')||'').toLowerCase();
-  const match=!query||txt.includes(query)||tags.includes(query);
-  it.classList.toggle('hidden',!match);
+  it.classList.toggle('hidden',!(txt.includes(query)||tags.includes(query)));
 });
-// Hide any section whose items are all hidden
-document.querySelectorAll('#mob .mob-section').forEach(sec=>{
+sections.forEach(sec=>{
   const visible=sec.querySelectorAll('.mob-item:not(.hidden)').length;
-  sec.classList.toggle('hidden',!!query&&visible===0);
-});}
+  sec.classList.toggle('hidden',visible===0);
+});
+quicks.forEach(qel=>{
+  // Hide quick tiles while searching so the results dominate
+  qel.style.display='none';
+});
+
+// Search products
+const all=(typeof allProducts==='function')?allProducts():[];
+const matches=all.filter(p=>{
+  if(!p||!p.n)return false;
+  const hay=`${p.n} ${p.brand||''} ${p.cat||''}`.toLowerCase();
+  return hay.includes(query);
+}).slice(0,10);
+
+if(!results)return;
+if(matches.length){
+  results.style.display='block';
+  const escQ=query.replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+  results.innerHTML=
+    `<div class="mob-section-head" style="color:#ff5722">🔍 Items matching "${escQ}" (${matches.length})</div>`+
+    matches.map(p=>{
+      const pid=typeof p.id==='string'?"'"+p.id+"'":p.id;
+      const oos=p.price==='Out of stock';
+      const safeName=(p.n||'').replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+      return `<a href="#" class="mob-result" onclick="toggleMenu();setTimeout(()=>openProduct(${pid}),0);return false">
+        <img src="${p.img||''}" alt="" loading="lazy" onerror="this.style.background='#eee'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#f5f5f5;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safeName}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.brand||'Other'}${p.cat?' · '+p.cat.split(',')[0]:''}</div>
+        </div>
+        <div style="font-size:12px;color:${oos?'#aaa':'#00C853'};font-weight:800;flex-shrink:0">${oos?'Sold out':p.price}</div>
+      </a>`;
+    }).join('');
+} else {
+  // No product matches — only show the message if categories are also empty
+  const anyCategoryVisible=document.querySelectorAll('#mob .mob-item:not(.hidden)').length>0;
+  if(anyCategoryVisible){
+    results.style.display='none';results.innerHTML='';
+  }else{
+    const escQ=query.replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+    results.style.display='block';
+    results.innerHTML=`<div style="padding:24px 16px;text-align:center;color:#888;font-size:13px">No matches for <strong style="color:#111">"${escQ}"</strong><div style="font-size:11px;margin-top:6px">Try a brand (B30, Asics), a colour (Light Blue), or a category (Hoodies)</div></div>`;
+  }
+}}
 // Close menu when clicking outside
 document.addEventListener('click',e=>{
 const m=document.getElementById('mob');
