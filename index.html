@@ -255,7 +255,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="#" onclick="showCat('Jackets')" class="nl">Outerwear</a>
 <a href="#" onclick="showCat('Hoodies')" class="nl">Hoodies</a>
 <a href="#" onclick="showCat('Accessories')" class="nl">Accessories</a>
-<a href="#" onclick="showStock()" class="nl" style="color:#00C853">Stock</a>
+<a href="#" onclick="showStock()" class="nl" style="color:#00C853">⚡ Next-Day Stock</a>
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
 </div>
 <!-- Right spacer (mobile) to balance hamburger for centered logo -->
@@ -274,7 +274,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
       <div id="menuResults" style="display:none"></div>
       <a href="#" class="mob-quick" onclick="goHome();toggleMenu()">🏠 Home</a>
       <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu()">🛍️ Shop All</a>
-      <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">📦 Live Stock</a>
+      <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">⚡ Next-Day Stock</a>
 
       <div class="mob-section">
         <div class="mob-section-head">⭐ Featured</div>
@@ -1264,10 +1264,17 @@ function showStock(filter){
   </div>`;
 
   let html = `<section style="padding:16px;max-width:700px;margin:0 auto">
-  <div style="text-align:center;margin-bottom:20px">
-    <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Live Availability</div>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,40px);color:#111;margin:0;letter-spacing:2px">Stock Check</h2>
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:11px;color:#ff5722;letter-spacing:3px;text-transform:uppercase;font-weight:800;margin-bottom:6px">⚡ Live Availability</div>
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,40px);color:#111;margin:0;letter-spacing:2px">Next-Day Stock</h2>
     <p style="font-size:12px;color:#aaa;margin-top:6px">Last updated: ${STOCK_UPDATED} · ${totalItems} items across ${totalProducts} products</p>
+  </div>
+  <div style="background:linear-gradient(135deg,#fff8e1 0%,#fffde7 100%);border:1.5px solid #ffe082;border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start">
+    <div style="font-size:22px;flex-shrink:0;line-height:1">⚡</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:800;color:#5d4037;margin-bottom:3px;letter-spacing:.3px">This is the live stock for next-day delivery</div>
+      <div style="font-size:11px;color:#7c5b25;line-height:1.5">These items ship within 1 working day. If your size isn't here, it may still be available on our 7-9 day delivery option — <a href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer" style="color:#5d4037;text-decoration:underline;font-weight:700">DM us</a> to check.</div>
+    </div>
   </div>
   ${shareBar}
   <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#888;text-align:center">Filter by size:</div>
