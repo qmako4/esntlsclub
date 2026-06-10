@@ -958,9 +958,9 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 </div></div>
 <label class="field"><span>Brand</span><input id="eb_${id}" value="${p.brand||''}"></label>
 <label class="field"><span>Buy Link</span>
-<div style="display:flex;gap:8px;align-items:stretch">
-<input id="el_${id}" value="${p.link||''}" style="flex:1;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="flex-shrink:0;padding:0 12px;font-size:11px;background:var(--g);color:#fff;border:none">📦 Pick</button>
+<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
+<input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
+<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="flex-shrink:0;padding:10px 14px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
 </div>
 </label>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
@@ -1322,7 +1322,8 @@ listEl.addEventListener('mouseout',e=>{const row=e.target.closest('.wix-pick-row
 m.style.display='flex';
 const status=document.getElementById('wixPickerStatus');
 status.textContent='Loading catalog…';
-loadWixCatalog().then(list=>{
+// Always force-refresh from R2 on open so newly-added Wix products appear without needing a manual Refresh tap
+loadWixCatalog(true).then(list=>{
 const stamp=wixCatalogUpdatedAt?` · synced ${new Date(wixCatalogUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
 status.textContent=`${list.length} products · tap to pick${stamp}`;
 renderWixPicker('');
