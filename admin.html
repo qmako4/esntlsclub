@@ -688,7 +688,7 @@ try{
 msg.style.color='var(--sub)';msg.textContent='Saving...';
 await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Product added!';
-if(typeof toast==='function')toast(`Added "${product.name}"`,'success');
+if(typeof toast==='function')toast(`Added "${newProduct.name}"`,'success');
 if(typeof syncDashboard==='function')syncDashboard();
 ['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('aFiles').value='';
