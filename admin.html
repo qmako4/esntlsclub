@@ -26,13 +26,59 @@ img,svg,video{max-width:100%;height:auto}
 .topbar h1{font-size:18px;color:var(--g);letter-spacing:2px}
 .topbar .logout{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--sub);cursor:pointer;font-family:inherit}
 
-.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+/* Tab nav: sticky, bigger tap targets, clearer active state */
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;position:sticky;top:53px;z-index:90;box-shadow:0 1px 0 var(--border)}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:1;min-width:0;padding:14px 8px;text-align:center;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
-.tab.active{color:var(--g);border-bottom-color:var(--g)}
+.tab{flex:1;min-width:70px;padding:14px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.tab:active{background:rgba(0,200,83,.05)}
+.tab.active{color:var(--g);border-bottom-color:var(--g);font-weight:700}
 
-.page{display:none;padding:16px;max-width:600px;margin:0 auto}
+.page{display:none;padding:16px;max-width:600px;margin:0 auto;padding-bottom:80px}
 .page.active{display:block}
+
+/* Toast notifications — replaces inline .msg for important feedback */
+.toast-host{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:calc(100% - 32px);max-width:380px}
+.toast{background:#111;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:auto;animation:toastIn .25s cubic-bezier(.22,1,.36,1);display:flex;align-items:center;gap:10px}
+.toast.success{background:#00C853}
+.toast.error{background:#e53935}
+.toast.info{background:#1e88e5}
+.toast .x{margin-left:auto;cursor:pointer;opacity:.7;font-size:16px;line-height:1}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.toast.dismiss{animation:toastOut .2s ease forwards}
+@keyframes toastOut{to{opacity:0;transform:translateY(-8px)}}
+
+/* Dashboard strip — at-a-glance status visible across all tabs */
+.dash-strip{display:flex;gap:8px;padding:10px 16px;background:linear-gradient(180deg,#fafbfc 0%,#fff 100%);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.dash-strip::-webkit-scrollbar{display:none}
+.dash-pill{flex:0 0 auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:11px;font-weight:600;color:#444;display:flex;align-items:center;gap:6px}
+.dash-pill strong{font-size:13px;color:#111;font-weight:800}
+.dash-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--g)}
+
+/* Search + filter bar above product list */
+.filter-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;position:sticky;top:108px;background:var(--bg);padding:8px 0;z-index:50;margin-top:-8px}
+.filter-bar input.search{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:#fff url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22none%22 stroke=%22%23888%22 stroke-width=%222%22><circle cx=%227%22 cy=%227%22 r=%225%22/><line x1=%2210.5%22 y1=%2210.5%22 x2=%2214%22 y2=%2214%22/></svg>') 12px center no-repeat}
+.filter-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.filter-chips::-webkit-scrollbar{display:none}
+.filter-chip{flex:0 0 auto;padding:7px 14px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:#555;cursor:pointer;white-space:nowrap;transition:all .12s;-webkit-tap-highlight-color:transparent}
+.filter-chip.on{background:#111;color:#fff;border-color:#111}
+.filter-chip.on-g{background:var(--g);color:#fff;border-color:var(--g)}
+
+/* Sticky form save bar — for long forms (Add Product, etc.) */
+.form-sticky-save{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,#fff 50%);padding:14px 0 4px;margin-top:14px;z-index:30}
+
+/* Product card improvements — slightly more info, cleaner spacing */
+.product-item{padding:14px;background:#fff;border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:12px;transition:border-color .12s}
+.product-item:hover{border-color:#ccc}
+.product-item .oos-flag{background:#ffebee;color:#c62828;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;margin-left:6px}
+.product-item .meta-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+.product-item .meta-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:#f1f3f5;color:#555;text-transform:uppercase;letter-spacing:.3px}
+
+/* Bigger tap targets globally on mobile */
+@media (max-width:600px){
+  .btn{min-height:48px}
+  .action-btn{width:38px;height:38px}
+  label.field input{padding:14px 14px;font-size:15px}
+}
 
 .card{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .card h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)}
@@ -148,6 +194,17 @@ label.field input:focus{border-color:var(--g)}
 <div class="tab" onclick="showTab('tools')">🔧 Tools</div>
 </div>
 
+<!-- Live status strip: shown across every tab so it's always 1 glance away -->
+<div class="dash-strip" id="dashStrip">
+<div class="dash-pill"><span class="dot"></span><strong id="dashCount">—</strong> products</div>
+<div class="dash-pill">📚 <strong id="dashImgCount">—</strong> images</div>
+<div class="dash-pill">🛒 <strong id="dashOosCount">—</strong> OOS</div>
+<div class="dash-pill">🔄 Synced <strong id="dashSyncTime">just now</strong></div>
+</div>
+
+<!-- Toast notification host -->
+<div class="toast-host" id="toastHost"></div>
+
 <!-- ADD PRODUCT -->
 <div class="page active" id="pageAdd">
 <div class="card">
@@ -189,10 +246,26 @@ label.field input:focus{border-color:var(--g)}
 
 <!-- PRODUCTS LIST -->
 <div class="page" id="pageProducts">
-<div class="card">
-<h3>All Products</h3>
-<div id="productList"></div>
+<div class="filter-bar" id="productFilterBar">
+<input type="search" class="search" id="productSearch" placeholder="Search products by name or brand…" oninput="renderProductList()">
+<div class="filter-chips" id="productStatusChips">
+<div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">·</span></div>
+<div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">·</span></div>
+<div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">·</span></div>
 </div>
+<div class="filter-chips" id="productBrandChips"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
+<span id="productCountSummary">—</span>
+<select id="productSort" onchange="renderProductList()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
+<option value="recent">↓ Newest first</option>
+<option value="oldest">↑ Oldest first</option>
+<option value="name">A → Z</option>
+<option value="price-low">£ Low → High</option>
+<option value="price-high">£ High → Low</option>
+</select>
+</div>
+</div>
+<div id="productList"></div>
 </div>
 
 <!-- MEDIA LIBRARY -->
@@ -615,6 +688,8 @@ try{
 msg.style.color='var(--sub)';msg.textContent='Saving...';
 await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Product added!';
+if(typeof toast==='function')toast(`Added "${product.name}"`,'success');
+if(typeof syncDashboard==='function')syncDashboard();
 ['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
@@ -644,6 +719,8 @@ products=[];
 }else{
 console.error('loadProducts HTTP',res.status);
 }
+_lastSyncTime=Date.now();
+if(typeof syncDashboard==='function')syncDashboard();
 }catch(e){console.error('Load error:',e)}}
 
 // PERSIST FULL PRODUCT LIST TO R2
@@ -712,27 +789,149 @@ btn.disabled=false;
 }
 
 // RENDER PRODUCT LIST
+// ─── Product list state: search + filter + sort ───
+const productFilters={status:'all',brand:'all',q:''};
+function setProductFilter(key,val){productFilters[key]=val;renderProductList()}
 function renderProductList(){
 const list=document.getElementById('productList');
 if(!products.length){
-list.innerHTML=`<div class="empty"><div class="icon">📦</div><div class="title">No products yet</div><div class="hint">Add your first product above</div></div>`;return}
-list.innerHTML=products.map(p=>`<div>
+  list.innerHTML=`<div class="empty"><div class="icon">📦</div><div class="title">No products yet</div><div class="hint">Add your first product above</div></div>`;
+  syncDashboard();return;
+}
+// Capture search & sort
+const searchEl=document.getElementById('productSearch');
+const q=(searchEl?searchEl.value:'').trim().toLowerCase();
+productFilters.q=q;
+const sortEl=document.getElementById('productSort');
+const sortBy=sortEl?sortEl.value:'recent';
+
+// Pre-compute counts so the chips can show numbers next to the labels
+const oosCount=products.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
+const inCount=products.length-oosCount;
+const ctAll=document.getElementById('ctAll');if(ctAll)ctAll.textContent=`(${products.length})`;
+const ctIn=document.getElementById('ctIn');if(ctIn)ctIn.textContent=`(${inCount})`;
+const ctOos=document.getElementById('ctOos');if(ctOos)ctOos.textContent=`(${oosCount})`;
+
+// Build the brand chips lazily (only when brand set changes)
+const brands=[...new Set(products.map(p=>p.brand||'Other'))].sort();
+const brandChipsEl=document.getElementById('productBrandChips');
+if(brandChipsEl){
+  const sig=brands.join('|')+'::'+productFilters.brand;
+  if(brandChipsEl._sig!==sig){
+    brandChipsEl._sig=sig;
+    brandChipsEl.innerHTML=`<div class="filter-chip${productFilters.brand==='all'?' on-g':''}" onclick="setProductFilter('brand','all')">All brands</div>`+
+      brands.map(b=>`<div class="filter-chip${productFilters.brand===b?' on-g':''}" onclick="setProductFilter('brand','${b.replace(/'/g,"\\'")}')">${b}</div>`).join('');
+  }
+}
+// Sync status chip active state
+document.querySelectorAll('#productStatusChips .filter-chip').forEach(c=>{
+  c.classList.toggle('on',c.dataset.status===productFilters.status);
+});
+
+// Apply filters
+let filtered=products.filter(p=>{
+  const isOos=String(p.price).toLowerCase().includes('out of stock');
+  if(productFilters.status==='instock'&&isOos)return false;
+  if(productFilters.status==='oos'&&!isOos)return false;
+  if(productFilters.brand!=='all'&&(p.brand||'Other')!==productFilters.brand)return false;
+  if(q){
+    const hay=`${p.name||''} ${p.brand||''} ${p.category||''}`.toLowerCase();
+    if(!hay.includes(q))return false;
+  }
+  return true;
+});
+// Sort
+const parsePriceNum=s=>{const m=String(s||'').match(/[\d.]+/);return m?parseFloat(m[0]):-1};
+filtered.sort((a,b)=>{
+  if(sortBy==='name')return (a.name||'').localeCompare(b.name||'');
+  if(sortBy==='price-low')return parsePriceNum(a.price)-parsePriceNum(b.price);
+  if(sortBy==='price-high')return parsePriceNum(b.price)-parsePriceNum(a.price);
+  if(sortBy==='oldest')return (a.id||0)-(b.id||0);
+  return (b.id||0)-(a.id||0); // recent
+});
+
+const summary=document.getElementById('productCountSummary');
+if(summary)summary.textContent=`${filtered.length} of ${products.length} shown`;
+
+if(!filtered.length){
+  list.innerHTML=`<div class="empty"><div class="icon">🔍</div><div class="title">No matches</div><div class="hint">Try clearing the search or filters</div></div>`;
+  syncDashboard();return;
+}
+
+list.innerHTML=filtered.map(p=>{
+  const isOos=String(p.price).toLowerCase().includes('out of stock');
+  const photos=p.images?p.images.length:0;
+  return `<div style="margin-bottom:10px">
 <div class="product-item">
 <img src="${p.images&&p.images[0]||''}" onerror="this.style.background='#eee'">
 <div class="info">
-<div class="name">${p.name}</div>
-<div class="meta">${p.category} · <span style="color:var(--g);font-weight:700">${p.price}</span></div>
-<div class="meta">${p.images?p.images.length:0} photos</div>
+<div class="name">${p.name||'(no name)'}${isOos?'<span class="oos-flag">OOS</span>':''}</div>
+<div class="meta" style="color:var(--g);font-weight:700">${p.price}</div>
+<div class="meta-pills">
+${(p.brand?`<span class="meta-pill">${p.brand}</span>`:'')}
+${(p.category||'').split(',').filter(Boolean).slice(0,2).map(c=>`<span class="meta-pill">${c.trim()}</span>`).join('')}
+<span class="meta-pill">${photos} 📷</span>
+</div>
 </div>
 <div class="actions">
 <button class="action-btn" style="background:#f0f4ff" onclick="toggleEdit(${p.id})" title="Edit">⚙️</button>
 <button class="action-btn" style="background:#f0fdf4" onclick="toggleImgEdit(${p.id})" title="Images">✏️</button>
+<button class="action-btn" style="background:#fff3e0" onclick="quickToggleOOS(${p.id})" title="${isOos?'Mark in stock':'Mark out of stock'}">${isOos?'✅':'🚫'}</button>
 <button class="action-btn" style="background:#fef2f2" onclick="deleteProduct(${p.id})" title="Delete">🗑️</button>
 </div>
 </div>
 <div class="edit-panel" id="edit_${p.id}"></div>
 <div class="edit-panel" id="imgs_${p.id}"></div>
-</div>`).join('')}
+</div>`;
+}).join('');
+syncDashboard();
+}
+
+// Quick toggle in/out of stock without opening the edit panel
+async function quickToggleOOS(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  const wasOos=String(p.price).toLowerCase().includes('out of stock');
+  const prev=p.price;
+  if(wasOos){
+    // Restore from any stashed last price, otherwise leave blank for the user to fill
+    p.price=p._lastPrice||p.price.replace(/out of stock/i,'').trim()||'£0.00';
+  } else {
+    p._lastPrice=p.price;
+    p.price='Out of stock';
+  }
+  try{
+    await saveProducts();
+    toast(`${p.name}: now ${wasOos?'in stock':'OOS'}`,'success');
+    renderProductList();
+  }catch(e){
+    p.price=prev;
+    toast('Save failed: '+e.message,'error');
+  }
+}
+
+// ─── Toast notifications ───
+function toast(msg,type='info',ms=2800){
+  const host=document.getElementById('toastHost');if(!host)return;
+  const el=document.createElement('div');
+  el.className='toast '+(type==='success'?'success':type==='error'?'error':'info');
+  const icon=type==='success'?'✓':type==='error'?'⚠':'ℹ';
+  el.innerHTML=`<span style="font-size:15px">${icon}</span><span style="flex:1">${msg}</span><span class="x" onclick="this.parentElement.classList.add('dismiss');setTimeout(()=>this.parentElement.remove(),200)">×</span>`;
+  host.appendChild(el);
+  setTimeout(()=>{el.classList.add('dismiss');setTimeout(()=>el.remove(),200)},ms);
+}
+
+// ─── Live dashboard strip ───
+let _lastSyncTime=Date.now();
+function syncDashboard(){
+  const c=document.getElementById('dashCount');if(c)c.textContent=products.length;
+  const oc=document.getElementById('dashOosCount');if(oc)oc.textContent=products.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
+  // Image count gets refreshed via Media tab
+  const it=document.getElementById('dashSyncTime');if(it){
+    const m=Math.floor((Date.now()-_lastSyncTime)/60000);
+    it.textContent=m<1?'just now':(m+'m ago');
+  }
+}
+setInterval(syncDashboard,30000);
 
 // TOGGLE EDIT DETAILS
 function toggleEdit(id){
@@ -784,6 +983,8 @@ Object.assign(p,{name,price,category:cat,brand:brand||'Other',link,delivery});
 try{
 await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Saved!';
+if(typeof toast==='function')toast(`Updated "${name}"`,'success');
+if(typeof syncDashboard==='function')syncDashboard();
 renderProductList();
 }catch(e){
 Object.assign(p,orig);
@@ -868,16 +1069,20 @@ alert('Save failed: '+e.message);
 
 // DELETE PRODUCT
 async function deleteProduct(id){
-if(!confirm('Delete this product?'))return;
 const idx=products.findIndex(p=>p.id===id);
 if(idx<0)return;
-const removed=products.splice(idx,1)[0];
+const removed=products[idx];
+if(!confirm(`Delete "${removed.name}"?`))return;
+products.splice(idx,1);
 try{
 await saveProducts();
 renderProductList();
+if(typeof toast==='function')toast(`Deleted "${removed.name}"`,'success');
+if(typeof syncDashboard==='function')syncDashboard();
 }catch(e){
 products.splice(idx,0,removed);
-alert('Delete failed: '+e.message);
+if(typeof toast==='function')toast('Delete failed: '+e.message,'error',5000);
+else alert('Delete failed: '+e.message);
 }}
 
 // MEDIA LIBRARY (R2)
@@ -894,6 +1099,7 @@ function renderMedia(){
 const list=document.getElementById('mediaList');
 const count=document.getElementById('mediaCount');
 count.textContent=mediaImages.length+' image'+(mediaImages.length===1?'':'s');
+const dashImg=document.getElementById('dashImgCount');if(dashImg)dashImg.textContent=mediaImages.length;
 if(!mediaImages.length){
 list.innerHTML=`<div class="empty"><div class="icon">📷</div><div class="title">No images yet</div><div class="hint">Upload above or via Add Product</div></div>`;return}
 const used=getUsedUrls();
