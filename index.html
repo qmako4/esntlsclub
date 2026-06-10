@@ -141,6 +141,30 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 @keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 @keyframes blurIn{from{opacity:0;filter:blur(12px);transform:scale(1.05)}to{opacity:1;filter:blur(0);transform:scale(1)}}
+
+/* ═══ Full-screen grouped mobile menu ═══ */
+.mob-menu{position:fixed;inset:0;z-index:500;display:flex;justify-content:flex-end}
+.mob-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);animation:fi .2s ease both}
+.mob-panel{position:relative;width:100%;max-width:340px;background:#fff;display:flex;flex-direction:column;height:100vh;animation:mobSlide .25s cubic-bezier(.22,1,.36,1) both;box-shadow:-12px 0 40px rgba(0,0,0,.18)}
+@keyframes mobSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.mob-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px;border-bottom:1px solid #eee}
+.mob-x{background:#f5f5f5;border:none;width:36px;height:36px;border-radius:50%;font-size:14px;cursor:pointer;color:#111;display:flex;align-items:center;justify-content:center;font-weight:700}
+.mob-x:active{background:#e0e0e0}
+.mob-search{margin:12px 16px 4px;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s}
+.mob-search:focus{border-color:#00C853}
+.mob-scroll{flex:1;overflow-y:auto;padding:8px 8px 24px;-webkit-overflow-scrolling:touch}
+.mob-quick{display:flex;align-items:center;color:#111;font-size:15px;font-weight:700;padding:14px 16px;border-radius:12px;margin:2px 0;text-decoration:none;background:#fafbfc;border:1px solid transparent;transition:all .12s}
+.mob-quick:active{background:#eef0f2;transform:scale(.98)}
+.mob-quick-cta{background:#00C853;color:#fff;margin-top:4px}
+.mob-quick-cta:active{background:#00B248}
+.mob-section{margin:14px 0 4px;padding:0 6px}
+.mob-section-head{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#00C853;letter-spacing:2.5px;padding:8px 10px 6px;text-transform:uppercase}
+.mob-item{display:block;color:#111;font-size:14px;font-weight:600;padding:13px 14px;border-radius:10px;text-decoration:none;transition:background .12s}
+.mob-item:hover,.mob-item:active{background:#f5f5f5}
+.mob-item-sub{font-size:13px;color:#555;padding-left:24px;font-weight:500}
+.mob-item.hidden{display:none}
+.mob-section.hidden{display:none}
+.mob-divider{height:1px;background:#eee;margin:10px 4px}
 @keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(0,200,83,.2)}50%{box-shadow:0 0 20px rgba(0,200,83,.4)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -221,38 +245,76 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div class="dnav" style="gap:20px;align-items:center">
 <a href="#" onclick="goHome()" class="nl">Home</a>
 <a href="#" onclick="showCat('All')" class="nl">Shop</a>
-<a href="#" onclick="showCat('Essentials')" class="nl">Essentials</a>
-<a href="#" onclick="showCat('Footwear')" class="nl">Footwear</a>
-<a href="#" onclick="showCat('Jackets')" class="nl">Jackets</a>
+<a href="#" onclick="showCat('Essentials')" class="nl">⭐ Essentials</a>
+<a href="#" onclick="showCat('Footwear')" class="nl">Sneakers</a>
+<a href="#" onclick="showCat('Jackets')" class="nl">Outerwear</a>
 <a href="#" onclick="showCat('Hoodies')" class="nl">Hoodies</a>
 <a href="#" onclick="showCat('Accessories')" class="nl">Accessories</a>
-<a href="#" onclick="showCat('Summer')" class="nl">Summer</a>
-<a href="#" onclick="showCat('Winter')" class="nl">Winter</a>
-<a href="#" onclick="showCat('Shorts')" class="nl">Shorts</a>
 <a href="#" onclick="showStock()" class="nl" style="color:#00C853">Stock</a>
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
 </div>
 <!-- Right spacer (mobile) to balance hamburger for centered logo -->
 <div class="mbtn" style="width:44px;min-height:44px;pointer-events:none;opacity:0"></div>
 </div>
-<!-- ═══ MOBILE MENU: compact green dropdown ═══ -->
-<div id="mob" style="display:none;position:absolute;top:58px;right:12px;width:220px;background:#00C853;border-radius:16px;padding:12px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:menuDrop .25s cubic-bezier(.22,1,.36,1) both">
-<a href="#" onclick="goHome();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px;transition:background .15s">Home</a>
-<a href="#" onclick="showCat('All');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shop All</a>
-<a href="#" onclick="showCat('Essentials');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">⭐ Essentials</a>
-<a href="#" onclick="showCat('Footwear');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Footwear</a>
-<a href="#" onclick="showCat('Jackets');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Jackets</a>
-<a href="#" onclick="showCat('Hoodies');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">🥷 Hoodies</a>
-<a href="#" onclick="showCat('Accessories');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Accessories</a>
-<a href="#" onclick="showCat('Tracksuits');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Tracksuits</a>
-<a href="#" onclick="showCat('Shirts');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">Shirts</a>
-<a href="#" onclick="showCat('Summer');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">☀️ Summer</a>
-<a href="#" onclick="showCat('Winter');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">❄️ Winter</a>
-<a href="#" onclick="showCat('Shorts');toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">🩳 Shorts</a>
-<div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
-<a href="#" onclick="showStock();toggleMenu()" style="display:block;color:#fff;font-size:14px;font-weight:600;padding:12px 14px;border-radius:10px">📦 Stock Check</a>
-<a href="https://instagram.com/cluesntl" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">📸 Instagram</a>
-<a href="https://t.me/esntlsclub" target="_blank" onclick="toggleMenu()" style="display:block;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px">✈️ Telegram</a>
+<!-- ═══ MOBILE MENU: full-screen, grouped sections, searchable ═══ -->
+<div id="mob" class="mob-menu" style="display:none">
+  <div class="mob-overlay" onclick="toggleMenu()"></div>
+  <div class="mob-panel" onclick="event.stopPropagation()">
+    <div class="mob-head">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#111">MENU</div>
+      <button onclick="toggleMenu()" class="mob-x" aria-label="Close menu">✕</button>
+    </div>
+    <input id="menuSearch" class="mob-search" placeholder="🔍 Search categories…" oninput="filterMenu(this.value)">
+    <div class="mob-scroll" id="menuScroll">
+      <a href="#" class="mob-quick" onclick="goHome();toggleMenu()">🏠 Home</a>
+      <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu()">🛍️ Shop All</a>
+      <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">📦 Live Stock</a>
+
+      <div class="mob-section">
+        <div class="mob-section-head">⭐ Featured</div>
+        <a href="#" class="mob-item" data-keywords="essentials featured curated" onclick="showCat('Essentials');toggleMenu()">⭐ Essentials</a>
+      </div>
+
+      <div class="mob-section">
+        <div class="mob-section-head">👟 Sneakers</div>
+        <a href="#" class="mob-item" data-keywords="footwear sneakers shoes all" onclick="showCat('Footwear');toggleMenu()">All Footwear</a>
+        <a href="#" class="mob-item mob-item-sub" data-keywords="b22 b 22 runner technical" onclick="showCat('B22');toggleMenu()">↳ B22</a>
+        <a href="#" class="mob-item mob-item-sub" data-keywords="b30 b 30 daily" onclick="showCat('B30');toggleMenu()">↳ B30</a>
+        <a href="#" class="mob-item mob-item-sub" data-keywords="asics gel kayano" onclick="showCat('Asics');toggleMenu()">↳ Asics</a>
+      </div>
+
+      <div class="mob-section">
+        <div class="mob-section-head">🧥 Outerwear</div>
+        <a href="#" class="mob-item" data-keywords="jackets coats parka windrunner puffer" onclick="showCat('Jackets');toggleMenu()">🧥 Jackets</a>
+        <a href="#" class="mob-item" data-keywords="hoodies hood pullover" onclick="showCat('Hoodies');toggleMenu()">🥷 Hoodies</a>
+      </div>
+
+      <div class="mob-section">
+        <div class="mob-section-head">👕 Clothing</div>
+        <a href="#" class="mob-item" data-keywords="shirts t-shirt tee tops" onclick="showCat('Shirts');toggleMenu()">👕 Shirts</a>
+        <a href="#" class="mob-item" data-keywords="tracksuits joggers bottoms set" onclick="showCat('Tracksuits');toggleMenu()">🏃 Tracksuits</a>
+        <a href="#" class="mob-item" data-keywords="shorts" onclick="showCat('Shorts');toggleMenu()">🩳 Shorts</a>
+      </div>
+
+      <div class="mob-section">
+        <div class="mob-section-head">👜 Bags & Accessories</div>
+        <a href="#" class="mob-item" data-keywords="accessories bags messenger belt goyard" onclick="showCat('Accessories');toggleMenu()">👜 All Accessories</a>
+      </div>
+
+      <div class="mob-section">
+        <div class="mob-section-head">🗓️ Seasonal</div>
+        <a href="#" class="mob-item" data-keywords="summer warm sun" onclick="showCat('Summer');toggleMenu()">☀️ Summer</a>
+        <a href="#" class="mob-item" data-keywords="winter cold snow" onclick="showCat('Winter');toggleMenu()">❄️ Winter</a>
+      </div>
+
+      <div class="mob-divider"></div>
+      <div class="mob-section">
+        <div class="mob-section-head">💬 Get In Touch</div>
+        <a href="https://instagram.com/cluesntl" target="_blank" rel="noopener" class="mob-item" onclick="toggleMenu()">📸 Instagram · @cluesntl</a>
+        <a href="https://t.me/esntlsclub" target="_blank" rel="noopener" class="mob-item" onclick="toggleMenu()">✈️ Telegram channel</a>
+      </div>
+    </div>
+  </div>
 </div>
 </nav>
 
@@ -1389,8 +1451,33 @@ history.replaceState(null,null,' ')}
   ╚═══════════════════════════╝*/
 function toggleMenu(){
 const m=document.getElementById('mob');
-if(m.style.display==='none'||m.style.display===''){m.style.display='block'}
-else{m.style.display='none'}}
+const opening=m.style.display==='none'||m.style.display==='';
+if(opening){
+  m.style.display='flex';
+  document.body.style.overflow='hidden';
+  const s=document.getElementById('menuSearch');
+  if(s){s.value='';filterMenu('')}
+  setTimeout(()=>{s&&s.focus()},150);
+} else {
+  m.style.display='none';
+  document.body.style.overflow='';
+}}
+
+// Live-filter the menu by category name / brand / keyword tags
+function filterMenu(q){
+const query=(q||'').toLowerCase().trim();
+const items=document.querySelectorAll('#mob .mob-item');
+items.forEach(it=>{
+  const txt=it.textContent.toLowerCase();
+  const tags=(it.getAttribute('data-keywords')||'').toLowerCase();
+  const match=!query||txt.includes(query)||tags.includes(query);
+  it.classList.toggle('hidden',!match);
+});
+// Hide any section whose items are all hidden
+document.querySelectorAll('#mob .mob-section').forEach(sec=>{
+  const visible=sec.querySelectorAll('.mob-item:not(.hidden)').length;
+  sec.classList.toggle('hidden',!!query&&visible===0);
+});}
 // Close menu when clicking outside
 document.addEventListener('click',e=>{
 const m=document.getElementById('mob');
