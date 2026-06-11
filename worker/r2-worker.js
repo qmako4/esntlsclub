@@ -15,6 +15,8 @@
 //   PUT    /upload/<key>     → request body = file bytes, Content-Type = file mime
 //   DELETE /delete/<key>     → removes <key> from the bucket
 //   POST   /wix-sync         → refreshes wix-products.json on R2 from the Wix Stores API
+//   POST   /wix-orders-sync  → refreshes wix-orders.json on R2 from the Wix eCom Orders API
+//                              (last 90 days, trimmed to fields the Orders admin tab needs)
 //   POST   /wix-create-product → creates a minimal Wix placeholder product and returns its URL.
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 
@@ -124,6 +126,85 @@ export default {
         products: all
       });
       await env.BUCKET.put('wix-products.json', payload, {
+        httpMetadata: { contentType: 'application/json' }
+      });
+      return json({ ok: true, count: all.length, updatedAt: new Date().toISOString() });
+    }
+
+    if (req.method === 'POST' && parts[0] === 'wix-orders-sync') {
+      if (!env.WIX_API_TOKEN) return json({ error: 'WIX_API_TOKEN env var not set' }, 500);
+      if (!env.WIX_SITE_ID)   return json({ error: 'WIX_SITE_ID env var not set' }, 500);
+
+      const all = [];
+      let cursor = null;
+      let pages = 0;
+      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // last 90 days
+      do {
+        const search = cursor
+          ? { cursorPaging: { limit: 50, cursor } }
+          : { cursorPaging: { limit: 50 }, sort: [{ fieldName: 'createdDate', order: 'DESC' }] };
+        const r = await fetch('https://www.wixapis.com/ecom/v1/orders/search', {
+          method: 'POST',
+          headers: {
+            'Authorization': env.WIX_API_TOKEN,
+            'wix-site-id': env.WIX_SITE_ID,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ search })
+        });
+        if (!r.ok) {
+          const t = await r.text().catch(() => '');
+          return json({ error: 'Wix Orders API ' + r.status, detail: t.slice(0, 500) }, 502);
+        }
+        const data = await r.json();
+        let stopPaging = false;
+        for (const o of data.orders || []) {
+          if (new Date(o.createdDate) < cutoff) { stopPaging = true; break; }
+          const ship = (o.recipientInfo && o.recipientInfo.address) || {};
+          const contact = (o.recipientInfo && o.recipientInfo.contactDetails) || {};
+          all.push({
+            id: o.id,
+            number: o.number,
+            createdDate: o.createdDate,
+            paymentStatus: o.paymentStatus,
+            fulfillmentStatus: o.fulfillmentStatus,
+            archived: !!o.archived,
+            status: o.status,
+            total: (o.priceSummary && o.priceSummary.total && o.priceSummary.total.amount) || '0.00',
+            currency: o.currency,
+            buyer: {
+              name: ((contact.firstName || '') + ' ' + (contact.lastName || '')).trim(),
+              email: (o.buyerInfo && o.buyerInfo.email) || '',
+              phone: contact.phone || ''
+            },
+            shipping: {
+              addressLine: ship.addressLine || '',
+              city: ship.city || '',
+              postalCode: ship.postalCode || '',
+              country: ship.country || '',
+              countryFullname: ship.countryFullname || ''
+            },
+            lineItems: (o.lineItems || []).map(li => ({
+              productId: (li.catalogReference && li.catalogReference.catalogItemId) || '',
+              productName: (li.productName && li.productName.original) || '',
+              image: (li.image && li.image.url) || '',
+              quantity: li.quantity || 1,
+              price: (li.price && li.price.amount) || '0.00',
+              options: (li.catalogReference && li.catalogReference.options && li.catalogReference.options.options) || {}
+            }))
+          });
+        }
+        if (stopPaging) break;
+        cursor = (data.metadata && data.metadata.cursors && data.metadata.cursors.next) || null;
+        pages++;
+      } while (cursor && pages < 30);
+
+      const payload = JSON.stringify({
+        updatedAt: new Date().toISOString(),
+        count: all.length,
+        orders: all
+      });
+      await env.BUCKET.put('wix-orders.json', payload, {
         httpMetadata: { contentType: 'application/json' }
       });
       return json({ ok: true, count: all.length, updatedAt: new Date().toISOString() });

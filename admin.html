@@ -188,6 +188,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="tabs">
 <div class="tab active" onclick="showTab('add')">➕ Add</div>
 <div class="tab" onclick="showTab('products')">📦 Products</div>
+<div class="tab" onclick="showTab('orders')">🚚 Orders</div>
 <div class="tab" onclick="showTab('media')">📚 Media</div>
 <div class="tab" onclick="showTab('studio')">📸 Studio</div>
 <div class="tab" onclick="showTab('stock')">📊 Stock</div>
@@ -266,6 +267,31 @@ label.field input:focus{border-color:var(--g)}
 </div>
 </div>
 <div id="productList"></div>
+</div>
+
+<!-- ORDERS / SUPPLIER FORWARDING -->
+<div class="page" id="pageOrders">
+<div class="filter-bar" id="orderFilterBar">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px">
+<div style="font-size:11px;color:var(--sub)" id="orderSyncStatus">Tap Refresh to load orders</div>
+<button class="btn" id="ordersRefreshBtn" onclick="refreshOrders()" style="padding:7px 14px;font-size:12px;background:var(--g);color:#fff;border:none;border-radius:8px;font-weight:700">↻ Refresh</button>
+</div>
+<input type="search" class="search" id="orderSearch" placeholder="Search by name, order #, postcode…" oninput="renderOrders()">
+<div class="filter-chips" id="orderStatusChips">
+<div class="filter-chip on" data-st="unfulfilled" onclick="setOrderFilter(this,'unfulfilled')">📨 To send <span id="oCtTodo">·</span></div>
+<div class="filter-chip" data-st="sent" onclick="setOrderFilter(this,'sent')">✓ Sent <span id="oCtSent">·</span></div>
+<div class="filter-chip" data-st="fulfilled" onclick="setOrderFilter(this,'fulfilled')">📦 Fulfilled <span id="oCtFul">·</span></div>
+<div class="filter-chip" data-st="all" onclick="setOrderFilter(this,'all')">All <span id="oCtAll">·</span></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
+<span id="orderCountSummary">—</span>
+<select id="orderSort" onchange="renderOrders()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
+<option value="recent">↓ Newest first</option>
+<option value="oldest">↑ Oldest first</option>
+</select>
+</div>
+</div>
+<div id="ordersList"></div>
 </div>
 
 <!-- MEDIA LIBRARY -->
@@ -1722,11 +1748,372 @@ async function psSaveToLibrary(){
 // Wire up Studio drag-and-drop
 setupDropZone(document.getElementById('psUploadZone'),psHandleFile);
 
-// Initialise Studio when its tab opens (lazy)
+/* ═══════════════ ORDERS / SUPPLIER FORWARDING ═══════════════ */
+// Pulls a cached snapshot of recent Wix orders from R2 (wix-orders.json), maps each
+// line item back to the ESNTLS-branded product card (so the supplier sees the right
+// version, not the blank), and generates a bilingual supplier message you can copy.
+// "Mark sent" state lives in localStorage only — Wix order is NOT touched.
+const ORDERS_LS_KEY='esntlsOrdersSent';
+let wixOrders=null;
+let wixOrdersUpdatedAt=null;
+let orderFilter='unfulfilled';
+let ordersSentSet=null;
+
+// UK shoe sizes → EU conversion for the supplier (Asian supplier reads EU)
+const UK_TO_EU={
+  '5':'38','5.5':'38.5','6':'39','6.5':'40','7':'40.5','7.5':'41',
+  '8':'42','8.5':'42.5','9':'43','9.5':'44','10':'44.5','10.5':'45',
+  '11':'45.5','11.5':'46','12':'46.5','12.5':'47','13':'47.5'
+};
+
+// ─── localStorage: order numbers that have been sent to the supplier
+function ordersLoadSent(){
+  if(ordersSentSet)return ordersSentSet;
+  try{ordersSentSet=new Set(JSON.parse(localStorage.getItem(ORDERS_LS_KEY)||'[]'))}
+  catch(e){ordersSentSet=new Set()}
+  return ordersSentSet;
+}
+function ordersSaveSent(){
+  localStorage.setItem(ORDERS_LS_KEY,JSON.stringify([...ordersLoadSent()]));
+}
+function ordersIsSent(num){return ordersLoadSent().has(String(num))}
+function ordersToggleSent(num){
+  const s=ordersLoadSent();
+  const k=String(num);
+  if(s.has(k)){s.delete(k)}else{s.add(k)}
+  ordersSaveSent();
+}
+
+// ─── Reverse-lookup: Wix order line item → ESNTLS product card
+// 1. If wix-products.json maps the catalogItemId to a slug that matches an
+//    esntls product.link → direct match.
+// 2. Special case for the OLD combined Daily Sneakers product (a627a...): use
+//    the Color option to find the matching B30 esntls product by name.
+// 3. Otherwise → no match (the supplier message falls back to the Wix product name).
+const DAILY_SNEAKERS_OLD_ID='a627a529-8d8e-4918-8e93-acaa0f9e35ef';
+
+function normColour(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function colourMatchesEsntls(orderColour,esntlsName){
+  // "Grey/White" → "greywhite"; "B30 Grey and White" → "b30greyandwhite" → strip "b30and" → ...
+  const oc=normColour(orderColour);                             // greywhite
+  const enRaw=normColour(esntlsName);                           // b30greyandwhite
+  const en=enRaw.replace(/^b30/,'').replace(/and/g,'').replace(/x/g,'');  // greywhite
+  if(oc===en)return true;
+  // Try reverse: "grey/white" tokens both appear?
+  const ocToks=(orderColour||'').toLowerCase().split(/[\/\s,]+/).filter(Boolean);
+  if(ocToks.length<=1)return false;
+  return ocToks.every(t=>enRaw.includes(t.replace(/[^a-z0-9]/g,'')));
+}
+
+function findEsntlsForLineItem(item, wixProductsBySlug, wixProductsById){
+  const wixId=item.productId;
+  const wixCat=wixProductsById[wixId]||null;
+  const wixSlug=wixCat?wixCat.slug:null;
+  const colourOpt=(item.options&&(item.options.Color||item.options.color||item.options.Colour||item.options.colour))||null;
+
+  // 1. Direct slug match against esntls products
+  if(wixSlug){
+    const hit=products.find(p=>(p.link||'').toLowerCase().includes('/'+wixSlug.toLowerCase()));
+    if(hit && !(wixId===DAILY_SNEAKERS_OLD_ID && colourOpt)){
+      return {esntls:hit, wixCat, matchType:'slug'};
+    }
+  }
+
+  // 2. Old combined Daily Sneakers → match by Color
+  if(wixId===DAILY_SNEAKERS_OLD_ID && colourOpt){
+    const candidates=products.filter(p=>{
+      const cats=(p.category||'').toLowerCase();
+      const name=(p.name||'').toLowerCase();
+      return cats.includes('b30')||name.startsWith('b30');
+    });
+    const hit=candidates.find(p=>colourMatchesEsntls(colourOpt,p.name));
+    if(hit)return {esntls:hit, wixCat, matchType:'b30-colour'};
+  }
+
+  // 3. Fallback to Wix product cache for image/name
+  return {esntls:null, wixCat, matchType:'none'};
+}
+
+// ─── Fetch wix-orders.json from R2 (no network = empty list, with friendly message)
+async function loadWixOrders(){
+  const status=document.getElementById('orderSyncStatus');
+  status.textContent='Loading from R2…';
+  try{
+    const res=await fetch(R2_PUBLIC+'wix-orders.json?t='+Date.now());
+    if(res.status===404){
+      wixOrders=[];wixOrdersUpdatedAt=null;
+      status.innerHTML='<span style="color:#e53935">No orders synced yet</span> · ask Claude to sync or deploy the worker';
+      return [];
+    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    wixOrders=Array.isArray(data.orders)?data.orders:[];
+    wixOrdersUpdatedAt=data.updatedAt||null;
+    const stamp=wixOrdersUpdatedAt?new Date(wixOrdersUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'unknown';
+    status.innerHTML=`Last sync <strong>${stamp}</strong> · ${wixOrders.length} orders`;
+    return wixOrders;
+  }catch(e){
+    wixOrders=[];
+    status.innerHTML='<span style="color:#e53935">Load failed: '+e.message+'</span>';
+    return [];
+  }
+}
+
+// Map of wix products cached so we can look up image/slug/name quickly
+function _buildWixIndices(){
+  const list=wixCatalog||[];
+  const byId={},bySlug={};
+  for(const p of list){byId[p.id]=p;if(p.slug)bySlug[p.slug]=p}
+  return {byId,bySlug};
+}
+
+// ─── Refresh: try worker first (if configured), then re-read R2
+async function refreshOrders(){
+  const btn=document.getElementById('ordersRefreshBtn');
+  const status=document.getElementById('orderSyncStatus');
+  btn.disabled=true;btn.textContent='⏳ Syncing…';
+  let workerOk=false,workerCount=0;
+  if(WORKER_URL&&ADMIN_SECRET){
+    try{
+      status.textContent='Asking worker to pull latest from Wix…';
+      const r=await fetch(WORKER_URL+'/wix-orders-sync',{method:'POST',headers:{'X-Admin-Secret':ADMIN_SECRET}});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){workerOk=true;workerCount=d.count||0}
+      else{status.innerHTML='<span style="color:#e53935">Worker sync failed: '+(d.error||r.status)+'</span>'}
+    }catch(e){/* fall through */}
+  }
+  await loadWixCatalog().catch(()=>{});
+  await loadProducts().catch(()=>{});
+  await loadWixOrders();
+  if(workerOk){
+    status.innerHTML=`✓ Worker synced <strong>${workerCount}</strong> orders · `+status.innerHTML;
+  }
+  renderOrders();
+  btn.disabled=false;btn.textContent='↻ Refresh';
+  if(typeof toast==='function')toast('Orders refreshed','success');
+}
+
+// ─── Filter chip click
+function setOrderFilter(el,st){
+  document.querySelectorAll('#orderStatusChips .filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  orderFilter=st;
+  renderOrders();
+}
+
+// ─── Supplier message (English + brief Chinese) — copy-to-clipboard
+function buildSupplierMessage(order){
+  const lines=[];
+  lines.push(`Order #${order.number} — ${new Date(order.createdDate).toLocaleDateString('en-GB')}`);
+  lines.push(`订单 #${order.number}`);
+  lines.push('');
+  const idx=_buildWixIndices();
+  (order.lineItems||[]).forEach((it,n)=>{
+    const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
+    const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
+    const wixName=it.productName||'';
+    lines.push(`Item ${n+1}: ${displayName}`);
+    lines.push(`商品 ${n+1}: ${displayName}`);
+    if(lookup.matchType==='b30-colour'||(lookup.esntls&&lookup.esntls.name!==wixName)){
+      lines.push(`(Wix listing: ${wixName})`);
+    }
+    const opts=it.options||{};
+    if(opts.Size){
+      const ukNum=String(opts.Size).replace(/[^0-9.]/g,'');
+      const eu=UK_TO_EU[ukNum];
+      lines.push(`Size: ${opts.Size}${eu?` (EU ${eu})`:''}`);
+      lines.push(`尺码: ${opts.Size}${eu?` / EU ${eu}`:''}`);
+    }else if(opts['Shoe Size']){
+      const ukNum=String(opts['Shoe Size']).replace(/[^0-9.]/g,'');
+      const eu=UK_TO_EU[ukNum];
+      lines.push(`Size: ${opts['Shoe Size']}${eu?` (EU ${eu})`:''}`);
+      lines.push(`尺码: ${opts['Shoe Size']}${eu?` / EU ${eu}`:''}`);
+    }
+    if(opts.Color||opts.Colour){lines.push(`Colour: ${opts.Color||opts.Colour}`);lines.push(`颜色: ${opts.Color||opts.Colour}`)}
+    lines.push(`Quantity / 数量: ${it.quantity||1}`);
+    lines.push('');
+  });
+  const s=order.shipping||{};
+  const b=order.buyer||{};
+  lines.push('Ship to / 寄送至:');
+  lines.push(b.name||'');
+  if(s.addressLine)lines.push(s.addressLine);
+  if(s.city)lines.push(s.city);
+  if(s.postalCode)lines.push(s.postalCode);
+  lines.push(s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||''));
+  if(b.phone)lines.push(`Phone / 电话: ${b.phone}`);
+  return lines.filter(l=>l!==null&&l!==undefined).join('\n');
+}
+
+function copySupplierMessage(num){
+  const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
+  if(!o)return;
+  const txt=buildSupplierMessage(o);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{
+      if(typeof toast==='function')toast('Supplier message copied','success');
+    }).catch(()=>fallbackCopy(txt));
+  }else{fallbackCopy(txt)}
+}
+function fallbackCopy(txt){
+  const ta=document.createElement('textarea');ta.value=txt;
+  ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);
+  ta.select();try{document.execCommand('copy');if(typeof toast==='function')toast('Supplier message copied','success')}catch(e){}
+  document.body.removeChild(ta);
+}
+
+// ─── Toggle "mark as sent" + re-render counts/state
+function markOrderSent(num,btnEl){
+  ordersToggleSent(num);
+  renderOrders();
+}
+
+// ─── Open the Wix order in the Wix dashboard so user can fulfill manually
+function openWixOrder(orderId){
+  if(!orderId)return;
+  const u='https://manage.wix.com/dashboard/'+WIX_SITE_ID_FOR_DASH+'/store/orders/'+orderId;
+  window.open(u,'_blank');
+}
+// Hardcoded — pulled from the site id used elsewhere in this admin (admin reads/writes the same store)
+const WIX_SITE_ID_FOR_DASH='7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155';
+
+// ─── Render the orders list
+function renderOrders(){
+  const root=document.getElementById('ordersList');
+  if(!wixOrders){root.innerHTML='<div style="padding:30px;text-align:center;color:var(--sub);font-size:13px">Tap Refresh to load orders</div>';return}
+  if(!wixOrders.length){
+    root.innerHTML='<div style="padding:30px;text-align:center;color:var(--sub);font-size:13px">No orders in the snapshot yet.<br><br>'+
+      'If the worker is deployed: tap Refresh.<br>Otherwise, ask Claude to push wix-orders.json to R2.</div>';
+    updateOrderCounts();
+    return;
+  }
+  const sentSet=ordersLoadSent();
+  const q=(document.getElementById('orderSearch').value||'').toLowerCase().trim();
+  const sort=document.getElementById('orderSort').value;
+  const sortFn=sort==='oldest'
+    ? (a,b)=>new Date(a.createdDate)-new Date(b.createdDate)
+    : (a,b)=>new Date(b.createdDate)-new Date(a.createdDate);
+
+  let list=wixOrders.slice().sort(sortFn);
+  if(orderFilter==='unfulfilled')list=list.filter(o=>o.fulfillmentStatus!=='FULFILLED'&&!sentSet.has(String(o.number)));
+  else if(orderFilter==='sent')list=list.filter(o=>sentSet.has(String(o.number))&&o.fulfillmentStatus!=='FULFILLED');
+  else if(orderFilter==='fulfilled')list=list.filter(o=>o.fulfillmentStatus==='FULFILLED');
+
+  if(q){
+    list=list.filter(o=>{
+      const hay=[
+        o.number,
+        (o.buyer&&o.buyer.name)||'',
+        (o.buyer&&o.buyer.email)||'',
+        (o.shipping&&o.shipping.postalCode)||'',
+        (o.shipping&&o.shipping.city)||'',
+        ...(o.lineItems||[]).map(li=>li.productName||'')
+      ].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  document.getElementById('orderCountSummary').textContent=`${list.length} of ${wixOrders.length} orders`;
+  updateOrderCounts();
+
+  if(!list.length){
+    root.innerHTML='<div style="padding:30px;text-align:center;color:var(--sub);font-size:13px">No orders match these filters.</div>';
+    return;
+  }
+
+  const idx=_buildWixIndices();
+  root.innerHTML=list.map(o=>{
+    const sent=sentSet.has(String(o.number));
+    const ful=o.fulfillmentStatus==='FULFILLED';
+    const paid=o.paymentStatus==='PAID';
+    const dateStr=new Date(o.createdDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
+    const itemsHtml=(o.lineItems||[]).map(it=>{
+      const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
+      const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
+      const displayImg=(lookup.esntls&&lookup.esntls.images&&lookup.esntls.images[0])||(lookup.wixCat&&lookup.wixCat.image)||it.image||'';
+      const opts=it.options||{};
+      const optBits=[];
+      if(opts.Size||opts['Shoe Size'])optBits.push(`<span>📏 ${escHtml(opts.Size||opts['Shoe Size'])}</span>`);
+      if(opts.Color||opts.Colour)optBits.push(`<span>🎨 ${escHtml(opts.Color||opts.Colour)}</span>`);
+      if(opts.Delivery)optBits.push(`<span>🚚 ${escHtml(opts.Delivery)}</span>`);
+      const matchBadge=lookup.matchType==='slug'?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ matched</span>'
+                       :lookup.matchType==='b30-colour'?'<span style="background:#e3f2fd;color:#1565c0;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">b30 colour</span>'
+                       :'<span style="background:#fff3e0;color:#e65100;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">no match</span>';
+      const wixNote=(lookup.esntls&&lookup.esntls.name!==it.productName)?`<div style="font-size:10px;color:#aaa;margin-top:3px">Wix: ${escHtml(it.productName||'')}</div>`:'';
+      return `<div style="display:flex;gap:10px;padding:8px 0;border-top:1px solid #f0f0f0">
+        <img src="${escHtml(displayImg)}" loading="lazy" style="width:54px;height:54px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:#111;line-height:1.25">${escHtml(displayName)}${matchBadge}</div>
+          ${wixNote}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:4px">${optBits.join('')}</div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--g);flex-shrink:0;align-self:flex-start">×${it.quantity||1}</div>
+      </div>`;
+    }).join('');
+    const s=o.shipping||{};
+    const b=o.buyer||{};
+    const addrLines=[s.addressLine,s.city,s.postalCode,s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||'')].filter(Boolean);
+    const statusPills=[];
+    if(ful)statusPills.push('<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">📦 FULFILLED</span>');
+    else if(sent)statusPills.push('<span style="background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">✓ SENT TO SUPPLIER</span>');
+    else statusPills.push('<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">📨 TO SEND</span>');
+    if(!paid)statusPills.push('<span style="background:#ffebee;color:#c62828;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">UNPAID</span>');
+    return `<div class="card" style="margin-bottom:10px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:var(--sub);font-weight:600">#${escHtml(o.number||'')} · ${escHtml(dateStr)}</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${escHtml(b.name||'(no name)')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:var(--g)">£${escHtml(o.total||'0.00')}</div>
+          <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px;flex-wrap:wrap">${statusPills.join('')}</div>
+        </div>
+      </div>
+      ${itemsHtml}
+      <details style="margin-top:8px;border-top:1px solid #f0f0f0;padding-top:8px">
+        <summary style="font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;list-style:none">📍 Ship to · tap to expand</summary>
+        <div style="font-size:12px;line-height:1.5;margin-top:6px;color:#444">
+          ${escHtml(b.name||'')}<br>
+          ${addrLines.map(escHtml).join('<br>')}
+          ${b.phone?`<br>📞 ${escHtml(b.phone)}`:''}
+          ${b.email?`<br>✉️ ${escHtml(b.email)}`:''}
+        </div>
+      </details>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:1;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none">📋 Copy supplier message</button>
+        <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 14px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'↶ Undo sent':'✓ Mark sent'}</button>
+        <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">🔗 Wix</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateOrderCounts(){
+  if(!wixOrders){return}
+  const sentSet=ordersLoadSent();
+  let todo=0,sent=0,ful=0;
+  wixOrders.forEach(o=>{
+    if(o.fulfillmentStatus==='FULFILLED')ful++;
+    else if(sentSet.has(String(o.number)))sent++;
+    else todo++;
+  });
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set('oCtTodo',todo);set('oCtSent',sent);set('oCtFul',ful);set('oCtAll',wixOrders.length);
+}
+
+// Initialise Studio + Orders when their tab opens (lazy)
 const _origShowTab=showTab;
 window.showTab=function(t){
   _origShowTab.apply(this,arguments);
   if(t==='studio'){psLoadSettings();psUpdateGenerateState()}
+  if(t==='orders'){
+    if(!wixOrders){
+      // First open — auto-load from R2 (no worker call, just snapshot)
+      Promise.all([loadWixCatalog().catch(()=>{}), loadWixOrders()]).then(renderOrders);
+    }else{
+      renderOrders();
+    }
+  }
 };
 </script>
 </body></html>
