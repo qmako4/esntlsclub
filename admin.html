@@ -2026,6 +2026,128 @@ function fallbackCopy(txt){
   document.body.removeChild(ta);
 }
 
+// ─── Fetch an image URL as a File so Web Share can attach it
+async function _fetchImageAsFile(url,filename){
+  if(!url)return null;
+  try{
+    const r=await fetch(url,{mode:'cors',cache:'no-store'});
+    if(!r.ok)return null;
+    const blob=await r.blob();
+    if(!blob.type.startsWith('image/'))return null;
+    const ext=blob.type.split('/')[1]||'png';
+    return new File([blob],(filename||'product')+'.'+ext,{type:blob.type});
+  }catch(e){return null}
+}
+
+// ─── Pick the first ESNTLS-branded image for this order (falls back to Wix image)
+function _orderHeroImageUrl(o){
+  const idx=_buildWixIndices();
+  for(const li of (o.lineItems||[])){
+    const lk=findEsntlsForLineItem(li,idx.bySlug,idx.byId);
+    const u=(lk.esntls&&lk.esntls.images&&lk.esntls.images[0])||(lk.wixCat&&lk.wixCat.image)||li.image;
+    if(u)return u;
+  }
+  return '';
+}
+
+// ─── Per-order: Web Share with image + text. On WeChat this attaches the photo.
+async function shareSupplierMessage(num,btn){
+  const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
+  if(!o)return;
+  const text=buildSupplierMessage(o);
+  const imgUrl=_orderHeroImageUrl(o);
+  if(btn){btn.disabled=true;const orig=btn.innerHTML;btn.innerHTML='⏳ Preparing…';btn._orig=orig}
+  let file=null;
+  if(imgUrl)file=await _fetchImageAsFile(imgUrl,'order-'+o.number);
+  if(btn){btn.disabled=false;if(btn._orig)btn.innerHTML=btn._orig}
+  const shareData={title:'Order #'+o.number,text};
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]}))shareData.files=[file];
+  if(navigator.share){
+    try{await navigator.share(shareData);return}
+    catch(e){if(e.name==='AbortError')return}
+  }
+  // Desktop / unsupported browser fallback: copy text + open image in new tab
+  copySupplierMessage(num);
+  if(file){
+    const blobUrl=URL.createObjectURL(file);
+    window.open(blobUrl,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(blobUrl),60000);
+  }else if(imgUrl){
+    window.open(imgUrl,'_blank');
+  }
+  if(typeof toast==='function')toast('Text copied · image opened in new tab — save & attach in WeChat','info',5000);
+}
+
+// ─── Bulk: condensed message of all unsent unfulfilled orders, sorted oldest first
+function _bulkOrdersToSend(){
+  const sentSet=ordersLoadSent();
+  return (wixOrders||[])
+    .filter(o=>o.fulfillmentStatus!=='FULFILLED'&&!sentSet.has(String(o.number)))
+    .sort((a,b)=>new Date(a.createdDate)-new Date(b.createdDate));
+}
+function buildBulkMessage(){
+  const list=_bulkOrdersToSend();
+  if(!list.length)return '';
+  const idx=_buildWixIndices();
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const lines=[`📦 ${list.length} orders to ship · 共 ${list.length} 个订单 (${today})`,''];
+  list.forEach((o,n)=>{
+    const date=new Date(o.createdDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+    lines.push(`${n+1}. #${o.number} · ${date}`);
+    (o.lineItems||[]).forEach(li=>{
+      const lk=findEsntlsForLineItem(li,idx.bySlug,idx.byId);
+      const name=lk.esntls?lk.esntls.name:(li.productName||'Unknown');
+      const opts=li.options||{};
+      const sizeRaw=opts.Size||opts['Shoe Size']||'';
+      const ukNum=String(sizeRaw).replace(/[^0-9.]/g,'');
+      const eu=UK_TO_EU[ukNum];
+      const sizeBit=sizeRaw?` ${sizeRaw}${eu?` / EU ${eu}`:''}`:'';
+      const colourBit=(opts.Color||opts.Colour)?` · ${opts.Color||opts.Colour}`:'';
+      const deliv=opts.Delivery?` · ${opts.Delivery}`:'';
+      const qty=(li.quantity||1)>1?` ×${li.quantity}`:'';
+      lines.push(`   ${name}${sizeBit}${colourBit}${deliv}${qty}`);
+    });
+    const b=o.buyer||{};
+    const s=o.shipping||{};
+    const country=s.countryFullname||(s.country==='GB'?'UK':s.country||'');
+    const addr=[b.name,s.addressLine,s.city,s.postalCode,country].filter(Boolean).join(' · ');
+    lines.push(`   📍 ${addr}`);
+    if(b.phone)lines.push(`   📞 ${b.phone}`);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function bulkCopyUnfulfilled(){
+  const list=_bulkOrdersToSend();
+  if(!list.length){if(typeof toast==='function')toast('No unsent orders','info');return}
+  const text=buildBulkMessage();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      if(typeof toast==='function')toast(`Copied ${list.length} orders — paste in WeChat`,'success',4000);
+    }).catch(()=>fallbackCopy(text));
+  }else{fallbackCopy(text)}
+}
+async function bulkShareUnfulfilled(){
+  const list=_bulkOrdersToSend();
+  if(!list.length){if(typeof toast==='function')toast('No unsent orders','info');return}
+  const text=buildBulkMessage();
+  if(navigator.share){
+    try{await navigator.share({title:`${list.length} orders to ship`,text});return}
+    catch(e){if(e.name==='AbortError')return}
+  }
+  bulkCopyUnfulfilled();
+}
+function bulkMarkAllSent(){
+  const list=_bulkOrdersToSend();
+  if(!list.length)return;
+  if(!confirm(`Mark all ${list.length} unsent orders as sent? (Browser-only, Wix not touched)`))return;
+  const s=ordersLoadSent();
+  list.forEach(o=>s.add(String(o.number)));
+  ordersSaveSent();
+  renderOrders();
+  if(typeof toast==='function')toast(`Marked ${list.length} as sent`,'success');
+}
+
 // ─── Toggle "mark as sent" + re-render counts/state
 function markOrderSent(num,btnEl){
   ordersToggleSent(num);
@@ -2085,8 +2207,20 @@ function renderOrders(){
     return;
   }
 
+  // Bulk action bar — shown only when filtering "To send" (the most common workflow)
+  const unsentCount=_bulkOrdersToSend().length;
+  const bulkBar=(orderFilter==='unfulfilled'&&unsentCount>0)?`
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:11px 14px;background:#111;color:#fff;border-radius:12px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:13px;font-weight:700">📤 Forward ${unsentCount} to supplier</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="bulkShareUnfulfilled()" style="background:var(--g);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Share to WeChat in one tap">📲 Share all</button>
+        <button onclick="bulkCopyUnfulfilled()" style="background:#fff;color:#111;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copy all</button>
+        <button onclick="bulkMarkAllSent()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="After you've sent them all">✓ Mark all sent</button>
+      </div>
+    </div>`:'';
+
   const idx=_buildWixIndices();
-  root.innerHTML=list.map(o=>{
+  root.innerHTML=bulkBar+list.map(o=>{
     const sent=sentSet.has(String(o.number));
     const ful=o.fulfillmentStatus==='FULFILLED';
     const paid=o.paymentStatus==='PAID';
@@ -2144,9 +2278,10 @@ function renderOrders(){
         </div>
       </details>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:1;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none">📋 Copy supplier message</button>
-        <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 14px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'↶ Undo sent':'✓ Mark sent'}</button>
-        <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">🔗 Wix</button>
+        <button class="btn" onclick="shareSupplierMessage('${escHtml(o.number)}',this)" style="flex:1 1 auto;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none" title="Send to WeChat with image attached">📲 Send (with image)</button>
+        <button class="btn btn-outline" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Copy text only">📋</button>
+        <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 12px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'↶ Undo':'✓ Sent'}</button>
+        <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">🔗</button>
       </div>
     </div>`;
   }).join('');
