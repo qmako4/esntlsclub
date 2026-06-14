@@ -420,8 +420,8 @@ const imgs=IMG_OVERRIDES[String(p.id)];
 return imgs?{...p,img:imgs[0],imgs}:p
 })}
 
-const CATS=["All","Best Sellers","Essentials","Footwear","B22","B30","Asics","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Summer","Winter","Shorts"];
-const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
+const CATS=["All","Best Sellers","Essentials","Footwear","B22","B30","Asics","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
+const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
 function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
 // Per-brand product blurb (replaces generic "from the X collection")
