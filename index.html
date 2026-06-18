@@ -438,11 +438,15 @@ const res=await fetch(R2_BASE+'products.json?t='+Math.floor(Date.now()/60000));
 if(!res.ok){if(res.status!==404)console.log('products.json HTTP',res.status);return}
 const data=await res.json();
 const arr=Array.isArray(data)?data:[];
+for(const p of arr){
+const discovered=[...(p.category||'').split(','),p.brand].map(c=>(c||'').trim()).filter(c=>c&&c!=='Other');
+for(const c of discovered){if(!CATS.includes(c))CATS.push(c);if(!CAT_ICONS[c])CAT_ICONS[c]='🏷️'}
+}
 customProducts=arr.map(p=>{
 const cats=(p.category||'').split(',').map(c=>c.trim()).filter(Boolean);
 const brand=p.brand||'Other';
-// Auto-tag: brand → category for shoe brands
-if(['B22','B30','Asics'].includes(brand)&&!cats.includes(brand)) cats.push(brand);
+// Every saved brand also behaves as a storefront category.
+if(brand!=='Other'&&!cats.includes(brand)) cats.push(brand);
 // Auto-tag: any product whose name starts with "ASICS Gel Kayano" → Asics category
 if(/^\s*asics\s+gel\s+kayano/i.test(p.name||'')){
   if(!cats.includes('Asics')) cats.push('Asics');
@@ -463,7 +467,7 @@ const imgs=IMG_OVERRIDES[String(p.id)];
 return imgs?{...p,img:imgs[0],imgs}:p
 })}
 
-const CATS=["All","Best Sellers","Essentials","Footwear","B22","B30","Asics","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
+const CATS=["All","Best Sellers","Essentials","Footwear","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
 const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
 function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}

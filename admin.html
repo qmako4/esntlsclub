@@ -225,7 +225,13 @@ label.field input:focus{border-color:var(--g)}
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
-<label class="field"><span>Brand</span><input id="aBrand" placeholder="e.g. B22, B30, Other"></label>
+<label class="field"><span>Add Category</span>
+<div style="display:flex;gap:6px;align-items:stretch">
+<input id="aNewCategory" placeholder="e.g. Ralph Lauren" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomCategory()}">
+<button type="button" class="btn" onclick="addCustomCategory()" style="width:auto;flex-shrink:0;padding:0 14px">Add</button>
+</div>
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">New categories appear below and are selected automatically.</span>
+</label>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories (tap multiple)</span>
 <div class="cats" id="addCats"></div>
@@ -253,13 +259,13 @@ label.field input:focus{border-color:var(--g)}
 <!-- PRODUCTS LIST -->
 <div class="page" id="pageProducts">
 <div class="filter-bar" id="productFilterBar">
-<input type="search" class="search" id="productSearch" placeholder="Search products by name or brand…" oninput="renderProductList()">
+<input type="search" class="search" id="productSearch" placeholder="Search products by name or category…" oninput="renderProductList()">
 <div class="filter-chips" id="productStatusChips">
 <div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">·</span></div>
 <div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">·</span></div>
 <div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">·</span></div>
 </div>
-<div class="filter-chips" id="productBrandChips"></div>
+<div class="filter-chips" id="productCategoryChips"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
 <span id="productCountSummary">—</span>
 <select id="productSort" onchange="renderProductList()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
@@ -464,8 +470,11 @@ const R2_ENDPOINT='https://'+R2_HOST;
 const R2_ACCESS_KEY='dc536b58cf237e0d95da9b91cb62a9cb';
 const R2_SECRET_KEY='61d0f77d798067438039743ec8851668fb2e5714ee82af5fe40ed36f4d6ea6e4';
 const ADMIN_PASS='esntls2026';
-const CATS=["Best Sellers","Essentials","Footwear","B22","B30","Asics","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
+const CORE_CATS=["Best Sellers","Essentials","Footwear","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
+const BRAND_CATS=["Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Essentials","Hermes","LV","Monc","Nike"];
+let CATS=[...CORE_CATS,...BRAND_CATS.filter(c=>!CORE_CATS.includes(c))];
 const DELIVERY=["Next Day","7-12 Days"];
+const CUSTOM_CATS_KEY='esntlsCustomCategories';
 
 let products=[];
 let selectedCats=[];
@@ -547,6 +556,7 @@ const pw=document.getElementById('pwInput').value;
 if(pw===ADMIN_PASS){
 document.getElementById('loginScreen').style.display='none';
 document.getElementById('app').style.display='block';
+loadCustomCategories();
 loadProducts();
 initCatPills();
 initDropZones();
@@ -589,12 +599,46 @@ if(tab==='media'){loadMedia().then(renderMedia)}
 }
 
 // CATEGORY / DELIVERY PILLS
+function escapeAdminHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function initCatPills(){
 const cats=document.getElementById('addCats');
-cats.innerHTML=CATS.map(c=>`<div class="cat-pill" onclick="toggleAddCat(this)" data-cat="${c}">${c}</div>`).join('');
+if(cats)cats.innerHTML=CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${selectedCats.includes(c)?' on':''}" onclick="toggleAddCat(this)" data-cat="${safe}">${safe}</div>`}).join('');
 const del=document.getElementById('addDelivery');
-del.innerHTML=DELIVERY.map(d=>`<div class="cat-pill" onclick="toggleAddDelivery(this)" data-cat="${d}">${d}</div>`).join('');
+if(del)del.innerHTML=DELIVERY.map(d=>`<div class="cat-pill" onclick="toggleAddDelivery(this)" data-cat="${d}">${d}</div>`).join('');
 }
+function loadCustomCategories(){
+let saved=[];try{saved=JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY)||'[]')}catch(e){}
+for(const c of saved)if(c&&!CATS.includes(c))CATS.push(c)
+}
+function refreshCategoriesFromProducts(){
+for(const p of products){
+const values=[...(p.category||'').split(','),p.brand].map(c=>(c||'').trim()).filter(c=>c&&c!=='Other');
+for(const c of values)if(!CATS.includes(c))CATS.push(c)
+}
+}
+function addCustomCategory(){
+const input=document.getElementById('aNewCategory');
+const value=(input?.value||'').trim().replace(/\s+/g,' ');
+if(!value)return;
+if(value.length>40){if(typeof toast==='function')toast('Category must be 40 characters or fewer','error');return}
+let category=CATS.find(c=>c.toLowerCase()===value.toLowerCase());
+if(!category){
+category=value;CATS.push(category);
+const saved=CATS.filter(c=>!CORE_CATS.includes(c)&&!BRAND_CATS.includes(c));
+localStorage.setItem(CUSTOM_CATS_KEY,JSON.stringify(saved));
+}
+if(!selectedCats.includes(category))selectedCats.push(category);
+if(input)input.value='';
+initCatPills();
+if(typeof toast==='function')toast(`Category "${category}" added`,'success');
+}
+function effectiveCategories(p){
+const cats=(p.category||'').split(',').map(c=>c.trim()).filter(Boolean);
+const brand=(p.brand||'').trim();
+if(brand&&brand!=='Other'&&!cats.includes(brand))cats.push(brand);
+return cats;
+}
+function inferBrand(cats){return cats.find(c=>BRAND_CATS.includes(c))||'Other'}
 function toggleAddCat(el){
 el.classList.toggle('on');
 selectedCats=[];
@@ -689,9 +733,9 @@ async function addProduct(){
 const n=document.getElementById('aName').value.trim();
 const price=document.getElementById('aPrice').value.trim();
 const link=document.getElementById('aLink').value.trim();
-const brand=document.getElementById('aBrand').value.trim();
 const msg=document.getElementById('addMsg');
 const cat=selectedCats.join(',')||'Footwear';
+const brand=inferBrand(selectedCats);
 
 if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
 if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
@@ -709,7 +753,7 @@ const newProduct={
 id:newId,
 name:n,
 category:cat,
-brand:brand||'Other',
+brand,
 price,
 link,
 delivery:selectedDelivery.join(','),
@@ -724,7 +768,7 @@ await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Product added!';
 if(typeof toast==='function')toast(`Added "${newProduct.name}"`,'success');
 if(typeof syncDashboard==='function')syncDashboard();
-['aName','aPrice','aLink','aBrand'].forEach(id=>document.getElementById(id).value='');
+['aName','aPrice','aLink','aNewCategory'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
@@ -754,6 +798,8 @@ products=[];
 console.error('loadProducts HTTP',res.status);
 }
 _lastSyncTime=Date.now();
+refreshCategoriesFromProducts();
+initCatPills();
 if(typeof syncDashboard==='function')syncDashboard();
 }catch(e){console.error('Load error:',e)}}
 
@@ -824,7 +870,7 @@ btn.disabled=false;
 
 // RENDER PRODUCT LIST
 // ─── Product list state: search + filter + sort ───
-const productFilters={status:'all',brand:'all',q:''};
+const productFilters={status:'all',category:'all',q:''};
 function setProductFilter(key,val){productFilters[key]=val;renderProductList()}
 function renderProductList(){
 const list=document.getElementById('productList');
@@ -846,15 +892,15 @@ const ctAll=document.getElementById('ctAll');if(ctAll)ctAll.textContent=`(${prod
 const ctIn=document.getElementById('ctIn');if(ctIn)ctIn.textContent=`(${inCount})`;
 const ctOos=document.getElementById('ctOos');if(ctOos)ctOos.textContent=`(${oosCount})`;
 
-// Build the brand chips lazily (only when brand set changes)
-const brands=[...new Set(products.map(p=>p.brand||'Other'))].sort();
-const brandChipsEl=document.getElementById('productBrandChips');
-if(brandChipsEl){
-  const sig=brands.join('|')+'::'+productFilters.brand;
-  if(brandChipsEl._sig!==sig){
-    brandChipsEl._sig=sig;
-    brandChipsEl.innerHTML=`<div class="filter-chip${productFilters.brand==='all'?' on-g':''}" onclick="setProductFilter('brand','all')">All brands</div>`+
-      brands.map(b=>`<div class="filter-chip${productFilters.brand===b?' on-g':''}" onclick="setProductFilter('brand','${b.replace(/'/g,"\\'")}')">${b}</div>`).join('');
+// Build category chips from both saved categories and legacy brand values.
+const usedCategories=[...new Set(products.flatMap(effectiveCategories))].sort();
+const categoryChipsEl=document.getElementById('productCategoryChips');
+if(categoryChipsEl){
+  const sig=usedCategories.join('|')+'::'+productFilters.category;
+  if(categoryChipsEl._sig!==sig){
+    categoryChipsEl._sig=sig;
+    categoryChipsEl.innerHTML=`<div class="filter-chip${productFilters.category==='all'?' on-g':''}" onclick="setProductFilter('category','all')">All categories</div>`+
+      usedCategories.map(c=>{const safe=escapeAdminHTML(c);const js=c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");return `<div class="filter-chip${productFilters.category===c?' on-g':''}" onclick="setProductFilter('category','${js}')">${safe}</div>`}).join('');
   }
 }
 // Sync status chip active state
@@ -867,7 +913,7 @@ let filtered=products.filter(p=>{
   const isOos=String(p.price).toLowerCase().includes('out of stock');
   if(productFilters.status==='instock'&&isOos)return false;
   if(productFilters.status==='oos'&&!isOos)return false;
-  if(productFilters.brand!=='all'&&(p.brand||'Other')!==productFilters.brand)return false;
+  if(productFilters.category!=='all'&&!effectiveCategories(p).includes(productFilters.category))return false;
   if(q){
     const hay=`${p.name||''} ${p.brand||''} ${p.category||''}`.toLowerCase();
     if(!hay.includes(q))return false;
@@ -902,8 +948,7 @@ list.innerHTML=filtered.map(p=>{
 <div class="name">${p.name||'(no name)'}${isOos?'<span class="oos-flag">OOS</span>':''}</div>
 <div class="meta" style="color:var(--g);font-weight:700">${p.price}</div>
 <div class="meta-pills">
-${(p.brand?`<span class="meta-pill">${p.brand}</span>`:'')}
-${(p.category||'').split(',').filter(Boolean).slice(0,2).map(c=>`<span class="meta-pill">${c.trim()}</span>`).join('')}
+${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdminHTML(c)}</span>`).join('')}
 <span class="meta-pill">${photos} 📷</span>
 </div>
 </div>
@@ -975,7 +1020,7 @@ document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
 el.style.display='block';
 const p=products.find(x=>x.id===id);
 if(!p)return;
-const pCats=(p.category||'').split(',').map(c=>c.trim());
+const pCats=effectiveCategories(p);
 const pDel=(p.delivery||'').split(',').map(d=>d.trim());
 el.innerHTML=`
 <label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
@@ -983,14 +1028,13 @@ el.innerHTML=`
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
 <div class="cats" id="ec_${id}">
-${CATS.map(c=>`<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${c}">${c}</div>`).join('')}
+${CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${safe}">${safe}</div>`}).join('')}
 </div></div>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery</span>
 <div class="cats" id="ed_${id}">
 ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${d}">${d}</div>`).join('')}
 </div></div>
-<label class="field"><span>Brand</span><input id="eb_${id}" value="${p.brand||''}"></label>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
@@ -1003,17 +1047,17 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 async function saveEdit(id){
 const name=document.getElementById('en_'+id).value.trim();
 const price=document.getElementById('ep_'+id).value.trim();
-const brand=document.getElementById('eb_'+id).value.trim();
 const link=document.getElementById('el_'+id).value.trim();
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
+const brand=inferBrand(cats);
 const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
 const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
 const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
-Object.assign(p,{name,price,category:cat,brand:brand||'Other',link,delivery});
+Object.assign(p,{name,price,category:cat,brand,link,delivery});
 try{
 await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Saved!';
