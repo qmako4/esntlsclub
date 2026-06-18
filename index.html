@@ -272,6 +272,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="#" onclick="showCat('B22')" class="desktop-menu-item">B22</a>
 <a href="#" onclick="showCat('B30')" class="desktop-menu-item">B30</a>
 <a href="#" onclick="showCat('Asics')" class="desktop-menu-item">Asics</a>
+<a href="#" onclick="showCat('Sandals')" class="desktop-menu-item">🩴 Sandals</a>
 </div>
 </div>
 <div class="desktop-menu">
@@ -331,6 +332,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
         <a href="#" class="mob-item mob-item-sub" data-keywords="b22 b 22 runner technical" onclick="showCat('B22');toggleMenu()">↳ B22</a>
         <a href="#" class="mob-item mob-item-sub" data-keywords="b30 b 30 daily" onclick="showCat('B30');toggleMenu()">↳ B30</a>
         <a href="#" class="mob-item mob-item-sub" data-keywords="asics gel kayano" onclick="showCat('Asics');toggleMenu()">↳ Asics</a>
+        <a href="#" class="mob-item mob-item-sub" data-keywords="sandals sliders slides summer footwear" onclick="showCat('Sandals');toggleMenu()">↳ Sandals</a>
       </div>
 
       <div class="mob-section">
@@ -402,7 +404,7 @@ const P=[
 {id:16,n:"B30 Light Blue",cat:"Footwear,Summer,B30",brand:"B30",price:"£89.99",originalPrice:"£109.99",img:U+"2025/10/img_1748_original.jpeg",imgs:[U+"2025/10/img_1748_original.jpeg",U+"2025/10/img_1749_original.jpeg",U+"2025/10/img_1750_original.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",delivery:"Next Day,7-12 Days"},
 {id:17,n:"B30 Grey and White",cat:"Footwear,Summer,B30",brand:"B30",price:"£89.99",originalPrice:"£109.99",img:U+"2025/11/Gemini_Generated_Image_4zaqcr4zaqcr4zaq.png",imgs:[U+"2025/11/Gemini_Generated_Image_4zaqcr4zaqcr4zaq.png"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",delivery:"Next Day,7-12 Days"},
 {id:18,n:"B30 x Stxne",cat:"Footwear,Summer,B30",brand:"B30",price:"£89.99",originalPrice:"£109.99",img:U+"2025/11/img_0397.jpeg",imgs:[U+"2025/11/img_0397.jpeg",U+"2025/11/img_0398.jpeg",U+"2025/11/img_0399.jpeg"],link:"https://www.essentialsblanks.net/product-page/30b-runner-sneaker-next-day-shipment",delivery:"Next Day,7-12 Days"},
-{id:19,n:"Dior Alpha Sandals",cat:"Footwear,Summer",brand:"Other",price:"Out of stock",img:U+"2026/03/img_0965.jpeg",imgs:[U+"2026/03/img_0965.jpeg",U+"2026/03/img_0966.jpeg",U+"2026/03/img_0967.jpeg",U+"2026/03/img_0968.jpeg"],link:"https://www.essentialsblanks.net/product-page/db-tech-sliders",delivery:"Next Day,7-12 Days"},
+{id:19,n:"Dior Alpha Sandals",cat:"Footwear,Summer,Sandals",brand:"Other",price:"Out of stock",img:U+"2026/03/img_0965.jpeg",imgs:[U+"2026/03/img_0965.jpeg",U+"2026/03/img_0966.jpeg",U+"2026/03/img_0967.jpeg",U+"2026/03/img_0968.jpeg"],link:"https://www.essentialsblanks.net/product-page/db-tech-sliders",delivery:"Next Day,7-12 Days"},
 // ── JACKETS: C Goose ──
 {id:20,n:"Grey Wyndham Parka",cat:"Jackets",brand:"C Goose",price:"£119.99",img:U+"2025/12/img_1316.jpeg",imgs:[U+"2025/12/img_1316.jpeg",U+"2025/12/img_1317.jpeg",U+"2025/12/img_1318.jpeg",U+"2025/12/img_1319.jpeg"],link:"https://www.essentialsblanks.net/product-page/wind-parker-coat",delivery:"Next Day,7-12 Days"},
 {id:21,n:"MacMillan Black Badge",cat:"Jackets",brand:"C Goose",price:"£99.99",img:U+"2025/10/img_0179.jpeg",imgs:[U+"2025/10/img_0179.jpeg",U+"2025/10/img_0180.jpeg",U+"2025/10/img_0181.jpeg",U+"2025/10/img_0182.jpeg"],link:"https://www.essentialsblanks.net/product-page/parker-mac-coat-next-day-batch",delivery:"Next Day,7-12 Days"},
@@ -452,6 +454,10 @@ if(/^\s*asics\s+gel\s+kayano/i.test(p.name||'')){
   if(!cats.includes('Asics')) cats.push('Asics');
   if(!cats.includes('Footwear')) cats.push('Footwear');
 }
+if(/\b(sandals?|sliders?|slides?)\b/i.test(p.name||'')){
+  if(!cats.includes('Sandals')) cats.push('Sandals');
+  if(!cats.includes('Footwear')) cats.push('Footwear');
+}
 return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:p.link,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]};
 });
 render();
@@ -467,8 +473,8 @@ const imgs=IMG_OVERRIDES[String(p.id)];
 return imgs?{...p,img:imgs[0],imgs}:p
 })}
 
-const CATS=["All","Best Sellers","Essentials","Footwear","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
-const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
+const CATS=["All","Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
+const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",Sandals:"🩴",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
 function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
 // Per-brand product blurb (replaces generic "from the X collection")
