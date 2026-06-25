@@ -1,0 +1,335 @@
+Handle,Title,Body (HTML),Vendor,Product Category,Type,Tags,Published,Option1 Name,Option1 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Requires Shipping,Variant Taxable,Image Src,Image Position,Image Alt Text,Status
+blank-item-001,Blank Item 001,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-1, B22, Footwear, Summer, Best Sellers",TRUE,Size,UK 5,ESNTLS-001-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 6,ESNTLS-001-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 7,ESNTLS-001-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 8,ESNTLS-001-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 9,ESNTLS-001-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 10,ESNTLS-001-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 11,ESNTLS-001-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-001,,,,,,,TRUE,Size,UK 12,ESNTLS-001-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,Blank Item 002,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-2, B22, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-002-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 6,ESNTLS-002-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 7,ESNTLS-002-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 8,ESNTLS-002-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 9,ESNTLS-002-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 10,ESNTLS-002-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 11,ESNTLS-002-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-002,,,,,,,TRUE,Size,UK 12,ESNTLS-002-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,Blank Item 003,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-3, B22, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-003-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 6,ESNTLS-003-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 7,ESNTLS-003-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 8,ESNTLS-003-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 9,ESNTLS-003-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 10,ESNTLS-003-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 11,ESNTLS-003-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-003,,,,,,,TRUE,Size,UK 12,ESNTLS-003-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,Blank Item 004,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-4, B22, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-004-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 6,ESNTLS-004-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 7,ESNTLS-004-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 8,ESNTLS-004-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 9,ESNTLS-004-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 10,ESNTLS-004-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 11,ESNTLS-004-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-004,,,,,,,TRUE,Size,UK 12,ESNTLS-004-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,Blank Item 005,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-5, B22, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-005-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 6,ESNTLS-005-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 7,ESNTLS-005-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 8,ESNTLS-005-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 9,ESNTLS-005-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 10,ESNTLS-005-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 11,ESNTLS-005-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-005,,,,,,,TRUE,Size,UK 12,ESNTLS-005-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,Blank Item 006,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-6, B22, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-006-UK5,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 6,ESNTLS-006-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 7,ESNTLS-006-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 8,ESNTLS-006-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 9,ESNTLS-006-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 10,ESNTLS-006-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 11,ESNTLS-006-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-006,,,,,,,TRUE,Size,UK 12,ESNTLS-006-UK12,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-007,Blank Item 007,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-7, B30, Footwear, Summer, Best Sellers",TRUE,Size,UK 6,ESNTLS-007-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-007,,,,,,,TRUE,Size,UK 7,ESNTLS-007-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-007,,,,,,,TRUE,Size,UK 8,ESNTLS-007-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-007,,,,,,,TRUE,Size,UK 9,ESNTLS-007-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-007,,,,,,,TRUE,Size,UK 10,ESNTLS-007-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-007,,,,,,,TRUE,Size,UK 11,ESNTLS-007-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,Blank Item 008,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-8, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-008-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,,,,,,,TRUE,Size,UK 7,ESNTLS-008-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,,,,,,,TRUE,Size,UK 8,ESNTLS-008-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,,,,,,,TRUE,Size,UK 9,ESNTLS-008-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,,,,,,,TRUE,Size,UK 10,ESNTLS-008-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-008,,,,,,,TRUE,Size,UK 11,ESNTLS-008-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,Blank Item 009,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-9, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-009-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,,,,,,,TRUE,Size,UK 7,ESNTLS-009-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,,,,,,,TRUE,Size,UK 8,ESNTLS-009-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,,,,,,,TRUE,Size,UK 9,ESNTLS-009-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,,,,,,,TRUE,Size,UK 10,ESNTLS-009-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-009,,,,,,,TRUE,Size,UK 11,ESNTLS-009-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,Blank Item 010,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-10, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-010-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,,,,,,,TRUE,Size,UK 7,ESNTLS-010-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,,,,,,,TRUE,Size,UK 8,ESNTLS-010-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,,,,,,,TRUE,Size,UK 9,ESNTLS-010-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,,,,,,,TRUE,Size,UK 10,ESNTLS-010-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-010,,,,,,,TRUE,Size,UK 11,ESNTLS-010-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,Blank Item 011,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-11, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-011-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,,,,,,,TRUE,Size,UK 7,ESNTLS-011-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,,,,,,,TRUE,Size,UK 8,ESNTLS-011-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,,,,,,,TRUE,Size,UK 9,ESNTLS-011-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,,,,,,,TRUE,Size,UK 10,ESNTLS-011-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-011,,,,,,,TRUE,Size,UK 11,ESNTLS-011-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,Blank Item 012,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-12, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-012-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,,,,,,,TRUE,Size,UK 7,ESNTLS-012-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,,,,,,,TRUE,Size,UK 8,ESNTLS-012-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,,,,,,,TRUE,Size,UK 9,ESNTLS-012-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,,,,,,,TRUE,Size,UK 10,ESNTLS-012-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-012,,,,,,,TRUE,Size,UK 11,ESNTLS-012-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,Blank Item 013,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-13, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-013-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,,,,,,,TRUE,Size,UK 7,ESNTLS-013-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,,,,,,,TRUE,Size,UK 8,ESNTLS-013-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,,,,,,,TRUE,Size,UK 9,ESNTLS-013-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,,,,,,,TRUE,Size,UK 10,ESNTLS-013-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-013,,,,,,,TRUE,Size,UK 11,ESNTLS-013-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,Blank Item 014,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-14, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-014-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,,,,,,,TRUE,Size,UK 7,ESNTLS-014-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,,,,,,,TRUE,Size,UK 8,ESNTLS-014-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,,,,,,,TRUE,Size,UK 9,ESNTLS-014-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,,,,,,,TRUE,Size,UK 10,ESNTLS-014-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-014,,,,,,,TRUE,Size,UK 11,ESNTLS-014-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,Blank Item 015,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-15, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-015-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,,,,,,,TRUE,Size,UK 7,ESNTLS-015-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,,,,,,,TRUE,Size,UK 8,ESNTLS-015-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,,,,,,,TRUE,Size,UK 9,ESNTLS-015-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,,,,,,,TRUE,Size,UK 10,ESNTLS-015-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-015,,,,,,,TRUE,Size,UK 11,ESNTLS-015-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,Blank Item 016,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-16, B30, Footwear, Summer, Best Sellers",TRUE,Size,UK 6,ESNTLS-016-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,,,,,,,TRUE,Size,UK 7,ESNTLS-016-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,,,,,,,TRUE,Size,UK 8,ESNTLS-016-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,,,,,,,TRUE,Size,UK 9,ESNTLS-016-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,,,,,,,TRUE,Size,UK 10,ESNTLS-016-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-016,,,,,,,TRUE,Size,UK 11,ESNTLS-016-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,Blank Item 017,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-17, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-017-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,,,,,,,TRUE,Size,UK 7,ESNTLS-017-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,,,,,,,TRUE,Size,UK 8,ESNTLS-017-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,,,,,,,TRUE,Size,UK 9,ESNTLS-017-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,,,,,,,TRUE,Size,UK 10,ESNTLS-017-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-017,,,,,,,TRUE,Size,UK 11,ESNTLS-017-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,Blank Item 018,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-18, B30, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-018-UK6,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,,,,,,,TRUE,Size,UK 7,ESNTLS-018-UK7,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,,,,,,,TRUE,Size,UK 8,ESNTLS-018-UK8,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,,,,,,,TRUE,Size,UK 9,ESNTLS-018-UK9,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,,,,,,,TRUE,Size,UK 10,ESNTLS-018-UK10,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-018,,,,,,,TRUE,Size,UK 11,ESNTLS-018-UK11,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-019,Blank Item 019,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-19, Other, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-019-UK6,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 7,ESNTLS-019-UK7,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 8,ESNTLS-019-UK8,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 9,ESNTLS-019-UK9,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 10,ESNTLS-019-UK10,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 11,ESNTLS-019-UK11,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-019,,,,,,,TRUE,Size,UK 12,ESNTLS-019-UK12,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-020,Blank Item 020,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-20, C Goose, Jackets",TRUE,Size,XS,ESNTLS-020-XS,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-020,,,,,,,TRUE,Size,S,ESNTLS-020-S,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-020,,,,,,,TRUE,Size,M,ESNTLS-020-M,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-020,,,,,,,TRUE,Size,L,ESNTLS-020-L,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-020,,,,,,,TRUE,Size,XL,ESNTLS-020-XL,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-021,Blank Item 021,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-21, C Goose, Jackets",TRUE,Size,XS,ESNTLS-021-XS,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-021,,,,,,,TRUE,Size,S,ESNTLS-021-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-021,,,,,,,TRUE,Size,M,ESNTLS-021-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-021,,,,,,,TRUE,Size,L,ESNTLS-021-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-021,,,,,,,TRUE,Size,XL,ESNTLS-021-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-022,Blank Item 022,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-22, C Goose, Jackets",TRUE,Size,XS,ESNTLS-022-XS,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-022,,,,,,,TRUE,Size,S,ESNTLS-022-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-022,,,,,,,TRUE,Size,M,ESNTLS-022-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-022,,,,,,,TRUE,Size,L,ESNTLS-022-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-022,,,,,,,TRUE,Size,XL,ESNTLS-022-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-023,Blank Item 023,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-23, C Goose, Jackets",TRUE,Size,XS,ESNTLS-023-XS,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-023,,,,,,,TRUE,Size,S,ESNTLS-023-S,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-023,,,,,,,TRUE,Size,M,ESNTLS-023-M,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-023,,,,,,,TRUE,Size,L,ESNTLS-023-L,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-023,,,,,,,TRUE,Size,XL,ESNTLS-023-XL,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-024,Blank Item 024,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-24, C Goose, Jackets",TRUE,Size,XS,ESNTLS-024-XS,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-024,,,,,,,TRUE,Size,S,ESNTLS-024-S,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-024,,,,,,,TRUE,Size,M,ESNTLS-024-M,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-024,,,,,,,TRUE,Size,L,ESNTLS-024-L,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-024,,,,,,,TRUE,Size,XL,ESNTLS-024-XL,0,,,continue,manual,119.99,TRUE,TRUE,,,,active
+blank-item-025,Blank Item 025,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-25, Monc, Jackets",FALSE,Size,XS,ESNTLS-025-XS,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-025,,,,,,,FALSE,Size,S,ESNTLS-025-S,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-025,,,,,,,FALSE,Size,M,ESNTLS-025-M,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-025,,,,,,,FALSE,Size,L,ESNTLS-025-L,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-025,,,,,,,FALSE,Size,XL,ESNTLS-025-XL,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-026,Blank Item 026,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-26, Monc, Jackets",FALSE,Size,XS,ESNTLS-026-XS,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-026,,,,,,,FALSE,Size,S,ESNTLS-026-S,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-026,,,,,,,FALSE,Size,M,ESNTLS-026-M,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-026,,,,,,,FALSE,Size,L,ESNTLS-026-L,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-026,,,,,,,FALSE,Size,XL,ESNTLS-026-XL,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-027,Blank Item 027,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-27, Monc, Jackets",TRUE,Size,S,ESNTLS-027-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-027,,,,,,,TRUE,Size,M,ESNTLS-027-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-027,,,,,,,TRUE,Size,L,ESNTLS-027-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-027,,,,,,,TRUE,Size,XL,ESNTLS-027-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-028,Blank Item 028,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-28, Monc, Jackets, Best Sellers",TRUE,Size,S,ESNTLS-028-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-028,,,,,,,TRUE,Size,M,ESNTLS-028-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-028,,,,,,,TRUE,Size,L,ESNTLS-028-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-028,,,,,,,TRUE,Size,XL,ESNTLS-028-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-029,Blank Item 029,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-29, Other, Jackets",TRUE,Size,XS,ESNTLS-029-XS,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-029,,,,,,,TRUE,Size,S,ESNTLS-029-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-029,,,,,,,TRUE,Size,M,ESNTLS-029-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-029,,,,,,,TRUE,Size,L,ESNTLS-029-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-029,,,,,,,TRUE,Size,XL,ESNTLS-029-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-030,Blank Item 030,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-30, Other, Accessories, Summer",TRUE,Size,One Size,ESNTLS-030-ONESIZE,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-031,Blank Item 031,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-31, Other, Accessories, Summer, Best Sellers",TRUE,Size,One Size,ESNTLS-031-ONESIZE,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-032,Blank Item 032,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-32, Other, Accessories, Summer",TRUE,Size,One Size,ESNTLS-032-ONESIZE,0,,,continue,manual,89.99,TRUE,TRUE,,,,active
+blank-item-033,Blank Item 033,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-33, Other, Accessories, Summer",TRUE,Size,One Size,ESNTLS-033-ONESIZE,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-034,Blank Item 034,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-34, Other, Accessories, Summer",FALSE,Size,One Size,ESNTLS-034-ONESIZE,0,,,deny,manual,0.00,TRUE,TRUE,,,,draft
+blank-item-035,Blank Item 035,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-35, Corteiz, Tracksuits, Summer",TRUE,Size,S,ESNTLS-035-S,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-035,,,,,,,TRUE,Size,M,ESNTLS-035-M,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-035,,,,,,,TRUE,Size,L,ESNTLS-035-L,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-035,,,,,,,TRUE,Size,XL,ESNTLS-035-XL,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-036,Blank Item 036,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-36, Other, Shirts, Summer, Best Sellers",TRUE,Size,S,ESNTLS-036-S,0,,,continue,manual,29.99,TRUE,TRUE,,,,active
+blank-item-036,,,,,,,TRUE,Size,M,ESNTLS-036-M,0,,,continue,manual,29.99,TRUE,TRUE,,,,active
+blank-item-036,,,,,,,TRUE,Size,L,ESNTLS-036-L,0,,,continue,manual,29.99,TRUE,TRUE,,,,active
+blank-item-036,,,,,,,TRUE,Size,XL,ESNTLS-036-XL,0,,,continue,manual,29.99,TRUE,TRUE,,,,active
+blank-item-037,Blank Item 037,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-37, Burberry, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-037-UK6,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 7,ESNTLS-037-UK7,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 8,ESNTLS-037-UK8,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 9,ESNTLS-037-UK9,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 10,ESNTLS-037-UK10,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 11,ESNTLS-037-UK11,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-037,,,,,,,TRUE,Size,UK 12,ESNTLS-037-UK12,0,,,continue,manual,39.99,TRUE,TRUE,,,,active
+blank-item-038,Blank Item 038,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-38, Asics, Footwear",TRUE,Size,UK 6,ESNTLS-038-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 7,ESNTLS-038-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 8,ESNTLS-038-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 9,ESNTLS-038-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 10,ESNTLS-038-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 11,ESNTLS-038-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-038,,,,,,,TRUE,Size,UK 12,ESNTLS-038-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-039,Blank Item 039,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-39, Other, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-039-UK6,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-039,,,,,,,TRUE,Size,UK 7,ESNTLS-039-UK7,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-039,,,,,,,TRUE,Size,UK 8,ESNTLS-039-UK8,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-039,,,,,,,TRUE,Size,UK 9,ESNTLS-039-UK9,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-039,,,,,,,TRUE,Size,UK 10,ESNTLS-039-UK10,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-039,,,,,,,TRUE,Size,UK 11,ESNTLS-039-UK11,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-040,Blank Item 040,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-40, Burberry, Shirts, Summer",TRUE,Size,S,ESNTLS-040-S,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-040,,,,,,,TRUE,Size,M,ESNTLS-040-M,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-040,,,,,,,TRUE,Size,L,ESNTLS-040-L,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-040,,,,,,,TRUE,Size,XL,ESNTLS-040-XL,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-041,Blank Item 041,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-41, Burberry, Summer, Shorts",TRUE,Size,S,ESNTLS-041-S,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-041,,,,,,,TRUE,Size,M,ESNTLS-041-M,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-041,,,,,,,TRUE,Size,L,ESNTLS-041-L,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-041,,,,,,,TRUE,Size,XL,ESNTLS-041-XL,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-042,Blank Item 042,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-42, Asics, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-042-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 7,ESNTLS-042-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 8,ESNTLS-042-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 9,ESNTLS-042-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 10,ESNTLS-042-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 11,ESNTLS-042-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-042,,,,,,,TRUE,Size,UK 12,ESNTLS-042-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,Blank Item 043,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-43, Asics, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-043-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 7,ESNTLS-043-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 8,ESNTLS-043-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 9,ESNTLS-043-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 10,ESNTLS-043-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 11,ESNTLS-043-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-043,,,,,,,TRUE,Size,UK 12,ESNTLS-043-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,Blank Item 044,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-44, Asics, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-044-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 7,ESNTLS-044-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 8,ESNTLS-044-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 9,ESNTLS-044-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 10,ESNTLS-044-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 11,ESNTLS-044-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-044,,,,,,,TRUE,Size,UK 12,ESNTLS-044-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,Blank Item 045,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-45, Asics, Footwear, Summer",TRUE,Size,UK 6,ESNTLS-045-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 7,ESNTLS-045-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 8,ESNTLS-045-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 9,ESNTLS-045-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 10,ESNTLS-045-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 11,ESNTLS-045-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-045,,,,,,,TRUE,Size,UK 12,ESNTLS-045-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-046,Blank Item 046,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-46, Ermes, Footwear, Old Money, Summer, Sandals, Hermes",TRUE,Size,UK 5,ESNTLS-046-UK5,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 6,ESNTLS-046-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 7,ESNTLS-046-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 8,ESNTLS-046-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 9,ESNTLS-046-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 10,ESNTLS-046-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 11,ESNTLS-046-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-046,,,,,,,TRUE,Size,UK 12,ESNTLS-046-UK12,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,Blank Item 047,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-47, Ermes, Footwear, Old Money, Summer, Sandals, Hermes",TRUE,Size,UK 5,ESNTLS-047-UK5,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 6,ESNTLS-047-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 7,ESNTLS-047-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 8,ESNTLS-047-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 9,ESNTLS-047-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 10,ESNTLS-047-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 11,ESNTLS-047-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-047,,,,,,,TRUE,Size,UK 12,ESNTLS-047-UK12,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-048,Blank Item 048,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-48, CP, Summer, Shorts",TRUE,Size,S,ESNTLS-048-S,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-048,,,,,,,TRUE,Size,M,ESNTLS-048-M,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-048,,,,,,,TRUE,Size,L,ESNTLS-048-L,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-048,,,,,,,TRUE,Size,XL,ESNTLS-048-XL,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-048,,,,,,,TRUE,Size,XXL,ESNTLS-048-XXL,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-049,Blank Item 049,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-49, Burberry, Footwear, Summer",TRUE,Size,UK 5,ESNTLS-049-UK5,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 6,ESNTLS-049-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 7,ESNTLS-049-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 8,ESNTLS-049-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 9,ESNTLS-049-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 10,ESNTLS-049-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 11,ESNTLS-049-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-049,,,,,,,TRUE,Size,UK 12,ESNTLS-049-UK12,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-050,Blank Item 050,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-50, Essentials, Footwear, Hoodies, Winter",TRUE,Size,XS,ESNTLS-050-XS,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-050,,,,,,,TRUE,Size,S,ESNTLS-050-S,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-050,,,,,,,TRUE,Size,M,ESNTLS-050-M,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-050,,,,,,,TRUE,Size,L,ESNTLS-050-L,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-050,,,,,,,TRUE,Size,XL,ESNTLS-050-XL,0,,,continue,manual,49.99,TRUE,TRUE,,,,active
+blank-item-051,Blank Item 051,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-51, LV, Footwear, Summer, Winter",TRUE,Size,UK 6,ESNTLS-051-UK6,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-051,,,,,,,TRUE,Size,UK 7,ESNTLS-051-UK7,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-051,,,,,,,TRUE,Size,UK 8,ESNTLS-051-UK8,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-051,,,,,,,TRUE,Size,UK 9,ESNTLS-051-UK9,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-051,,,,,,,TRUE,Size,UK 10,ESNTLS-051-UK10,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-051,,,,,,,TRUE,Size,UK 11,ESNTLS-051-UK11,0,,,continue,manual,129.99,TRUE,TRUE,,,,active
+blank-item-052,Blank Item 052,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-52, Other, Accessories, Summer, Winter",TRUE,Size,One Size,ESNTLS-052-ONESIZE,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-053,Blank Item 053,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-53, Nike, Footwear, Summer, Winter",TRUE,Size,UK 6,ESNTLS-053-UK6,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-053,,,,,,,TRUE,Size,UK 7,ESNTLS-053-UK7,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-053,,,,,,,TRUE,Size,UK 8,ESNTLS-053-UK8,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-053,,,,,,,TRUE,Size,UK 9,ESNTLS-053-UK9,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-053,,,,,,,TRUE,Size,UK 10,ESNTLS-053-UK10,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-053,,,,,,,TRUE,Size,UK 11,ESNTLS-053-UK11,0,,,continue,manual,64.99,TRUE,TRUE,,,,active
+blank-item-054,Blank Item 054,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-54, Apple, Accessories, Summer, Winter",TRUE,Size,One Size,ESNTLS-054-ONESIZE,0,,,continue,manual,34.99,TRUE,TRUE,,,,active
+blank-item-056,Blank Item 056,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-56, Asics, Best Sellers, Footwear, Summer, Winter",TRUE,Size,UK 6,ESNTLS-056-UK6,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-056,,,,,,,TRUE,Size,UK 7,ESNTLS-056-UK7,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-056,,,,,,,TRUE,Size,UK 8,ESNTLS-056-UK8,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-056,,,,,,,TRUE,Size,UK 9,ESNTLS-056-UK9,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-056,,,,,,,TRUE,Size,UK 10,ESNTLS-056-UK10,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-056,,,,,,,TRUE,Size,UK 11,ESNTLS-056-UK11,0,,,continue,manual,59.99,TRUE,TRUE,,,,active
+blank-item-057,Blank Item 057,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-57, Hermes, Footwear, Old Money, Summer, Sandals",TRUE,Size,UK 6,ESNTLS-057-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-057,,,,,,,TRUE,Size,UK 7,ESNTLS-057-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-057,,,,,,,TRUE,Size,UK 8,ESNTLS-057-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-057,,,,,,,TRUE,Size,UK 9,ESNTLS-057-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-057,,,,,,,TRUE,Size,UK 10,ESNTLS-057-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-057,,,,,,,TRUE,Size,UK 11,ESNTLS-057-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,Blank Item 058,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-58, Hermes, Footwear, Old Money, Summer, Winter, Sandals",TRUE,Size,UK 6,ESNTLS-058-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,,,,,,,TRUE,Size,UK 7,ESNTLS-058-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,,,,,,,TRUE,Size,UK 8,ESNTLS-058-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,,,,,,,TRUE,Size,UK 9,ESNTLS-058-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,,,,,,,TRUE,Size,UK 10,ESNTLS-058-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-058,,,,,,,TRUE,Size,UK 11,ESNTLS-058-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-059,Blank Item 059,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-59, Hermes, Footwear, Old Money, Summer, Winter",TRUE,Size,UK 6,ESNTLS-059-UK6,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-059,,,,,,,TRUE,Size,UK 7,ESNTLS-059-UK7,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-059,,,,,,,TRUE,Size,UK 8,ESNTLS-059-UK8,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-059,,,,,,,TRUE,Size,UK 9,ESNTLS-059-UK9,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-059,,,,,,,TRUE,Size,UK 10,ESNTLS-059-UK10,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-059,,,,,,,TRUE,Size,UK 11,ESNTLS-059-UK11,0,,,continue,manual,99.99,TRUE,TRUE,,,,active
+blank-item-060,Blank Item 060,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-60, Hermes, Best Sellers, Footwear, Sandals, Old Money, Summer",TRUE,Size,UK 6,ESNTLS-060-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-060,,,,,,,TRUE,Size,UK 7,ESNTLS-060-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-060,,,,,,,TRUE,Size,UK 8,ESNTLS-060-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-060,,,,,,,TRUE,Size,UK 9,ESNTLS-060-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-060,,,,,,,TRUE,Size,UK 10,ESNTLS-060-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-060,,,,,,,TRUE,Size,UK 11,ESNTLS-060-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,Blank Item 061,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-61, Hermes, Best Sellers, Footwear, Sandals, Old Money, Summer",TRUE,Size,UK 6,ESNTLS-061-UK6,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,,,,,,,TRUE,Size,UK 7,ESNTLS-061-UK7,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,,,,,,,TRUE,Size,UK 8,ESNTLS-061-UK8,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,,,,,,,TRUE,Size,UK 9,ESNTLS-061-UK9,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,,,,,,,TRUE,Size,UK 10,ESNTLS-061-UK10,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-061,,,,,,,TRUE,Size,UK 11,ESNTLS-061-UK11,0,,,continue,manual,79.99,TRUE,TRUE,,,,active
+blank-item-062,Blank Item 062,<p><strong>Blank item = original item.</strong></p><p>Buy this placeholder to complete checkout. You will receive the original ESNTLS item you selected.</p>,ESNTLS Club,,Placeholder,"ESNTLS-MIGRATED, ESNTLS-ID-62, Other, Footwear, Sandals, Summer, Dior",TRUE,Size,UK 6,ESNTLS-062-UK6,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-062,,,,,,,TRUE,Size,UK 7,ESNTLS-062-UK7,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-062,,,,,,,TRUE,Size,UK 8,ESNTLS-062-UK8,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-062,,,,,,,TRUE,Size,UK 9,ESNTLS-062-UK9,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-062,,,,,,,TRUE,Size,UK 10,ESNTLS-062-UK10,0,,,continue,manual,69.99,TRUE,TRUE,,,,active
+blank-item-062,,,,,,,TRUE,Size,UK 11,ESNTLS-062-UK11,0,,,continue,manual,69.99,TRUE,TRUE,,,,active

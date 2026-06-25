@@ -431,6 +431,19 @@ const IMG_OVERRIDES={"1": ["https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/
 // Supabase config
 const SB_URL='https://pccqpmefzeaorgtajdfm.supabase.co';
 const R2_BASE='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const CHECKOUT_PROVIDER='wix'; // 'wix' or 'shopify'
+const SHOPIFY_CHECKOUT_BASE='https://nr00an-yh.myshopify.com/products/';
+function shopifyCheckoutLinkForId(id){
+  const n=parseInt(id,10);
+  if(!Number.isFinite(n))return '';
+  return SHOPIFY_CHECKOUT_BASE+'blank-item-'+String(n).padStart(3,'0');
+}
+function wixCheckoutLinkForProduct(p){return p.wixLink||p.link||''}
+function checkoutLinkForProduct(p){
+  const wix=wixCheckoutLinkForProduct(p);
+  const shop=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
+  return CHECKOUT_PROVIDER==='shopify' ? (shop||wix) : wix;
+}
 
 // Load products from R2 (products.json managed by admin.html)
 let customProducts=[];
@@ -458,7 +471,9 @@ if(/\b(sandals?|sliders?|slides?)\b/i.test(p.name||'')){
   if(!cats.includes('Sandals')) cats.push('Sandals');
   if(!cats.includes('Footwear')) cats.push('Footwear');
 }
-return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:p.link,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]};
+const wixLink=wixCheckoutLinkForProduct(p);
+const shopifyLink=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
+return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]};
 });
 render();
 }catch(e){console.log('R2 products load error:',e)}}
@@ -1049,6 +1064,7 @@ function _renderModalPicker_DISABLED(card){
     sizeOptionName: wp.sizeOptionName || '',
     colorOptionName: wp.colorOptionName || '',
     baseUrl: card.link,
+    wixBaseUrl: card.wixLink||card.link,
     color: initialColor,
     size: null,
     availableSizes,
@@ -1162,8 +1178,9 @@ function buildPickedCheckoutUrl(){
 // Given a card, find its matching Wix product (by slug from the Buy link) + the matching colour entry.
 // Falls back to showing all colours if we can't infer one from the card name.
 function getCardWixContext(card){
-  if(!WIX_STOCK_BY_SLUG||!card||!card.link) return null;
-  const m = String(card.link).match(/\/product-page\/([^/?#]+)/);
+  const sourceLink=card&&(card.wixLink||card.link);
+  if(!WIX_STOCK_BY_SLUG||!sourceLink) return null;
+  const m = String(sourceLink).match(/\/product-page\/([^/?#]+)/);
   if(!m) return null;
   const wixProduct = WIX_STOCK_BY_SLUG[m[1]];
   if(!wixProduct) return null;
