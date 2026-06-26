@@ -8,7 +8,7 @@ on:
       limit:
         description: "Maximum ESNTLS products to scan this run"
         required: false
-        default: "50"
+        default: "1"
       source_title:
         description: "Optional: only process products matching this title"
         required: false
@@ -16,7 +16,7 @@ on:
       dry_run:
         description: "Check what would happen without creating Shopify products"
         required: false
-        default: false
+        default: true
         type: boolean
 
 concurrency:
@@ -53,9 +53,9 @@ jobs:
           DEFAULT_FOOTWEAR_SIZES: "UK 6,UK 7,UK 8,UK 9,UK 10,UK 11"
           WORKER_STATE_PATH: ${{ runner.temp }}/esntls-blank-worker-state.json
           WORKER_GENERATED_DIR: ${{ runner.temp }}/esntls-blank-worker-generated
-          LIMIT: ${{ github.event.inputs.limit || '50' }}
+          LIMIT: ${{ github.event.inputs.limit || '1' }}
           SOURCE_TITLE: ${{ github.event.inputs.source_title || '' }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
         run: |
           set -euo pipefail
 
