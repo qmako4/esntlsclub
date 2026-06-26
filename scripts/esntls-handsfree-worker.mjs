@@ -265,7 +265,7 @@ function sourceKey(product) {
 }
 
 function storefrontUrl(handle) {
-  const domain = requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const domain = shopifyStoreDomain();
   return `https://${domain}/products/${handle}`;
 }
 
@@ -275,6 +275,47 @@ function requiredEnv(name) {
     throw new Error(`Missing ${name}. Add it to your environment or .env.local.`);
   }
   return value;
+}
+
+function shopifyStoreDomain() {
+  return requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+let cachedShopifyAccessToken = null;
+let cachedShopifyAccessTokenExpiresAt = 0;
+
+async function getShopifyAccessToken() {
+  if (process.env.SHOPIFY_ADMIN_ACCESS_TOKEN) {
+    return process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  }
+
+  if (cachedShopifyAccessToken && Date.now() < cachedShopifyAccessTokenExpiresAt - 60_000) {
+    return cachedShopifyAccessToken;
+  }
+
+  const storeDomain = shopifyStoreDomain();
+  const clientId = requiredEnv("SHOPIFY_CLIENT_ID");
+  const clientSecret = requiredEnv("SHOPIFY_CLIENT_SECRET");
+  const response = await fetch(`https://${storeDomain}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "client_credentials",
+    }),
+  });
+
+  const json = await response.json().catch(async () => ({ raw: await response.text() }));
+  if (!response.ok || !json.access_token) {
+    throw new Error(`Shopify access token request failed: ${JSON.stringify(json)}`);
+  }
+
+  cachedShopifyAccessToken = json.access_token;
+  cachedShopifyAccessTokenExpiresAt = Date.now() + Number(json.expires_in || 86_400) * 1000;
+  return cachedShopifyAccessToken;
 }
 
 async function loadState(statePath) {
@@ -301,8 +342,8 @@ async function fetchJson(url) {
 }
 
 async function shopifyGraphql(query, variables) {
-  const storeDomain = requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const token = requiredEnv("SHOPIFY_ADMIN_ACCESS_TOKEN");
+  const storeDomain = shopifyStoreDomain();
+  const token = await getShopifyAccessToken();
   const response = await fetch(`https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
@@ -636,6 +677,10 @@ Usage:
 Required environment:
   OPENAI_API_KEY
   SHOPIFY_STORE_DOMAIN
+  SHOPIFY_CLIENT_ID
+  SHOPIFY_CLIENT_SECRET
+
+Optional legacy Shopify environment:
   SHOPIFY_ADMIN_ACCESS_TOKEN
 
 Optional environment:

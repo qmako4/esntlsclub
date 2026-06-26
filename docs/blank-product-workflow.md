@@ -110,13 +110,15 @@ Required environment variables:
 ```bash
 OPENAI_API_KEY=
 SHOPIFY_STORE_DOMAIN=nr00an-yh.myshopify.com
-SHOPIFY_ADMIN_ACCESS_TOKEN=
+SHOPIFY_CLIENT_ID=
+SHOPIFY_CLIENT_SECRET=
 ```
 
 Optional environment variables:
 
 ```bash
 ESNTLS_PRODUCTS_URL=https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json
+SHOPIFY_ADMIN_ACCESS_TOKEN=
 OPENAI_IMAGE_MODEL=gpt-image-1
 OPENAI_IMAGE_SIZE=1024x1024
 SHOPIFY_API_VERSION=2026-04
@@ -153,10 +155,11 @@ Add these GitHub repository secrets:
 
 ```text
 OPENAI_API_KEY
-SHOPIFY_ADMIN_ACCESS_TOKEN
+SHOPIFY_CLIENT_ID
+SHOPIFY_CLIENT_SECRET
 ```
 
-The Shopify token needs these Admin API scopes:
+The Shopify app needs these Admin API scopes:
 
 ```text
 read_products
@@ -166,5 +169,7 @@ write_publications
 read_files
 write_files
 ```
+
+The worker will request a short-lived Shopify Admin API token at runtime from the Dev Dashboard client ID and secret. If you already have a legacy admin-created custom app token, you can use `SHOPIFY_ADMIN_ACCESS_TOKEN` instead of the client ID and secret.
 
 The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products.
