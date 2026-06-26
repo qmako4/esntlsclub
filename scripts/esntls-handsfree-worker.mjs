@@ -2,12 +2,13 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { randomInt } from "node:crypto";
+import { createHash, createHmac, randomInt } from "node:crypto";
 
 const DEFAULT_PRODUCTS_URL =
   "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json";
 
 const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || "2026-04";
+const DEFAULT_PRODUCTS_OBJECT_KEY = "products.json";
 const DEFAULT_STATE_PATH = path.join(
   process.cwd(),
   "outputs",
@@ -277,6 +278,11 @@ function requiredEnv(name) {
   return value;
 }
 
+function optionalEnv(name) {
+  const value = process.env[name];
+  return value && value.trim() ? value.trim() : "";
+}
+
 function shopifyStoreDomain() {
   return requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
@@ -316,6 +322,141 @@ async function getShopifyAccessToken() {
   cachedShopifyAccessToken = json.access_token;
   cachedShopifyAccessTokenExpiresAt = Date.now() + Number(json.expires_in || 86_400) * 1000;
   return cachedShopifyAccessToken;
+}
+
+function sha256Hex(data) {
+  return createHash("sha256").update(data).digest("hex");
+}
+
+function hmac(key, data) {
+  return createHmac("sha256", key).update(data).digest();
+}
+
+function hmacHex(key, data) {
+  return createHmac("sha256", key).update(data).digest("hex");
+}
+
+function linkbackEnabled() {
+  return process.env.ESNTLS_LINKBACK_ENABLED !== "false";
+}
+
+function linkbackRequired() {
+  return linkbackEnabled() && process.env.ESNTLS_LINKBACK_REQUIRED !== "false";
+}
+
+function productsObjectKey(productsUrl) {
+  if (process.env.ESNTLS_PRODUCTS_OBJECT_KEY) return process.env.ESNTLS_PRODUCTS_OBJECT_KEY;
+
+  try {
+    const pathname = new URL(productsUrl).pathname.replace(/^\/+/, "");
+    return pathname || DEFAULT_PRODUCTS_OBJECT_KEY;
+  } catch {
+    return DEFAULT_PRODUCTS_OBJECT_KEY;
+  }
+}
+
+function r2Config() {
+  const config = {
+    accountId: optionalEnv("R2_ACCOUNT_ID"),
+    bucketName: optionalEnv("R2_BUCKET_NAME"),
+    accessKeyId: optionalEnv("R2_ACCESS_KEY_ID"),
+    secretAccessKey: optionalEnv("R2_SECRET_ACCESS_KEY"),
+  };
+  const missing = [
+    ["R2_ACCOUNT_ID", config.accountId],
+    ["R2_BUCKET_NAME", config.bucketName],
+    ["R2_ACCESS_KEY_ID", config.accessKeyId],
+    ["R2_SECRET_ACCESS_KEY", config.secretAccessKey],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  return { config, missing };
+}
+
+function assertLinkbackConfigured() {
+  if (!linkbackRequired()) return;
+
+  const { missing } = r2Config();
+  if (missing.length) {
+    throw new Error(
+      `Missing R2 link-back environment values: ${missing.join(", ")}. ` +
+        "Add them as GitHub Actions secrets before running live product creation.",
+    );
+  }
+}
+
+async function putR2JsonObject(key, data) {
+  const { config, missing } = r2Config();
+  if (missing.length) {
+    throw new Error(`Cannot write R2 object; missing ${missing.join(", ")}`);
+  }
+
+  const body = `${JSON.stringify(data, null, 2)}\n`;
+  const host = `${config.accountId}.r2.cloudflarestorage.com`;
+  const endpoint = `https://${host}`;
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = amzDate.slice(0, 8);
+  const encodedKey = encodeURIComponent(key).replace(/%2F/g, "/");
+  const requestPath = `/${config.bucketName}/${encodedKey}`;
+  const payloadHash = "UNSIGNED-PAYLOAD";
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonicalRequest = `PUT\n${requestPath}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  const scope = `${dateStamp}/auto/s3/aws4_request`;
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${sha256Hex(canonicalRequest)}`;
+  const dateKey = hmac(`AWS4${config.secretAccessKey}`, dateStamp);
+  const regionKey = hmac(dateKey, "auto");
+  const serviceKey = hmac(regionKey, "s3");
+  const signingKey = hmac(serviceKey, "aws4_request");
+  const signature = hmacHex(signingKey, stringToSign);
+  const authorization =
+    `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${scope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const response = await fetch(`${endpoint}${requestPath}`, {
+    method: "PUT",
+    headers: {
+      Authorization: authorization,
+      "Content-Type": "application/json",
+      "x-amz-content-sha256": payloadHash,
+      "x-amz-date": amzDate,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    throw new Error(`R2 products.json update failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+async function updateSourceProductLink(product, shopifyUrl, productsUrl) {
+  if (!linkbackEnabled()) {
+    return { status: "disabled" };
+  }
+
+  const rawProducts = await fetchJson(`${productsUrl}${productsUrl.includes("?") ? "&" : "?"}linkback=${Date.now()}`);
+  const products = Array.isArray(rawProducts) ? rawProducts : rawProducts.products;
+
+  if (!Array.isArray(products)) {
+    throw new Error("Cannot update source product link because products.json is not an array.");
+  }
+
+  const source = products.find((item) => String(item.id) === String(product.id));
+  if (!source) {
+    throw new Error(`Cannot update source product link because product ID ${product.id} was not found.`);
+  }
+
+  const previousLink = source.link || "";
+  if (previousLink === shopifyUrl) {
+    return { status: "already-linked", link: shopifyUrl };
+  }
+
+  source.link = shopifyUrl;
+  await putR2JsonObject(productsObjectKey(productsUrl), rawProducts);
+
+  return { status: "linked", previousLink, link: shopifyUrl };
 }
 
 async function loadState(statePath) {
@@ -595,7 +736,8 @@ async function processProduct(product, options, state) {
 
   const existing = await findExistingShopifyProduct(product);
   if (existing) {
-    state.processed[key] = {
+    const shopifyRecord = {
+      sourceId: product.id,
       sourceTitle: product.title,
       shopifyProductId: existing.id,
       shopifyTitle: existing.title,
@@ -603,6 +745,8 @@ async function processProduct(product, options, state) {
       existing: true,
       at: new Date().toISOString(),
     };
+    shopifyRecord.linkback = await updateSourceProductLink(product, shopifyRecord.shopifyUrl, options.productsUrl);
+    state.processed[key] = shopifyRecord;
     return { status: "existing", product, shopify: state.processed[key] };
   }
 
@@ -611,7 +755,7 @@ async function processProduct(product, options, state) {
   const upload = await uploadProductImageToShopify(product, generatedImage);
   const shopifyProduct = await createShopifyProduct(product, upload.resourceUrl, visibleTitle);
 
-  state.processed[key] = {
+  const shopifyRecord = {
     sourceId: product.id,
     sourceTitle: product.title,
     sourceImage: product.image,
@@ -624,12 +768,19 @@ async function processProduct(product, options, state) {
     sizeSource: shopifyProduct.sizeSource,
     at: new Date().toISOString(),
   };
+  shopifyRecord.linkback = await updateSourceProductLink(product, shopifyRecord.shopifyUrl, options.productsUrl);
+  state.processed[key] = shopifyRecord;
 
   return { status: "created", product, shopify: state.processed[key] };
 }
 
 async function runOnce(options) {
   const productsUrl = options.productsUrl || process.env.ESNTLS_PRODUCTS_URL || DEFAULT_PRODUCTS_URL;
+  options.productsUrl = productsUrl;
+  if (!options.dryRun) {
+    assertLinkbackConfigured();
+  }
+
   const state = await loadState(options.statePath);
   const rawProducts = await fetchJson(productsUrl);
   const products = (Array.isArray(rawProducts) ? rawProducts : rawProducts.products || [])
@@ -647,7 +798,10 @@ async function runOnce(options) {
     try {
       const result = await processProduct(product, options, state);
       results.push(result);
-      console.log(`[${result.status}] ${product.title}${result.shopify?.shopifyUrl ? ` -> ${result.shopify.shopifyUrl}` : ""}`);
+      const linkbackStatus = result.shopify?.linkback?.status ? ` (${result.shopify.linkback.status})` : "";
+      console.log(
+        `[${result.status}] ${product.title}${result.shopify?.shopifyUrl ? ` -> ${result.shopify.shopifyUrl}` : ""}${linkbackStatus}`,
+      );
     } catch (error) {
       state.skipped[sourceKey(product)] = {
         reason: "error",
@@ -679,12 +833,18 @@ Required environment:
   SHOPIFY_STORE_DOMAIN
   SHOPIFY_CLIENT_ID
   SHOPIFY_CLIENT_SECRET
+  R2_ACCESS_KEY_ID
+  R2_SECRET_ACCESS_KEY
 
 Optional legacy Shopify environment:
   SHOPIFY_ADMIN_ACCESS_TOKEN
 
 Optional environment:
   ESNTLS_PRODUCTS_URL
+  R2_ACCOUNT_ID=2cd63a3dc8a97fd3d54da09e423ab769
+  R2_BUCKET_NAME=esntls-images
+  ESNTLS_PRODUCTS_OBJECT_KEY=products.json
+  ESNTLS_LINKBACK_REQUIRED=true
   OPENAI_IMAGE_MODEL=gpt-image-1
   OPENAI_IMAGE_SIZE=1024x1024
   SHOPIFY_API_VERSION=2026-04

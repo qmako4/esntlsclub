@@ -99,7 +99,9 @@ The repo now includes a hands-free worker:
 node scripts/esntls-handsfree-worker.mjs --watch --interval-ms 300000
 ```
 
-It polls the ESNTLS product feed, finds products it has not processed, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a randomly named Shopify placeholder product, then records the mapping in:
+It polls the ESNTLS product feed, finds products it has not processed, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a randomly named Shopify placeholder product, then writes the new Shopify product URL back to the matching ESNTLS product's `link` field in R2 `products.json`.
+
+It also records the mapping in:
 
 ```text
 outputs/blank-product-workflow/state.json
@@ -112,6 +114,8 @@ OPENAI_API_KEY=
 SHOPIFY_STORE_DOMAIN=nr00an-yh.myshopify.com
 SHOPIFY_CLIENT_ID=
 SHOPIFY_CLIENT_SECRET=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
 ```
 
 Optional environment variables:
@@ -119,6 +123,10 @@ Optional environment variables:
 ```bash
 ESNTLS_PRODUCTS_URL=https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json
 SHOPIFY_ADMIN_ACCESS_TOKEN=
+R2_ACCOUNT_ID=2cd63a3dc8a97fd3d54da09e423ab769
+R2_BUCKET_NAME=esntls-images
+ESNTLS_PRODUCTS_OBJECT_KEY=products.json
+ESNTLS_LINKBACK_REQUIRED=true
 OPENAI_IMAGE_MODEL=gpt-image-1
 OPENAI_IMAGE_SIZE=1024x1024
 SHOPIFY_API_VERSION=2026-04
@@ -157,6 +165,8 @@ Add these GitHub repository secrets:
 OPENAI_API_KEY
 SHOPIFY_CLIENT_ID
 SHOPIFY_CLIENT_SECRET
+R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY
 ```
 
 The Shopify app needs these Admin API scopes:
@@ -172,4 +182,6 @@ write_files
 
 The worker will request a short-lived Shopify Admin API token at runtime from the Dev Dashboard client ID and secret. If you already have a legacy admin-created custom app token, you can use `SHOPIFY_ADMIN_ACCESS_TOKEN` instead of the client ID and secret.
 
-The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products.
+The live workflow requires R2 write credentials before it creates a Shopify product. That prevents a product from being created without the ESNTLS checkout link being updated.
+
+The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products. If a matching Shopify product already exists, the worker can still update the ESNTLS source product link to the existing Shopify URL.
