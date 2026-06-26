@@ -147,13 +147,12 @@ The repo includes a scheduled workflow at:
 .github/workflows/esntls-blank-worker.yml
 ```
 
-It runs every 15 minutes and can also be started manually from GitHub.
+It runs every 15 minutes and can also be started manually from GitHub. The workflow is already configured for Shopify store domain `nr00an-yh.myshopify.com`.
 
 Add these GitHub repository secrets:
 
 ```text
 OPENAI_API_KEY
-SHOPIFY_STORE_DOMAIN
 SHOPIFY_ADMIN_ACCESS_TOKEN
 ```
 
