@@ -45,6 +45,12 @@ jobs:
           SHOPIFY_STORE_DOMAIN: "nr00an-yh.myshopify.com"
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          R2_ACCOUNT_ID: "2cd63a3dc8a97fd3d54da09e423ab769"
+          R2_BUCKET_NAME: "esntls-images"
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ESNTLS_PRODUCTS_OBJECT_KEY: "products.json"
+          ESNTLS_LINKBACK_REQUIRED: "true"
           SHOPIFY_API_VERSION: "2026-04"
           SHOPIFY_PRODUCT_STATUS: "ACTIVE"
           OPENAI_IMAGE_MODEL: "gpt-image-1"
