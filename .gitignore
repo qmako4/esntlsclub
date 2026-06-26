@@ -1,0 +1,10 @@
+.next
+node_modules
+.env
+.env.local
+.vercel
+dist
+coverage
+*.tsbuildinfo
+outputs/blank-product-workflow/state.json
+outputs/blank-product-workflow/generated/
