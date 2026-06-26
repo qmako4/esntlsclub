@@ -110,8 +110,7 @@ Required environment variables:
 ```bash
 OPENAI_API_KEY=
 SHOPIFY_STORE_DOMAIN=nr00an-yh.myshopify.com
-SHOPIFY_CLIENT_ID=
-SHOPIFY_CLIENT_SECRET=
+SHOPIFY_ADMIN_ACCESS_TOKEN=
 ```
 
 Optional environment variables:
@@ -155,8 +154,7 @@ Add these GitHub repository secrets:
 ```text
 OPENAI_API_KEY
 SHOPIFY_STORE_DOMAIN
-SHOPIFY_CLIENT_ID
-SHOPIFY_CLIENT_SECRET
+SHOPIFY_ADMIN_ACCESS_TOKEN
 ```
 
 The Shopify token needs these Admin API scopes:

@@ -20,7 +20,6 @@ const DEFAULT_GENERATED_DIR = path.join(
   "blank-product-workflow",
   "generated",
 );
-let cachedShopifyAccessToken = null;
 
 const PLACEHOLDER_PREFIXES = [
   "Daily Item",
@@ -303,7 +302,7 @@ async function fetchJson(url) {
 
 async function shopifyGraphql(query, variables) {
   const storeDomain = requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const token = await getShopifyAccessToken(storeDomain);
+  const token = requiredEnv("SHOPIFY_ADMIN_ACCESS_TOKEN");
   const response = await fetch(`https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
@@ -319,35 +318,6 @@ async function shopifyGraphql(query, variables) {
   }
 
   return json.data;
-}
-
-async function getShopifyAccessToken(storeDomain) {
-  if (process.env.SHOPIFY_ADMIN_ACCESS_TOKEN) return process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  if (cachedShopifyAccessToken) return cachedShopifyAccessToken;
-
-  const clientId = requiredEnv("SHOPIFY_CLIENT_ID");
-  const clientSecret = requiredEnv("SHOPIFY_CLIENT_SECRET");
-  const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-  });
-
-  const response = await fetch(`https://${storeDomain}/admin/oauth/access_token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
-
-  const json = await response.json().catch(async () => ({ raw: await response.text() }));
-  if (!response.ok || !json.access_token) {
-    throw new Error(`Shopify token request failed: ${JSON.stringify(json)}`);
-  }
-
-  cachedShopifyAccessToken = json.access_token;
-  return cachedShopifyAccessToken;
 }
 
 async function findExistingShopifyProduct(product) {
@@ -666,8 +636,7 @@ Usage:
 Required environment:
   OPENAI_API_KEY
   SHOPIFY_STORE_DOMAIN
-  SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET
-  or SHOPIFY_ADMIN_ACCESS_TOKEN
+  SHOPIFY_ADMIN_ACCESS_TOKEN
 
 Optional environment:
   ESNTLS_PRODUCTS_URL
