@@ -1,0 +1,71 @@
+name: ESNTLS Blank Product Worker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Maximum ESNTLS products to scan this run"
+        required: false
+        default: "50"
+      source_title:
+        description: "Optional: only process products matching this title"
+        required: false
+        default: ""
+      dry_run:
+        description: "Check what would happen without creating Shopify products"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: esntls-blank-product-worker
+  cancel-in-progress: false
+
+jobs:
+  run-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run blank product worker
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+          SHOPIFY_ADMIN_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ADMIN_ACCESS_TOKEN }}
+          SHOPIFY_API_VERSION: "2026-04"
+          SHOPIFY_PRODUCT_STATUS: "ACTIVE"
+          OPENAI_IMAGE_MODEL: "gpt-image-1"
+          OPENAI_IMAGE_SIZE: "1024x1024"
+          DEFAULT_CLOTHING_SIZES: "S,M,L,XL"
+          DEFAULT_FOOTWEAR_SIZES: "UK 6,UK 7,UK 8,UK 9,UK 10,UK 11"
+          WORKER_STATE_PATH: ${{ runner.temp }}/esntls-blank-worker-state.json
+          WORKER_GENERATED_DIR: ${{ runner.temp }}/esntls-blank-worker-generated
+          LIMIT: ${{ github.event.inputs.limit || '50' }}
+          SOURCE_TITLE: ${{ github.event.inputs.source_title || '' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+
+          args=(--once --limit "$LIMIT")
+
+          if [ -n "$SOURCE_TITLE" ]; then
+            args+=(--source-title "$SOURCE_TITLE")
+          fi
+
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+
+          node scripts/esntls-handsfree-worker.mjs "${args[@]}"
