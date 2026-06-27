@@ -103,6 +103,17 @@ label.field input:focus{border-color:var(--g)}
 .img-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .img-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
 
+.add-bg-card{display:none;margin-top:14px;border:1px solid var(--border);border-radius:18px;background:#fbfdfc;overflow:hidden}
+.add-bg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 14px 10px}
+.add-bg-title{font-size:13px;font-weight:800;color:var(--text)}
+.add-bg-status{font-size:11px;color:var(--sub);margin-top:2px;line-height:1.4}
+.add-bg-badge{flex:0 0 auto;border-radius:999px;background:#eafaf0;color:#078536;font-size:10px;font-weight:800;padding:5px 9px;text-transform:uppercase;letter-spacing:.05em}
+.add-bg-body{display:grid;grid-template-columns:1fr;gap:10px;padding:0 14px 14px}
+.add-bg-preview{display:none;border-radius:16px;overflow:hidden;background:#eef3ef;border:1px solid var(--border)}
+.add-bg-preview img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.add-bg-actions{display:none;gap:8px;flex-wrap:wrap}
+.add-bg-actions .btn{width:auto;flex:1 1 140px;min-height:42px;padding:10px 12px;font-size:12px}
+
 .btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
 .btn:active{transform:scale(.97)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -569,6 +580,22 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="hint">Select multiple images from camera roll</div>
 </label>
 <div class="img-preview" id="imgPreview"></div>
+<div class="add-bg-card" id="addBgCard">
+<div class="add-bg-head">
+<div>
+<div class="add-bg-title">ESNTLS background preview</div>
+<div class="add-bg-status" id="addBgStatus">Select a photo to generate the branded background preview.</div>
+</div>
+<div class="add-bg-badge" id="addBgBadge">Auto</div>
+</div>
+<div class="add-bg-body">
+<div class="add-bg-preview" id="addBgPreview"><img id="addBgImg" alt="Generated ESNTLS background product preview"></div>
+<div class="add-bg-actions" id="addBgActions">
+<button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
+<button type="button" class="btn btn-outline" onclick="generateAddBackground(true)">Regenerate</button>
+</div>
+</div>
+</div>
 <div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
 <button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">Pick from Library</button>
 <div id="addLibPreview"></div>
@@ -802,6 +829,7 @@ let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
+let addBgState={status:'idle',sourceFile:null,generatedFile:null,generatedDataUrl:null,useGenerated:true,token:0};
 let mediaImages=[];
 let mediaSelected=new Set();
 let pickerSelected=new Set();
@@ -978,6 +1006,7 @@ document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelive
 function previewFiles(files){
 pendingFiles=[...files];
 renderPendingPreview();
+queueAddBackgroundGeneration();
 }
 
 function renderPendingPreview(){
@@ -1011,6 +1040,151 @@ if(idx<=0||idx>=pendingFiles.length)return;
 const[moved]=pendingFiles.splice(idx,1);
 pendingFiles.unshift(moved);
 renderPendingPreview();
+queueAddBackgroundGeneration();
+}
+
+function addBgEls(){
+return {
+card:document.getElementById('addBgCard'),
+status:document.getElementById('addBgStatus'),
+badge:document.getElementById('addBgBadge'),
+preview:document.getElementById('addBgPreview'),
+img:document.getElementById('addBgImg'),
+actions:document.getElementById('addBgActions'),
+useBtn:document.getElementById('addBgUseBtn')
+}}
+
+function resetAddBackgroundPreview(){
+addBgState.token++;
+addBgState={status:'idle',sourceFile:null,generatedFile:null,generatedDataUrl:null,useGenerated:true,token:addBgState.token};
+renderAddBackgroundPreview();
+}
+
+function renderAddBackgroundPreview(){
+const el=addBgEls();
+if(!el.card)return;
+if(!pendingFiles.length){
+el.card.style.display='none';
+return;
+}
+el.card.style.display='block';
+el.preview.style.display=addBgState.generatedDataUrl?'block':'none';
+el.actions.style.display=addBgState.generatedFile?'flex':'none';
+if(addBgState.generatedDataUrl)el.img.src=addBgState.generatedDataUrl;
+if(addBgState.generatedFile)el.useBtn.textContent=addBgState.useGenerated?'Use original':'Use generated';
+const copy={
+idle:['Auto','Ready to generate an ESNTLS background preview.'],
+needsSetup:['Setup','Set your OpenAI key and brand background in Studio once, then reselect the photo.'],
+generating:['Generating','Creating the ESNTLS background preview before upload.'],
+done:['Ready',addBgState.useGenerated?'Generated preview will upload as the main image.':'Original image will upload first.'],
+error:['Check','Preview failed. You can upload now and the automatic worker can still process it later.']
+}[addBgState.status]||['Auto','Ready'];
+el.badge.textContent=copy[0];
+el.status.textContent=copy[1];
+}
+
+function addBackgroundPrompt(){
+const s=psGetSettings();
+const preset=s.stylePreset||'sneaker';
+const base=PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
+return [
+'Place this exact product onto the provided ESNTLS Club background image.',
+'Keep the product details, colours, branding, stitching, labels, shape and material realistic and unchanged.',
+'Make it look like a clean premium ecommerce product photo with realistic contact shadow and natural lighting.',
+'Keep one product only. No model, no hands, no extra props, no added text, no watermark.',
+base
+].join(' ');
+}
+
+async function generateAddBackground(force=false){
+const source=pendingFiles[0];
+if(!source){
+resetAddBackgroundPreview();
+return;
+}
+const s=psGetSettings();
+if(!s.openaiKey||!s.brandBg){
+addBgState.status='needsSetup';
+addBgState.sourceFile=source;
+addBgState.generatedFile=null;
+addBgState.generatedDataUrl=null;
+renderAddBackgroundPreview();
+return;
+}
+if(!force&&addBgState.sourceFile===source&&addBgState.generatedFile)return;
+const token=++addBgState.token;
+addBgState.status='generating';
+addBgState.sourceFile=source;
+addBgState.generatedFile=null;
+addBgState.generatedDataUrl=null;
+addBgState.useGenerated=true;
+renderAddBackgroundPreview();
+try{
+const bgBlob=await psFetchAsBlob(s.brandBg);
+const form=new FormData();
+form.append('model','gpt-image-1');
+form.append('image[]',source,source.name||'product.jpg');
+form.append('image[]',bgBlob,'esntls-background.jpg');
+form.append('prompt',addBackgroundPrompt());
+form.append('size','1024x1024');
+form.append('quality','medium');
+form.append('n','1');
+const r=await fetch('https://api.openai.com/v1/images/edits',{
+method:'POST',
+headers:{'Authorization':'Bearer '+s.openaiKey},
+body:form
+});
+const data=await r.json();
+if(!r.ok)throw new Error((data.error&&data.error.message)||('HTTP '+r.status));
+const b64=data.data&&data.data[0]&&data.data[0].b64_json;
+if(!b64)throw new Error('No image returned in response');
+if(token!==addBgState.token)return;
+const blob=await (await fetch('data:image/png;base64,'+b64)).blob();
+const fileName='esntls_bg_'+Date.now()+'.png';
+addBgState.status='done';
+addBgState.sourceFile=source;
+addBgState.generatedFile=new File([blob],fileName,{type:'image/png'});
+addBgState.generatedDataUrl='data:image/png;base64,'+b64;
+addBgState.useGenerated=true;
+renderAddBackgroundPreview();
+}catch(e){
+if(token!==addBgState.token)return;
+console.error('Add background generation failed:',e);
+addBgState.status='error';
+addBgState.generatedFile=null;
+addBgState.generatedDataUrl=null;
+renderAddBackgroundPreview();
+}}
+
+function queueAddBackgroundGeneration(){
+if(!pendingFiles.length){
+resetAddBackgroundPreview();
+return;
+}
+addBgState.token++;
+addBgState.status='idle';
+addBgState.sourceFile=pendingFiles[0];
+addBgState.generatedFile=null;
+addBgState.generatedDataUrl=null;
+addBgState.useGenerated=true;
+renderAddBackgroundPreview();
+setTimeout(()=>{
+if(pendingFiles[0]===addBgState.sourceFile)generateAddBackground(false);
+},250);
+}
+
+function toggleAddGeneratedUsage(){
+if(!addBgState.generatedFile)return;
+addBgState.useGenerated=!addBgState.useGenerated;
+addBgState.status='done';
+renderAddBackgroundPreview();
+}
+
+function addUploadFiles(){
+if(addBgState.generatedFile&&addBgState.useGenerated&&addBgState.sourceFile===pendingFiles[0]){
+return [addBgState.generatedFile,...pendingFiles];
+}
+return [...pendingFiles];
 }
 
 // IMAGE COMPRESSION (resize to 1600px wide, re-encode JPEG ~82% quality)
@@ -1064,16 +1238,22 @@ const brand=inferBrand(selectedCats);
 if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
 if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
 if(!pendingFiles.length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
+if(addBgState.status==='generating'){msg.style.color='#e53935';msg.textContent='Wait for the ESNTLS background preview to finish first.';return}
 
-let imageUrls=[...addLibraryUrls];
+let imageUrls=[];
 if(pendingFiles.length){
-const newUrls=await uploadImages(pendingFiles);
+const newUrls=await uploadImages(addUploadFiles());
 imageUrls=[...imageUrls,...newUrls];
 }
+imageUrls=[...imageUrls,...addLibraryUrls];
 if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
 
 const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
 const createdAt=new Date().toISOString();
+const usedGenerated=!!(addBgState.generatedFile&&addBgState.useGenerated&&addBgState.sourceFile===pendingFiles[0]&&imageUrls.length);
+const grassMeta=usedGenerated
+?{status:'done',sourceImage:imageUrls[1]||imageUrls[0],image:imageUrls[0],requestedAt:createdAt,processedAt:createdAt,promptVersion:'admin-preview-v1'}
+:{status:'pending',sourceImage:imageUrls[0],requestedAt:createdAt};
 const newProduct={
 id:newId,
 name:n,
@@ -1084,7 +1264,7 @@ link,
 delivery:selectedDelivery.join(','),
 images:imageUrls,
 created_at:createdAt,
-grassBackground:{status:'pending',sourceImage:imageUrls[0],requestedAt:createdAt}
+grassBackground:grassMeta
 };
 products.unshift(newProduct);
 
@@ -1099,6 +1279,7 @@ document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
 pendingFiles=[];
+resetAddBackgroundPreview();
 addLibraryUrls=[];
 renderAddLibPreview();
 selectedCats=[];
@@ -2085,6 +2266,7 @@ function psSaveSettings(){
   m.style.color='var(--g)';m.textContent='✓ Saved to this browser only';
   setTimeout(()=>{m.textContent=''},2500);
   psUpdateGenerateState();
+  if(pendingFiles.length)queueAddBackgroundGeneration();
 }
 function psGetSettings(){try{return JSON.parse(localStorage.getItem(PS_LS_KEY)||'{}')}catch(e){return{}}}
 
