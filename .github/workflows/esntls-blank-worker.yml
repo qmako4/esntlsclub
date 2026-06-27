@@ -61,7 +61,7 @@ jobs:
           WORKER_GENERATED_DIR: ${{ runner.temp }}/esntls-blank-worker-generated
           LIMIT: ${{ github.event.inputs.limit || '1' }}
           SOURCE_TITLE: ${{ github.event.inputs.source_title || '' }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.dry_run || 'true') || 'false' }}
         run: |
           set -euo pipefail
 
