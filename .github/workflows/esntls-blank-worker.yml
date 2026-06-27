@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Maximum ESNTLS products to scan this run"
+        description: "Maximum ESNTLS products with empty links to process"
         required: false
         default: "1"
       source_title:

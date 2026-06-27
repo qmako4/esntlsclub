@@ -99,7 +99,7 @@ The repo now includes a hands-free worker:
 node scripts/esntls-handsfree-worker.mjs --watch --interval-ms 300000
 ```
 
-It polls the ESNTLS product feed, finds products it has not processed, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a randomly named Shopify placeholder product, then writes the new Shopify product URL back to the matching ESNTLS product's `link` field in R2 `products.json`.
+It polls the ESNTLS product feed, only selects products whose ESNTLS `link` field is empty, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a randomly named Shopify placeholder product, then writes the new Shopify product URL back to the matching ESNTLS product's `link` field in R2 `products.json`.
 
 It also records the mapping in:
 
@@ -184,4 +184,4 @@ The worker will request a short-lived Shopify Admin API token at runtime from th
 
 The live workflow requires R2 write credentials before it creates a Shopify product. That prevents a product from being created without the ESNTLS checkout link being updated.
 
-The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products. If a matching Shopify product already exists, the worker can still update the ESNTLS source product link to the existing Shopify URL.
+The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products. The worker only processes ESNTLS products where `link` is blank; products that already point to an existing checkout link are left alone. If a matching Shopify product already exists for a blank-link source product, the worker can still update that ESNTLS source product link to the existing Shopify URL.
