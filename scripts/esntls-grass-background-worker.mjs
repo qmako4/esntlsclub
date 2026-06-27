@@ -7,6 +7,7 @@ import { createHash, createHmac } from "node:crypto";
 const DEFAULT_PRODUCTS_URL =
   "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json";
 const DEFAULT_R2_PUBLIC_BASE = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/";
+const DEFAULT_GRASS_BACKGROUND_IMAGE = path.join(process.cwd(), "img", "esntls-grass-background.jpg");
 const DEFAULT_PRODUCTS_OBJECT_KEY = "products.json";
 const DEFAULT_GENERATED_DIR = path.join(
   process.cwd(),
@@ -225,11 +226,12 @@ function buildGrassPrompt(product) {
     "Use case: precise-product-background-replacement",
     "Asset type: ESNTLS Club ecommerce product image",
     `Input image: the source image for "${product.title}" is the exact product reference.`,
-    "Primary request: place the exact same product onto a clean green grass background. Keep the product unchanged and realistic.",
-    "Background: close-cropped green grass or artificial turf, evenly lit, premium ecommerce look, similar to ESNTLS Club grass product photography.",
-    "Product preservation: keep the same product shape, colors, materials, logos, labels, stitching, patterns, and visible details from the source image. Do not blank or rebrand the item.",
+    "Primary request: place the exact same product onto the provided ESNTLS grass background reference. Keep the product unchanged and realistic.",
+    "Background: use the supplied close-cropped green grass or artificial turf image as the exact background surface. Do not invent a different background.",
+    "Product preservation: keep the same product shape, colors, materials, logos, labels, stitching, patterns, readable text, marks, sole shape, fabric drape, and visible details from the source image.",
+    "Only remove the original background from the product photo. Do not redesign, recolor, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.",
     "Composition/framing: square product photo, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.",
-    "Lighting/mood: natural daylight, realistic soft shadows, crisp detail, clean resale/streetwear product presentation.",
+    "Lighting/mood: natural daylight, realistic contact shadow, crisp detail, clean resale/streetwear product presentation.",
     "Constraints: one product only; no model; no hands; no extra props; no extra text; no watermark; not an illustration.",
   ].join("\n");
 }
@@ -238,7 +240,7 @@ async function generateGrassImage(product) {
   const apiKey = requiredEnv("OPENAI_API_KEY");
   const source = await readImageForOpenAI(product.image);
   const sourceFile = new File([source.buffer], source.filename, { type: source.contentType });
-  const backgroundUrl = process.env.GRASS_BACKGROUND_IMAGE_URL || "";
+  const backgroundUrl = process.env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_IMAGE;
   const background = backgroundUrl ? await readImageForOpenAI(backgroundUrl) : null;
   const form = new FormData();
 
