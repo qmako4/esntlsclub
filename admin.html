@@ -749,6 +749,7 @@ imageUrls=[...imageUrls,...newUrls];
 if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
 
 const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
+const createdAt=new Date().toISOString();
 const newProduct={
 id:newId,
 name:n,
@@ -758,7 +759,8 @@ price,
 link,
 delivery:selectedDelivery.join(','),
 images:imageUrls,
-created_at:new Date().toISOString()
+created_at:createdAt,
+grassBackground:{status:'pending',sourceImage:imageUrls[0],requestedAt:createdAt}
 };
 products.unshift(newProduct);
 
