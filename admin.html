@@ -735,7 +735,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="hint">Select multiple images from camera roll</div>
 </label>
 <div class="img-preview" id="imgPreview"></div>
-<div class="add-bg-card" id="addBgCard">
+<div class="add-bg-card" id="addBgCard" onclick="handleAddBackgroundCardClick(event)">
 <div class="add-bg-head">
 <div>
 <div class="add-bg-title">ESNTLS background preview</div>
@@ -746,8 +746,8 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="add-bg-body">
 <div class="add-bg-preview" id="addBgPreview"><img id="addBgImg" alt="Generated ESNTLS background product preview"></div>
 <div class="add-bg-actions" id="addBgActions">
+<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate preview</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
-<button type="button" class="btn btn-outline" onclick="generateAddBackground(true)">Regenerate</button>
 </div>
 </div>
 </div>
@@ -842,7 +842,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <p style="font-size:12px;color:var(--sub);margin-bottom:14px">Drop a product photo and generate a clean ESNTLS-style product image on your brand background.</p>
 
 <!-- Settings (collapsible) -->
-<details style="background:#f8f9fa;border-radius:10px;padding:10px 14px;margin-bottom:14px">
+<details id="psSettingsBox" style="background:#f8f9fa;border-radius:10px;padding:10px 14px;margin-bottom:14px">
 <summary style="font-size:13px;font-weight:600;cursor:pointer;color:#555">Settings</summary>
 <div style="margin-top:12px">
 <label class="field"><span>OpenAI API key (stored in this browser only, never committed)</span>
@@ -1206,6 +1206,7 @@ badge:document.getElementById('addBgBadge'),
 preview:document.getElementById('addBgPreview'),
 img:document.getElementById('addBgImg'),
 actions:document.getElementById('addBgActions'),
+generateBtn:document.getElementById('addBgGenerateBtn'),
 useBtn:document.getElementById('addBgUseBtn')
 }}
 
@@ -1224,18 +1225,55 @@ return;
 }
 el.card.style.display='block';
 el.preview.style.display=addBgState.generatedDataUrl?'block':'none';
-el.actions.style.display=addBgState.generatedFile?'flex':'none';
+el.actions.style.display='flex';
 if(addBgState.generatedDataUrl)el.img.src=addBgState.generatedDataUrl;
-if(addBgState.generatedFile)el.useBtn.textContent=addBgState.useGenerated?'Use original':'Use generated';
+if(el.useBtn){
+el.useBtn.style.display=addBgState.generatedFile?'block':'none';
+el.useBtn.textContent=addBgState.useGenerated?'Use original':'Use generated';
+}
+if(el.generateBtn){
+const isGenerating=addBgState.status==='generating';
+const needsSetup=addBgState.status==='needsSetup';
+el.generateBtn.disabled=isGenerating;
+el.generateBtn.style.opacity=isGenerating?'.65':'1';
+el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?'Generating...':addBgState.generatedFile?'Regenerate':'Generate preview';
+el.generateBtn.classList.toggle('btn-outline',!!addBgState.generatedFile);
+}
 const copy={
-idle:['Auto','Ready to generate an ESNTLS background preview.'],
-needsSetup:['Setup','Set your OpenAI key and brand background in Studio once, then reselect the photo.'],
+idle:['Auto','Generating should start automatically. Tap Generate preview if it does not.'],
+needsSetup:['Setup','Open Studio setup once, save your key and background, then return here.'],
 generating:['Generating','Creating the ESNTLS background preview before upload.'],
 done:['Ready',addBgState.useGenerated?'Generated preview will upload as the main image.':'Original image will upload first.'],
 error:['Check','Preview failed. You can upload now and the automatic worker can still process it later.']
 }[addBgState.status]||['Auto','Ready'];
 el.badge.textContent=copy[0];
 el.status.textContent=copy[1];
+}
+
+function openPhotoStudioSetup(){
+const tab=document.querySelector('.tab[data-tab="studio"]');
+showTab('studio',tab);
+const box=document.getElementById('psSettingsBox');
+if(box){
+box.open=true;
+setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+}
+
+function handleAddBackgroundGenerate(){
+const s=psGetSettings();
+if(!s.openaiKey||!s.brandBg){
+addBgState.status='needsSetup';
+renderAddBackgroundPreview();
+openPhotoStudioSetup();
+return;
+}
+generateAddBackground(true);
+}
+
+function handleAddBackgroundCardClick(event){
+if(event.target.closest('button'))return;
+if(['idle','needsSetup','error'].includes(addBgState.status))handleAddBackgroundGenerate();
 }
 
 function addBackgroundPrompt(){
