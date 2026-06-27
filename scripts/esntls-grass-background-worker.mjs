@@ -8,6 +8,10 @@ const DEFAULT_PRODUCTS_URL =
   "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json";
 const DEFAULT_R2_PUBLIC_BASE = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/";
 const DEFAULT_GRASS_BACKGROUND_IMAGE = path.join(process.cwd(), "img", "esntls-grass-background.jpg");
+const DEFAULT_OPENAI_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_OPENAI_IMAGE_SIZE = "768x1024";
+const FALLBACK_OPENAI_IMAGE_MODEL = "gpt-image-1";
+const FALLBACK_OPENAI_IMAGE_SIZE = "1024x1536";
 const DEFAULT_PRODUCTS_OBJECT_KEY = "products.json";
 const DEFAULT_GENERATED_DIR = path.join(
   process.cwd(),
@@ -238,17 +242,12 @@ function buildGrassPrompt(product) {
   ].join("\n");
 }
 
-async function generateGrassImage(product) {
-  const apiKey = requiredEnv("OPENAI_API_KEY");
-  const source = await readImageForOpenAI(product.image);
-  const sourceFile = new File([source.buffer], source.filename, { type: source.contentType });
-  const backgroundUrl = process.env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_IMAGE;
-  const background = backgroundUrl ? await readImageForOpenAI(backgroundUrl) : null;
+async function requestOpenAIGrassImage({ apiKey, product, sourceFile, background, model, size }) {
   const form = new FormData();
 
-  form.append("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-2");
+  form.append("model", model);
   form.append("prompt", buildGrassPrompt(product));
-  form.append("size", process.env.OPENAI_IMAGE_SIZE || "768x1024");
+  form.append("size", size);
   form.append("quality", process.env.OPENAI_IMAGE_QUALITY || "medium");
 
   if (background) {
@@ -268,7 +267,7 @@ async function generateGrassImage(product) {
 
   const json = await response.json().catch(async () => ({ raw: await response.text() }));
   if (!response.ok) {
-    throw new Error(`OpenAI image generation failed: ${JSON.stringify(json)}`);
+    throw new Error(`${model} image generation failed: ${JSON.stringify(json)}`);
   }
 
   const first = json.data?.[0];
@@ -285,6 +284,37 @@ async function generateGrassImage(product) {
   }
 
   throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(json)}`);
+}
+
+async function generateGrassImage(product) {
+  const apiKey = requiredEnv("OPENAI_API_KEY");
+  const source = await readImageForOpenAI(product.image);
+  const sourceFile = new File([source.buffer], source.filename, { type: source.contentType });
+  const backgroundUrl = process.env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_IMAGE;
+  const background = backgroundUrl ? await readImageForOpenAI(backgroundUrl) : null;
+  const primaryModel = process.env.OPENAI_IMAGE_MODEL || DEFAULT_OPENAI_IMAGE_MODEL;
+  const primarySize = process.env.OPENAI_IMAGE_SIZE || DEFAULT_OPENAI_IMAGE_SIZE;
+
+  try {
+    return await requestOpenAIGrassImage({
+      apiKey,
+      product,
+      sourceFile,
+      background,
+      model: primaryModel,
+      size: primarySize,
+    });
+  } catch (primaryError) {
+    console.warn(`[warn] ${primaryModel} failed; retrying with ${FALLBACK_OPENAI_IMAGE_MODEL}: ${primaryError.message}`);
+    return requestOpenAIGrassImage({
+      apiKey,
+      product,
+      sourceFile,
+      background,
+      model: FALLBACK_OPENAI_IMAGE_MODEL,
+      size: FALLBACK_OPENAI_IMAGE_SIZE,
+    });
+  }
 }
 
 async function saveGeneratedImage(product, imageBuffer, generatedDir) {

@@ -711,7 +711,6 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
 <input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1 1 100%;min-width:0">
-<button type="button" class="btn" onclick="createWixPlaceholder()" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 12px;font-size:12px;background:#111;color:#fff;border:none" title="Create a new Wix placeholder product using the Name & Price above, then auto-fill this link">Create on Wix</button>
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
@@ -968,6 +967,10 @@ const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_GRASS_BACKGROUND_PATH='img/esntls-grass-background.jpg';
 const OPENAI_IMAGE_MODEL='gpt-image-2';
 const OPENAI_GRASS_IMAGE_SIZE='768x1024';
+const OPENAI_IMAGE_FALLBACK_MODEL='gpt-image-1';
+const OPENAI_GRASS_FALLBACK_SIZE='1024x1536';
+const GRASS_FINAL_WIDTH=768;
+const GRASS_FINAL_HEIGHT=1024;
 // Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
 //   2. ADMIN_SECRET  = the value of the ADMIN_SECRET env var you set on the worker
@@ -990,7 +993,7 @@ let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
-let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:0,total:0,done:0,errorCount:0};
+let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:0,total:0,done:0,errorCount:0,lastError:''};
 let mediaImages=[];
 let mediaSelected=new Set();
 let pickerSelected=new Set();
@@ -1218,7 +1221,7 @@ useBtn:document.getElementById('addBgUseBtn')
 
 function resetAddBackgroundPreview(){
 addBgState.token++;
-addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:addBgState.token,total:0,done:0,errorCount:0};
+addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:addBgState.token,total:0,done:0,errorCount:0,lastError:''};
 renderAddBackgroundPreview();
 }
 
@@ -1255,7 +1258,7 @@ idle:['Auto','Generating should start automatically on the ESNTLS grass backgrou
 needsSetup:['Setup','Open Studio setup once, save your OpenAI key, then return here.'],
 generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
 done:['Ready',addBgState.useGenerated?`Generated ${doneText} previews. Generated images will upload first.`:`Original images will upload first.`],
-error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; you can retry.`:'Preview failed. You can upload now and the automatic worker can still process it later.']
+error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
 }[addBgState.status]||['Auto','Ready'];
 el.badge.textContent=copy[0];
 el.status.textContent=copy[1];
@@ -1311,28 +1314,74 @@ base
 ].join(' ');
 }
 
-async function generateSingleAddBackground(source,index,bgBlob,s){
+async function requestGrassImageEdit(source,bgBlob,s,prompt,model,size,quality='medium'){
 const form=new FormData();
-form.append('model',OPENAI_IMAGE_MODEL);
+form.append('model',model);
 form.append('image[]',source,source.name||'product.jpg');
 form.append('image[]',bgBlob,'esntls-background.jpg');
-form.append('prompt',addBackgroundPrompt());
-form.append('size',OPENAI_GRASS_IMAGE_SIZE);
-form.append('quality','medium');
+form.append('prompt',prompt);
+form.append('size',size);
+form.append('quality',quality);
 form.append('n','1');
 const r=await fetch('https://api.openai.com/v1/images/edits',{
 method:'POST',
 headers:{'Authorization':'Bearer '+s.openaiKey},
 body:form
 });
-const data=await r.json();
-if(!r.ok)throw new Error((data.error&&data.error.message)||('HTTP '+r.status));
+let data={};
+try{data=await r.json()}catch(e){data={error:{message:'Invalid OpenAI response'}}}
+if(!r.ok)throw new Error(model+': '+((data.error&&data.error.message)||('HTTP '+r.status)));
 const b64=data.data&&data.data[0]&&data.data[0].b64_json;
-if(!b64)throw new Error('No image returned in response');
-const dataUrl='data:image/png;base64,'+b64;
-const blob=await (await fetch(dataUrl)).blob();
-const fileName='esntls_bg_'+Date.now()+'_'+index+'.png';
-return {sourceFile:source,generatedFile:new File([blob],fileName,{type:'image/png'}),dataUrl};
+if(!b64)throw new Error(model+': no image returned');
+return {model,size,b64};
+}
+
+async function normalizeGrassDataUrl(dataUrl){
+const img=await new Promise((resolve,reject)=>{
+const image=new Image();
+image.onload=()=>resolve(image);
+image.onerror=()=>reject(new Error('Generated image could not be loaded'));
+image.src=dataUrl;
+});
+const sourceW=img.naturalWidth||img.width;
+const sourceH=img.naturalHeight||img.height;
+const targetRatio=GRASS_FINAL_WIDTH/GRASS_FINAL_HEIGHT;
+let sx=0,sy=0,sw=sourceW,sh=sourceH;
+if(sourceW/sourceH>targetRatio){
+sw=Math.round(sourceH*targetRatio);
+sx=Math.round((sourceW-sw)/2);
+}else if(sourceW/sourceH<targetRatio){
+sh=Math.round(sourceW/targetRatio);
+sy=Math.round((sourceH-sh)/2);
+}
+const canvas=document.createElement('canvas');
+canvas.width=GRASS_FINAL_WIDTH;
+canvas.height=GRASS_FINAL_HEIGHT;
+const ctx=canvas.getContext('2d');
+ctx.drawImage(img,sx,sy,sw,sh,0,0,GRASS_FINAL_WIDTH,GRASS_FINAL_HEIGHT);
+const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.95));
+if(!blob)throw new Error('Generated image could not be prepared');
+return {blob,dataUrl:canvas.toDataURL('image/jpeg',0.95)};
+}
+
+async function generateGrassPreviewFile(source,index,bgBlob,s,prompt,quality='medium'){
+let result;
+try{
+result=await requestGrassImageEdit(source,bgBlob,s,prompt,OPENAI_IMAGE_MODEL,OPENAI_GRASS_IMAGE_SIZE,quality);
+}catch(primaryError){
+console.warn('Primary image model failed; trying fallback:',primaryError);
+result=await requestGrassImageEdit(source,bgBlob,s,prompt,OPENAI_IMAGE_FALLBACK_MODEL,OPENAI_GRASS_FALLBACK_SIZE,quality);
+result.fallbackReason=primaryError.message;
+}
+const dataUrl='data:image/png;base64,'+result.b64;
+const normalized=await normalizeGrassDataUrl(dataUrl);
+const fileName='esntls_bg_'+Date.now()+'_'+index+'.jpg';
+return {sourceFile:source,generatedFile:new File([normalized.blob],fileName,{type:'image/jpeg'}),dataUrl:normalized.dataUrl,model:result.model,size:result.size,fallbackReason:result.fallbackReason||''};
+}
+
+async function generateSingleAddBackground(source,index,bgBlob,s){
+const prompt=addBackgroundPrompt();
+return generateGrassPreviewFile(source,index,bgBlob,s,prompt);
 }
 
 async function generateAddBackground(force=false){
@@ -1348,6 +1397,7 @@ addBgState.generatedItems=[];
 addBgState.total=pendingFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
+addBgState.lastError='';
 renderAddBackgroundPreview();
 return;
 }
@@ -1361,6 +1411,7 @@ addBgState.useGenerated=true;
 addBgState.total=sources.length;
 addBgState.done=0;
 addBgState.errorCount=0;
+addBgState.lastError='';
 renderAddBackgroundPreview();
 try{
 const bgBlob=await psFetchAsBlob(s.brandBg);
@@ -1373,6 +1424,7 @@ addBgState.generatedItems.push(item);
 }catch(e){
 console.error('Add background generation failed:',sources[i]?.name,e);
 addBgState.errorCount++;
+addBgState.lastError=(e&&e.message)||'image generation failed';
 }
 addBgState.done=i+1;
 renderAddBackgroundPreview();
@@ -1385,6 +1437,7 @@ if(token!==addBgState.token)return;
 console.error('Add background setup failed:',e);
 addBgState.status='error';
 addBgState.errorCount=sources.length;
+addBgState.lastError=(e&&e.message)||'background setup failed';
 renderAddBackgroundPreview();
 }}
 
@@ -1401,6 +1454,7 @@ addBgState.useGenerated=true;
 addBgState.total=pendingFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
+addBgState.lastError='';
 renderAddBackgroundPreview();
 setTimeout(()=>{
 if(filesMatch(pendingFiles,addBgState.sourceFiles))generateAddBackground(false);
@@ -2578,24 +2632,8 @@ async function psGenerate(){
   msg.style.color='var(--sub)';msg.textContent='Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
-    const form=new FormData();
-    form.append('model',OPENAI_IMAGE_MODEL);
-    form.append('image[]',psState.file,psState.file.name||'product.jpg');
-    form.append('image[]',bgBlob,'grass.jpg');
-    form.append('prompt',psBuildPrompt());
-    form.append('size',OPENAI_GRASS_IMAGE_SIZE);
-    form.append('quality',quality);
-    form.append('n','1');
-    const r=await fetch('https://api.openai.com/v1/images/edits',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+s.openaiKey},
-      body:form
-    });
-    const data=await r.json();
-    if(!r.ok)throw new Error((data.error&&data.error.message)||('HTTP '+r.status));
-    const b64=data.data&&data.data[0]&&data.data[0].b64_json;
-    if(!b64)throw new Error('No image returned in response');
-    psState.resultDataUrl='data:image/png;base64,'+b64;
+    const item=await generateGrassPreviewFile(psState.file,0,bgBlob,s,psBuildPrompt(),quality);
+    psState.resultDataUrl=item.dataUrl;
     document.getElementById('psResultImg').src=psState.resultDataUrl;
     document.getElementById('psResultPreview').style.display='block';
     msg.style.color='var(--g)';msg.textContent='✓ Generated — review below, save if happy';
@@ -2614,8 +2652,8 @@ async function psSaveToLibrary(){
     // Convert data URL to blob
     const res=await fetch(psState.resultDataUrl);
     const blob=await res.blob();
-    const fname='studio_'+Date.now()+'_'+Math.floor(Math.random()*9999)+'.png';
-    const file=new File([blob],fname,{type:'image/png'});
+    const fname='studio_'+Date.now()+'_'+Math.floor(Math.random()*9999)+'.jpg';
+    const file=new File([blob],fname,{type:'image/jpeg'});
     const url=await r2Upload(file,fname);
     msg.style.color='var(--g)';msg.innerHTML='✓ Saved · <a href="'+url+'" target="_blank" style="color:#00C853">view</a>';
   }catch(e){
