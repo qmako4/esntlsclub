@@ -1,0 +1,80 @@
+name: ESNTLS Grass Background Worker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Maximum pending ESNTLS products to process"
+        required: false
+        default: "1"
+      source_title:
+        description: "Optional: only process products matching this title"
+        required: false
+        default: ""
+      dry_run:
+        description: "Check what would happen without generating or updating images"
+        required: false
+        default: true
+        type: boolean
+      include_existing:
+        description: "Manual backfill: include old products without a pending marker"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: esntls-grass-background-worker
+  cancel-in-progress: false
+
+jobs:
+  run-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run grass background worker
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          R2_ACCOUNT_ID: "2cd63a3dc8a97fd3d54da09e423ab769"
+          R2_BUCKET_NAME: "esntls-images"
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ESNTLS_PRODUCTS_OBJECT_KEY: "products.json"
+          OPENAI_IMAGE_MODEL: "gpt-image-1"
+          OPENAI_IMAGE_SIZE: "1024x1024"
+          OPENAI_IMAGE_QUALITY: "medium"
+          GRASS_GENERATED_DIR: ${{ runner.temp }}/esntls-grass-worker-generated
+          LIMIT: ${{ github.event.inputs.limit || '1' }}
+          SOURCE_TITLE: ${{ github.event.inputs.source_title || '' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          INCLUDE_EXISTING: ${{ github.event.inputs.include_existing || 'false' }}
+        run: |
+          set -euo pipefail
+
+          args=(--once --limit "$LIMIT")
+
+          if [ -n "$SOURCE_TITLE" ]; then
+            args+=(--source-title "$SOURCE_TITLE")
+          fi
+
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+
+          if [ "$INCLUDE_EXISTING" = "true" ]; then
+            args+=(--include-existing)
+          fi
+
+          node scripts/esntls-grass-background-worker.mjs "${args[@]}"

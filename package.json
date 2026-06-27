@@ -9,6 +9,8 @@
     "blank-worker": "node scripts/esntls-handsfree-worker.mjs --watch",
     "blank-worker:once": "node scripts/esntls-handsfree-worker.mjs --once",
     "blank-worker:dry-run": "node scripts/esntls-handsfree-worker.mjs --once --dry-run",
+    "grass-worker:once": "node scripts/esntls-grass-background-worker.mjs --once",
+    "grass-worker:dry-run": "node scripts/esntls-grass-background-worker.mjs --once --dry-run",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
