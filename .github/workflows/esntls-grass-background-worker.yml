@@ -52,8 +52,8 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           ESNTLS_PRODUCTS_OBJECT_KEY: "products.json"
-          OPENAI_IMAGE_MODEL: "gpt-image-1"
-          OPENAI_IMAGE_SIZE: "1024x1024"
+          OPENAI_IMAGE_MODEL: "gpt-image-2"
+          OPENAI_IMAGE_SIZE: "768x1024"
           OPENAI_IMAGE_QUALITY: "medium"
           GRASS_BACKGROUND_IMAGE_URL: "img/esntls-grass-background.jpg"
           GRASS_GENERATED_DIR: ${{ runner.temp }}/esntls-grass-worker-generated

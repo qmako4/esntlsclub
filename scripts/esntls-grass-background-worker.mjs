@@ -230,8 +230,10 @@ function buildGrassPrompt(product) {
     "Background: use the supplied close-cropped green grass or artificial turf image as the exact background surface. Do not invent a different background.",
     "Product preservation: keep the same product shape, colors, materials, logos, labels, stitching, patterns, readable text, marks, sole shape, fabric drape, and visible details from the source image.",
     "Only remove the original background from the product photo. Do not redesign, recolor, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.",
-    "Composition/framing: square product photo, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.",
-    "Lighting/mood: natural daylight, realistic contact shadow, crisp detail, clean resale/streetwear product presentation.",
+    "Composition/framing: vertical 3:4 product photo, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.",
+    "Generative fill: if the product needs more canvas to fit 3:4, extend only the grass background. Do not stretch, crop, squeeze, or distort the product.",
+    "Lighting/mood: natural daylight, subtle realistic contact shadow, crisp detail, clean resale/streetwear product presentation.",
+    "Shadow constraints: no unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.",
     "Constraints: one product only; no model; no hands; no extra props; no extra text; no watermark; not an illustration.",
   ].join("\n");
 }
@@ -244,9 +246,9 @@ async function generateGrassImage(product) {
   const background = backgroundUrl ? await readImageForOpenAI(backgroundUrl) : null;
   const form = new FormData();
 
-  form.append("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-1");
+  form.append("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-2");
   form.append("prompt", buildGrassPrompt(product));
-  form.append("size", process.env.OPENAI_IMAGE_SIZE || "1024x1024");
+  form.append("size", process.env.OPENAI_IMAGE_SIZE || "768x1024");
   form.append("quality", process.env.OPENAI_IMAGE_QUALITY || "medium");
 
   if (background) {
@@ -325,8 +327,8 @@ async function updateSourceProductGrassImage(product, grassUrl, productsUrl) {
     sourceImage,
     image: grassUrl,
     processedAt: new Date().toISOString(),
-    model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
-    promptVersion: "green-grass-v1",
+    model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
+    promptVersion: "green-grass-v2-3x4",
   };
 
   await putR2JsonObject(productsObjectKey(productsUrl), rawProducts);
@@ -414,8 +416,8 @@ Optional environment:
   ESNTLS_PRODUCTS_OBJECT_KEY=products.json
   GRASS_BACKGROUND_IMAGE_URL
   GRASS_WORKER_LIMIT=1
-  OPENAI_IMAGE_MODEL=gpt-image-1
-  OPENAI_IMAGE_SIZE=1024x1024
+  OPENAI_IMAGE_MODEL=gpt-image-2
+  OPENAI_IMAGE_SIZE=768x1024
   OPENAI_IMAGE_QUALITY=medium
 
 By default this only processes products with grassBackground.status="pending".
