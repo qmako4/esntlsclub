@@ -195,6 +195,7 @@ function normalizeProduct(rawProduct) {
     id: rawProduct.id || rawProduct.productId || rawProduct.slug || slugify(name),
     title: name,
     price: rawProduct.price || rawProduct.price_gbp || rawProduct.sale_price_gbp,
+    link: rawProduct.link || "",
     image,
     sizes: splitList(rawProduct.sizes || rawProduct.size || rawProduct.availableSizes),
     categories,
@@ -711,6 +712,10 @@ function shouldSkipProduct(product) {
   return null;
 }
 
+function hasBlankSourceLink(product) {
+  return !String(product.link || "").trim();
+}
+
 async function processProduct(product, options, state) {
   const key = sourceKey(product);
 
@@ -788,11 +793,18 @@ async function runOnce(options) {
     .filter((product) => {
       if (!options.sourceTitle) return true;
       return String(product.title || "").toLowerCase().includes(options.sourceTitle.toLowerCase());
-    });
+    })
+    .filter(hasBlankSourceLink);
 
   const limit = Number(options.limit || process.env.WORKER_LIMIT || products.length);
   const selectedProducts = products.slice(0, limit);
   const results = [];
+
+  if (!selectedProducts.length) {
+    const sourceMessage = options.sourceTitle ? ` matching "${options.sourceTitle}"` : "";
+    console.log(`No ESNTLS products${sourceMessage} have an empty checkout link.`);
+    return results;
+  }
 
   for (const product of selectedProducts) {
     try {
