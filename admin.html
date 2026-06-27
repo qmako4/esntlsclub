@@ -709,7 +709,6 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
 <input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1 1 100%;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('aLink')" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 12px;font-size:12px;background:var(--g);color:#fff;border:none">Pick from Wix</button>
 <button type="button" class="btn" onclick="createWixPlaceholder()" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 12px;font-size:12px;background:#111;color:#fff;border:none" title="Create a new Wix placeholder product using the Name & Price above, then auto-fill this link">Create on Wix</button>
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
@@ -1701,7 +1700,6 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 14px;font-size:12px;background:var(--g);color:#fff;border:none">Pick from Wix</button>
 </div>
 </label>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
