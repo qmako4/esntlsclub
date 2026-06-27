@@ -227,18 +227,15 @@ async function readImageForOpenAI(imageSource) {
 
 function buildGrassPrompt(product) {
   return [
-    "Use case: precise-product-background-replacement",
+    "Use case: simple-background-swap",
     "Asset type: ESNTLS Club ecommerce product image",
     `Input image: the source image for "${product.title}" is the exact product reference.`,
-    "Primary request: place the exact same product onto the provided ESNTLS grass background reference. Keep the product unchanged and realistic.",
-    "Background: use the supplied close-cropped green grass or artificial turf image as the exact background surface. Do not invent a different background.",
-    "Product preservation: keep the same product shape, colors, materials, logos, labels, stitching, patterns, readable text, marks, sole shape, fabric drape, and visible details from the source image.",
-    "Only remove the original background from the product photo. Do not redesign, recolor, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.",
-    "Composition/framing: vertical 3:4 product photo, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.",
-    "Generative fill: if the product needs more canvas to fit 3:4, extend only the grass background. Do not stretch, crop, squeeze, or distort the product.",
-    "Lighting/mood: natural daylight, subtle realistic contact shadow, crisp detail, clean resale/streetwear product presentation.",
-    "Shadow constraints: no unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.",
-    "Constraints: one product only; no model; no hands; no extra props; no extra text; no watermark; not an illustration.",
+    "Simple edit: replace only the original background with the provided ESNTLS grass background.",
+    "Keep the product exactly as it is. If a hand, arm, hanger, tag, lace position, or other real foreground detail is already in the source image, keep it unchanged.",
+    "Preserve the original camera angle, perspective, product size, hand position, colors, logos, textures, stitching, text, materials, shadows on the product, and lighting on the foreground.",
+    "Do not zoom in, crop closer, enlarge the item, change the angle, redesign, recolor, rebrand, remove the hand, remove product details, or add new details.",
+    "Keep the subject naturally sized in the frame with comfortable grass visible around it. If extra canvas is needed for the 3:4 output, fill only the background with matching grass.",
+    "Add only a subtle realistic grounding shadow if needed. No harsh halos, fake floating shadows, dramatic lighting, extra objects, text, or watermark.",
   ].join("\n");
 }
 
@@ -358,7 +355,7 @@ async function updateSourceProductGrassImage(product, grassUrl, productsUrl) {
     image: grassUrl,
     processedAt: new Date().toISOString(),
     model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
-    promptVersion: "green-grass-v2-3x4",
+    promptVersion: "simple-grass-swap-v1",
   };
 
   await putR2JsonObject(productsObjectKey(productsUrl), rawProducts);
