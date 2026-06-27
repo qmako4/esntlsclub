@@ -78,22 +78,49 @@ Lighting/mood: soft natural ecommerce lighting, subtle realistic shadows, clean 
 Constraints: one item only; no logos; no text; no watermark; no original background; no model unless the original product absolutely requires fit context; no extra accessories; not an illustration.
 ```
 
-## What Full Automation Would Need Later
+## Admin Button Workflow
 
-A fully automatic version, where uploading to ESNTLS instantly creates the Shopify blank item without asking Codex, would need:
+The preferred flow is manual from `admin.html`:
 
-- An ESNTLS product-created webhook or scheduled scanner.
-- A private server or serverless function.
-- OpenAI image API credentials.
-- Shopify Admin API credentials.
-- A review queue so bad generated images do not go live by accident.
-- A mapping table from ESNTLS product ID to Shopify placeholder product ID.
+1. Add or edit a product in ESNTLS admin.
+2. Open the product's edit panel.
+3. Click `Generate Shopify Product`.
+4. The admin calls the private Cloudflare Worker endpoint `/shopify-create-product`.
+5. The worker loads the saved product from R2 `products.json`, generates the blank image, creates the Shopify placeholder product, writes the Shopify URL back into that ESNTLS product's `link` field, and returns the link to the admin.
+6. If Wix credentials are configured, the same button also creates a Wix backup placeholder product and returns that backup URL without linking it to the ESNTLS product.
 
-Until that is built, this workflow keeps the risky visual step reviewed by Codex before the Shopify product goes live.
+The admin button does not expose OpenAI, Shopify, or Wix credentials in the browser. Those secrets must live on the Cloudflare Worker.
 
-## Hands-Free Worker
+Required Cloudflare Worker bindings:
 
-The repo now includes a hands-free worker:
+```text
+BUCKET = esntls-images
+ADMIN_SECRET
+OPENAI_API_KEY
+SHOPIFY_STORE_DOMAIN = nr00an-yh.myshopify.com
+SHOPIFY_ADMIN_ACCESS_TOKEN
+```
+
+Optional Cloudflare Worker variables:
+
+```text
+SHOPIFY_CLIENT_ID
+SHOPIFY_CLIENT_SECRET
+SHOPIFY_BLANK_BACKGROUND_URL=https://esntlsclub.com/img/esntls-grass-background.jpg
+SHOPIFY_PRODUCT_STATUS=ACTIVE
+SHOPIFY_VENDOR=ESNTLS Club
+SHOPIFY_PRODUCT_TYPE=Placeholder
+DEFAULT_CLOTHING_SIZES=S,M,L,XL
+DEFAULT_FOOTWEAR_SIZES=UK 6,UK 7,UK 8,UK 9,UK 10,UK 11
+WIX_API_TOKEN
+WIX_SITE_ID
+```
+
+`SHOPIFY_ADMIN_ACCESS_TOKEN` is preferred. If using `SHOPIFY_CLIENT_ID` and `SHOPIFY_CLIENT_SECRET`, the Shopify app must be installed on the shop or Shopify will return `app_not_installed`.
+
+## Local Worker Script
+
+The repo still includes a command-line worker for manual testing:
 
 ```bash
 node scripts/esntls-handsfree-worker.mjs --watch --interval-ms 300000
@@ -151,13 +178,13 @@ Important: the worker can only process products that have a usable `image` URL/p
 
 ## GitHub Actions Setup
 
-The repo includes a scheduled workflow at:
+The repo includes a manual GitHub Actions workflow at:
 
 ```text
 .github/workflows/esntls-blank-worker.yml
 ```
 
-It runs live every 15 minutes and can also be started manually from GitHub. Manual runs default to `dry_run: true` so you can test safely; scheduled runs use `dry_run: false` so blank Shopify products are actually created and linked back automatically. The workflow is already configured for Shopify store domain `nr00an-yh.myshopify.com`.
+It no longer runs on a schedule. It can be started manually from GitHub if needed, and manual runs default to `dry_run: true` so you can test safely. The normal production path is the admin button calling the Cloudflare Worker endpoint.
 
 Add these GitHub repository secrets:
 
@@ -184,4 +211,4 @@ The worker will request a short-lived Shopify Admin API token at runtime from th
 
 The live workflow requires R2 write credentials before it creates a Shopify product. That prevents a product from being created without the ESNTLS checkout link being updated.
 
-The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products. The worker only processes ESNTLS products where `link` is blank; products that already point to an existing checkout link are left alone. If a matching Shopify product already exists for a blank-link source product, the worker can still update that ESNTLS source product link to the existing Shopify URL.
+The workflow does not keep a permanent state file. Instead, the worker checks Shopify for matching `ESNTLS-ID-*` and `ESNTLS-SOURCE-ID-*` tags before creating anything, so repeat runs should not duplicate products.
