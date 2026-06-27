@@ -111,6 +111,8 @@ label.field input:focus{border-color:var(--g)}
 .add-bg-body{display:grid;grid-template-columns:1fr;gap:10px;padding:0 14px 14px}
 .add-bg-preview{display:none;border-radius:16px;overflow:hidden;background:#eef3ef;border:1px solid var(--border)}
 .add-bg-preview img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.add-bg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;padding:8px;background:#fff}
+.add-bg-grid img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:1px solid var(--border);background:#eef3ef}
 .add-bg-actions{display:none;gap:8px;flex-wrap:wrap}
 .add-bg-actions .btn{width:auto;flex:1 1 140px;min-height:42px;padding:10px 12px;font-size:12px}
 
@@ -744,7 +746,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="add-bg-badge" id="addBgBadge">Auto</div>
 </div>
 <div class="add-bg-body">
-<div class="add-bg-preview" id="addBgPreview"><img id="addBgImg" alt="Generated ESNTLS background product preview"></div>
+<div class="add-bg-preview" id="addBgPreview"><div class="add-bg-grid" id="addBgGrid"></div></div>
 <div class="add-bg-actions" id="addBgActions">
 <button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate preview</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
@@ -964,6 +966,8 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const SB_STORAGE=SB_URL+'/storage/v1/object/public/product-images/';
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_GRASS_BACKGROUND_PATH='img/esntls-grass-background.jpg';
+const OPENAI_IMAGE_MODEL='gpt-image-2';
+const OPENAI_GRASS_IMAGE_SIZE='768x1024';
 // Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
 //   2. ADMIN_SECRET  = the value of the ADMIN_SECRET env var you set on the worker
@@ -986,7 +990,7 @@ let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
-let addBgState={status:'idle',sourceFile:null,generatedFile:null,generatedDataUrl:null,useGenerated:true,token:0};
+let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:0,total:0,done:0,errorCount:0};
 let mediaImages=[];
 let mediaSelected=new Set();
 let pickerSelected=new Set();
@@ -1206,7 +1210,7 @@ card:document.getElementById('addBgCard'),
 status:document.getElementById('addBgStatus'),
 badge:document.getElementById('addBgBadge'),
 preview:document.getElementById('addBgPreview'),
-img:document.getElementById('addBgImg'),
+grid:document.getElementById('addBgGrid'),
 actions:document.getElementById('addBgActions'),
 generateBtn:document.getElementById('addBgGenerateBtn'),
 useBtn:document.getElementById('addBgUseBtn')
@@ -1214,7 +1218,7 @@ useBtn:document.getElementById('addBgUseBtn')
 
 function resetAddBackgroundPreview(){
 addBgState.token++;
-addBgState={status:'idle',sourceFile:null,generatedFile:null,generatedDataUrl:null,useGenerated:true,token:addBgState.token};
+addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:addBgState.token,total:0,done:0,errorCount:0};
 renderAddBackgroundPreview();
 }
 
@@ -1225,28 +1229,33 @@ if(!pendingFiles.length){
 el.card.style.display='none';
 return;
 }
+const generatedCount=addBgState.generatedItems.length;
 el.card.style.display='block';
-el.preview.style.display=addBgState.generatedDataUrl?'block':'none';
+el.preview.style.display=generatedCount?'block':'none';
 el.actions.style.display='flex';
-if(addBgState.generatedDataUrl)el.img.src=addBgState.generatedDataUrl;
+if(el.grid){
+el.grid.innerHTML=addBgState.generatedItems.map((item,i)=>`<img src="${item.dataUrl}" alt="Generated grass background preview ${i+1}">`).join('');
+}
 if(el.useBtn){
-el.useBtn.style.display=addBgState.generatedFile?'block':'none';
-el.useBtn.textContent=addBgState.useGenerated?'Use original':'Use generated';
+el.useBtn.style.display=generatedCount?'block':'none';
+el.useBtn.textContent=addBgState.useGenerated?'Use originals':'Use generated';
 }
 if(el.generateBtn){
 const isGenerating=addBgState.status==='generating';
 const needsSetup=addBgState.status==='needsSetup';
 el.generateBtn.disabled=isGenerating;
 el.generateBtn.style.opacity=isGenerating?'.65':'1';
-el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?'Generating...':addBgState.generatedFile?'Regenerate':'Generate preview';
-el.generateBtn.classList.toggle('btn-outline',!!addBgState.generatedFile);
+el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate previews':(pendingFiles.length>1?'Generate previews':'Generate preview');
+el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
 }
+const total=addBgState.total||pendingFiles.length;
+const doneText=generatedCount+'/'+pendingFiles.length;
 const copy={
 idle:['Auto','Generating should start automatically on the ESNTLS grass background. Tap Generate preview if it does not.'],
 needsSetup:['Setup','Open Studio setup once, save your OpenAI key, then return here.'],
-generating:['Generating','Creating the ESNTLS background preview before upload.'],
-done:['Ready',addBgState.useGenerated?'Generated preview will upload as the main image.':'Original image will upload first.'],
-error:['Check','Preview failed. You can upload now and the automatic worker can still process it later.']
+generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
+done:['Ready',addBgState.useGenerated?`Generated ${doneText} previews. Generated images will upload first.`:`Original images will upload first.`],
+error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; you can retry.`:'Preview failed. You can upload now and the automatic worker can still process it later.']
 }[addBgState.status]||['Auto','Ready'];
 el.badge.textContent=copy[0];
 el.status.textContent=copy[1];
@@ -1278,6 +1287,14 @@ if(event.target.closest('button'))return;
 if(['idle','needsSetup','error'].includes(addBgState.status))handleAddBackgroundGenerate();
 }
 
+function filesMatch(a,b){
+return a.length===b.length&&a.every((file,i)=>file===b[i]);
+}
+
+function addGeneratedFilesReady(){
+return addBgState.generatedItems.length&&filesMatch(addBgState.sourceFiles,pendingFiles);
+}
+
 function addBackgroundPrompt(){
 const s=psGetSettings();
 const preset=s.stylePreset||'sneaker';
@@ -1287,43 +1304,20 @@ return [
 'Place the exact product from the first image onto that grass as a realistic premium ecommerce product shoot.',
 'Preserve the product exactly: same shape, colours, materials, logos, labels, stitching, patterns, text, marks, sole shape, fabric drape and proportions.',
 'Only remove the original background from the product photo. Do not redesign, recolour, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.',
-'Add only natural contact shadow and lighting needed to make the product sit realistically on the grass.',
+'Final output must be a vertical 3:4 product image. Use generative fill with matching grass if more canvas is needed; do not stretch, crop, or squeeze the product.',
+'Add only realistic natural contact shadow and lighting needed to make the product sit on the grass. No unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.',
 'Keep one product only. No model, no hands, no extra props, no added text, no watermark.',
 base
 ].join(' ');
 }
 
-async function generateAddBackground(force=false){
-const source=pendingFiles[0];
-if(!source){
-resetAddBackgroundPreview();
-return;
-}
-const s=psGetSettings();
-if(!s.openaiKey){
-addBgState.status='needsSetup';
-addBgState.sourceFile=source;
-addBgState.generatedFile=null;
-addBgState.generatedDataUrl=null;
-renderAddBackgroundPreview();
-return;
-}
-if(!force&&addBgState.sourceFile===source&&addBgState.generatedFile)return;
-const token=++addBgState.token;
-addBgState.status='generating';
-addBgState.sourceFile=source;
-addBgState.generatedFile=null;
-addBgState.generatedDataUrl=null;
-addBgState.useGenerated=true;
-renderAddBackgroundPreview();
-try{
-const bgBlob=await psFetchAsBlob(s.brandBg);
+async function generateSingleAddBackground(source,index,bgBlob,s){
 const form=new FormData();
-form.append('model','gpt-image-1');
+form.append('model',OPENAI_IMAGE_MODEL);
 form.append('image[]',source,source.name||'product.jpg');
 form.append('image[]',bgBlob,'esntls-background.jpg');
 form.append('prompt',addBackgroundPrompt());
-form.append('size','1024x1024');
+form.append('size',OPENAI_GRASS_IMAGE_SIZE);
 form.append('quality','medium');
 form.append('n','1');
 const r=await fetch('https://api.openai.com/v1/images/edits',{
@@ -1335,21 +1329,62 @@ const data=await r.json();
 if(!r.ok)throw new Error((data.error&&data.error.message)||('HTTP '+r.status));
 const b64=data.data&&data.data[0]&&data.data[0].b64_json;
 if(!b64)throw new Error('No image returned in response');
-if(token!==addBgState.token)return;
-const blob=await (await fetch('data:image/png;base64,'+b64)).blob();
-const fileName='esntls_bg_'+Date.now()+'.png';
-addBgState.status='done';
-addBgState.sourceFile=source;
-addBgState.generatedFile=new File([blob],fileName,{type:'image/png'});
-addBgState.generatedDataUrl='data:image/png;base64,'+b64;
+const dataUrl='data:image/png;base64,'+b64;
+const blob=await (await fetch(dataUrl)).blob();
+const fileName='esntls_bg_'+Date.now()+'_'+index+'.png';
+return {sourceFile:source,generatedFile:new File([blob],fileName,{type:'image/png'}),dataUrl};
+}
+
+async function generateAddBackground(force=false){
+if(!pendingFiles.length){
+resetAddBackgroundPreview();
+return;
+}
+const s=psGetSettings();
+if(!s.openaiKey){
+addBgState.status='needsSetup';
+addBgState.sourceFiles=[...pendingFiles];
+addBgState.generatedItems=[];
+addBgState.total=pendingFiles.length;
+addBgState.done=0;
+addBgState.errorCount=0;
+renderAddBackgroundPreview();
+return;
+}
+if(!force&&addGeneratedFilesReady())return;
+const token=++addBgState.token;
+const sources=[...pendingFiles];
+addBgState.status='generating';
+addBgState.sourceFiles=sources;
+addBgState.generatedItems=[];
 addBgState.useGenerated=true;
+addBgState.total=sources.length;
+addBgState.done=0;
+addBgState.errorCount=0;
+renderAddBackgroundPreview();
+try{
+const bgBlob=await psFetchAsBlob(s.brandBg);
+for(let i=0;i<sources.length;i++){
+if(token!==addBgState.token)return;
+try{
+const item=await generateSingleAddBackground(sources[i],i,bgBlob,s);
+if(token!==addBgState.token)return;
+addBgState.generatedItems.push(item);
+}catch(e){
+console.error('Add background generation failed:',sources[i]?.name,e);
+addBgState.errorCount++;
+}
+addBgState.done=i+1;
+renderAddBackgroundPreview();
+}
+if(token!==addBgState.token)return;
+addBgState.status=addBgState.generatedItems.length?'done':'error';
 renderAddBackgroundPreview();
 }catch(e){
 if(token!==addBgState.token)return;
-console.error('Add background generation failed:',e);
+console.error('Add background setup failed:',e);
 addBgState.status='error';
-addBgState.generatedFile=null;
-addBgState.generatedDataUrl=null;
+addBgState.errorCount=sources.length;
 renderAddBackgroundPreview();
 }}
 
@@ -1360,26 +1395,28 @@ return;
 }
 addBgState.token++;
 addBgState.status='idle';
-addBgState.sourceFile=pendingFiles[0];
-addBgState.generatedFile=null;
-addBgState.generatedDataUrl=null;
+addBgState.sourceFiles=[...pendingFiles];
+addBgState.generatedItems=[];
 addBgState.useGenerated=true;
+addBgState.total=pendingFiles.length;
+addBgState.done=0;
+addBgState.errorCount=0;
 renderAddBackgroundPreview();
 setTimeout(()=>{
-if(pendingFiles[0]===addBgState.sourceFile)generateAddBackground(false);
+if(filesMatch(pendingFiles,addBgState.sourceFiles))generateAddBackground(false);
 },250);
 }
 
 function toggleAddGeneratedUsage(){
-if(!addBgState.generatedFile)return;
+if(!addBgState.generatedItems.length)return;
 addBgState.useGenerated=!addBgState.useGenerated;
 addBgState.status='done';
 renderAddBackgroundPreview();
 }
 
 function addUploadFiles(){
-if(addBgState.generatedFile&&addBgState.useGenerated&&addBgState.sourceFile===pendingFiles[0]){
-return [addBgState.generatedFile,...pendingFiles];
+if(addBgState.generatedItems.length&&addBgState.useGenerated&&filesMatch(addBgState.sourceFiles,pendingFiles)){
+return [...addBgState.generatedItems.map(item=>item.generatedFile),...pendingFiles];
 }
 return [...pendingFiles];
 }
@@ -1438,6 +1475,7 @@ if(!pendingFiles.length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.t
 if(addBgState.status==='generating'){msg.style.color='#e53935';msg.textContent='Wait for the ESNTLS background preview to finish first.';return}
 
 let imageUrls=[];
+const generatedUploadCount=(pendingFiles.length&&addBgState.useGenerated&&addGeneratedFilesReady())?addBgState.generatedItems.length:0;
 if(pendingFiles.length){
 const newUrls=await uploadImages(addUploadFiles());
 imageUrls=[...imageUrls,...newUrls];
@@ -1447,9 +1485,11 @@ if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload fa
 
 const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
 const createdAt=new Date().toISOString();
-const usedGenerated=!!(addBgState.generatedFile&&addBgState.useGenerated&&addBgState.sourceFile===pendingFiles[0]&&imageUrls.length);
+const usedGenerated=!!(generatedUploadCount&&imageUrls.length>=generatedUploadCount);
+const generatedUrls=usedGenerated?imageUrls.slice(0,generatedUploadCount):[];
+const sourceUrls=usedGenerated?imageUrls.slice(generatedUploadCount,generatedUploadCount+pendingFiles.length):[];
 const grassMeta=usedGenerated
-?{status:'done',sourceImage:imageUrls[1]||imageUrls[0],image:imageUrls[0],requestedAt:createdAt,processedAt:createdAt,promptVersion:'admin-preview-v1'}
+?{status:'done',sourceImage:sourceUrls[0]||generatedUrls[0],sourceImages:sourceUrls,images:generatedUrls,image:generatedUrls[0],generatedCount:generatedUrls.length,requestedAt:createdAt,processedAt:createdAt,promptVersion:'admin-preview-v2-3x4'}
 :{status:'pending',sourceImage:imageUrls[0],requestedAt:createdAt};
 const newProduct={
 id:newId,
@@ -2439,10 +2479,10 @@ loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
 const PS_LS_KEY='esntlsPhotoStudio';
 const PS_GRASS_BG_VERSION=2;
 const PS_STYLE_PROMPTS={
-  sneaker:'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, soft natural contact shadow underneath, clean professional ecommerce photograph, sharp focus, 1024x1024.',
-  'sneaker-card':'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, soft natural contact shadow underneath, clean professional ecommerce photograph. No business card, no extra props, no extra text.',
-  flatlay:'Place the preserved product as a clean flat lay on the provided grass background, even diffuse lighting, subtle contact shadow, professional minimal product photograph, no text or watermarks.',
-  lifestyle:'Place the preserved product naturally on the provided grass background as if shot outdoors, realistic ambient lighting, soft cast shadow. Professional product photo, no text, no models, sharp on product.'
+  sneaker:'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, subtle realistic contact shadow underneath, clean professional ecommerce photograph, sharp focus, vertical 3:4 frame.',
+  'sneaker-card':'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, subtle realistic contact shadow underneath, clean professional ecommerce photograph. No business card, no extra props, no extra text, vertical 3:4 frame.',
+  flatlay:'Place the preserved product as a clean flat lay on the provided grass background, even diffuse lighting, subtle realistic contact shadow, professional minimal product photograph, no text or watermarks, vertical 3:4 frame.',
+  lifestyle:'Place the preserved product naturally on the provided grass background as if shot outdoors, realistic ambient lighting, subtle realistic cast shadow. Professional product photo, no text, no models, sharp on product, vertical 3:4 frame.'
 };
 let psState={file:null,fileDataUrl:null,resultBlob:null,resultDataUrl:null};
 
@@ -2523,7 +2563,8 @@ function psBuildPrompt(){
     'Place the exact product from the first image onto that grass as a realistic premium ecommerce product shoot.',
     'Preserve the product exactly: same shape, colours, materials, logos, labels, stitching, patterns, text, marks, sole shape, fabric drape and proportions.',
     'Only remove the original background from the product photo. Do not redesign, recolour, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.',
-    'Add only natural contact shadow and lighting needed to make the product sit realistically on the grass.',
+    'Final output must be a vertical 3:4 product image. Use generative fill with matching grass if more canvas is needed; do not stretch, crop, or squeeze the product.',
+    'Add only realistic natural contact shadow and lighting needed to make the product sit on the grass. No unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.',
     base
   ].join(' ');
 }
@@ -2534,15 +2575,15 @@ async function psGenerate(){
   const msg=document.getElementById('psGenerateMsg');
   const quality=document.querySelector('input[name="psQuality"]:checked').value;
   btn.disabled=true;btn.textContent='⏳ Generating… (~10–20s)';
-  msg.style.color='var(--sub)';msg.textContent='Calling OpenAI gpt-image-1…';
+  msg.style.color='var(--sub)';msg.textContent='Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
     const form=new FormData();
-    form.append('model','gpt-image-1');
+    form.append('model',OPENAI_IMAGE_MODEL);
     form.append('image[]',psState.file,psState.file.name||'product.jpg');
     form.append('image[]',bgBlob,'grass.jpg');
     form.append('prompt',psBuildPrompt());
-    form.append('size','1024x1024');
+    form.append('size',OPENAI_GRASS_IMAGE_SIZE);
     form.append('quality',quality);
     form.append('n','1');
     const r=await fetch('https://api.openai.com/v1/images/edits',{

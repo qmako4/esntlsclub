@@ -17,7 +17,7 @@ Use this workflow to automatically turn newly uploaded ESNTLS product photos int
 
 3. The GitHub Action `ESNTLS Grass Background Worker` runs every 15 minutes.
 4. The worker only selects products with `grassBackground.status` set to `pending`.
-5. OpenAI creates a realistic product image on the ESNTLS grass background while preserving the original item details.
+5. OpenAI creates a realistic vertical 3:4 product image on the ESNTLS grass background while preserving the original item details.
 6. The generated image is uploaded to R2 under `grass-products/`.
 7. The product's `images` array is updated so the new grass image becomes the first/main image.
 8. The original uploaded image is kept after the grass image.
@@ -77,4 +77,4 @@ The GitHub Action also sets:
 GRASS_BACKGROUND_IMAGE_URL=img/esntls-grass-background.jpg
 ```
 
-The prompt tells OpenAI to use this grass photo as the exact background surface and to preserve the shoe or clothing details from the uploaded product image.
+The prompt tells OpenAI to use this grass photo as the exact background surface, preserve the shoe or clothing details from the uploaded product image, use grass generative fill when extra canvas is needed, and avoid unrealistic shadows.
