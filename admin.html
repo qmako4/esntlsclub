@@ -168,8 +168,330 @@ label.field input:focus{border-color:var(--g)}
 .picker-footer .btn:first-child{flex:0 0 90px}
 .picker-footer .btn:last-child{flex:1}
 
+/* ESNTLS admin polish */
+:root{
+--g:#00C853;
+--g2:#18f071;
+--ink:#07110b;
+--ink2:#111815;
+--bg:#f4f7f5;
+--card:#fff;
+--text:#111815;
+--sub:#68746e;
+--border:#dde7e1;
+--line:#edf2ee;
+--mint:#eafaf0;
+--blue:#eef5ff;
+--amber:#fff7e6;
+--danger:#e53935;
+--r:18px;
+--r-lg:26px;
+--shadow-sm:0 10px 24px rgba(7,17,11,.06);
+--shadow-md:0 18px 42px rgba(7,17,11,.1);
+--ease:cubic-bezier(.22,1,.36,1)
+}
+
+html{scroll-behavior:smooth}
+body{
+background:linear-gradient(180deg,#eef7f0 0%,#f7f9f8 38%,#f3f5f4 100%);
+color:var(--text);
+line-height:1.45;
+letter-spacing:0;
+position:relative
+}
+body::before{
+content:"";
+position:fixed;
+inset:0 0 auto;
+height:190px;
+background:linear-gradient(135deg,#07110b 0%,#102118 55%,#00C853 145%);
+pointer-events:none;
+z-index:0
+}
+
+#loginScreen{
+background:linear-gradient(145deg,#050806 0%,#0f1813 58%,#07391f 100%);
+gap:4px;
+position:relative;
+z-index:1
+}
+#loginScreen h1{font-size:34px;letter-spacing:5px}
+#loginScreen .sub{color:#99f7bd;font-weight:700}
+#loginScreen input,#loginScreen button{border-radius:18px;box-shadow:0 14px 34px rgba(0,0,0,.22)}
+
+#app{position:relative;z-index:1}
+
+.topbar{
+background:rgba(7,17,11,.96);
+border-bottom:1px solid rgba(255,255,255,.08);
+padding:16px clamp(18px,3vw,34px);
+box-shadow:0 18px 44px rgba(7,17,11,.18);
+backdrop-filter:blur(18px)
+}
+.topbar h1{
+color:#fff;
+font-size:20px;
+letter-spacing:3px;
+display:flex;
+align-items:center;
+gap:10px
+}
+.topbar h1::before{
+content:"";
+width:13px;
+height:13px;
+border-radius:50%;
+background:var(--g);
+box-shadow:0 0 0 5px rgba(0,200,83,.14)
+}
+.topbar .logout{
+background:rgba(255,255,255,.08);
+border-color:rgba(255,255,255,.16);
+color:#fff;
+border-radius:999px;
+padding:9px 16px;
+transition:transform .18s var(--ease),background .18s var(--ease)
+}
+.topbar .logout:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+
+.tabs{
+top:65px;
+gap:5px;
+width:min(1080px,calc(100% - 24px));
+margin:14px auto 0;
+padding:6px;
+border:1px solid rgba(255,255,255,.7);
+border-radius:999px;
+background:rgba(255,255,255,.9);
+box-shadow:var(--shadow-sm);
+backdrop-filter:blur(18px)
+}
+.tab{
+flex:0 0 auto;
+min-width:auto;
+border:0;
+border-radius:999px;
+padding:10px 15px;
+font-size:12px;
+font-weight:800;
+letter-spacing:.01em;
+transition:background .18s var(--ease),color .18s var(--ease),transform .18s var(--ease),box-shadow .18s var(--ease)
+}
+.tab:hover{color:var(--ink);background:#f3f7f4}
+.tab.active{
+background:var(--ink);
+color:#fff;
+border-bottom-color:transparent;
+box-shadow:0 10px 24px rgba(7,17,11,.18);
+transform:translateY(-1px)
+}
+
+.dash-strip{
+max-width:1080px;
+margin:10px auto 0;
+padding:0 12px 10px;
+background:transparent;
+border:0
+}
+.dash-pill{
+border:1px solid rgba(255,255,255,.72);
+background:rgba(255,255,255,.86);
+border-radius:999px;
+padding:9px 14px;
+color:#4d5a53;
+box-shadow:0 10px 24px rgba(7,17,11,.05);
+backdrop-filter:blur(14px)
+}
+.dash-pill strong{color:var(--ink)}
+
+.page{
+max-width:1080px;
+padding:14px clamp(14px,3vw,30px) 96px;
+width:100%
+}
+.page.active{animation:pageIn .24s var(--ease)}
+#pageAdd,#pageStudio,#pageStock{max-width:760px}
+#pageProducts,#pageOrders,#pageMedia,#pageTools{max-width:1120px}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+border:1px solid rgba(221,231,225,.9);
+border-radius:var(--r-lg);
+padding:clamp(18px,3vw,26px);
+box-shadow:var(--shadow-sm);
+transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease)
+}
+.card:hover{border-color:#cfe0d7;box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.card h2,.card h3{
+font-size:16px;
+letter-spacing:-.01em;
+margin-bottom:16px;
+color:var(--ink)
+}
+
+label.field span{
+font-size:10px;
+color:#637069;
+letter-spacing:.08em
+}
+label.field input,select,textarea{
+border-color:#dce7e1!important;
+border-radius:14px!important;
+background:#fbfdfc;
+transition:border-color .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease)
+}
+label.field input:focus,select:focus,textarea:focus,.filter-bar input.search:focus{
+border-color:var(--g)!important;
+box-shadow:0 0 0 4px rgba(0,200,83,.12);
+background:#fff
+}
+
+.btn{
+border-radius:16px;
+box-shadow:0 12px 26px rgba(0,200,83,.18);
+transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease),opacity .18s var(--ease)
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 16px 32px rgba(0,200,83,.22)}
+.btn:active{transform:translateY(0) scale(.99)}
+.btn-outline{background:#fff;color:var(--ink);border-color:#cfe0d7;box-shadow:none}
+.btn-outline:hover{border-color:var(--g);box-shadow:0 12px 26px rgba(7,17,11,.07)}
+.btn:focus-visible,.action-btn:focus-visible,.tab:focus-visible,.filter-chip:focus-visible,.cat-pill:focus-visible{
+outline:3px solid rgba(0,200,83,.22);
+outline-offset:3px
+}
+
+.upload-zone{
+border:1.5px dashed #b9d8c7;
+border-radius:24px;
+background:linear-gradient(180deg,#fff 0%,#f4fff7 100%);
+padding:30px 20px;
+box-shadow:inset 0 0 0 1px rgba(255,255,255,.72);
+transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),background .2s var(--ease)
+}
+.upload-zone:hover,.upload-zone.dragover{
+transform:translateY(-1px);
+border-color:var(--g);
+box-shadow:0 14px 34px rgba(0,200,83,.11)
+}
+.upload-zone .icon{
+width:44px;
+height:44px;
+margin:0 auto 10px;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:50%;
+background:var(--ink);
+color:#fff;
+font-size:24px;
+font-weight:800
+}
+
+.cats,.filter-chips{gap:8px}
+.cat-pill,.filter-chip{
+border-radius:999px;
+border-color:#dbe6df;
+background:#fff;
+color:#4f5a54;
+box-shadow:0 6px 14px rgba(7,17,11,.035);
+transition:background .18s var(--ease),color .18s var(--ease),border-color .18s var(--ease),transform .18s var(--ease),box-shadow .18s var(--ease)
+}
+.cat-pill:hover,.filter-chip:hover{transform:translateY(-1px);border-color:#bdd9c8}
+.cat-pill.on,.filter-chip.on-g{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 10px 22px rgba(0,200,83,.18)}
+.filter-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.filter-bar{
+top:132px;
+background:rgba(244,247,245,.9);
+border:1px solid rgba(221,231,225,.88);
+border-radius:22px;
+padding:12px;
+box-shadow:0 12px 30px rgba(7,17,11,.055);
+backdrop-filter:blur(16px)
+}
+.filter-bar input.search{
+border-radius:16px;
+background-color:#fff;
+box-shadow:0 8px 18px rgba(7,17,11,.035)
+}
+
+#productList,#ordersList{display:grid;gap:12px}
+@media(min-width:880px){
+  #productList{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.product-item{
+background:#fff;
+border:1px solid rgba(221,231,225,.95);
+border-radius:20px;
+padding:14px;
+margin:0;
+box-shadow:0 10px 24px rgba(7,17,11,.045);
+transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)
+}
+.product-item:hover{transform:translateY(-1px);border-color:#c5d8ce;box-shadow:0 16px 34px rgba(7,17,11,.08)}
+.product-item img{width:62px;height:62px;border-radius:16px}
+.product-item .name{font-size:14px}
+.product-item .meta-pill{border-radius:999px;background:#eef3ef}
+.action-btn{
+border-radius:13px;
+font-size:11px;
+font-weight:800;
+transition:transform .18s var(--ease),box-shadow .18s var(--ease)
+}
+.action-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(7,17,11,.08)}
+.edit-panel{
+background:#fff;
+border:1px solid var(--line);
+border-radius:20px;
+box-shadow:var(--shadow-sm)
+}
+
+.media-grid{gap:10px}
+@media(min-width:700px){.media-grid{grid-template-columns:repeat(5,1fr)}}
+.media-item,.img-thumb{
+border-radius:18px;
+transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)
+}
+.media-item:hover,.img-thumb:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(7,17,11,.1)}
+.picker-sheet{
+border-radius:26px 26px 0 0;
+box-shadow:0 -20px 60px rgba(0,0,0,.18)
+}
+.picker-header,.picker-footer{padding:16px 18px}
+.picker-header .close{font-size:12px;font-weight:800;border:1px solid var(--border);border-radius:999px}
+
+.toast{border-radius:16px;box-shadow:0 18px 42px rgba(7,17,11,.18)}
+.progress{height:8px;background:#e9f1ed}
+.progress-bar{background:linear-gradient(90deg,var(--g),var(--g2))}
+
+@media(min-width:860px){
+  .page.active#pageTools{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:16px;
+    align-items:start
+  }
+  .page.active#pageTools .card{margin-bottom:0}
+}
+
+@media(max-width:640px){
+  body::before{height:160px}
+  .topbar{padding:13px 16px}
+  .topbar h1{font-size:17px}
+  .tabs{top:56px;width:calc(100% - 20px);margin-top:10px}
+  .tab{padding:9px 13px}
+  .dash-strip{padding:0 10px 8px}
+  .page{padding:12px 12px 88px}
+  .filter-bar{top:116px;border-radius:18px}
+  .card{border-radius:22px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+}
+
 @media(max-width:400px){
-.tab{font-size:10px;padding:12px 2px}
+.tab{font-size:11px;padding:9px 10px}
 }
 </style>
 </head><body>
@@ -191,21 +513,21 @@ label.field input:focus{border-color:var(--g)}
 </div>
 
 <div class="tabs">
-<div class="tab active" onclick="showTab('add')">➕ Add</div>
-<div class="tab" onclick="showTab('products')">📦 Products</div>
-<div class="tab" onclick="showTab('orders')">🚚 Orders</div>
-<div class="tab" onclick="showTab('media')">📚 Media</div>
-<div class="tab" onclick="showTab('studio')">📸 Studio</div>
-<div class="tab" onclick="showTab('stock')">📊 Stock</div>
-<div class="tab" onclick="showTab('tools')">🔧 Tools</div>
+<div class="tab active" data-tab="add" onclick="showTab('add',this)">Add</div>
+<div class="tab" data-tab="products" onclick="showTab('products',this)">Products</div>
+<div class="tab" data-tab="orders" onclick="showTab('orders',this)">Orders</div>
+<div class="tab" data-tab="media" onclick="showTab('media',this)">Media</div>
+<div class="tab" data-tab="studio" onclick="showTab('studio',this)">Studio</div>
+<div class="tab" data-tab="stock" onclick="showTab('stock',this)">Stock</div>
+<div class="tab" data-tab="tools" onclick="showTab('tools',this)">Tools</div>
 </div>
 
 <!-- Live status strip: shown across every tab so it's always 1 glance away -->
 <div class="dash-strip" id="dashStrip">
-<div class="dash-pill"><span class="dot"></span><strong id="dashCount">—</strong> products</div>
-<div class="dash-pill">📚 <strong id="dashImgCount">—</strong> images</div>
-<div class="dash-pill">🛒 <strong id="dashOosCount">—</strong> OOS</div>
-<div class="dash-pill">🔄 Synced <strong id="dashSyncTime">just now</strong></div>
+<div class="dash-pill"><span class="dot"></span><strong id="dashCount">-</strong> products</div>
+<div class="dash-pill"><strong id="dashImgCount">-</strong> images</div>
+<div class="dash-pill"><strong id="dashOosCount">-</strong> OOS</div>
+<div class="dash-pill">Synced <strong id="dashSyncTime">just now</strong></div>
 </div>
 
 <!-- Toast notification host -->
@@ -214,14 +536,14 @@ label.field input:focus{border-color:var(--g)}
 <!-- ADD PRODUCT -->
 <div class="page active" id="pageAdd">
 <div class="card">
-<h3>Add New Product</h3>
+<h3>Add Product</h3>
 <label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
-<label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. £129.99"></label>
+<label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
 <input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1 1 100%;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('aLink')" style="flex-shrink:0;padding:0 12px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
-<button type="button" class="btn" onclick="createWixPlaceholder()" style="flex-shrink:0;padding:0 12px;font-size:12px;background:#111;color:#fff;border:none" title="Create a new Wix placeholder product using the Name & Price above, then auto-fill this link">🆕 Create on Wix</button>
+<button type="button" class="btn" onclick="openWixPicker('aLink')" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 12px;font-size:12px;background:var(--g);color:#fff;border:none">Pick from Wix</button>
+<button type="button" class="btn" onclick="createWixPlaceholder()" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 12px;font-size:12px;background:#111;color:#fff;border:none" title="Create a new Wix placeholder product using the Name & Price above, then auto-fill this link">Create on Wix</button>
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
@@ -242,13 +564,13 @@ label.field input:focus{border-color:var(--g)}
 </div>
 <label class="upload-zone" id="uploadZone">
 <input type="file" accept="image/*" multiple style="display:none" id="aFiles" onchange="previewFiles(this.files)">
-<div class="icon">📷</div>
+<div class="icon">+</div>
 <div class="label">Tap to upload photos</div>
 <div class="hint">Select multiple images from camera roll</div>
 </label>
 <div class="img-preview" id="imgPreview"></div>
 <div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
-<button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">📚 Pick from Library</button>
+<button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">Pick from Library</button>
 <div id="addLibPreview"></div>
 <div style="height:14px"></div>
 <button class="btn" onclick="addProduct()">Add Product</button>
@@ -259,21 +581,21 @@ label.field input:focus{border-color:var(--g)}
 <!-- PRODUCTS LIST -->
 <div class="page" id="pageProducts">
 <div class="filter-bar" id="productFilterBar">
-<input type="search" class="search" id="productSearch" placeholder="Search products by name or category…" oninput="renderProductList()">
+<input type="search" class="search" id="productSearch" placeholder="Search products by name or category" oninput="renderProductList()">
 <div class="filter-chips" id="productStatusChips">
-<div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">·</span></div>
-<div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">·</span></div>
-<div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">·</span></div>
+<div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">-</span></div>
+<div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">-</span></div>
+<div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">-</span></div>
 </div>
 <div class="filter-chips" id="productCategoryChips"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
-<span id="productCountSummary">—</span>
+<span id="productCountSummary">-</span>
 <select id="productSort" onchange="renderProductList()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
-<option value="recent">↓ Newest first</option>
-<option value="oldest">↑ Oldest first</option>
-<option value="name">A → Z</option>
-<option value="price-low">£ Low → High</option>
-<option value="price-high">£ High → Low</option>
+<option value="recent">Newest first</option>
+<option value="oldest">Oldest first</option>
+<option value="name">A to Z</option>
+<option value="price-low">Price low to high</option>
+<option value="price-high">Price high to low</option>
 </select>
 </div>
 </div>
@@ -285,20 +607,20 @@ label.field input:focus{border-color:var(--g)}
 <div class="filter-bar" id="orderFilterBar">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px">
 <div style="font-size:11px;color:var(--sub)" id="orderSyncStatus">Tap Refresh to load orders</div>
-<button class="btn" id="ordersRefreshBtn" onclick="refreshOrders()" style="padding:7px 14px;font-size:12px;background:var(--g);color:#fff;border:none;border-radius:8px;font-weight:700">↻ Refresh</button>
+<button class="btn" id="ordersRefreshBtn" onclick="refreshOrders()" style="padding:7px 14px;font-size:12px;background:var(--g);color:#fff;border:none;border-radius:8px;font-weight:700">Refresh</button>
 </div>
-<input type="search" class="search" id="orderSearch" placeholder="Search by name, order #, postcode…" oninput="renderOrders()">
+<input type="search" class="search" id="orderSearch" placeholder="Search by name, order #, postcode" oninput="renderOrders()">
 <div class="filter-chips" id="orderStatusChips">
-<div class="filter-chip on" data-st="unfulfilled" onclick="setOrderFilter(this,'unfulfilled')">📨 To send <span id="oCtTodo">·</span></div>
-<div class="filter-chip" data-st="sent" onclick="setOrderFilter(this,'sent')">✓ Sent <span id="oCtSent">·</span></div>
-<div class="filter-chip" data-st="fulfilled" onclick="setOrderFilter(this,'fulfilled')">📦 Fulfilled <span id="oCtFul">·</span></div>
-<div class="filter-chip" data-st="all" onclick="setOrderFilter(this,'all')">All <span id="oCtAll">·</span></div>
+<div class="filter-chip on" data-st="unfulfilled" onclick="setOrderFilter(this,'unfulfilled')">To send <span id="oCtTodo">-</span></div>
+<div class="filter-chip" data-st="sent" onclick="setOrderFilter(this,'sent')">Sent <span id="oCtSent">-</span></div>
+<div class="filter-chip" data-st="fulfilled" onclick="setOrderFilter(this,'fulfilled')">Fulfilled <span id="oCtFul">-</span></div>
+<div class="filter-chip" data-st="all" onclick="setOrderFilter(this,'all')">All <span id="oCtAll">-</span></div>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
-<span id="orderCountSummary">—</span>
+<span id="orderCountSummary">-</span>
 <select id="orderSort" onchange="renderOrders()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
-<option value="recent">↓ Newest first</option>
-<option value="oldest">↑ Oldest first</option>
+<option value="recent">Newest first</option>
+<option value="oldest">Oldest first</option>
 </select>
 </div>
 </div>
@@ -311,7 +633,7 @@ label.field input:focus{border-color:var(--g)}
 <h3>Media Library</h3>
 <label class="upload-zone" id="mediaZone">
 <input type="file" accept="image/*" multiple style="display:none" id="mediaFiles" onchange="uploadToMedia([...this.files]);this.value=''">
-<div class="icon">⬆️</div>
+<div class="icon">+</div>
 <div class="label">Tap to upload to library</div>
 <div class="hint">Photos saved here can be reused across products</div>
 </label>
@@ -319,11 +641,11 @@ label.field input:focus{border-color:var(--g)}
 <div class="msg" id="mediaMsg"></div>
 <div style="height:14px"></div>
 <div class="media-toolbar">
-<div class="count" id="mediaCount">Loading…</div>
+<div class="count" id="mediaCount">Loading</div>
 <div style="display:flex;gap:6px">
-<button class="action-btn" style="background:#eef" onclick="toggleSelectAllMedia()" id="mediaSelectAllBtn" title="Select all / clear">☑</button>
-<button class="action-btn" style="background:#fff3cd" onclick="compressLibraryAll()" title="Compress all to save space">🗜️</button>
-<button class="action-btn" style="background:#f0f4ff" onclick="loadMedia().then(renderMedia)" title="Refresh">🔄</button>
+<button class="action-btn" style="background:#eef" onclick="toggleSelectAllMedia()" id="mediaSelectAllBtn" title="Select all / clear">All</button>
+<button class="action-btn" style="background:#fff3cd" onclick="compressLibraryAll()" title="Compress all to save space">Zip</button>
+<button class="action-btn" style="background:#f0f4ff" onclick="loadMedia().then(renderMedia)" title="Refresh">Go</button>
 </div>
 </div>
 <div id="mediaList"></div>
@@ -334,29 +656,29 @@ label.field input:focus{border-color:var(--g)}
 <!-- PHOTO STUDIO -->
 <div class="page" id="pageStudio">
 <div class="card">
-<h2 style="font-size:18px;margin-bottom:6px">📸 Photo Studio</h2>
-<p style="font-size:12px;color:var(--sub);margin-bottom:14px">Drop a phone photo of a product → AI cuts it out, places it on your brand background, adds a realistic shadow, ready to use on any product card.</p>
+<h2 style="font-size:18px;margin-bottom:6px">Photo Studio</h2>
+<p style="font-size:12px;color:var(--sub);margin-bottom:14px">Drop a product photo and generate a clean ESNTLS-style product image on your brand background.</p>
 
 <!-- Settings (collapsible) -->
 <details style="background:#f8f9fa;border-radius:10px;padding:10px 14px;margin-bottom:14px">
-<summary style="font-size:13px;font-weight:600;cursor:pointer;color:#555">⚙️ Settings (one-time setup)</summary>
+<summary style="font-size:13px;font-weight:600;cursor:pointer;color:#555">Settings</summary>
 <div style="margin-top:12px">
 <label class="field"><span>OpenAI API key (stored in this browser only, never committed)</span>
 <input id="psOpenaiKey" type="password" placeholder="sk-proj-..." style="font-family:monospace;font-size:12px">
 </label>
 <div style="font-size:11px;color:var(--sub);margin-bottom:10px">
-<a href="https://platform.openai.com/settings/organization/limits" target="_blank" style="color:#00C853">Set a $20 hard spending limit ↗</a> ·
-<a href="https://platform.openai.com/api-keys" target="_blank" style="color:#00C853">Get/rotate a key ↗</a>
+<a href="https://platform.openai.com/settings/organization/limits" target="_blank" style="color:#00C853">Set a $20 hard spending limit</a> /
+<a href="https://platform.openai.com/api-keys" target="_blank" style="color:#00C853">Get or rotate a key</a>
 </div>
 <label class="field"><span>Brand background image URL (your grass)</span>
 <input id="psBrandBg" placeholder="https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/grass-...">
 </label>
 <label class="field"><span>Default style preset</span>
 <select id="psStylePreset" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit">
-<option value="sneaker">Sneaker on grass · centred · soft shadow</option>
-<option value="sneaker-card">Sneaker on grass · with business card bottom-right</option>
-<option value="flatlay">Flat lay on grass · top-down view</option>
-<option value="lifestyle">Lifestyle · grass with natural lighting</option>
+<option value="sneaker">Sneaker on grass, centred, soft shadow</option>
+<option value="sneaker-card">Sneaker on grass with business card</option>
+<option value="flatlay">Flat lay on grass, top-down view</option>
+<option value="lifestyle">Lifestyle grass with natural lighting</option>
 <option value="custom">Custom (use the prompt field below)</option>
 </select>
 </label>
@@ -368,9 +690,9 @@ label.field input:focus{border-color:var(--g)}
 <!-- Upload + generate -->
 <label class="upload-zone" id="psUploadZone" style="margin-bottom:12px">
 <input type="file" accept="image/*" id="psFile" style="display:none" onchange="psHandleFile(this.files)">
-<div class="icon">📷</div>
+<div class="icon">+</div>
 <div class="label">Tap to upload a product photo</div>
-<div class="hint">Or drag & drop · phone photo is fine</div>
+<div class="hint">Or drag and drop a phone photo</div>
 </label>
 
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
@@ -378,7 +700,7 @@ label.field input:focus{border-color:var(--g)}
 <img id="psOriginalImg" style="width:100%;border-radius:10px;background:#f5f5f5">
 </div>
 
-<label class="field"><span>Prompt (optional — overrides preset)</span>
+<label class="field"><span>Prompt (optional)</span>
 <textarea id="psPrompt" rows="3" placeholder="e.g. 'Place the sneaker centred on the grass at a slight angle, soft natural shadow underneath, clean professional product shot'" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
 </label>
 
@@ -387,15 +709,15 @@ label.field input:focus{border-color:var(--g)}
 <label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="psQuality" value="high"> High ($0.17)</label>
 </div>
 
-<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">✨ Generate</button>
+<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">Generate</button>
 <div class="msg" id="psGenerateMsg"></div>
 
 <div id="psResultPreview" style="display:none;margin-top:14px">
 <div style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Generated</div>
 <img id="psResultImg" style="width:100%;border-radius:10px;background:#f5f5f5;margin-bottom:10px">
 <div style="display:flex;gap:8px">
-<button type="button" class="btn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">💾 Save to Library</button>
-<button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">🔄 Try again</button>
+<button type="button" class="btn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">Save to Library</button>
+<button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">Try again</button>
 </div>
 <div class="msg" id="psSaveMsg"></div>
 </div>
@@ -426,9 +748,9 @@ label.field input:focus{border-color:var(--g)}
 </div>
 <div class="card">
 <h3>Quick Actions</h3>
-<button class="btn btn-outline" onclick="window.open('https://esntlsclub.com','_blank')" style="margin-bottom:10px">🌐 View Live Site</button>
-<button class="btn btn-outline" onclick="window.open('https://instagram.com/cluesntl','_blank')" style="margin-bottom:10px">📸 Instagram</button>
-<button class="btn btn-outline" onclick="window.open('https://www.essentialsblanks.net','_blank')" style="margin-bottom:10px">🛒 Wix Checkout Site</button>
+<button class="btn btn-outline" onclick="window.open('https://esntlsclub.com','_blank')" style="margin-bottom:10px">View Live Site</button>
+<button class="btn btn-outline" onclick="window.open('https://instagram.com/cluesntl','_blank')" style="margin-bottom:10px">Instagram</button>
+<button class="btn btn-outline" onclick="window.open('https://www.essentialsblanks.net','_blank')" style="margin-bottom:10px">Wix Checkout Site</button>
 </div>
 <div class="card">
 <h3>Image Storage</h3>
@@ -442,7 +764,7 @@ label.field input:focus{border-color:var(--g)}
 <div class="picker-sheet">
 <div class="picker-header">
 <h3>Select from Library</h3>
-<button class="close" onclick="closePicker()">✕</button>
+<button class="close" onclick="closePicker()">Close</button>
 </div>
 <div class="picker-body" id="pickerBody"></div>
 <div class="picker-footer">
@@ -589,11 +911,13 @@ window.addEventListener('drop',e=>e.preventDefault())}
 function logout(){document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('pwInput').value=''}
 
 // TABS
-function showTab(tab){
+function showTab(tab,tabEl){
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-document.getElementById('page'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
-event.target.classList.add('active');
+const page=document.getElementById('page'+tab.charAt(0).toUpperCase()+tab.slice(1));
+if(page)page.classList.add('active');
+const activeTab=tabEl||document.querySelector(`.tab[data-tab="${tab}"]`);
+if(activeTab)activeTab.classList.add('active');
 if(tab==='products')renderProductList();
 if(tab==='media'){loadMedia().then(renderMedia)}
 }
@@ -1040,7 +1364,7 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
-<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="flex-shrink:0;padding:10px 14px;font-size:12px;background:var(--g);color:#fff;border:none">📦 Pick from Wix</button>
+<button type="button" class="btn" onclick="openWixPicker('el_${id}')" style="width:auto;flex:1 1 160px;min-height:42px;padding:10px 14px;font-size:12px;background:var(--g);color:#fff;border:none">Pick from Wix</button>
 </div>
 </label>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
