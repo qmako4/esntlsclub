@@ -859,10 +859,10 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </label>
 <label class="field"><span>Default style preset</span>
 <select id="psStylePreset" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit">
-<option value="sneaker">Sneaker on grass, centred, soft shadow</option>
-<option value="sneaker-card">Sneaker on grass, premium product angle</option>
-<option value="flatlay">Flat lay on grass, top-down view</option>
-<option value="lifestyle">Lifestyle grass with natural lighting</option>
+<option value="sneaker">Simple grass background swap</option>
+<option value="sneaker-card">More grass around item</option>
+<option value="flatlay">Preserve original crop</option>
+<option value="lifestyle">Natural phone photo</option>
 <option value="custom">Custom (use the prompt field below)</option>
 </select>
 </label>
@@ -885,7 +885,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <label class="field"><span>Prompt (optional)</span>
-<textarea id="psPrompt" rows="3" placeholder="e.g. 'Place the sneaker centred on the grass at a slight angle, soft natural shadow underneath, clean professional product shot'" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+<textarea id="psPrompt" rows="3" placeholder="Optional: extra note. Default is a simple grass background swap that keeps the product and hand unchanged." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
 </label>
 
 <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -1303,13 +1303,12 @@ const s=psGetSettings();
 const preset=s.stylePreset||'sneaker';
 const base=PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
 return [
-'Use the second image as the exact ESNTLS grass background reference. Do not invent a different background.',
-'Place the exact product from the first image onto that grass as a realistic premium ecommerce product shoot.',
-'Preserve the product exactly: same shape, colours, materials, logos, labels, stitching, patterns, text, marks, sole shape, fabric drape and proportions.',
-'Only remove the original background from the product photo. Do not redesign, recolour, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.',
-'Final output must be a vertical 3:4 product image. Use generative fill with matching grass if more canvas is needed; do not stretch, crop, or squeeze the product.',
-'Add only realistic natural contact shadow and lighting needed to make the product sit on the grass. No unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.',
-'Keep one product only. No model, no hands, no extra props, no added text, no watermark.',
+'Simple edit: replace only the background with the provided ESNTLS grass background.',
+'Keep the product exactly as it is. If a hand, arm, hanger, tag, lace position, or other real foreground detail is already in the source image, keep it unchanged.',
+'Preserve the original camera angle, perspective, product size, hand position, colours, logos, textures, stitching, text, materials, shadows on the product, and lighting on the foreground.',
+'Do not zoom in, crop closer, enlarge the item, change the angle, redesign, recolour, rebrand, remove the hand, remove product details, or add new details.',
+'Keep the subject naturally sized in the frame with comfortable grass visible around it. If extra canvas is needed for the 3:4 output, fill only the background with matching grass.',
+'Add only a subtle realistic grounding shadow if needed. No harsh halos, fake floating shadows, dramatic lighting, extra objects, text, or watermark.',
 base
 ].join(' ');
 }
@@ -2533,10 +2532,10 @@ loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
 const PS_LS_KEY='esntlsPhotoStudio';
 const PS_GRASS_BG_VERSION=2;
 const PS_STYLE_PROMPTS={
-  sneaker:'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, subtle realistic contact shadow underneath, clean professional ecommerce photograph, sharp focus, vertical 3:4 frame.',
-  'sneaker-card':'Place the preserved product centred on the provided grass background, slightly angled product-catalog view when appropriate, subtle realistic contact shadow underneath, clean professional ecommerce photograph. No business card, no extra props, no extra text, vertical 3:4 frame.',
-  flatlay:'Place the preserved product as a clean flat lay on the provided grass background, even diffuse lighting, subtle realistic contact shadow, professional minimal product photograph, no text or watermarks, vertical 3:4 frame.',
-  lifestyle:'Place the preserved product naturally on the provided grass background as if shot outdoors, realistic ambient lighting, subtle realistic cast shadow. Professional product photo, no text, no models, sharp on product, vertical 3:4 frame.'
+  sneaker:'Simple background swap only. Keep the foreground product and any hand exactly unchanged. Preserve the original perspective and scale with natural grass visible around the subject.',
+  'sneaker-card':'Simple background swap only with a little more visible grass around the subject. Keep the product and any hand unchanged. Do not add props.',
+  flatlay:'Simple background swap only. Preserve the original crop, angle, product size, and any hand or foreground detail.',
+  lifestyle:'Simple natural phone-photo background swap. Keep the product and any hand unchanged; make only the background grass.'
 };
 let psState={file:null,fileDataUrl:null,resultBlob:null,resultDataUrl:null};
 
@@ -2610,15 +2609,15 @@ function psBuildPrompt(){
   const custom=document.getElementById('psPrompt').value.trim();
   const preset=document.getElementById('psStylePreset').value;
   const base=custom||(preset==='custom'
-    ?'Place this product on the provided grass background, realistic shadow, professional product photo.'
+    ?'Simple grass background swap only. Keep the product and any hand unchanged.'
     :PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker);
   return [
-    'Use the second image as the exact ESNTLS grass background reference.',
-    'Place the exact product from the first image onto that grass as a realistic premium ecommerce product shoot.',
-    'Preserve the product exactly: same shape, colours, materials, logos, labels, stitching, patterns, text, marks, sole shape, fabric drape and proportions.',
-    'Only remove the original background from the product photo. Do not redesign, recolour, rebrand, simplify, blank out, add details to, or distort the shoe or clothing.',
-    'Final output must be a vertical 3:4 product image. Use generative fill with matching grass if more canvas is needed; do not stretch, crop, or squeeze the product.',
-    'Add only realistic natural contact shadow and lighting needed to make the product sit on the grass. No unrealistic shadows, harsh black halos, fake floating shadows, duplicate shadows, or over-dramatic lighting.',
+    'Simple edit: replace only the background with the provided ESNTLS grass background.',
+    'Keep the product exactly as it is. If a hand, arm, hanger, tag, lace position, or other real foreground detail is already in the source image, keep it unchanged.',
+    'Preserve the original camera angle, perspective, product size, hand position, colours, logos, textures, stitching, text, materials, shadows on the product, and lighting on the foreground.',
+    'Do not zoom in, crop closer, enlarge the item, change the angle, redesign, recolour, rebrand, remove the hand, remove product details, or add new details.',
+    'Keep the subject naturally sized in the frame with comfortable grass visible around it. If extra canvas is needed for the 3:4 output, fill only the background with matching grass.',
+    'Add only a subtle realistic grounding shadow if needed. No harsh halos, fake floating shadows, dramatic lighting, extra objects, text, or watermark.',
     base
   ].join(' ');
 }
