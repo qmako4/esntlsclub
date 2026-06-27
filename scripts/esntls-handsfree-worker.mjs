@@ -288,6 +288,17 @@ function shopifyStoreDomain() {
   return requiredEnv("SHOPIFY_STORE_DOMAIN").replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
 let cachedShopifyAccessToken = null;
 let cachedShopifyAccessTokenExpiresAt = 0;
 
@@ -315,7 +326,7 @@ async function getShopifyAccessToken() {
     }),
   });
 
-  const json = await response.json().catch(async () => ({ raw: await response.text() }));
+  const json = await readJsonResponse(response);
   if (!response.ok || !json.access_token) {
     throw new Error(`Shopify access token request failed: ${JSON.stringify(json)}`);
   }
@@ -495,7 +506,7 @@ async function shopifyGraphql(query, variables) {
     body: JSON.stringify({ query, variables }),
   });
 
-  const json = await response.json().catch(async () => ({ raw: await response.text() }));
+  const json = await readJsonResponse(response);
   if (!response.ok || json.errors?.length) {
     throw new Error(`Shopify GraphQL failed: ${JSON.stringify(json.errors || json)}`);
   }
@@ -576,7 +587,7 @@ async function generateBlankImage(product) {
     body: form,
   });
 
-  const json = await response.json().catch(async () => ({ raw: await response.text() }));
+  const json = await readJsonResponse(response);
   if (!response.ok) {
     throw new Error(`OpenAI image generation failed: ${JSON.stringify(json)}`);
   }
@@ -886,7 +897,10 @@ Optional environment:
     return;
   }
 
-  await runOnce(options);
+  const results = await runOnce(options);
+  if (results.some((result) => result.status === "error")) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {
