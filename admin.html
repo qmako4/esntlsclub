@@ -710,7 +710,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
-<input id="aLink" placeholder="Leave blank to auto-create checkout product" style="flex:1 1 100%;min-width:0">
+<input id="aLink" placeholder="Paste checkout link or generate Shopify after saving" style="flex:1 1 100%;min-width:0">
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
@@ -1873,6 +1873,8 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
 </div>
 </label>
+<button type="button" class="btn btn-outline" id="sb_${id}" onclick="generateShopifyPlaceholder(${id})">Generate Shopify Product</button>
+<div class="msg" id="sm_${id}"></div>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
 <div class="msg" id="em_${id}"></div>`}
 
@@ -1900,6 +1902,68 @@ renderProductList();
 Object.assign(p,orig);
 msg.style.color='#e53935';msg.textContent='Save failed: '+e.message;
 }}
+
+function collectEditValues(id){
+const name=document.getElementById('en_'+id)?.value.trim()||'';
+const price=document.getElementById('ep_'+id)?.value.trim()||'';
+const link=document.getElementById('el_'+id)?.value.trim()||'';
+const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
+const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
+return {name,price,link,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
+}
+
+async function generateShopifyPlaceholder(id){
+const p=products.find(x=>x.id===id);
+const msg=document.getElementById('sm_'+id);
+const btn=document.getElementById('sb_'+id);
+if(!p||!msg||!btn)return;
+if(!WORKER_URL||!ADMIN_SECRET){
+msg.style.color='#e53935';
+msg.textContent='Worker not configured. Set WORKER_URL + ADMIN_SECRET, then deploy the worker.';
+return;
+}
+const values=collectEditValues(id);
+if(!values.name){msg.style.color='#e53935';msg.textContent='Add a product name first.';return}
+if(!values.price){msg.style.color='#e53935';msg.textContent='Add a price first.';return}
+if(values.link&&!confirm('This product already has a Buy Link. Replace it with a Shopify link?'))return;
+const original={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
+Object.assign(p,values);
+let didSave=false;
+try{
+btn.disabled=true;btn.textContent='Generating...';
+msg.style.color='var(--sub)';
+msg.textContent='Saving product, generating blank image, then creating Shopify product...';
+await saveProducts();
+didSave=true;
+const r=await fetch(WORKER_URL+'/shopify-create-product',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink:!!values.link})
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
+const shopifyUrl=data.shopifyUrl||(data.shopify&&data.shopify.shopifyUrl)||'';
+if(!shopifyUrl)throw new Error('No Shopify link returned');
+p.link=shopifyUrl;
+const linkInput=document.getElementById('el_'+id);
+if(linkInput)linkInput.value=shopifyUrl;
+let html=`Created Shopify product: <a href="${escapeAdminHTML(shopifyUrl)}" target="_blank" style="color:#00C853;font-weight:700">open link</a>`;
+const wixUrl=data.wixBackup&&data.wixBackup.url;
+if(wixUrl)html+=`<br>Wix backup created: <a href="${escapeAdminHTML(wixUrl)}" target="_blank" style="color:#00C853;font-weight:700">open backup</a>`;
+else if(data.wixBackup&&data.wixBackup.error)html+=`<br><span style="color:#e53935">Wix backup failed: ${escapeAdminHTML(data.wixBackup.error)}</span>`;
+else if(data.wixBackup&&data.wixBackup.status==='skipped')html+=`<br><span style="color:var(--sub)">Wix backup skipped: ${escapeAdminHTML(data.wixBackup.reason||'not configured')}</span>`;
+msg.style.color='var(--g)';
+msg.innerHTML=html;
+if(typeof toast==='function')toast('Shopify product created','success');
+}catch(e){
+if(!didSave)Object.assign(p,original);
+msg.style.color='#e53935';
+msg.textContent='Shopify generation failed: '+e.message;
+if(typeof toast==='function')toast('Shopify generation failed','error');
+}finally{
+btn.disabled=false;btn.textContent='Generate Shopify Product';
+}
+}
 
 // TOGGLE IMAGE EDITOR
 function toggleImgEdit(id){

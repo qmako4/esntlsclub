@@ -7,6 +7,10 @@
 //        Bucket:        esntls-images
 //   2. Environment variables (encrypted):
 //        ADMIN_SECRET   any random string (used by admin.html to authenticate)
+//        OPENAI_API_KEY used by /shopify-create-product to generate the blank image
+//        SHOPIFY_STORE_DOMAIN e.g. nr00an-yh.myshopify.com
+//        SHOPIFY_ADMIN_ACCESS_TOKEN recommended Shopify Admin token, or:
+//        SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET for an installed Shopify app
 //        WIX_API_TOKEN  Wix API key with WIX_STORES.PRODUCT_READ scope (for /wix-sync)
 //        WIX_SITE_ID    7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155 (for /wix-sync)
 //
@@ -21,10 +25,12 @@
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
+const SHOPIFY_API_VERSION = '2026-04';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
   'Access-Control-Max-Age': '86400'
 };
@@ -34,6 +40,466 @@ function json(body, status = 200) {
     status,
     headers: { ...cors, 'Content-Type': 'application/json' }
   });
+}
+
+const PRODUCT_SEARCH_QUERY = `
+query ProductsBySourceTag($query: String!) {
+  products(first: 1, query: $query) {
+    nodes { id title handle tags }
+  }
+}`;
+
+const STAGED_UPLOAD_MUTATION = `
+mutation StagedUploadsCreate($input: [StagedUploadInput!]!) {
+  stagedUploadsCreate(input: $input) {
+    stagedTargets {
+      url
+      resourceUrl
+      parameters { name value }
+    }
+    userErrors { field message }
+  }
+}`;
+
+const PRODUCT_SET_MUTATION = `
+mutation ProductSet($input: ProductSetInput!, $synchronous: Boolean!) {
+  productSet(input: $input, synchronous: $synchronous) {
+    product {
+      id
+      title
+      handle
+      variants(first: 100) { nodes { id title sku price } }
+    }
+    userErrors { field message }
+  }
+}`;
+
+const PRODUCT_UPDATE_MEDIA_MUTATION = `
+mutation ProductUpdateMedia($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+  productUpdate(product: $product, media: $media) {
+    product {
+      id
+      title
+      handle
+      featuredMedia { preview { image { url } } }
+    }
+    userErrors { field message }
+  }
+}`;
+
+const PUBLICATIONS_QUERY = `
+query PublicationsForStorefront {
+  publications(first: 20) { nodes { id name } }
+}`;
+
+const PUBLISHABLE_PUBLISH_MUTATION = `
+mutation PublishProductToOnlineStore($id: ID!, $publicationId: ID!) {
+  publishablePublish(id: $id, input: { publicationId: $publicationId }) {
+    publishable { ... on Product { id title handle } }
+    userErrors { field message }
+  }
+}`;
+
+const PLACEHOLDER_PREFIXES = [
+  'Daily Item',
+  'Studio Item',
+  'Select Item',
+  'Core Item',
+  'Essential Item',
+  'Clean Item',
+  'Archive Item',
+  'Standard Item'
+];
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function randomPlaceholderTitle() {
+  return `${PLACEHOLDER_PREFIXES[randomInt(0, PLACEHOLDER_PREFIXES.length)]} ${randomInt(1000, 10000)}`;
+}
+
+function slugify(value) {
+  return String(value || 'product')
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+function splitList(value) {
+  if (Array.isArray(value)) return value.map(String).map(item => item.trim()).filter(Boolean);
+  if (!value) return [];
+  return String(value).split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function priceAmount(value) {
+  const cleaned = String(value || '').replace(/[£$,\s]/g, '');
+  const match = cleaned.match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]).toFixed(2) : '';
+}
+
+function normalizeStoredProduct(raw) {
+  const title = raw.name || raw.title || raw.productName || '';
+  const categories = splitList(raw.category || raw.categories);
+  const image = raw.image || raw.imageUrl || raw.featuredImage || raw.thumbnail || raw.images?.[0]?.url || raw.images?.[0] || '';
+  return {
+    id: raw.id || raw.productId || raw.slug || slugify(title),
+    title,
+    price: priceAmount(raw.price || raw.price_gbp || raw.sale_price_gbp),
+    link: raw.link || '',
+    image,
+    sizes: splitList(raw.sizes || raw.size || raw.availableSizes),
+    categories,
+    active: raw.active !== false,
+    raw
+  };
+}
+
+function inferSizes(product, env) {
+  if (product.sizes.length) return product.sizes;
+  const text = `${product.title || ''} ${product.categories.join(' ')}`.toLowerCase();
+  if (/(sandal|slide|trainer|sneaker|shoe|footwear|b22|b30)/.test(text)) {
+    return splitList(env.DEFAULT_FOOTWEAR_SIZES || 'UK 6,UK 7,UK 8,UK 9,UK 10,UK 11');
+  }
+  if (/(shirt|tee|short|jacket|tracksuit|hoodie|clothing|top|casablanca)/.test(text)) {
+    return splitList(env.DEFAULT_CLOTHING_SIZES || 'S,M,L,XL');
+  }
+  return splitList(env.DEFAULT_SIZES || 'S,M,L,XL');
+}
+
+function sourceTags(product) {
+  return [
+    'ESNTLS-BLANK-WORKFLOW',
+    `ESNTLS-ID-${product.id}`,
+    `ESNTLS-SOURCE-ID-${product.id}`,
+    `ESNTLS-SOURCE-TITLE-${slugify(product.title)}`,
+    ...product.categories
+  ].filter(Boolean);
+}
+
+function shopifyStoreDomain(env) {
+  if (!env.SHOPIFY_STORE_DOMAIN) throw new Error('SHOPIFY_STORE_DOMAIN env var not set');
+  return env.SHOPIFY_STORE_DOMAIN.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
+function storefrontUrl(env, handle) {
+  return `https://${shopifyStoreDomain(env)}/products/${handle}`;
+}
+
+function buildDescriptionHtml() {
+  return [
+    '<p><strong>Blank item = original item.</strong></p>',
+    "<p><strong>Buy the blank item shown at checkout. You'll receive the original item you selected.</strong></p>"
+  ].join('');
+}
+
+function buildShopifyImagePrompt(product, hasBackground) {
+  const backgroundLine = hasBackground
+    ? 'Use the provided ESNTLS background image as the final background so this matches the existing Shopify product images.'
+    : 'Use a clean ESNTLS-style green grass product-photo background matching the existing Shopify product images.';
+  return [
+    'Create a blank placeholder product image for ESNTLS Blanks.',
+    `The source image for "${product.title}" is the subject reference.`,
+    backgroundLine,
+    'Keep the same product type, silhouette, color family, material feel, camera angle, and natural scale as the source.',
+    'Remove all visible branding, logos, labels, tags, marks, and readable text.',
+    'Keep it as one realistic ecommerce product photo. Do not add extra objects, watermarks, text, model, packaging, or dramatic shadows.',
+    'If a hand is in the source and is needed to hold the item naturally, keep it realistic; otherwise show only the item.'
+  ].join('\n');
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+function base64ToBlob(base64, type = 'image/png') {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+async function fetchImageBlob(url, label) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${label} download failed: ${response.status}`);
+  const type = response.headers.get('content-type') || 'image/png';
+  const pathname = new URL(url).pathname;
+  return { blob: await response.blob(), type, filename: slugify(pathname.split('/').pop()) || 'image' };
+}
+
+async function requestOpenAIImageEdit(env, product, source, background, model, size) {
+  const form = new FormData();
+  form.append('model', model);
+  form.append('prompt', buildShopifyImagePrompt(product, !!background));
+  form.append('size', size);
+  if (env.OPENAI_IMAGE_QUALITY) form.append('quality', env.OPENAI_IMAGE_QUALITY);
+  if (background) {
+    form.append('image[]', source.blob, source.filename || 'source.jpg');
+    form.append('image[]', background.blob, 'esntls-background.jpg');
+  } else {
+    form.append('image', source.blob, source.filename || 'source.jpg');
+  }
+  const response = await fetch('https://api.openai.com/v1/images/edits', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
+    body: form
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`OpenAI image generation failed: ${JSON.stringify(data)}`);
+  const first = data.data && data.data[0];
+  if (first && first.b64_json) return base64ToBlob(first.b64_json, 'image/png');
+  if (first && first.url) {
+    const imageResponse = await fetch(first.url);
+    if (!imageResponse.ok) throw new Error(`Generated image URL download failed: ${imageResponse.status}`);
+    return imageResponse.blob();
+  }
+  throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
+}
+
+async function generateBlankImage(env, product) {
+  if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
+  if (!product.image) throw new Error('Product is missing an image');
+  const source = await fetchImageBlob(product.image, 'Source image');
+  let background = null;
+  try {
+    background = await fetchImageBlob(env.SHOPIFY_BLANK_BACKGROUND_URL || DEFAULT_BACKGROUND_URL, 'Background image');
+  } catch {
+    background = null;
+  }
+  try {
+    return await requestOpenAIImageEdit(env, product, source, background, env.OPENAI_IMAGE_MODEL || 'gpt-image-2', env.OPENAI_IMAGE_SIZE || '768x1024');
+  } catch {
+    return requestOpenAIImageEdit(env, product, source, background, 'gpt-image-1', '1024x1536');
+  }
+}
+
+let cachedShopifyAccessToken = null;
+let cachedShopifyAccessTokenExpiresAt = 0;
+
+async function getShopifyAccessToken(env) {
+  if (env.SHOPIFY_ADMIN_ACCESS_TOKEN) return env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  if (cachedShopifyAccessToken && Date.now() < cachedShopifyAccessTokenExpiresAt - 60000) return cachedShopifyAccessToken;
+  if (!env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) {
+    throw new Error('Set SHOPIFY_ADMIN_ACCESS_TOKEN, or SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET for an installed Shopify app.');
+  }
+  const response = await fetch(`https://${shopifyStoreDomain(env)}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: env.SHOPIFY_CLIENT_ID,
+      client_secret: env.SHOPIFY_CLIENT_SECRET,
+      grant_type: 'client_credentials'
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok || !data.access_token) throw new Error(`Shopify access token request failed: ${JSON.stringify(data)}`);
+  cachedShopifyAccessToken = data.access_token;
+  cachedShopifyAccessTokenExpiresAt = Date.now() + Number(data.expires_in || 86400) * 1000;
+  return cachedShopifyAccessToken;
+}
+
+async function shopifyGraphql(env, query, variables) {
+  const response = await fetch(`https://${shopifyStoreDomain(env)}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': await getShopifyAccessToken(env)
+    },
+    body: JSON.stringify({ query, variables })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok || data.errors?.length) throw new Error(`Shopify GraphQL failed: ${JSON.stringify(data.errors || data)}`);
+  return data.data;
+}
+
+async function findExistingShopifyProduct(env, product) {
+  const data = await shopifyGraphql(env, PRODUCT_SEARCH_QUERY, {
+    query: `(tag:ESNTLS-SOURCE-ID-${product.id}) OR (tag:ESNTLS-ID-${product.id})`
+  });
+  return data.products.nodes[0] || null;
+}
+
+async function uploadProductImageToShopify(env, product, imageBlob) {
+  const filename = `${slugify(product.id)}-${slugify(product.title)}-blank.png`;
+  const staged = await shopifyGraphql(env, STAGED_UPLOAD_MUTATION, {
+    input: [{ filename, mimeType: 'image/png', httpMethod: 'POST', resource: 'PRODUCT_IMAGE' }]
+  });
+  const errors = staged.stagedUploadsCreate.userErrors;
+  if (errors.length) throw new Error(`Shopify staged upload failed: ${JSON.stringify(errors)}`);
+  const target = staged.stagedUploadsCreate.stagedTargets[0];
+  const form = new FormData();
+  for (const parameter of target.parameters) form.append(parameter.name, parameter.value);
+  form.append('file', imageBlob, filename);
+  const uploadResponse = await fetch(target.url, { method: 'POST', body: form });
+  if (!uploadResponse.ok) throw new Error(`Shopify staged file POST failed: ${uploadResponse.status} ${await uploadResponse.text()}`);
+  return { resourceUrl: target.resourceUrl, filename };
+}
+
+async function publishProductToOnlineStore(env, productId) {
+  if (env.SHOPIFY_PUBLISH_ONLINE_STORE === 'false') return null;
+  const publications = await shopifyGraphql(env, PUBLICATIONS_QUERY, {});
+  const publication = publications.publications.nodes.find(node => node.name === 'Online Store');
+  if (!publication) throw new Error('Could not find the Shopify Online Store publication.');
+  const data = await shopifyGraphql(env, PUBLISHABLE_PUBLISH_MUTATION, { id: productId, publicationId: publication.id });
+  const errors = data.publishablePublish.userErrors;
+  if (errors.length) throw new Error(`Shopify publishablePublish failed: ${JSON.stringify(errors)}`);
+  return data.publishablePublish.publishable;
+}
+
+async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle) {
+  const sizes = inferSizes(product, env);
+  const productSet = await shopifyGraphql(env, PRODUCT_SET_MUTATION, {
+    synchronous: true,
+    input: {
+      title: visibleTitle,
+      descriptionHtml: buildDescriptionHtml(),
+      vendor: env.SHOPIFY_VENDOR || 'ESNTLS Club',
+      productType: env.SHOPIFY_PRODUCT_TYPE || 'Placeholder',
+      status: env.SHOPIFY_PRODUCT_STATUS || 'ACTIVE',
+      tags: sourceTags(product),
+      productOptions: [{ name: 'Size', position: 1, values: sizes.map(size => ({ name: size })) }],
+      variants: sizes.map(size => ({
+        optionValues: [{ optionName: 'Size', name: size }],
+        price: product.price,
+        sku: `ESNTLS-${slugify(product.id)}-${slugify(size).toUpperCase()}`
+      }))
+    }
+  });
+  const errors = productSet.productSet.userErrors;
+  if (errors.length) throw new Error(`Shopify productSet failed: ${JSON.stringify(errors)}`);
+  const created = productSet.productSet.product;
+  const mediaUpdate = await shopifyGraphql(env, PRODUCT_UPDATE_MEDIA_MUTATION, {
+    product: { id: created.id },
+    media: [{ originalSource: imageResourceUrl, mediaContentType: 'IMAGE', alt: `${visibleTitle} blank product image` }]
+  });
+  const mediaErrors = mediaUpdate.productUpdate.userErrors;
+  if (mediaErrors.length) throw new Error(`Shopify productUpdate media failed: ${JSON.stringify(mediaErrors)}`);
+  await publishProductToOnlineStore(env, created.id);
+  return {
+    ...created,
+    sizes,
+    featuredImageUrl: mediaUpdate.productUpdate.product.featuredMedia?.preview?.image?.url || null,
+    shopifyUrl: storefrontUrl(env, created.handle)
+  };
+}
+
+async function createWixBackupProduct(env, product, visibleTitle) {
+  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
+    return { status: 'skipped', reason: 'WIX_API_TOKEN or WIX_SITE_ID is not configured' };
+  }
+  const sizes = inferSizes(product, env);
+  const variantPrice = { actualPrice: { amount: product.price } };
+  const response = await fetch('https://www.wixapis.com/stores/v3/products', {
+    method: 'POST',
+    headers: {
+      Authorization: env.WIX_API_TOKEN,
+      'wix-site-id': env.WIX_SITE_ID,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      product: {
+        name: visibleTitle,
+        visible: true,
+        productType: 'PHYSICAL',
+        physicalProperties: {},
+        options: [{
+          name: 'Size',
+          optionRenderType: 'TEXT_CHOICES',
+          choicesSettings: { choices: sizes.map(size => ({ choiceType: 'CHOICE_TEXT', name: size })) }
+        }],
+        variantsInfo: {
+          variants: sizes.map(size => ({
+            visible: true,
+            choices: [{ optionChoiceNames: { optionName: 'Size', choiceName: size, renderType: 'TEXT_CHOICES' } }],
+            price: variantPrice,
+            physicalProperties: {}
+          }))
+        }
+      }
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix backup API ${response.status}: ${JSON.stringify(data).slice(0, 500)}`);
+  const wixProduct = data.product || {};
+  return {
+    status: 'created',
+    id: wixProduct.id,
+    name: wixProduct.name,
+    slug: wixProduct.slug,
+    url: wixProduct.slug ? `https://www.essentialsblanks.net/product-page/${wixProduct.slug}` : ''
+  };
+}
+
+async function createShopifyPlaceholderFromR2(env, requestBody) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+  const productId = requestBody.productId;
+  if (productId === undefined || productId === null || productId === '') throw new Error('Missing productId');
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const list = Array.isArray(payload) ? payload : payload.products;
+  if (!Array.isArray(list)) throw new Error('products.json is not an array');
+  const rawProduct = list.find(item => String(item.id) === String(productId));
+  if (!rawProduct) throw new Error(`Product ${productId} was not found`);
+  const product = normalizeStoredProduct(rawProduct);
+  if (!product.active) throw new Error('Product is inactive');
+  if (!product.title) throw new Error('Product is missing a name');
+  if (!product.price) throw new Error('Product is missing a valid price');
+  if (!product.image) throw new Error('Product is missing an image');
+
+  const existing = await findExistingShopifyProduct(env, product);
+  let status = 'created';
+  let visibleTitle = existing?.title || randomPlaceholderTitle();
+  let shopifyProduct;
+  let uploadedFilename = '';
+
+  if (existing) {
+    status = 'existing';
+    shopifyProduct = { id: existing.id, title: existing.title, handle: existing.handle, shopifyUrl: storefrontUrl(env, existing.handle) };
+  } else {
+    const generatedImage = await generateBlankImage(env, product);
+    const upload = await uploadProductImageToShopify(env, product, generatedImage);
+    uploadedFilename = upload.filename;
+    shopifyProduct = await createShopifyProduct(env, product, upload.resourceUrl, visibleTitle);
+  }
+
+  let wixBackup = rawProduct.wixBackupPlaceholder || null;
+  if (!wixBackup && requestBody.createWixBackup !== false) {
+    try {
+      wixBackup = await createWixBackupProduct(env, product, visibleTitle);
+    } catch (error) {
+      wixBackup = { status: 'error', error: error.message };
+    }
+  }
+
+  const shopifyUrl = shopifyProduct.shopifyUrl;
+  rawProduct.link = shopifyUrl;
+  rawProduct.shopifyPlaceholder = {
+    status,
+    sourceId: product.id,
+    sourceTitle: product.title,
+    shopifyProductId: shopifyProduct.id,
+    shopifyTitle: shopifyProduct.title,
+    shopifyUrl,
+    uploadedFilename,
+    sizes: shopifyProduct.sizes || inferSizes(product, env),
+    generatedAt: new Date().toISOString()
+  };
+  if (wixBackup) rawProduct.wixBackupPlaceholder = wixBackup;
+
+  await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
+    httpMetadata: { contentType: 'application/json' }
+  });
+
+  return { ok: true, status, productId: product.id, shopifyUrl, shopify: rawProduct.shopifyPlaceholder, wixBackup };
 }
 
 export default {
@@ -46,6 +512,16 @@ export default {
 
     const url = new URL(req.url);
     const parts = url.pathname.split('/').filter(Boolean);
+
+    if (req.method === 'POST' && parts[0] === 'shopify-create-product') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await createShopifyPlaceholderFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
 
     if (req.method === 'GET' && parts[0] === 'list') {
       const out = [];
