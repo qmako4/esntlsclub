@@ -157,7 +157,7 @@ The repo includes a scheduled workflow at:
 .github/workflows/esntls-blank-worker.yml
 ```
 
-It runs every 15 minutes and can also be started manually from GitHub. The workflow is already configured for Shopify store domain `nr00an-yh.myshopify.com`.
+It runs live every 15 minutes and can also be started manually from GitHub. Manual runs default to `dry_run: true` so you can test safely; scheduled runs use `dry_run: false` so blank Shopify products are actually created and linked back automatically. The workflow is already configured for Shopify store domain `nr00an-yh.myshopify.com`.
 
 Add these GitHub repository secrets:
 

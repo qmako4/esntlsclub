@@ -710,7 +710,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
-<input id="aLink" placeholder="essentialsblanks.net/product-page/..." style="flex:1 1 100%;min-width:0">
+<input id="aLink" placeholder="Leave blank to auto-create checkout product" style="flex:1 1 100%;min-width:0">
 </div>
 <div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
 </label>
@@ -736,7 +736,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="hint">Select multiple images from camera roll</div>
 </label>
 <div class="img-preview" id="imgPreview"></div>
-<div class="add-bg-card" id="addBgCard" onclick="handleAddBackgroundCardClick(event)">
+<div class="add-bg-card" id="addBgCard">
 <div class="add-bg-head">
 <div>
 <div class="add-bg-title">ESNTLS background preview</div>
@@ -748,6 +748,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="add-bg-preview" id="addBgPreview"><div class="add-bg-grid" id="addBgGrid"></div></div>
 <div class="add-bg-actions" id="addBgActions">
 <button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate preview</button>
+<button type="button" class="btn btn-outline" id="addBgSaveBtn" onclick="saveAddGeneratedToMedia()">Save to Library</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
 </div>
 </div>
@@ -1170,7 +1171,7 @@ document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelive
 function previewFiles(files){
 pendingFiles=[...files];
 renderPendingPreview();
-queueAddBackgroundGeneration();
+prepareAddBackgroundPreview();
 }
 
 function renderPendingPreview(){
@@ -1204,7 +1205,7 @@ if(idx<=0||idx>=pendingFiles.length)return;
 const[moved]=pendingFiles.splice(idx,1);
 pendingFiles.unshift(moved);
 renderPendingPreview();
-queueAddBackgroundGeneration();
+prepareAddBackgroundPreview();
 }
 
 function addBgEls(){
@@ -1216,6 +1217,7 @@ preview:document.getElementById('addBgPreview'),
 grid:document.getElementById('addBgGrid'),
 actions:document.getElementById('addBgActions'),
 generateBtn:document.getElementById('addBgGenerateBtn'),
+saveBtn:document.getElementById('addBgSaveBtn'),
 useBtn:document.getElementById('addBgUseBtn')
 }}
 
@@ -1243,6 +1245,11 @@ if(el.useBtn){
 el.useBtn.style.display=generatedCount?'block':'none';
 el.useBtn.textContent=addBgState.useGenerated?'Use originals':'Use generated';
 }
+if(el.saveBtn){
+el.saveBtn.style.display=generatedCount?'block':'none';
+el.saveBtn.disabled=addBgState.status==='generating';
+el.saveBtn.textContent=generatedCount>1?'Save previews to Library':'Save preview to Library';
+}
 if(el.generateBtn){
 const isGenerating=addBgState.status==='generating';
 const needsSetup=addBgState.status==='needsSetup';
@@ -1254,12 +1261,12 @@ el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
 const total=addBgState.total||pendingFiles.length;
 const doneText=generatedCount+'/'+pendingFiles.length;
 const copy={
-idle:['Auto','Generating should start automatically on the ESNTLS grass background. Tap Generate preview if it does not.'],
+idle:['Manual',pendingFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
 needsSetup:['Setup','Open Studio setup once, save your OpenAI key, then return here.'],
 generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
 done:['Ready',addBgState.useGenerated?`Generated ${doneText} previews. Generated images will upload first.`:`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
-}[addBgState.status]||['Auto','Ready'];
+}[addBgState.status]||['Manual','Ready'];
 el.badge.textContent=copy[0];
 el.status.textContent=copy[1];
 }
@@ -1283,11 +1290,6 @@ openPhotoStudioSetup();
 return;
 }
 generateAddBackground(true);
-}
-
-function handleAddBackgroundCardClick(event){
-if(event.target.closest('button'))return;
-if(['idle','needsSetup','error'].includes(addBgState.status))handleAddBackgroundGenerate();
 }
 
 function filesMatch(a,b){
@@ -1440,7 +1442,7 @@ addBgState.lastError=(e&&e.message)||'background setup failed';
 renderAddBackgroundPreview();
 }}
 
-function queueAddBackgroundGeneration(){
+function prepareAddBackgroundPreview(){
 if(!pendingFiles.length){
 resetAddBackgroundPreview();
 return;
@@ -1455,9 +1457,6 @@ addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
 renderAddBackgroundPreview();
-setTimeout(()=>{
-if(filesMatch(pendingFiles,addBgState.sourceFiles))generateAddBackground(false);
-},250);
 }
 
 function toggleAddGeneratedUsage(){
@@ -1465,6 +1464,43 @@ if(!addBgState.generatedItems.length)return;
 addBgState.useGenerated=!addBgState.useGenerated;
 addBgState.status='done';
 renderAddBackgroundPreview();
+}
+
+async function saveAddGeneratedToMedia(){
+if(!addBgState.generatedItems.length)return;
+const el=addBgEls();
+const btn=el.saveBtn;
+const originalText=btn?btn.textContent:'';
+const msg=document.getElementById('addMsg');
+if(btn){btn.disabled=true;btn.textContent='Saving...'}
+if(msg){msg.style.color='var(--sub)';msg.textContent='Saving generated preview to Media Library...'}
+let ok=0,lastErr='';
+try{
+for(let i=0;i<addBgState.generatedItems.length;i++){
+const item=addBgState.generatedItems[i];
+const file=item.generatedFile;
+if(!file)continue;
+const fname=Date.now()+'_grass_'+i+'.jpg';
+await r2Upload(file,fname);
+ok++;
+}
+await loadMedia();
+renderMedia();
+if(ok){
+const plural=ok===1?'preview':'previews';
+if(msg){msg.style.color='var(--g)';msg.textContent='Saved '+ok+' '+plural+' to Media Library'}
+if(typeof toast==='function')toast('Saved '+ok+' '+plural+' to Media Library','success');
+}else{
+throw new Error('No generated previews were ready to save');
+}
+}catch(e){
+lastErr=e&&e.message?e.message:'Save failed';
+if(msg){msg.style.color='#e53935';msg.textContent='Save to library failed: '+lastErr}
+if(typeof toast==='function')toast('Save to Media Library failed','error');
+}finally{
+if(btn){btn.disabled=false;btn.textContent=originalText||'Save preview to Library'}
+if(msg)setTimeout(()=>{msg.textContent=''},5000);
+}
 }
 
 function addUploadFiles(){
@@ -2572,7 +2608,7 @@ function psSaveSettings(){
   m.style.color='var(--g)';m.textContent='✓ Saved to this browser only';
   setTimeout(()=>{m.textContent=''},2500);
   psUpdateGenerateState();
-  if(pendingFiles.length)queueAddBackgroundGeneration();
+  if(pendingFiles.length)prepareAddBackgroundPreview();
 }
 function psGetSettings(){try{return psNormalizeSettings(JSON.parse(localStorage.getItem(PS_LS_KEY)||'{}'))}catch(e){return psNormalizeSettings({})}}
 
