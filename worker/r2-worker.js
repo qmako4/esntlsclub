@@ -336,7 +336,12 @@ let cachedShopifyAccessTokenExpiresAt = 0;
 
 async function getShopifyAccessToken(env) {
   if (env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET) {
-    return getShopifyClientCredentialsToken(env);
+    try {
+      return await getShopifyClientCredentialsToken(env);
+    } catch (error) {
+      if (!env.SHOPIFY_ADMIN_ACCESS_TOKEN) throw error;
+      if (!/app_not_installed/i.test(error.message)) throw error;
+    }
   }
   if (env.SHOPIFY_ADMIN_ACCESS_TOKEN) return env.SHOPIFY_ADMIN_ACCESS_TOKEN;
   throw new Error('Set SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET, or replace SHOPIFY_ADMIN_ACCESS_TOKEN with a valid Shopify Admin API access token.');
