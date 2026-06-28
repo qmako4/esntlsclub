@@ -335,19 +335,27 @@ let cachedShopifyAccessToken = null;
 let cachedShopifyAccessTokenExpiresAt = 0;
 
 async function getShopifyAccessToken(env) {
-  if (env.SHOPIFY_ADMIN_ACCESS_TOKEN) return env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  if (cachedShopifyAccessToken && Date.now() < cachedShopifyAccessTokenExpiresAt - 60000) return cachedShopifyAccessToken;
-  if (!env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) {
-    throw new Error('Set SHOPIFY_ADMIN_ACCESS_TOKEN, or SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET for an installed Shopify app.');
+  if (env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET) {
+    return getShopifyClientCredentialsToken(env);
   }
+  if (env.SHOPIFY_ADMIN_ACCESS_TOKEN) return env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  throw new Error('Set SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET, or replace SHOPIFY_ADMIN_ACCESS_TOKEN with a valid Shopify Admin API access token.');
+}
+
+async function getShopifyClientCredentialsToken(env) {
+  if (cachedShopifyAccessToken && Date.now() < cachedShopifyAccessTokenExpiresAt - 60000) return cachedShopifyAccessToken;
+  const body = new URLSearchParams({
+    client_id: env.SHOPIFY_CLIENT_ID,
+    client_secret: env.SHOPIFY_CLIENT_SECRET,
+    grant_type: 'client_credentials'
+  });
   const response = await fetch(`https://${shopifyStoreDomain(env)}/admin/oauth/access_token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: env.SHOPIFY_CLIENT_ID,
-      client_secret: env.SHOPIFY_CLIENT_SECRET,
-      grant_type: 'client_credentials'
-    })
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body
   });
   const data = await readJsonResponse(response);
   if (!response.ok || !data.access_token) throw new Error(`Shopify access token request failed: ${JSON.stringify(data)}`);
@@ -366,7 +374,13 @@ async function shopifyGraphql(env, query, variables) {
     body: JSON.stringify({ query, variables })
   });
   const data = await readJsonResponse(response);
-  if (!response.ok || data.errors?.length) throw new Error(`Shopify GraphQL failed: ${JSON.stringify(data.errors || data)}`);
+  if (!response.ok || data.errors?.length) {
+    const details = JSON.stringify(data.errors || data);
+    if (response.status === 401 || /Invalid API key or access token/i.test(details)) {
+      throw new Error('Shopify authentication failed. Add SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET from the installed Shopify app, or replace SHOPIFY_ADMIN_ACCESS_TOKEN with a valid Admin API access token.');
+    }
+    throw new Error(`Shopify GraphQL failed: ${details}`);
+  }
   return data.data;
 }
 
