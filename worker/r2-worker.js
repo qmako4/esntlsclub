@@ -23,6 +23,8 @@
 //                              (last 90 days, trimmed to fields the Orders admin tab needs)
 //   POST   /wix-create-product → creates a minimal Wix placeholder product and returns its URL.
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
+//   POST   /sync-linked-price → updates linked Shopify/Wix placeholder prices after an admin price edit.
+//                                Body: { productId: string|number, price: string|number }
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
@@ -46,6 +48,27 @@ const PRODUCT_SEARCH_QUERY = `
 query ProductsBySourceTag($query: String!) {
   products(first: 1, query: $query) {
     nodes { id title handle tags }
+  }
+}`;
+
+const PRODUCT_VARIANTS_QUERY = `
+query ProductVariantsForPriceSync($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    handle
+    variants(first: 100) {
+      nodes { id price }
+    }
+  }
+}`;
+
+const PRODUCT_VARIANTS_BULK_UPDATE_MUTATION = `
+mutation ProductVariantsBulkUpdateForPriceSync($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+    product { id title handle }
+    productVariants { id price }
+    userErrors { field message }
   }
 }`;
 
@@ -186,6 +209,33 @@ function shopifyStoreDomain(env) {
 
 function storefrontUrl(env, handle) {
   return `https://${shopifyStoreDomain(env)}/products/${handle}`;
+}
+
+function extractShopifyHandle(value, env) {
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, '').toLowerCase();
+    const storeHost = shopifyStoreDomain(env).replace(/^www\./, '').toLowerCase();
+    const isShopify = host === storeHost || host.endsWith('.myshopify.com');
+    if (!isShopify) return '';
+    const match = url.pathname.match(/\/products\/([^/?#]+)/i);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch {
+    return '';
+  }
+}
+
+function extractWixSlug(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    if (!/essentialsblanks\.net$/i.test(url.hostname.replace(/^www\./, ''))) return '';
+    const match = url.pathname.match(/\/product-page\/([^/?#]+)/i);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch {
+    return '';
+  }
 }
 
 function buildDescriptionHtml() {
@@ -438,6 +488,190 @@ async function createWixBackupProduct(env, product, visibleTitle) {
   };
 }
 
+async function resolveShopifyProductForPriceSync(env, rawProduct, product) {
+  const storedId = rawProduct.shopifyPlaceholder?.shopifyProductId || rawProduct.shopifyProductId || '';
+  if (storedId) return { id: storedId, source: 'stored' };
+
+  const tagged = await findExistingShopifyProduct(env, product);
+  if (tagged?.id) return { id: tagged.id, title: tagged.title, handle: tagged.handle, source: 'tag' };
+
+  const handle = extractShopifyHandle(rawProduct.link || rawProduct.shopifyPlaceholder?.shopifyUrl, env);
+  if (!handle) return null;
+  const data = await shopifyGraphql(env, PRODUCT_SEARCH_QUERY, { query: `handle:${handle}` });
+  const found = data.products.nodes[0] || null;
+  return found ? { id: found.id, title: found.title, handle: found.handle, source: 'handle' } : null;
+}
+
+async function updateShopifyLinkedPrice(env, rawProduct, product, price) {
+  if (!env.SHOPIFY_STORE_DOMAIN) return { status: 'skipped', reason: 'SHOPIFY_STORE_DOMAIN is not configured' };
+  const target = await resolveShopifyProductForPriceSync(env, rawProduct, product);
+  if (!target?.id) return { status: 'skipped', reason: 'No linked Shopify product found' };
+
+  const data = await shopifyGraphql(env, PRODUCT_VARIANTS_QUERY, { id: target.id });
+  const shopifyProduct = data.product;
+  if (!shopifyProduct) return { status: 'skipped', reason: `Shopify product ${target.id} was not found` };
+  const variants = shopifyProduct.variants.nodes || [];
+  if (!variants.length) return { status: 'skipped', reason: 'Shopify product has no variants to update' };
+
+  const updated = await shopifyGraphql(env, PRODUCT_VARIANTS_BULK_UPDATE_MUTATION, {
+    productId: shopifyProduct.id,
+    variants: variants.map(variant => ({ id: variant.id, price }))
+  });
+  const payload = updated.productVariantsBulkUpdate;
+  if (payload.userErrors.length) throw new Error(`Shopify price update failed: ${JSON.stringify(payload.userErrors)}`);
+
+  return {
+    status: 'updated',
+    productId: shopifyProduct.id,
+    title: shopifyProduct.title,
+    handle: shopifyProduct.handle,
+    url: storefrontUrl(env, shopifyProduct.handle),
+    variantCount: payload.productVariants.length,
+    source: target.source
+  };
+}
+
+async function loadWixCatalogFromR2(env) {
+  if (!env.BUCKET) return [];
+  const object = await env.BUCKET.get('wix-products.json');
+  if (!object) return [];
+  try {
+    const data = JSON.parse(await object.text());
+    return Array.isArray(data.products) ? data.products : [];
+  } catch {
+    return [];
+  }
+}
+
+async function resolveWixProductIdsForPriceSync(env, rawProduct) {
+  const ids = new Set();
+  const backupId = rawProduct.wixBackupPlaceholder?.id || rawProduct.wixBackupProductId || rawProduct.wixProductId || '';
+  if (backupId) ids.add(String(backupId));
+
+  const slug = extractWixSlug(rawProduct.link || rawProduct.wixBackupPlaceholder?.url || '');
+  if (slug) {
+    const catalog = await loadWixCatalogFromR2(env);
+    const hit = catalog.find(item =>
+      String(item.slug || '').toLowerCase() === slug.toLowerCase() ||
+      String(item.url || '').toLowerCase().includes(`/product-page/${slug.toLowerCase()}`)
+    );
+    if (hit?.id) ids.add(String(hit.id));
+  }
+
+  return [...ids];
+}
+
+function wixHeaders(env) {
+  return {
+    'Authorization': env.WIX_API_TOKEN,
+    'wix-site-id': env.WIX_SITE_ID,
+    'Content-Type': 'application/json'
+  };
+}
+
+async function fetchWixProduct(env, productId) {
+  const response = await fetch(`https://www.wixapis.com/stores/v3/products/${encodeURIComponent(productId)}`, {
+    method: 'GET',
+    headers: wixHeaders(env)
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix get product ${productId} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.product || data;
+}
+
+async function patchWixProductPrice(env, wixProduct, price) {
+  const variants = wixProduct.variantsInfo?.variants || [];
+  if (!variants.length) throw new Error(`Wix product ${wixProduct.id} has no variants to update`);
+  const variantPrice = { actualPrice: { amount: price } };
+  const product = {
+    id: wixProduct.id,
+    revision: wixProduct.revision,
+    options: wixProduct.options || [],
+    variantsInfo: {
+      variants: variants.map(variant => ({
+        id: variant.id,
+        price: variantPrice
+      }))
+    }
+  };
+  const response = await fetch(`https://www.wixapis.com/stores/v3/products/${encodeURIComponent(wixProduct.id)}`, {
+    method: 'PATCH',
+    headers: wixHeaders(env),
+    body: JSON.stringify({ product })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix price update ${wixProduct.id} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.product || data;
+}
+
+async function updateWixLinkedPrices(env, rawProduct, price) {
+  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
+    return { status: 'skipped', reason: 'WIX_API_TOKEN or WIX_SITE_ID is not configured', products: [] };
+  }
+  const ids = await resolveWixProductIdsForPriceSync(env, rawProduct);
+  if (!ids.length) return { status: 'skipped', reason: 'No linked Wix product found', products: [] };
+
+  const products = [];
+  for (const id of ids) {
+    const wixProduct = await fetchWixProduct(env, id);
+    const patched = await patchWixProductPrice(env, wixProduct, price);
+    products.push({
+      id,
+      name: patched.name || wixProduct.name || '',
+      slug: patched.slug || wixProduct.slug || '',
+      variantCount: (wixProduct.variantsInfo?.variants || []).length
+    });
+  }
+
+  return { status: 'updated', count: products.length, products };
+}
+
+async function syncLinkedPriceFromR2(env, requestBody) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+  const productId = requestBody.productId;
+  if (productId === undefined || productId === null || productId === '') throw new Error('Missing productId');
+  const price = priceAmount(requestBody.price);
+  if (!price) throw new Error('Missing or invalid numeric price');
+
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const list = Array.isArray(payload) ? payload : payload.products;
+  if (!Array.isArray(list)) throw new Error('products.json is not an array');
+  const rawProduct = list.find(item => String(item.id) === String(productId));
+  if (!rawProduct) throw new Error(`Product ${productId} was not found`);
+  const product = normalizeStoredProduct({ ...rawProduct, price });
+
+  const result = {
+    ok: true,
+    productId: product.id,
+    price,
+    shopify: { status: 'skipped', reason: 'Not attempted' },
+    wix: { status: 'skipped', reason: 'Not attempted', products: [] },
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    result.shopify = await updateShopifyLinkedPrice(env, rawProduct, product, price);
+  } catch (error) {
+    result.shopify = { status: 'error', error: error.message };
+  }
+
+  try {
+    result.wix = await updateWixLinkedPrices(env, rawProduct, price);
+  } catch (error) {
+    result.wix = { status: 'error', error: error.message, products: [] };
+  }
+
+  rawProduct.price = requestBody.price;
+  rawProduct.linkedPriceSync = result;
+  await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
+    httpMetadata: { contentType: 'application/json' }
+  });
+
+  return result;
+}
+
 async function createShopifyPlaceholderFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
   const productId = requestBody.productId;
@@ -518,6 +752,16 @@ export default {
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await createShopifyPlaceholderFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'sync-linked-price') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await syncLinkedPriceFromR2(env, body));
       } catch (error) {
         return json({ error: error.message }, 500);
       }

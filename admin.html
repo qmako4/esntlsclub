@@ -1641,6 +1641,35 @@ async function saveProducts(){
 const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
 await r2Upload(blob,'products.json')}
 
+function numericPriceAmount(value){
+const cleaned=String(value||'').replace(/[£$,\s]/g,'');
+const match=cleaned.match(/\d+(?:\.\d+)?/);
+return match?Number(match[0]).toFixed(2):'';
+}
+
+function linkedPriceSummary(result){
+const bits=[];
+if(result.shopify&&result.shopify.status==='updated')bits.push('Shopify '+(result.shopify.variantCount||0)+' variants');
+else if(result.shopify&&result.shopify.status==='error')bits.push('Shopify failed');
+else if(result.shopify&&result.shopify.status==='skipped')bits.push('Shopify skipped');
+if(result.wix&&result.wix.status==='updated')bits.push('Wix '+(result.wix.count||0)+' products');
+else if(result.wix&&result.wix.status==='error')bits.push('Wix failed');
+else if(result.wix&&result.wix.status==='skipped')bits.push('Wix skipped');
+return bits.join(' · ')||'No linked checkout products found';
+}
+
+async function syncLinkedPrice(id,price){
+if(!WORKER_URL||!ADMIN_SECRET)throw new Error('Worker not configured');
+const r=await fetch(WORKER_URL+'/sync-linked-price',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify({productId:id,price})
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
+return data;
+}
+
 // SYNC PRICE / CATEGORY / BRAND FROM REPO products.json INTO R2 (existing IDs only)
 async function syncPricesFromRepo(){
 const msg=document.getElementById('syncMsg');
@@ -1891,11 +1920,28 @@ const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
 const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
+const oldNumericPrice=numericPriceAmount(orig.price);
+const newNumericPrice=numericPriceAmount(price);
+const priceChanged=oldNumericPrice!==newNumericPrice;
 Object.assign(p,{name,price,category:cat,brand,link,delivery});
 try{
 await saveProducts();
+let toastText=`Updated "${name}"`;
+if(priceChanged&&newNumericPrice){
+msg.style.color='var(--sub)';msg.textContent='Saved locally. Updating linked checkout prices...';
+try{
+const syncResult=await syncLinkedPrice(id,price);
+p.linkedPriceSync=syncResult;
+toastText+=' · '+linkedPriceSummary(syncResult);
+}catch(syncErr){
+toastText+=' · linked price sync failed';
+if(typeof toast==='function')toast('Linked price sync failed: '+syncErr.message,'error',4200);
+}
+}else if(priceChanged&&!newNumericPrice){
+toastText+=' · linked price sync skipped';
+}
 msg.style.color='var(--g)';msg.textContent='Saved!';
-if(typeof toast==='function')toast(`Updated "${name}"`,'success');
+if(typeof toast==='function')toast(toastText,'success',4200);
 if(typeof syncDashboard==='function')syncDashboard();
 renderProductList();
 }catch(e){
