@@ -169,7 +169,15 @@ function inferPlaceholderBase(product) {
   if (/\b(parka)\b/.test(text)) return 'Parka Jacket';
   if (/\b(puffer)\b/.test(text)) return 'Puffer Jacket';
   if (/\b(jacket|windrunner|coat|outerwear|clothing)\b/.test(text)) return 'Lightweight Jacket';
-  if (/\b(messenger|bag|accessories?)\b/.test(text)) return 'Messenger Bag';
+  if (/\b(watches?|timepieces?|datejust|daytona|submariner|oyster|gmt|rolex|cartier|patek|audemars|royal\s*oak)\b/.test(text)) return 'Classic Watch';
+  if (/\b(earphones?|earbuds?|headphones?|airpods?)\b/.test(text)) return 'Essential Earphones';
+  if (/\b(sunglasses?|glasses|shades)\b/.test(text)) return 'Sunglasses';
+  if (/\b(wallets?|card\s*holders?|cardholders?)\b/.test(text)) return 'Card Holder';
+  if (/\b(belts?)\b/.test(text)) return 'Leather Belt';
+  if (/\b(caps?|hats?|beanies?)\b/.test(text)) return 'Cap';
+  if (/\b(bracelets?|necklaces?|rings?|chains?|jewell?ery)\b/.test(text)) return 'Jewellery Piece';
+  if (/\b(messenger|bags?|backpacks?|totes?|duffles?|crossbody)\b/.test(text)) return 'Messenger Bag';
+  if (/\b(accessories?)\b/.test(text)) return 'Essential Accessory';
   return 'Select Piece';
 }
 
@@ -220,13 +228,16 @@ function normalizeStoredProduct(raw) {
 function inferSizes(product, env) {
   if (product.sizes.length) return product.sizes;
   const text = `${product.title || ''} ${product.categories.join(' ')}`.toLowerCase();
-  if (/(sandal|slide|trainer|sneaker|shoe|footwear|b22|b30)/.test(text)) {
-    return splitList(env.DEFAULT_FOOTWEAR_SIZES || 'UK 6,UK 7,UK 8,UK 9,UK 10,UK 11');
+  if (/\b(sandals?|slides?|sliders?|trainers?|sneakers?|shoes?|footwear|b22|b30)\b/.test(text)) {
+    return splitList(env.DEFAULT_FOOTWEAR_SIZES || 'UK 5,UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12');
   }
-  if (/(shirt|tee|short|jacket|tracksuit|hoodie|clothing|top|casablanca)/.test(text)) {
-    return splitList(env.DEFAULT_CLOTHING_SIZES || 'S,M,L,XL');
+  if (/\b(t-?shirts?|tees?|shirts?|shorts?|jackets?|tracksuits?|hoodies?|clothing|tops?|parkas?|puffers?|coats?|casablanca)\b/.test(text)) {
+    return splitList(env.DEFAULT_CLOTHING_SIZES || 'XS,S,M,L,XL');
   }
-  return splitList(env.DEFAULT_SIZES || 'S,M,L,XL');
+  if (/\b(watches?|timepieces?|datejust|daytona|submariner|oyster|gmt|rolex|cartier|patek|audemars|royal\s*oak|earphones?|earbuds?|headphones?|airpods?|sunglasses?|glasses|shades|wallets?|card\s*holders?|cardholders?|belts?|caps?|hats?|beanies?|bracelets?|necklaces?|rings?|chains?|jewell?ery|messenger|bags?|backpacks?|totes?|duffles?|crossbody|accessories?)\b/.test(text)) {
+    return splitList(env.DEFAULT_ACCESSORY_SIZES || 'One Size');
+  }
+  return splitList(env.DEFAULT_SIZES || 'One Size');
 }
 
 function sourceTags(product) {
