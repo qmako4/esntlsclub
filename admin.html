@@ -116,6 +116,13 @@ label.field input:focus{border-color:var(--g)}
 .add-bg-actions{display:none;gap:8px;flex-wrap:wrap}
 .add-bg-actions .btn{width:auto;flex:1 1 140px;min-height:42px;padding:10px 12px;font-size:12px}
 
+.studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+@media(min-width:560px){.studio-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.studio-tile{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#f5f5f5;min-width:0}
+.studio-tile img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#eef3ef}
+.studio-tile .caption{padding:7px 8px;font-size:10px;font-weight:700;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
+.studio-tile.failed{display:flex;min-height:140px;align-items:center;justify-content:center;text-align:center;padding:12px;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700}
+
 .btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
 .btn:active{transform:scale(.97)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -874,15 +881,15 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 
 <!-- Upload + generate -->
 <label class="upload-zone" id="psUploadZone" style="margin-bottom:12px">
-<input type="file" accept="image/*" id="psFile" style="display:none" onchange="psHandleFile(this.files)">
+<input type="file" accept="image/*" multiple id="psFile" style="display:none" onchange="psHandleFile(this.files);this.value=''">
 <div class="icon">+</div>
-<div class="label">Tap to upload a product photo</div>
-<div class="hint">Or drag and drop a phone photo</div>
+<div class="label">Tap to upload product photos</div>
+<div class="hint">Select one or multiple images</div>
 </label>
 
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
-<div style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Original photo</div>
-<img id="psOriginalImg" style="width:100%;border-radius:10px;background:#f5f5f5">
+<div id="psOriginalTitle" style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Original photos</div>
+<div id="psOriginalGrid" class="studio-grid"></div>
 </div>
 
 <label class="field"><span>Prompt (optional)</span>
@@ -895,13 +902,14 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">Generate</button>
+<div class="progress" id="psStudioProgress"><div class="progress-bar" id="psStudioBar"></div></div>
 <div class="msg" id="psGenerateMsg"></div>
 
 <div id="psResultPreview" style="display:none;margin-top:14px">
-<div style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Generated</div>
-<img id="psResultImg" style="width:100%;border-radius:10px;background:#f5f5f5;margin-bottom:10px">
+<div id="psResultTitle" style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Generated</div>
+<div id="psResultGrid" class="studio-grid" style="margin-bottom:10px"></div>
 <div style="display:flex;gap:8px">
-<button type="button" class="btn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">Save to Library</button>
+<button type="button" class="btn" id="psSaveBtn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">Save to Library</button>
 <button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">Try again</button>
 </div>
 <div class="msg" id="psSaveMsg"></div>
@@ -2714,7 +2722,7 @@ const PS_STYLE_PROMPTS={
   flatlay:'Simple background swap only. Preserve the original crop, angle, product size, and any hand or foreground detail.',
   lifestyle:'Simple natural phone-photo background swap. Keep the product and any hand unchanged; make only the background grass.'
 };
-let psState={file:null,fileDataUrl:null,resultBlob:null,resultDataUrl:null};
+let psState={files:[],file:null,originalDataUrls:[],fileDataUrl:null,resultItems:[],resultBlob:null,resultDataUrl:null};
 
 function psDefaultBrandBg(){
   try{return new URL(DEFAULT_GRASS_BACKGROUND_PATH,window.location.href).href}
@@ -2753,29 +2761,85 @@ function psSaveSettings(){
 }
 function psGetSettings(){try{return psNormalizeSettings(JSON.parse(localStorage.getItem(PS_LS_KEY)||'{}'))}catch(e){return psNormalizeSettings({})}}
 
-function psHandleFile(files){
+function psEscapeHtml(str){
+  return String(str||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function psFileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(new Error('Could not read '+(file.name||'image')));
+    r.readAsDataURL(file);
+  });
+}
+function psRenderOriginals(){
+  const preview=document.getElementById('psOriginalPreview');
+  const grid=document.getElementById('psOriginalGrid');
+  const title=document.getElementById('psOriginalTitle');
+  if(!preview||!grid||!title)return;
+  const files=psState.files||[];
+  if(!files.length){preview.style.display='none';grid.innerHTML='';return}
+  title.textContent=files.length===1?'Original photo':'Original photos ('+files.length+')';
+  grid.innerHTML=files.map((f,i)=>`<div class="studio-tile"><img src="${psState.originalDataUrls[i]||''}" alt=""><div class="caption">${i+1}. ${psEscapeHtml(f.name||'image')}</div></div>`).join('');
+  preview.style.display='block';
+}
+function psRenderResults(){
+  const preview=document.getElementById('psResultPreview');
+  const grid=document.getElementById('psResultGrid');
+  const title=document.getElementById('psResultTitle');
+  const saveBtn=document.getElementById('psSaveBtn');
+  if(!preview||!grid||!title)return;
+  const items=psState.resultItems||[];
+  if(!items.length){preview.style.display='none';grid.innerHTML='';return}
+  const ok=items.filter(item=>item&&item.dataUrl).length;
+  title.textContent=ok===1&&items.length===1?'Generated':'Generated ('+ok+'/'+items.length+')';
+  grid.innerHTML=items.map((item,i)=>{
+    if(item&&item.dataUrl){
+      const name=item.sourceFile&&item.sourceFile.name?item.sourceFile.name:'image';
+      return `<div class="studio-tile"><img src="${item.dataUrl}" alt=""><div class="caption">${i+1}. ${psEscapeHtml(name)}</div></div>`;
+    }
+    const err=item&&item.error?item.error:'Failed';
+    return `<div class="studio-tile failed">${i+1}. ${psEscapeHtml(err)}</div>`;
+  }).join('');
+  if(saveBtn){
+    saveBtn.disabled=!ok;
+    saveBtn.style.opacity=ok?'1':'.45';
+    saveBtn.textContent=ok>1?'Save '+ok+' to Library':'Save to Library';
+  }
+  preview.style.display='block';
+}
+async function psHandleFile(files){
   if(!files||!files.length)return;
-  const f=files[0];
-  if(!f.type.startsWith('image/')){alert('Please drop an image file');return}
-  psState.file=f;
-  const r=new FileReader();
-  r.onload=function(e){
-    psState.fileDataUrl=e.target.result;
-    const img=document.getElementById('psOriginalImg');
-    img.src=e.target.result;
-    document.getElementById('psOriginalPreview').style.display='block';
-    document.getElementById('psResultPreview').style.display='none';
-    psUpdateGenerateState();
-  };
-  r.readAsDataURL(f);
+  const selected=[...files].filter(f=>f.type&&f.type.startsWith('image/'));
+  if(!selected.length){alert('Please drop image files');return}
+  psState.files=selected;
+  psState.file=selected[0]||null;
+  psState.originalDataUrls=[];
+  psState.fileDataUrl=null;
+  psState.resultItems=[];
+  psState.resultDataUrl=null;
+  psState.resultBlob=null;
+  document.getElementById('psResultPreview').style.display='none';
+  psUpdateGenerateState();
+  try{
+    psState.originalDataUrls=await Promise.all(selected.map(psFileToDataUrl));
+    psState.fileDataUrl=psState.originalDataUrls[0]||null;
+    psRenderOriginals();
+  }catch(e){
+    const msg=document.getElementById('psGenerateMsg');
+    msg.style.color='#e53935';msg.textContent=e.message;
+  }
+  psUpdateGenerateState();
 }
 function psUpdateGenerateState(){
-  const hasFile=!!psState.file;
+  const fileCount=(psState.files&&psState.files.length)||(psState.file?1:0);
+  const hasFile=!!fileCount;
   const hasBackend=psHasGenerationBackend();
   const ready=!!(hasFile&&hasBackend);
   const btn=document.getElementById('psGenerateBtn');
   btn.disabled=!ready;
   btn.style.opacity=ready?'1':'.5';
+  btn.textContent=ready?(fileCount>1?'Generate '+fileCount:'Generate'):'Generate';
   btn.title=ready?(psGetSettings().openaiKey?'Ready: using browser OpenAI key':'Ready: using secure Worker key'):(hasFile?'Worker/OpenAI setup needed':'Upload a product photo first');
 }
 async function psFetchAsBlob(url){
@@ -2799,7 +2863,7 @@ function psBuildPrompt(){
     base
   ].join(' ');
 }
-async function psGenerate(){
+async function psGenerateSingleLegacy(){
   const s=psGetSettings();
   const msg=document.getElementById('psGenerateMsg');
   if(!psState.file){
@@ -2830,8 +2894,8 @@ async function psGenerate(){
   btn.disabled=false;btn.textContent='✨ Generate';
   psUpdateGenerateState();
 }
-function psRegenerate(){document.getElementById('psResultPreview').style.display='none';psGenerate()}
-async function psSaveToLibrary(){
+function psRegenerateSingleLegacy(){document.getElementById('psResultPreview').style.display='none';psGenerate()}
+async function psSaveToLibrarySingleLegacy(){
   if(!psState.resultDataUrl)return;
   const msg=document.getElementById('psSaveMsg');
   msg.style.color='var(--sub)';msg.textContent='Uploading to R2…';
@@ -2845,6 +2909,124 @@ async function psSaveToLibrary(){
     msg.style.color='var(--g)';msg.innerHTML='✓ Saved · <a href="'+url+'" target="_blank" style="color:#00C853">view</a>';
   }catch(e){
     msg.style.color='#e53935';msg.textContent='Upload failed: '+e.message;
+  }
+}
+
+// Batch-safe Photo Studio actions. These override the original single-image handlers above.
+async function psGenerate(){
+  const s=psGetSettings();
+  const msg=document.getElementById('psGenerateMsg');
+  const files=(psState.files&&psState.files.length)?psState.files:(psState.file?[psState.file]:[]);
+  if(!files.length){
+    msg.style.color='#e53935';msg.textContent='Upload product photos first.';
+    psUpdateGenerateState();
+    return;
+  }
+  if(!psHasGenerationBackend()){
+    msg.style.color='#e53935';msg.textContent='Worker is not configured. Open Settings if you want to use a browser OpenAI key.';
+    openPhotoStudioSetup();
+    psUpdateGenerateState();
+    return;
+  }
+  const btn=document.getElementById('psGenerateBtn');
+  const prog=document.getElementById('psStudioProgress');
+  const bar=document.getElementById('psStudioBar');
+  const quality=document.querySelector('input[name="psQuality"]:checked').value;
+  btn.disabled=true;
+  btn.textContent=files.length>1?'Generating 0/'+files.length:'Generating...';
+  if(prog)prog.style.display='block';
+  if(bar)bar.style.width='0%';
+  msg.style.color='var(--sub)';
+  msg.textContent=s.openaiKey?'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...':'Calling ESNTLS Worker...';
+  psState.resultItems=[];
+  psState.resultDataUrl=null;
+  psRenderResults();
+  let ok=0,failed=0,lastError='';
+  try{
+    const bgBlob=await psFetchAsBlob(s.brandBg);
+    const prompt=psBuildPrompt();
+    for(let i=0;i<files.length;i++){
+      btn.textContent=files.length>1?'Generating '+(i+1)+'/'+files.length:'Generating...';
+      msg.style.color='var(--sub)';
+      msg.textContent='Generating '+(i+1)+'/'+files.length+'...';
+      if(bar)bar.style.width=Math.round((i/files.length)*100)+'%';
+      try{
+        const item=await generateGrassPreviewFile(files[i],i,bgBlob,s,prompt,quality);
+        psState.resultItems.push(item);
+        if(!psState.resultDataUrl)psState.resultDataUrl=item.dataUrl;
+        ok++;
+      }catch(itemError){
+        lastError=itemError.message;
+        failed++;
+        psState.resultItems.push({sourceFile:files[i],error:itemError.message});
+      }
+      psRenderResults();
+    }
+    if(bar)bar.style.width='100%';
+    if(ok){
+      msg.style.color=failed?'#ff8f00':'var(--g)';
+      msg.textContent=failed?('Generated '+ok+'/'+files.length+' - '+failed+' failed'):'Generated '+ok+' - review below, save if happy';
+    }else{
+      msg.style.color='#e53935';
+      msg.textContent='Failed: '+(lastError||'No image returned');
+    }
+  }catch(e){
+    msg.style.color='#e53935';
+    msg.textContent='Failed: '+e.message;
+  }
+  setTimeout(()=>{if(prog)prog.style.display='none';if(bar)bar.style.width='0%'},1200);
+  btn.disabled=false;
+  psUpdateGenerateState();
+}
+
+function psRegenerate(){
+  document.getElementById('psResultPreview').style.display='none';
+  psGenerate();
+}
+
+async function psSaveToLibrary(){
+  const items=(psState.resultItems||[]).filter(item=>item&&item.dataUrl);
+  if(!items.length&&psState.resultDataUrl)items.push({dataUrl:psState.resultDataUrl,sourceFile:psState.file});
+  if(!items.length)return;
+  const msg=document.getElementById('psSaveMsg');
+  const saveBtn=document.getElementById('psSaveBtn');
+  msg.style.color='var(--sub)';
+  msg.textContent='Uploading '+items.length+' to R2...';
+  if(saveBtn){saveBtn.disabled=true;saveBtn.style.opacity='.65'}
+  try{
+    let ok=0,firstUrl='',lastErr='';
+    for(let i=0;i<items.length;i++){
+      msg.style.color='var(--sub)';
+      msg.textContent='Uploading '+(i+1)+'/'+items.length+'...';
+      try{
+        let file=items[i].generatedFile;
+        if(!file){
+          const res=await fetch(items[i].dataUrl);
+          const blob=await res.blob();
+          file=new File([blob],'studio_'+Date.now()+'_'+i+'.jpg',{type:'image/jpeg'});
+        }
+        const fname='studio_'+Date.now()+'_'+i+'_'+Math.floor(Math.random()*9999)+'.jpg';
+        const url=await r2Upload(file,fname);
+        if(!firstUrl)firstUrl=url;
+        ok++;
+      }catch(e){
+        lastErr=e.message;
+      }
+    }
+    if(ok){
+      msg.style.color='var(--g)';
+      msg.innerHTML='Saved '+ok+' to Library'+(firstUrl?' - <a href="'+firstUrl+'" target="_blank" style="color:#00C853">view first</a>':'')+(lastErr?' - '+psEscapeHtml(lastErr):'');
+      await loadMedia();
+      renderMedia();
+    }else{
+      throw new Error(lastErr||'Upload failed');
+    }
+  }catch(e){
+    msg.style.color='#e53935';
+    msg.textContent='Upload failed: '+e.message;
+  }finally{
+    if(saveBtn){saveBtn.disabled=false;saveBtn.style.opacity='1'}
+    psRenderResults();
   }
 }
 
