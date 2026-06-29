@@ -21,6 +21,11 @@ const DEFAULT_GENERATED_DIR = path.join(
   "blank-product-workflow",
   "generated",
 );
+const DEFAULT_BLANK_BACKGROUND_IMAGE = path.join(
+  process.cwd(),
+  "img",
+  "esntls-blank-concrete-background.jpg",
+);
 
 const COLOR_PATTERNS = [
   [/black\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*black/i, "Black & White"],
@@ -273,7 +278,8 @@ function buildImagePrompt(product) {
     "Use case: precise-object-edit",
     "Asset type: Shopify product image for ESNTLS Blanks",
     `Input image: the source image for "${product.title}" is the edit target and subject reference.`,
-    "Primary request: create a blank placeholder version of this product image. Keep it as one single realistic product photo. Remove visible branding, logos, labels, tags, marks, monograms, and readable text. Replace the original background with a neutral grey concrete floor/background matching ESNTLS blank Shopify product photography.",
+    "Primary request: create a blank placeholder version of this product image. Keep it as one single realistic product photo. Remove visible branding, logos, labels, tags, marks, monograms, and readable text. Replace the original background with the provided ESNTLS grey concrete background plate.",
+    "Use the provided concrete background image as the final background style so Shopify and Wix blank products share the same backdrop.",
     "Use the source only to understand the broad item category, color family, angle, and scale.",
     "Create a new generic blank version of the item, not the exact source product with logos removed.",
     "The output must not be recognizable as the original branded/designer item. Change model-specific details such as panel shapes, overlays, sole tooling, tread pattern, stitching layout, lace arrangement, badges, hardware, trim, and decorative shapes.",
@@ -608,16 +614,37 @@ async function readImageForOpenAI(imageSource) {
   return { buffer, contentType, filename: path.basename(imageSource) };
 }
 
+async function readBlankBackgroundForOpenAI() {
+  const sources = splitList(process.env.SHOPIFY_BLANK_BACKGROUND_URL || process.env.SHOPIFY_BLANK_BACKGROUND_PATH);
+  if (!sources.length) sources.push(DEFAULT_BLANK_BACKGROUND_IMAGE);
+
+  for (const source of sources) {
+    try {
+      return await readImageForOpenAI(source);
+    } catch {
+      // Keep the workflow usable if an optional background override is unavailable.
+    }
+  }
+
+  return null;
+}
+
 async function generateBlankImage(product) {
   const apiKey = requiredEnv("OPENAI_API_KEY");
   const { buffer, contentType, filename } = await readImageForOpenAI(product.image);
+  const background = await readBlankBackgroundForOpenAI();
   const sourceFile = new File([buffer], filename, { type: contentType });
   const form = new FormData();
 
   form.append("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-1");
   form.append("prompt", buildImagePrompt(product));
   form.append("size", process.env.OPENAI_IMAGE_SIZE || "1024x1024");
-  form.append("image", sourceFile);
+  if (background) {
+    form.append("image[]", sourceFile);
+    form.append("image[]", new File([background.buffer], background.filename, { type: background.contentType }));
+  } else {
+    form.append("image", sourceFile);
+  }
 
   const response = await fetch("https://api.openai.com/v1/images/edits", {
     method: "POST",

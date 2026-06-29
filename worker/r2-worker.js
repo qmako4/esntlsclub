@@ -284,7 +284,7 @@ function buildDescriptionHtml() {
 
 function buildShopifyImagePrompt(product, hasBackground) {
   const backgroundLine = hasBackground
-    ? 'Use the provided ESNTLS grey concrete background as the final background style so this matches the existing Shopify blank product images.'
+    ? 'Use the provided ESNTLS grey concrete background plate as the final background so Shopify and Wix blank products share the same backdrop.'
     : 'Replace the original background with a neutral grey concrete floor/background matching clean ESNTLS Shopify blank product photography.';
   return [
     'Create a blank placeholder product image for ESNTLS Blanks.',
