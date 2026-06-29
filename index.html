@@ -260,6 +260,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div class="desktop-menu">
 <button class="nl desktop-trigger" type="button">Featured <span class="desktop-chevron">▼</span></button>
 <div class="desktop-menu-panel">
+<a href="#" onclick="showCat('New Items')" class="desktop-menu-item">New Items</a>
 <a href="#" onclick="showCat('Best Sellers')" class="desktop-menu-item">🔥 Best Sellers</a>
 <a href="#" onclick="showCat('Essentials')" class="desktop-menu-item">⭐ Essentials</a>
 <a href="#" onclick="showCat('Old Money')" class="desktop-menu-item">🏛️ Old Money</a>
@@ -321,6 +322,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 
       <div class="mob-section">
         <div class="mob-section-head">⭐ Featured</div>
+        <a href="#" class="mob-item" data-keywords="new items latest recent arrivals newest drops uploaded" onclick="showCat('New Items');toggleMenu()">New Items</a>
         <a href="#" class="mob-item" data-keywords="best sellers popular hot top trending bestsellers" onclick="showCat('Best Sellers');toggleMenu()">🔥 Best Sellers</a>
         <a href="#" class="mob-item" data-keywords="essentials featured curated" onclick="showCat('Essentials');toggleMenu()">⭐ Essentials</a>
         <a href="#" class="mob-item" data-keywords="old money classic luxury preppy heritage featured" onclick="showCat('Old Money');toggleMenu()">🏛️ Old Money</a>
@@ -473,7 +475,7 @@ if(/\b(sandals?|sliders?|slides?)\b/i.test(p.name||'')){
 }
 const wixLink=wixCheckoutLinkForProduct(p);
 const shopifyLink=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
-return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[]};
+return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[],createdAt:p.created_at||p.createdAt||''};
 });
 render();
 }catch(e){console.log('R2 products load error:',e)}}
@@ -488,10 +490,10 @@ const imgs=IMG_OVERRIDES[String(p.id)];
 return imgs?{...p,img:imgs[0],imgs}:p
 })}
 
-const CATS=["All","Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
-const CAT_ICONS={"Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",Sandals:"🩴",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
+const CATS=["All","New Items","Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
+const CAT_ICONS={"New Items":"NEW","Best Sellers":"🔥",Essentials:"⭐",Footwear:"👟",Sandals:"🩴",B22:"👟",B30:"👟",Asics:"👟",Jackets:"🧥",Hoodies:"🥷",Accessories:"👜",Tracksuits:"🏃",Shirts:"👕","Old Money":"🏛️",Summer:"☀️",Winter:"❄️",Shorts:"🩳"};
 // Check if product belongs to a category (supports comma-separated multi-cat)
-function catMatch(p,cat){return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
+function catMatch(p,cat){if(cat==='New Items')return true;return(p.cat||'').split(',').map(c=>c.trim()).includes(cat)}
 // Per-brand product blurb (replaces generic "from the X collection")
 const BRAND_BLURB={
   'B22':'Premium technical runner with a lightweight mesh upper and clean silhouette. Sized true to UK.',
@@ -506,6 +508,19 @@ function getBrandBlurb(p){return BRAND_BLURB[p.brand]||BRAND_BLURB['Other']}
 function productSourceId(p){return p&&p.dbId!=null?p.dbId:String(p&&p.id||'').replace(/^r2_/,'')}
 function escapeHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function jsString(v){return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function uploadedMs(p){
+  const raw=p&&(p.createdAt||p.created_at||p.uploadedAt||p.updatedAt);
+  const parsed=raw?Date.parse(raw):NaN;
+  if(Number.isFinite(parsed))return parsed;
+  const idNum=parseInt(productSourceId(p),10);
+  return Number.isFinite(idNum)?idNum:0;
+}
+function sortForCollection(items,cat){
+  if(cat==='New Items'){
+    return [...items].sort((a,b)=>uploadedMs(b)-uploadedMs(a)||(parseInt(productSourceId(b),10)||0)-(parseInt(productSourceId(a),10)||0));
+  }
+  return [...items].sort((a,b)=>(a.price==='Out of stock'?1:0)-(b.price==='Out of stock'?1:0));
+}
 function getStockEntryForProduct(p){
   const productId=String(productSourceId(p));
   for(const [name,v] of Object.entries(LIVE_STOCK)){
@@ -632,12 +647,11 @@ return REVIEWS.map(r=>`
   ╚═══════════════════════════╝*/
 function shopHTML(cat){
 const all=allProducts();
-const byCat=cat==='All'?all:all.filter(p=>catMatch(p,cat));
+const byCat=(cat==='All'||cat==='New Items')?all:all.filter(p=>catMatch(p,cat));
 const priceFn=PRICE_RANGES[priceFilter];
 const byPrice=priceFn?byCat.filter(p=>{const v=parsePrice(p.price);return v!==null&&priceFn(v)}):byCat;
-// Sort: in-stock first, OOS pushed to the end
-const items=[...byPrice].sort((a,b)=>(a.price==='Out of stock'?1:0)-(b.price==='Out of stock'?1:0));
-const count=c=>c==='All'?all.length:all.filter(p=>catMatch(p,c)).length;
+const items=sortForCollection(byPrice,cat);
+const count=c=>(c==='All'||c==='New Items')?all.length:all.filter(p=>catMatch(p,c)).length;
 const priceKeys=Object.keys(PRICE_RANGES);
 return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
 <div style="margin-bottom:20px;padding:0 12px">
