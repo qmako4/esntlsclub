@@ -25,10 +25,12 @@
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 //   POST   /sync-linked-price → updates linked Shopify/Wix placeholder prices after an admin price edit.
 //                                Body: { productId: string|number, price: string|number }
+//   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
 const FALLBACK_BACKGROUND_URL = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main/img/esntls-blank-concrete-background.jpg';
+const DEFAULT_GRASS_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
 const SHOPIFY_API_VERSION = '2026-04';
 
 const cors = {
@@ -317,6 +319,16 @@ function base64ToBlob(base64, type = 'image/png') {
   return new Blob([bytes], { type });
 }
 
+async function blobToBase64(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 async function fetchImageBlob(url, label) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${label} download failed: ${response.status}`);
@@ -352,6 +364,107 @@ async function requestOpenAIImageEdit(env, product, source, background, model, s
     return imageResponse.blob();
   }
   throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
+}
+
+function buildGrassImagePrompt(prompt) {
+  const fallback = [
+    'Simple edit: replace only the background with the provided ESNTLS grass background.',
+    'Keep the product exactly as it is. If a hand, arm, hanger, tag, lace position, or other real foreground detail is already in the source image, keep it unchanged.',
+    'Preserve the original camera angle, perspective, product size, hand position, colours, logos, textures, stitching, text, materials, shadows on the product, and lighting on the foreground.',
+    'Do not zoom in, crop closer, enlarge the item, change the angle, redesign, recolour, rebrand, remove the hand, remove product details, or add new details.',
+    'Keep the subject naturally sized in the frame with comfortable grass visible around it. If extra canvas is needed for the 3:4 output, fill only the background with matching grass.',
+    'Add only a subtle realistic grounding shadow if needed. No harsh halos, fake floating shadows, dramatic lighting, extra objects, text, or watermark.'
+  ].join(' ');
+  return String(prompt || fallback).trim() || fallback;
+}
+
+async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality) {
+  const form = new FormData();
+  form.append('model', model);
+  form.append('image[]', source.blob, source.filename || 'product.jpg');
+  if (background) form.append('image[]', background.blob, background.filename || 'esntls-background.jpg');
+  form.append('prompt', buildGrassImagePrompt(prompt));
+  form.append('size', size);
+  if (quality) form.append('quality', quality);
+  form.append('n', '1');
+
+  const response = await fetch('https://api.openai.com/v1/images/edits', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
+    body: form
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`${model}: OpenAI image generation failed: ${JSON.stringify(data)}`);
+  const first = data.data && data.data[0];
+  if (first && first.b64_json) return { blob: base64ToBlob(first.b64_json, 'image/png'), model, size };
+  if (first && first.url) {
+    const imageResponse = await fetch(first.url);
+    if (!imageResponse.ok) throw new Error(`${model}: Generated image URL download failed: ${imageResponse.status}`);
+    return { blob: await imageResponse.blob(), model, size };
+  }
+  throw new Error(`${model}: OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
+}
+
+async function createGrassPreview(env, formData) {
+  if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
+  const image = formData.get('image') || formData.get('image[]');
+  if (!(image instanceof Blob)) throw new Error('Missing image file');
+  let backgroundFile = formData.get('background');
+  let background = null;
+  if (backgroundFile instanceof Blob) {
+    background = {
+      blob: backgroundFile,
+      type: backgroundFile.type || 'image/jpeg',
+      filename: backgroundFile.name || 'esntls-background.jpg'
+    };
+  } else {
+    const backgroundUrl = env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_URL;
+    background = await fetchImageBlob(backgroundUrl, 'Grass background image');
+  }
+
+  const source = {
+    blob: image,
+    type: image.type || 'image/jpeg',
+    filename: image.name || 'product.jpg'
+  };
+  const prompt = formData.get('prompt') || '';
+  const quality = formData.get('quality') || env.OPENAI_IMAGE_QUALITY || 'medium';
+  try {
+    const result = await requestOpenAIGrassImageEdit(
+      env,
+      source,
+      background,
+      prompt,
+      env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
+      env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
+      quality
+    );
+    return {
+      ok: true,
+      b64: await blobToBase64(result.blob),
+      contentType: result.blob.type || 'image/png',
+      model: result.model,
+      size: result.size
+    };
+  } catch (primaryError) {
+    const result = await requestOpenAIGrassImageEdit(
+      env,
+      source,
+      background,
+      prompt,
+      env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
+      env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
+      quality
+    );
+    return {
+      ok: true,
+      b64: await blobToBase64(result.blob),
+      contentType: result.blob.type || 'image/png',
+      model: result.model,
+      size: result.size,
+      fallbackReason: primaryError.message
+    };
+  }
 }
 
 async function generateBlankImage(env, product) {
@@ -826,6 +939,16 @@ export default {
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await syncLinkedPriceFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'grass-preview') {
+      let formData;
+      try { formData = await req.formData(); } catch (e) { return json({ error: 'Invalid multipart form data' }, 400); }
+      try {
+        return json(await createGrassPreview(env, formData));
       } catch (error) {
         return json({ error: error.message }, 500);
       }

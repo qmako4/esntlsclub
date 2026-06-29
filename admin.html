@@ -1262,7 +1262,7 @@ const total=addBgState.total||pendingFiles.length;
 const doneText=generatedCount+'/'+pendingFiles.length;
 const copy={
 idle:['Manual',pendingFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
-needsSetup:['Setup','Open Studio setup once, save your OpenAI key, then return here.'],
+needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
 generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
 done:['Ready',addBgState.useGenerated?`Generated ${doneText} previews. Generated images will upload first.`:`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
@@ -1282,8 +1282,7 @@ setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),80);
 }
 
 function handleAddBackgroundGenerate(){
-const s=psGetSettings();
-if(!s.openaiKey){
+if(!psHasGenerationBackend()){
 addBgState.status='needsSetup';
 renderAddBackgroundPreview();
 openPhotoStudioSetup();
@@ -1337,6 +1336,34 @@ if(!b64)throw new Error(model+': no image returned');
 return {model,size,b64};
 }
 
+function psCanUseWorker(){
+return !!(WORKER_URL&&ADMIN_SECRET);
+}
+
+function psHasGenerationBackend(){
+const s=psGetSettings();
+return !!(s.openaiKey||psCanUseWorker());
+}
+
+async function requestGrassImageEditViaWorker(source,bgBlob,prompt,quality='medium'){
+if(!psCanUseWorker())throw new Error('Worker not configured');
+const form=new FormData();
+form.append('image',source,source.name||'product.jpg');
+if(bgBlob)form.append('background',bgBlob,'esntls-background.jpg');
+form.append('prompt',prompt);
+form.append('quality',quality);
+const r=await fetch(WORKER_URL+'/grass-preview',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET},
+body:form
+});
+let data={};
+try{data=await r.json()}catch(e){data={error:'Invalid worker response'}}
+if(!r.ok)throw new Error(data.error||data.detail||('Worker HTTP '+r.status));
+if(!data.b64)throw new Error('Worker returned no image');
+return {model:data.model||'worker',size:data.size||'',b64:data.b64,fallbackReason:data.fallbackReason||''};
+}
+
 async function normalizeGrassDataUrl(dataUrl){
 const img=await new Promise((resolve,reject)=>{
 const image=new Image();
@@ -1367,12 +1394,16 @@ return {blob,dataUrl:canvas.toDataURL('image/jpeg',0.95)};
 
 async function generateGrassPreviewFile(source,index,bgBlob,s,prompt,quality='medium'){
 let result;
+if(!s.openaiKey&&psCanUseWorker()){
+result=await requestGrassImageEditViaWorker(source,bgBlob,prompt,quality);
+}else{
 try{
 result=await requestGrassImageEdit(source,bgBlob,s,prompt,OPENAI_IMAGE_MODEL,OPENAI_GRASS_IMAGE_SIZE,quality);
 }catch(primaryError){
 console.warn('Primary image model failed; trying fallback:',primaryError);
 result=await requestGrassImageEdit(source,bgBlob,s,prompt,OPENAI_IMAGE_FALLBACK_MODEL,OPENAI_GRASS_FALLBACK_SIZE,quality);
 result.fallbackReason=primaryError.message;
+}
 }
 const dataUrl='data:image/png;base64,'+result.b64;
 const normalized=await normalizeGrassDataUrl(dataUrl);
@@ -1391,7 +1422,7 @@ resetAddBackgroundPreview();
 return;
 }
 const s=psGetSettings();
-if(!s.openaiKey){
+if(!psHasGenerationBackend()){
 addBgState.status='needsSetup';
 addBgState.sourceFiles=[...pendingFiles];
 addBgState.generatedItems=[];
@@ -2739,12 +2770,13 @@ function psHandleFile(files){
   r.readAsDataURL(f);
 }
 function psUpdateGenerateState(){
-  const s=psGetSettings();
-  const ready=!!(psState.file&&s.openaiKey);
+  const hasFile=!!psState.file;
+  const hasBackend=psHasGenerationBackend();
+  const ready=!!(hasFile&&hasBackend);
   const btn=document.getElementById('psGenerateBtn');
   btn.disabled=!ready;
   btn.style.opacity=ready?'1':'.5';
-  btn.title=ready?'':'Need: upload a photo + save your OpenAI key in Settings';
+  btn.title=ready?(psGetSettings().openaiKey?'Ready: using browser OpenAI key':'Ready: using secure Worker key'):(hasFile?'Worker/OpenAI setup needed':'Upload a product photo first');
 }
 async function psFetchAsBlob(url){
   const r=await fetch(url);
@@ -2769,12 +2801,22 @@ function psBuildPrompt(){
 }
 async function psGenerate(){
   const s=psGetSettings();
-  if(!s.openaiKey||!psState.file){psUpdateGenerateState();return}
-  const btn=document.getElementById('psGenerateBtn');
   const msg=document.getElementById('psGenerateMsg');
+  if(!psState.file){
+    msg.style.color='#e53935';msg.textContent='Upload a product photo first.';
+    psUpdateGenerateState();
+    return;
+  }
+  if(!psHasGenerationBackend()){
+    msg.style.color='#e53935';msg.textContent='Worker is not configured. Open Settings if you want to use a browser OpenAI key.';
+    openPhotoStudioSetup();
+    psUpdateGenerateState();
+    return;
+  }
+  const btn=document.getElementById('psGenerateBtn');
   const quality=document.querySelector('input[name="psQuality"]:checked').value;
   btn.disabled=true;btn.textContent='⏳ Generating… (~10–20s)';
-  msg.style.color='var(--sub)';msg.textContent='Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
+  msg.style.color='var(--sub)';msg.textContent=s.openaiKey?'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...':'Calling ESNTLS Worker...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
     const item=await generateGrassPreviewFile(psState.file,0,bgBlob,s,psBuildPrompt(),quality);
