@@ -8,7 +8,7 @@ Create a Shopify product that:
 
 - Uses a blank, unbranded version of the ESNTLS product image.
 - Matches the standard grey concrete blank-product background.
-- Has a neutral random Shopify title.
+- Has a neutral, real-sounding Shopify title that does not expose the real brand.
 - Keeps the real ESNTLS product mapped privately so the correct original item is fulfilled.
 - Uses the same price and sizes as the ESNTLS product.
 
@@ -35,17 +35,18 @@ Create the Shopify blank product from the latest blank-product request.
 - Remove all visible logos, labels, text, and brand marks.
 - Inspect the generated image.
 - Upload it to Shopify.
-- Create the Shopify product using the generated random title, price, and size variants.
+- Create the Shopify product using the generated neutral title, price, and size variants.
 - Return the Shopify product link.
 
-## Random Naming Rule
+## Placeholder Naming Rule
 
-Visible Shopify product names should be neutral and random, for example:
+Visible Shopify product names should be neutral and ecommerce-friendly, not generic numbered items. They should describe the blank item type and colour while avoiding the real brand name. Examples:
 
-- `Daily Item 4827`
-- `Studio Item 1936`
-- `Select Item 7402`
-- `Core Item 6281`
+- `The Gel Runners - Pink`
+- `The Technical Sneakers - Black & Grey`
+- `The Runner Sneakers - Light Blue`
+- `The Classic Sandals - Brown`
+- `The Simple T-Shirt - White`
 
 Do not use the real brand name in the visible Shopify title when the product is meant to be a checkout placeholder.
 
@@ -106,7 +107,7 @@ Optional Cloudflare Worker variables:
 ```text
 SHOPIFY_CLIENT_ID
 SHOPIFY_CLIENT_SECRET
-SHOPIFY_BLANK_BACKGROUND_URL=https://esntlsclub.com/img/esntls-grass-background.jpg
+SHOPIFY_BLANK_BACKGROUND_URL=https://esntlsclub.com/img/esntls-blank-concrete-background.jpg
 SHOPIFY_PRODUCT_STATUS=ACTIVE
 SHOPIFY_VENDOR=ESNTLS Club
 SHOPIFY_PRODUCT_TYPE=Placeholder
@@ -126,7 +127,7 @@ The repo still includes a command-line worker for manual testing:
 node scripts/esntls-handsfree-worker.mjs --watch --interval-ms 300000
 ```
 
-It polls the ESNTLS product feed, only selects products whose ESNTLS `link` field is empty, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a randomly named Shopify placeholder product, then writes the new Shopify product URL back to the matching ESNTLS product's `link` field in R2 `products.json`.
+It polls the ESNTLS product feed, only selects products whose ESNTLS `link` field is empty, generates a blank image with the OpenAI image API, uploads that generated image to Shopify, creates a neutral real-sounding Shopify placeholder product, then writes the new Shopify product URL back to the matching ESNTLS product's `link` field in R2 `products.json`.
 
 It also records the mapping in:
 

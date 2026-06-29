@@ -27,7 +27,8 @@
 //                                Body: { productId: string|number, price: string|number }
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
-const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
+const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
+const FALLBACK_BACKGROUND_URL = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main/img/esntls-blank-concrete-background.jpg';
 const SHOPIFY_API_VERSION = '2026-04';
 
 const cors = {
@@ -123,23 +124,57 @@ mutation PublishProductToOnlineStore($id: ID!, $publicationId: ID!) {
   }
 }`;
 
-const PLACEHOLDER_PREFIXES = [
-  'Daily Item',
-  'Studio Item',
-  'Select Item',
-  'Core Item',
-  'Essential Item',
-  'Clean Item',
-  'Archive Item',
-  'Standard Item'
+const COLOR_PATTERNS = [
+  [/black\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*black/i, 'Black & White'],
+  [/black\s*(?:and|&|\+|\/)\s*grey|grey\s*(?:and|&|\+|\/)\s*black|black\s*(?:and|&|\+|\/)\s*gray|gray\s*(?:and|&|\+|\/)\s*black/i, 'Black & Grey'],
+  [/grey\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*grey|gray\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*gray/i, 'Grey & White'],
+  [/blue\s*(?:and|&|\+|\/)?\s*lime|lime\s*(?:and|&|\+|\/)?\s*blue/i, 'Blue Lime'],
+  [/light\s*blue/i, 'Light Blue'],
+  [/dark\s*blue/i, 'Dark Blue'],
+  [/\bnavy\b/i, 'Navy'],
+  [/\bpink\b/i, 'Pink'],
+  [/\bbrown\b/i, 'Brown'],
+  [/\bbeige\b/i, 'Beige'],
+  [/\bcream\b/i, 'Cream'],
+  [/\bred\b/i, 'Red'],
+  [/\bgreen\b/i, 'Green'],
+  [/\blime\b/i, 'Lime'],
+  [/\bwhite\b/i, 'White'],
+  [/\bblack\b/i, 'Black'],
+  [/\bgr[ae]y\b/i, 'Grey'],
+  [/\bblue\b/i, 'Blue']
 ];
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
+function productText(product) {
+  return `${product.title || ''} ${product.categories.join(' ')}`;
 }
 
-function randomPlaceholderTitle() {
-  return `${PLACEHOLDER_PREFIXES[randomInt(0, PLACEHOLDER_PREFIXES.length)]} ${randomInt(1000, 10000)}`;
+function inferPlaceholderColor(product) {
+  const text = productText(product);
+  const hit = COLOR_PATTERNS.find(([pattern]) => pattern.test(text));
+  return hit ? hit[1] : '';
+}
+
+function inferPlaceholderBase(product) {
+  const text = productText(product).toLowerCase();
+  if (/\b(sandals?|slides?|sliders?)\b/.test(text)) return /\b(slides?|sliders?)\b/.test(text) ? 'Classic Slides' : 'Classic Sandals';
+  if (/\b(gel|kayano|asics)\b/.test(text)) return 'Gel Runners';
+  if (/\b(b30|technical)\b/.test(text)) return 'Technical Sneakers';
+  if (/\b(b22|runner|sneakers?|trainers?|shoes?|footwear)\b/.test(text)) return /\b(b22|runner)\b/.test(text) ? 'Runner Sneakers' : 'Daily Trainers';
+  if (/\b(t-?shirt|tee|shirt)\b/.test(text)) return 'Simple T-Shirt';
+  if (/\b(shorts?)\b/.test(text)) return 'Summer Shorts';
+  if (/\b(tracksuit)\b/.test(text)) return 'Core Tracksuit';
+  if (/\b(parka)\b/.test(text)) return 'Parka Jacket';
+  if (/\b(puffer)\b/.test(text)) return 'Puffer Jacket';
+  if (/\b(jacket|windrunner|coat|outerwear|clothing)\b/.test(text)) return 'Lightweight Jacket';
+  if (/\b(messenger|bag|accessories?)\b/.test(text)) return 'Messenger Bag';
+  return 'Select Piece';
+}
+
+function buildPlaceholderTitle(product) {
+  const base = inferPlaceholderBase(product);
+  const color = inferPlaceholderColor(product);
+  return color ? `The ${base} - ${color}` : `The ${base}`;
 }
 
 function slugify(value) {
@@ -247,16 +282,19 @@ function buildDescriptionHtml() {
 
 function buildShopifyImagePrompt(product, hasBackground) {
   const backgroundLine = hasBackground
-    ? 'Use the provided ESNTLS background image as the final background so this matches the existing Shopify product images.'
-    : 'Use a clean ESNTLS-style green grass product-photo background matching the existing Shopify product images.';
+    ? 'Use the provided ESNTLS grey concrete background as the final background style so this matches the existing Shopify blank product images.'
+    : 'Replace the original background with a neutral grey concrete floor/background matching clean ESNTLS Shopify blank product photography.';
   return [
     'Create a blank placeholder product image for ESNTLS Blanks.',
     `The source image for "${product.title}" is the subject reference.`,
     backgroundLine,
-    'Keep the same product type, silhouette, color family, material feel, camera angle, and natural scale as the source.',
-    'Remove all visible branding, logos, labels, tags, marks, and readable text.',
-    'Keep it as one realistic ecommerce product photo. Do not add extra objects, watermarks, text, model, packaging, or dramatic shadows.',
-    'If a hand is in the source and is needed to hold the item naturally, keep it realistic; otherwise show only the item.'
+    'Simple edit only: make the item unbranded and swap the background, do not redesign the product.',
+    'Keep the same product type, silhouette, color family, panels, material feel, camera angle, crop, and natural scale as the source.',
+    'Remove visible branding, logos, labels, tags, marks, monograms, and readable text while preserving the item as a realistic blank version.',
+    'Final composition should be one clean square ecommerce product photo with the full item visible, centered, and comfortably surrounded by grey concrete.',
+    'Use only a subtle natural contact shadow. No unrealistic shadows, no floating effect, no props, no packaging, no text, no watermark, no extra products, no model.',
+    'If a hand is in the source and is needed to hold the item naturally, keep the hand realistic and unchanged; otherwise show only the item.',
+    'Do not use grass or any green outdoor background.'
   ].join('\n');
 }
 
@@ -319,15 +357,20 @@ async function generateBlankImage(env, product) {
   if (!product.image) throw new Error('Product is missing an image');
   const source = await fetchImageBlob(product.image, 'Source image');
   let background = null;
-  try {
-    background = await fetchImageBlob(env.SHOPIFY_BLANK_BACKGROUND_URL || DEFAULT_BACKGROUND_URL, 'Background image');
-  } catch {
-    background = null;
+  const backgroundUrls = splitList(env.SHOPIFY_BLANK_BACKGROUND_URL);
+  if (!backgroundUrls.length) backgroundUrls.push(DEFAULT_BACKGROUND_URL, FALLBACK_BACKGROUND_URL);
+  for (const backgroundUrl of backgroundUrls) {
+    try {
+      background = await fetchImageBlob(backgroundUrl, 'Background image');
+      break;
+    } catch {
+      background = null;
+    }
   }
   try {
-    return await requestOpenAIImageEdit(env, product, source, background, env.OPENAI_IMAGE_MODEL || 'gpt-image-2', env.OPENAI_IMAGE_SIZE || '768x1024');
+    return await requestOpenAIImageEdit(env, product, source, background, env.OPENAI_IMAGE_MODEL || 'gpt-image-2', env.OPENAI_IMAGE_SIZE || '1024x1024');
   } catch {
-    return requestOpenAIImageEdit(env, product, source, background, 'gpt-image-1', '1024x1536');
+    return requestOpenAIImageEdit(env, product, source, background, 'gpt-image-1', '1024x1024');
   }
 }
 
@@ -710,7 +753,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 
   const existing = await findExistingShopifyProduct(env, product);
   let status = 'created';
-  let visibleTitle = existing?.title || randomPlaceholderTitle();
+  let visibleTitle = existing?.title || buildPlaceholderTitle(product);
   let shopifyProduct;
   let uploadedFilename = '';
 

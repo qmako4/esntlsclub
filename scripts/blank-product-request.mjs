@@ -6,15 +6,25 @@ import path from "node:path";
 const DEFAULT_PRODUCTS_URL =
   "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json";
 
-const RANDOM_PREFIXES = [
-  "Daily Item",
-  "Studio Item",
-  "Select Item",
-  "Core Item",
-  "Essential Item",
-  "Clean Item",
-  "Archive Item",
-  "Standard Item",
+const COLOR_PATTERNS = [
+  [/black\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*black/i, "Black & White"],
+  [/black\s*(?:and|&|\+|\/)\s*grey|grey\s*(?:and|&|\+|\/)\s*black|black\s*(?:and|&|\+|\/)\s*gray|gray\s*(?:and|&|\+|\/)\s*black/i, "Black & Grey"],
+  [/grey\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*grey|gray\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*gray/i, "Grey & White"],
+  [/blue\s*(?:and|&|\+|\/)?\s*lime|lime\s*(?:and|&|\+|\/)?\s*blue/i, "Blue Lime"],
+  [/light\s*blue/i, "Light Blue"],
+  [/dark\s*blue/i, "Dark Blue"],
+  [/\bnavy\b/i, "Navy"],
+  [/\bpink\b/i, "Pink"],
+  [/\bbrown\b/i, "Brown"],
+  [/\bbeige\b/i, "Beige"],
+  [/\bcream\b/i, "Cream"],
+  [/\bred\b/i, "Red"],
+  [/\bgreen\b/i, "Green"],
+  [/\blime\b/i, "Lime"],
+  [/\bwhite\b/i, "White"],
+  [/\bblack\b/i, "Black"],
+  [/\bgr[ae]y\b/i, "Grey"],
+  [/\bblue\b/i, "Blue"],
 ];
 
 function parseArgs(argv) {
@@ -48,18 +58,44 @@ function slugify(value) {
     .slice(0, 80);
 }
 
-function randomPlaceholderTitle() {
-  const prefix = RANDOM_PREFIXES[Math.floor(Math.random() * RANDOM_PREFIXES.length)];
-  const number = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix} ${number}`;
-}
-
 function normalizeSizes(value) {
   if (!value) return ["S", "M", "L", "XL"];
   return String(value)
     .split(",")
     .map((size) => size.trim())
     .filter(Boolean);
+}
+
+function requestText(title, categories = []) {
+  return `${title || ""} ${categories.join(" ")}`;
+}
+
+function inferPlaceholderColor(title, categories = []) {
+  const text = requestText(title, categories);
+  const hit = COLOR_PATTERNS.find(([pattern]) => pattern.test(text));
+  return hit ? hit[1] : "";
+}
+
+function inferPlaceholderBase(title, categories = []) {
+  const text = requestText(title, categories).toLowerCase();
+  if (/\b(sandals?|slides?|sliders?)\b/.test(text)) return /\b(slides?|sliders?)\b/.test(text) ? "Classic Slides" : "Classic Sandals";
+  if (/\b(gel|kayano|asics)\b/.test(text)) return "Gel Runners";
+  if (/\b(b30|technical)\b/.test(text)) return "Technical Sneakers";
+  if (/\b(b22|runner|sneakers?|trainers?|shoes?|footwear)\b/.test(text)) return /\b(b22|runner)\b/.test(text) ? "Runner Sneakers" : "Daily Trainers";
+  if (/\b(t-?shirt|tee|shirt)\b/.test(text)) return "Simple T-Shirt";
+  if (/\b(shorts?)\b/.test(text)) return "Summer Shorts";
+  if (/\b(tracksuit)\b/.test(text)) return "Core Tracksuit";
+  if (/\b(parka)\b/.test(text)) return "Parka Jacket";
+  if (/\b(puffer)\b/.test(text)) return "Puffer Jacket";
+  if (/\b(jacket|windrunner|coat|outerwear|clothing)\b/.test(text)) return "Lightweight Jacket";
+  if (/\b(messenger|bag|accessories?)\b/.test(text)) return "Messenger Bag";
+  return "Select Piece";
+}
+
+function buildPlaceholderTitle(title, categories = []) {
+  const base = inferPlaceholderBase(title, categories);
+  const color = inferPlaceholderColor(title, categories);
+  return color ? `The ${base} - ${color}` : `The ${base}`;
 }
 
 function productMatches(product, args) {
@@ -103,11 +139,12 @@ function buildPrompt(request) {
     "Use case: precise-object-edit",
     "Asset type: Shopify product image for ESNTLS Blanks",
     `Input image: ${request.sourceImage || "source product image"} is the edit target and subject reference.`,
-    "Primary request: create a blank placeholder version of this product image. Keep it as one single realistic product photo. Remove all visible branding, logos, labels, tags, marks, and any readable text. Replace the background with a neutral grey concrete floor/background matching clean ecommerce blank-product photography.",
-    "Subject: same product type, shape, color family, material feel, and silhouette as the source image, but completely unbranded.",
-    "Composition/framing: square product image, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.",
-    "Lighting/mood: soft natural ecommerce lighting, subtle realistic shadows, clean and premium.",
-    "Constraints: one item only; no logos; no text; no watermark; no original background; no model unless the original product absolutely requires fit context; no extra accessories; not an illustration.",
+    "Primary request: create a blank placeholder version of this product image. Keep it as one single realistic product photo. Remove visible branding, logos, labels, tags, marks, monograms, and readable text. Replace the background with a neutral grey concrete floor/background matching ESNTLS blank Shopify product photography.",
+    "Simple edit only: make the item unbranded and swap the background, do not redesign the product.",
+    "Subject: same product type, silhouette, color family, panels, material feel, camera angle, crop, and natural scale as the source image.",
+    "Composition/framing: square product image, centered item, full item visible with comfortable padding.",
+    "Lighting/mood: soft natural ecommerce lighting with only a subtle realistic contact shadow.",
+    "Constraints: one item only; no logos; no text; no watermark; no original background; no unrealistic shadows; no props; no packaging; no model unless the original product absolutely requires fit context; not an illustration; no grass or green outdoor background.",
   ].join("\n");
 }
 
@@ -157,7 +194,7 @@ Options:
   }
 
   const createdAt = new Date().toISOString();
-  const placeholderTitle = args["placeholder-title"] || randomPlaceholderTitle();
+  const placeholderTitle = args["placeholder-title"] || buildPlaceholderTitle(sourceTitle, categories);
   const slug = slugify(`${sourceId || "new"}-${sourceTitle}`);
   const timestamp = createdAt.replace(/[:.]/g, "-");
   const outDir = path.join(process.cwd(), "outputs", "blank-product-workflow", "requests");
