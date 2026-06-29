@@ -72,8 +72,8 @@ Use this pattern for the generated image:
 Use case: precise-object-edit
 Asset type: Shopify product image for ESNTLS Blanks
 Input image: source product image is the edit target and subject reference.
-Primary request: create a blank placeholder version of this product image. Keep it as one single realistic product photo. Remove all visible branding, logos, labels, tags, marks, and any readable text. Replace the background with a neutral grey concrete floor/background matching clean ecommerce blank-product photography.
-Subject: same product type, shape, color family, material feel, and silhouette as the source image, but completely unbranded.
+Primary request: create a new generic blank placeholder product inspired by this product image. Keep it as one single realistic product photo. Use the source only to understand the broad item category, color family, angle, and scale. Do not recreate the exact original product with logos removed. Replace the background with a neutral grey concrete floor/background matching clean ecommerce blank-product photography.
+Subject: same broad product type and general color family as the source image, but clearly different and completely unbranded. It must not be recognizable as the original branded/designer item. Change model-specific details such as panel shapes, overlays, sole tooling, tread pattern, stitching layout, lace arrangement, badges, hardware, trim, and decorative shapes.
 Composition/framing: square product image, centered item, full item visible with comfortable padding, overhead or product-catalog angle matching the source.
 Lighting/mood: soft natural ecommerce lighting, subtle realistic shadows, clean and premium.
 Constraints: one item only; no logos; no text; no watermark; no original background; no model unless the original product absolutely requires fit context; no extra accessories; not an illustration.
