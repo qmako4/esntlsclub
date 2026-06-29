@@ -884,11 +884,14 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <input type="file" accept="image/*" multiple id="psFile" style="display:none" onchange="psHandleFile(this.files);this.value=''">
 <div class="icon">+</div>
 <div class="label">Tap to upload product photos</div>
-<div class="hint">Select one or multiple images</div>
+<div class="hint">Add one or multiple images; new drops join the batch</div>
 </label>
 
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
-<div id="psOriginalTitle" style="font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Original photos</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+<div id="psOriginalTitle" style="font-size:11px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Original photos</div>
+<button type="button" onclick="psClearFiles()" style="border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;font-family:inherit">Clear</button>
+</div>
 <div id="psOriginalGrid" class="studio-grid"></div>
 </div>
 
@@ -2772,6 +2775,23 @@ function psFileToDataUrl(file){
     r.readAsDataURL(file);
   });
 }
+function psFileKey(file){
+  return [file.name,file.size,file.lastModified,file.type].join('|');
+}
+function psClearFiles(){
+  psState.files=[];
+  psState.file=null;
+  psState.originalDataUrls=[];
+  psState.fileDataUrl=null;
+  psState.resultItems=[];
+  psState.resultBlob=null;
+  psState.resultDataUrl=null;
+  psRenderOriginals();
+  psRenderResults();
+  psUpdateGenerateState();
+  const msg=document.getElementById('psGenerateMsg');
+  if(msg){msg.style.color='var(--sub)';msg.textContent='Selection cleared.'}
+}
 function psRenderOriginals(){
   const preview=document.getElementById('psOriginalPreview');
   const grid=document.getElementById('psOriginalGrid');
@@ -2812,22 +2832,30 @@ async function psHandleFile(files){
   if(!files||!files.length)return;
   const selected=[...files].filter(f=>f.type&&f.type.startsWith('image/'));
   if(!selected.length){alert('Please drop image files');return}
-  psState.files=selected;
-  psState.file=selected[0]||null;
-  psState.originalDataUrls=[];
-  psState.fileDataUrl=null;
+  const existing=psState.files||[];
+  const existingKeys=new Set(existing.map(psFileKey));
+  const additions=selected.filter(f=>!existingKeys.has(psFileKey(f)));
+  const msg=document.getElementById('psGenerateMsg');
+  if(!additions.length){
+    if(msg){msg.style.color='var(--sub)';msg.textContent='Those photos are already selected.'}
+    psUpdateGenerateState();
+    return;
+  }
   psState.resultItems=[];
   psState.resultDataUrl=null;
   psState.resultBlob=null;
   document.getElementById('psResultPreview').style.display='none';
   psUpdateGenerateState();
   try{
-    psState.originalDataUrls=await Promise.all(selected.map(psFileToDataUrl));
+    const newDataUrls=await Promise.all(additions.map(psFileToDataUrl));
+    psState.files=[...existing,...additions];
+    psState.file=psState.files[0]||null;
+    psState.originalDataUrls=[...(psState.originalDataUrls||[]).slice(0,existing.length),...newDataUrls];
     psState.fileDataUrl=psState.originalDataUrls[0]||null;
     psRenderOriginals();
+    if(msg&&existing.length){msg.style.color='var(--g)';msg.textContent='Added '+additions.length+' photo'+(additions.length===1?'':'s')+' - '+psState.files.length+' selected.'}
   }catch(e){
-    const msg=document.getElementById('psGenerateMsg');
-    msg.style.color='#e53935';msg.textContent=e.message;
+    if(msg){msg.style.color='#e53935';msg.textContent=e.message}
   }
   psUpdateGenerateState();
 }
