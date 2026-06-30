@@ -912,6 +912,17 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="paste-actions">
 <button type="button" class="btn btn-outline" onclick="pasteToPhotoStudio()">Paste from clipboard</button>
 </div>
+<div style="border:1px solid var(--border);border-radius:16px;background:#fbfdfc;padding:12px 12px 10px;margin:0 0 14px">
+<label class="field" style="margin-bottom:8px"><span>Import from Yupoo link</span>
+<input id="psYupooUrl" type="url" placeholder="https://...yupoo.com/..." onkeydown="if(event.key==='Enter'){event.preventDefault();psImportYupoo(true)}">
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Paste an album or photo link. Imported photos join the current Studio batch.</span>
+</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button type="button" data-ps-yupoo-btn class="btn btn-outline" onclick="psImportYupoo(false)" style="flex:1 1 140px;margin:0">Import only</button>
+<button type="button" data-ps-yupoo-btn class="btn" onclick="psImportYupoo(true)" style="flex:1 1 160px;margin:0">Import + Generate</button>
+</div>
+<div class="msg" id="psYupooMsg"></div>
+</div>
 
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -2929,6 +2940,77 @@ function psFileToDataUrl(file){
 }
 function psFileKey(file){
   return [file.name,file.size,file.lastModified,file.type].join('|');
+}
+function psSetYupooMsg(text,color){
+  const msg=document.getElementById('psYupooMsg');
+  if(!msg)return;
+  msg.style.color=color||'var(--sub)';
+  msg.textContent=text||'';
+}
+function psSetYupooLoading(loading){
+  document.querySelectorAll('[data-ps-yupoo-btn]').forEach(btn=>{
+    btn.disabled=!!loading;
+    btn.style.opacity=loading?'.55':'1';
+  });
+}
+function psYupooFileName(url,index,name){
+  const fallback='yupoo_'+String(index+1).padStart(2,'0')+'.jpg';
+  const raw=name||(()=>{try{return decodeURIComponent(new URL(url).pathname.split('/').filter(Boolean).pop()||'')}catch(e){return ''}})();
+  const clean=String(raw||fallback).replace(/[^a-z0-9._-]+/gi,'_').replace(/^_+|_+$/g,'');
+  return /\.(jpe?g|png|webp)$/i.test(clean)?clean:(clean||fallback);
+}
+async function psFetchYupooFile(image,index,total){
+  const imageUrl=typeof image==='string'?image:image.url;
+  const imageName=typeof image==='string'?'':image.name;
+  if(!imageUrl)throw new Error('Missing Yupoo image URL');
+  psSetYupooMsg('Downloading Yupoo photo '+(index+1)+'/'+total+'...','var(--sub)');
+  const r=await fetch(WORKER_URL+'/yupoo-image?url='+encodeURIComponent(imageUrl),{
+    headers:{'X-Admin-Secret':ADMIN_SECRET}
+  });
+  if(!r.ok){
+    const data=await r.json().catch(()=>({}));
+    throw new Error(data.error||('Yupoo image download failed: HTTP '+r.status));
+  }
+  const blob=await r.blob();
+  if(!blob.type||!blob.type.startsWith('image/'))throw new Error('Yupoo file was not an image');
+  return new File([blob],psYupooFileName(imageUrl,index,imageName),{type:blob.type,lastModified:Date.now()+index});
+}
+async function psImportYupoo(generateAfter){
+  const input=document.getElementById('psYupooUrl');
+  const raw=input?input.value.trim():'';
+  if(!raw){psSetYupooMsg('Paste a Yupoo link first.','#e53935');return}
+  if(!WORKER_URL||!ADMIN_SECRET){psSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
+  try{new URL(raw)}catch(e){psSetYupooMsg('That does not look like a valid link.','#e53935');return}
+  psSetYupooLoading(true);
+  psSetYupooMsg('Reading Yupoo page...','var(--sub)');
+  try{
+    const r=await fetch(WORKER_URL+'/yupoo-images',{
+      method:'POST',
+      headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+      body:JSON.stringify({url:raw,limit:30})
+    });
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.error||('Yupoo scan failed: HTTP '+r.status));
+    const images=(data.images||[]).filter(item=>(typeof item==='string'?item:item&&item.url));
+    if(!images.length)throw new Error('No Yupoo product images found on that link.');
+    const files=[];
+    let failed=0,lastError='';
+    for(let i=0;i<images.length;i++){
+      try{files.push(await psFetchYupooFile(images[i],i,images.length))}
+      catch(e){failed++;lastError=e.message}
+    }
+    if(!files.length)throw new Error(lastError||'Could not download Yupoo images.');
+    await psHandleFile(files);
+    psSetYupooMsg('Imported '+files.length+' Yupoo photo'+(files.length===1?'':'s')+(failed?' - '+failed+' skipped':''),'var(--g)');
+    if(generateAfter){
+      psSetYupooMsg('Imported '+files.length+' - starting background generation...','var(--g)');
+      await psGenerate();
+    }
+  }catch(e){
+    psSetYupooMsg('Yupoo import failed: '+e.message,'#e53935');
+  }finally{
+    psSetYupooLoading(false);
+  }
 }
 function psClearFiles(){
   psState.files=[];

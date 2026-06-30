@@ -32,6 +32,8 @@ const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete
 const FALLBACK_BACKGROUND_URL = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main/img/esntls-blank-concrete-background.jpg';
 const DEFAULT_GRASS_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
 const SHOPIFY_API_VERSION = '2026-04';
+const YUPOO_IMPORT_LIMIT = 30;
+const YUPOO_PAGE_CRAWL_LIMIT = 12;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -346,6 +348,229 @@ async function fetchImageBlob(url, label) {
   const type = response.headers.get('content-type') || 'image/png';
   const pathname = new URL(url).pathname;
   return { blob: await response.blob(), type, filename: slugify(pathname.split('/').pop()) || 'image' };
+}
+
+function isAllowedYupooHost(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  return host === 'yupoo.com' || host.endsWith('.yupoo.com');
+}
+
+function validateYupooUrl(value, label = 'Yupoo URL') {
+  let parsed;
+  try {
+    parsed = new URL(String(value || '').trim());
+  } catch {
+    throw new Error(`${label} is not a valid URL`);
+  }
+  if (!/^https?:$/.test(parsed.protocol)) throw new Error(`${label} must start with http or https`);
+  if (!isAllowedYupooHost(parsed.hostname)) throw new Error(`${label} must be a yupoo.com link`);
+  return parsed;
+}
+
+function decodeHtmlEntities(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&#x3D;/gi, '=')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([a-f0-9]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
+function normalizeYupooHtml(html) {
+  return decodeHtmlEntities(html)
+    .replace(/\\\//g, '/')
+    .replace(/\\u002f/gi, '/')
+    .replace(/\\u003a/gi, ':')
+    .replace(/\\u0026/gi, '&')
+    .replace(/\\u003d/gi, '=');
+}
+
+function cleanYupooImageUrl(value, baseUrl) {
+  let raw = decodeHtmlEntities(value).trim();
+  if (!raw) return '';
+  if (raw.startsWith('//')) raw = 'https:' + raw;
+  let parsed;
+  try {
+    parsed = new URL(raw, baseUrl);
+  } catch {
+    return '';
+  }
+  if (!isAllowedYupooHost(parsed.hostname)) return '';
+  if (!/(?:^|\.)photo\.yupoo\.com$|(?:^|\.)pic\.yupoo\.com$/i.test(parsed.hostname)) return '';
+  if (/\/(?:icons?|avatar|logo|qrcode)\b/i.test(parsed.pathname)) return '';
+  if (/\/(?:square|small|thumb|thumbnail|tiny|medium)\.(?:jpe?g|png|webp)$/i.test(parsed.pathname)) return '';
+  if (!/\.(?:jpe?g|png|webp)(?:$|\?)/i.test(parsed.pathname + parsed.search)) return '';
+  parsed.hash = '';
+  return parsed.href;
+}
+
+function uniquePush(list, seen, value) {
+  if (!value || seen.has(value)) return false;
+  seen.add(value);
+  list.push(value);
+  return true;
+}
+
+function yupooImageFolderKey(value) {
+  try {
+    const parsed = new URL(value);
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length < 3) return '';
+    return parsed.origin + '/' + parts.slice(0, -1).join('/');
+  } catch {
+    return '';
+  }
+}
+
+function isGenericYupooImage(value) {
+  try {
+    return /\/(?:big|square|small|thumb|thumbnail|tiny|medium)\.(?:jpe?g|png|webp)$/i.test(new URL(value).pathname);
+  } catch {
+    return false;
+  }
+}
+
+function addYupooImage(list, seen, value) {
+  if (!value || seen.has(value)) return false;
+  const folder = yupooImageFolderKey(value);
+  if (folder) {
+    const existingIndex = list.findIndex(item => yupooImageFolderKey(item) === folder);
+    if (existingIndex >= 0) {
+      const existing = list[existingIndex];
+      if (isGenericYupooImage(existing) && !isGenericYupooImage(value)) {
+        seen.delete(existing);
+        seen.add(value);
+        list[existingIndex] = value;
+        return true;
+      }
+      return false;
+    }
+  }
+  return uniquePush(list, seen, value);
+}
+
+function extractYupooImageUrls(html, pageUrl) {
+  const normalized = normalizeYupooHtml(html);
+  const images = [];
+  const seen = new Set();
+  const directRe = /((?:https?:)?\/\/(?:photo|pic)\.yupoo\.com\/[^"'<>\s\\)]+?\.(?:jpe?g|png|webp)(?:\?[^"'<>\s\\)]*)?)/gi;
+  for (const match of normalized.matchAll(directRe)) {
+    uniquePush(images, seen, cleanYupooImageUrl(match[1], pageUrl));
+  }
+  return images;
+}
+
+function extractYupooPageLinks(html, pageUrl) {
+  const normalized = normalizeYupooHtml(html);
+  const base = new URL(pageUrl);
+  const links = [];
+  const seen = new Set([base.href]);
+  const hrefRe = /\b(?:href|data-href)=["']([^"']+)["']/gi;
+  for (const match of normalized.matchAll(hrefRe)) {
+    const href = decodeHtmlEntities(match[1]).trim();
+    if (!href || /^(?:#|javascript:|mailto:|tel:)/i.test(href)) continue;
+    let parsed;
+    try {
+      parsed = new URL(href, base.href);
+    } catch {
+      continue;
+    }
+    if (parsed.hostname !== base.hostname) continue;
+    if (!/^https?:$/.test(parsed.protocol)) continue;
+    if (/\.(?:jpe?g|png|webp|css|js|svg|ico)(?:$|\?)/i.test(parsed.pathname)) continue;
+    if (parsed.pathname === '/' || (parsed.pathname === base.pathname && parsed.search === base.search)) continue;
+    if (/\/(?:categories|collections|tag|search|login|about|contact)\b/i.test(parsed.pathname)) continue;
+    parsed.hash = '';
+    uniquePush(links, seen, parsed.href);
+    if (links.length >= YUPOO_PAGE_CRAWL_LIMIT) break;
+  }
+  return links;
+}
+
+function yupooImageName(imageUrl, index) {
+  let name = '';
+  try {
+    const parsed = new URL(imageUrl);
+    name = decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop() || '');
+  } catch {}
+  name = name.replace(/[^a-z0-9._-]+/gi, '_').replace(/^_+|_+$/g, '');
+  if (!/\.(?:jpe?g|png|webp)$/i.test(name)) name = `${name || 'image'}.jpg`;
+  return `yupoo_${String(index + 1).padStart(2, '0')}_${name}`;
+}
+
+async function fetchYupooHtml(pageUrl) {
+  const response = await fetch(pageUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; ESNTLSPhotoStudio/1.0)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    }
+  });
+  if (!response.ok) throw new Error(`Yupoo page fetch failed: HTTP ${response.status}`);
+  return response.text();
+}
+
+async function listYupooImages(rawUrl, requestedLimit) {
+  const start = validateYupooUrl(rawUrl);
+  const parsedLimit = parseInt(requestedLimit || YUPOO_IMPORT_LIMIT, 10);
+  const limit = Math.min(Math.max(parsedLimit || YUPOO_IMPORT_LIMIT, 1), YUPOO_IMPORT_LIMIT);
+  if (/\.(?:jpe?g|png|webp)(?:$|\?)/i.test(start.pathname + start.search)) {
+    const direct = cleanYupooImageUrl(start.href, start.href);
+    return { ok: true, sourceUrl: start.href, count: direct ? 1 : 0, images: direct ? [{ url: direct, name: yupooImageName(direct, 0) }] : [] };
+  }
+
+  const queue = [start.href];
+  const seenPages = new Set();
+  const seenImages = new Set();
+  const images = [];
+
+  while (queue.length && seenPages.size < YUPOO_PAGE_CRAWL_LIMIT && images.length < limit) {
+    const pageUrl = queue.shift();
+    if (seenPages.has(pageUrl)) continue;
+    seenPages.add(pageUrl);
+    const html = await fetchYupooHtml(pageUrl);
+    for (const imageUrl of extractYupooImageUrls(html, pageUrl)) {
+      if (addYupooImage(images, seenImages, imageUrl) && images.length >= limit) break;
+    }
+    if (images.length >= limit) break;
+    for (const link of extractYupooPageLinks(html, pageUrl)) {
+      if (!seenPages.has(link) && !queue.includes(link)) queue.push(link);
+      if (queue.length + seenPages.size >= YUPOO_PAGE_CRAWL_LIMIT) break;
+    }
+  }
+
+  return {
+    ok: true,
+    sourceUrl: start.href,
+    crawledPages: seenPages.size,
+    count: images.length,
+    images: images.slice(0, limit).map((url, index) => ({ url, name: yupooImageName(url, index) }))
+  };
+}
+
+async function proxyYupooImage(rawUrl) {
+  const parsed = validateYupooUrl(rawUrl, 'Yupoo image URL');
+  const imageUrl = cleanYupooImageUrl(parsed.href, parsed.href);
+  if (!imageUrl) throw new Error('URL is not a supported Yupoo image');
+  const response = await fetch(imageUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; ESNTLSPhotoStudio/1.0)',
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      'Referer': parsed.origin + '/'
+    }
+  });
+  if (!response.ok) throw new Error(`Yupoo image download failed: HTTP ${response.status}`);
+  const type = response.headers.get('content-type') || 'image/jpeg';
+  if (!type.startsWith('image/')) throw new Error('Yupoo URL did not return an image');
+  return new Response(response.body, {
+    status: 200,
+    headers: {
+      ...cors,
+      'Content-Type': type,
+      'Cache-Control': 'public, max-age=3600'
+    }
+  });
 }
 
 async function requestOpenAIImageEdit(env, product, source, background, model, size) {
@@ -960,6 +1185,24 @@ export default {
       try { formData = await req.formData(); } catch (e) { return json({ error: 'Invalid multipart form data' }, 400); }
       try {
         return json(await createGrassPreview(env, formData));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'yupoo-images') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await listYupooImages(body.url, body.limit));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'GET' && parts[0] === 'yupoo-image') {
+      try {
+        return await proxyYupooImage(url.searchParams.get('url'));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
