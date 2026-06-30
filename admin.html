@@ -19,6 +19,8 @@ img,svg,video{max-width:100%;height:auto}
 #loginScreen input:focus{border-color:var(--g)}
 #loginScreen button{width:100%;max-width:320px;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,background .15s}
 #loginScreen button:active{transform:scale(.97)}
+.login-remember{width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;gap:9px;color:#d7eee0;font-size:13px;font-weight:600;margin:-2px 0 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#loginScreen .login-remember input{width:18px;max-width:18px;height:18px;min-height:18px;margin:0;padding:0;accent-color:var(--g);box-shadow:none}
 #loginErr{color:#e53935;font-size:12px;margin-top:8px;min-height:18px}
 
 #app{display:none}
@@ -684,6 +686,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <h1>ESNTLS</h1>
 <div class="sub">Admin Panel</div>
 <input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()">
+<label class="login-remember"><input type="checkbox" id="rememberAdmin" checked><span>Remember this device</span></label>
 <button onclick="login()">Log In</button>
 <div id="loginErr"></div>
 </div>
@@ -1018,6 +1021,9 @@ const R2_ENDPOINT='https://'+R2_HOST;
 const R2_ACCESS_KEY='dc536b58cf237e0d95da9b91cb62a9cb';
 const R2_SECRET_KEY='61d0f77d798067438039743ec8851668fb2e5714ee82af5fe40ed36f4d6ea6e4';
 const ADMIN_PASS='esntls2026';
+const ADMIN_SESSION_KEY='esntlsAdminRememberV1';
+const ADMIN_SESSION_VERSION='2026-06-30';
+const ADMIN_SESSION_MS=30*24*60*60*1000;
 const CORE_CATS=["Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
 const BRAND_CATS=["Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Essentials","Hermes","LV","Monc","Nike"];
 let CATS=[...CORE_CATS,...BRAND_CATS.filter(c=>!CORE_CATS.includes(c))];
@@ -1100,18 +1106,56 @@ out.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
 return out}
 
 // LOGIN
-function login(){
-const pw=document.getElementById('pwInput').value;
-if(pw===ADMIN_PASS){
+function openAdminApp(){
 document.getElementById('loginScreen').style.display='none';
 document.getElementById('app').style.display='block';
 loadCustomCategories();
 loadProducts();
 initCatPills();
 initDropZones();
+}
+
+function saveAdminSession(){
+try{
+localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify({version:ADMIN_SESSION_VERSION,expires:Date.now()+ADMIN_SESSION_MS}))
+}catch(e){}
+}
+
+function clearAdminSession(){
+try{localStorage.removeItem(ADMIN_SESSION_KEY)}catch(e){}
+}
+
+function hasAdminSession(){
+try{
+const session=JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)||'null');
+if(session&&session.version===ADMIN_SESSION_VERSION&&session.expires>Date.now())return true;
+clearAdminSession()
+}catch(e){clearAdminSession()}
+return false
+}
+
+function login(){
+const pw=document.getElementById('pwInput').value;
+if(pw===ADMIN_PASS){
+document.getElementById('loginErr').textContent='';
+if(document.getElementById('rememberAdmin')?.checked)saveAdminSession();
+else clearAdminSession();
+openAdminApp();
 }else{
 document.getElementById('loginErr').textContent='Incorrect password';
 }}
+
+function initAdminLogin(){
+if(hasAdminSession()){
+openAdminApp();
+return
+}
+const input=document.getElementById('pwInput');
+if(input)input.focus()
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAdminLogin);
+else initAdminLogin();
 
 // DRAG-AND-DROP
 function setupDropZone(el,handler){
@@ -1220,7 +1264,7 @@ psPaste.addEventListener('paste',e=>handlePasteImages(e,'psPasteZone',files=>psH
 // Block browser from opening dropped files anywhere else
 window.addEventListener('dragover',e=>e.preventDefault());
 window.addEventListener('drop',e=>e.preventDefault())}
-function logout(){document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('pwInput').value=''}
+function logout(){clearAdminSession();document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus()}
 
 // TABS
 function showTab(tab,tabEl){
