@@ -99,6 +99,13 @@ label.field input:focus{border-color:var(--g)}
 .upload-zone.dragover .icon{transform:scale(1.15)}
 .upload-zone .label{font-size:13px;font-weight:600;color:var(--text)}
 .upload-zone .hint{font-size:11px;color:var(--sub);margin-top:4px}
+.paste-zone{border:2px dashed var(--border);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border .15s,background .15s;background:#fbfdfc;display:block;outline:none;margin-top:10px}
+.paste-zone:focus,.paste-zone.active{border-color:var(--g);background:#f0fdf4}
+.paste-zone .icon{font-size:24px;margin-bottom:5px}
+.paste-zone .label{font-size:13px;font-weight:700;color:var(--text)}
+.paste-zone .hint{font-size:11px;color:var(--sub);margin-top:4px}
+.paste-actions{display:flex;gap:8px;margin:10px 0 12px;flex-wrap:wrap}
+.paste-actions .btn{flex:1 1 150px;margin:0}
 
 .img-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .img-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
@@ -828,6 +835,14 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="label">Tap to upload to library</div>
 <div class="hint">Photos saved here can be reused across products</div>
 </label>
+<div class="paste-zone" id="mediaPasteZone" tabindex="0" role="button" aria-label="Paste images into media library">
+<div class="icon">Paste</div>
+<div class="label">Paste images to library</div>
+<div class="hint">Copy an image, tap here, then paste. Or use the button below.</div>
+</div>
+<div class="paste-actions">
+<button type="button" class="btn btn-outline" onclick="pasteToMediaLibrary()">Paste from clipboard</button>
+</div>
 <div class="progress" id="mediaProgress"><div class="progress-bar" id="mediaBar"></div></div>
 <div class="msg" id="mediaMsg"></div>
 <div style="height:14px"></div>
@@ -886,6 +901,14 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="label">Tap to upload product photos</div>
 <div class="hint">Add one or multiple images; new drops join the batch</div>
 </label>
+<div class="paste-zone" id="psPasteZone" tabindex="0" role="button" aria-label="Paste product photos into Photo Studio">
+<div class="icon">Paste</div>
+<div class="label">Paste product photos</div>
+<div class="hint">Copy product photos, tap here, then paste. Pasted photos join the batch.</div>
+</div>
+<div class="paste-actions">
+<button type="button" class="btn btn-outline" onclick="pasteToPhotoStudio()">Paste from clipboard</button>
+</div>
 
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -1102,6 +1125,79 @@ el.classList.remove('dragover');
 const files=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('image/'));
 if(files.length)handler(files)})}
 
+function pastedImageName(type,index){
+const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'}[type]||'png');
+return 'pasted_'+Date.now()+'_'+index+'.'+ext
+}
+
+function clipboardImageFiles(data){
+const files=[...(data?.files||[])].filter(f=>f.type&&f.type.startsWith('image/'));
+if(files.length)return files;
+return [...(data?.items||[])]
+.filter(item=>item.kind==='file'&&item.type&&item.type.startsWith('image/'))
+.map((item,index)=>{
+const file=item.getAsFile();
+if(!file)return null;
+return file.name?file:new File([file],pastedImageName(file.type,index),{type:file.type})
+})
+.filter(Boolean)
+}
+
+async function readClipboardImages(){
+if(!navigator.clipboard?.read)throw new Error('Clipboard button is not available in this browser. Tap the paste box, then paste.');
+const items=await navigator.clipboard.read();
+const files=[];
+for(const item of items){
+const type=item.types.find(t=>t.startsWith('image/'));
+if(!type)continue;
+const blob=await item.getType(type);
+files.push(new File([blob],pastedImageName(type,files.length),{type}))
+}
+if(!files.length)throw new Error('Clipboard does not contain an image.');
+return files
+}
+
+function flashPasteZone(id){
+const el=document.getElementById(id);
+if(!el)return;
+el.classList.add('active');
+setTimeout(()=>el.classList.remove('active'),800)
+}
+
+function handlePasteImages(event,zoneId,handler,msgId){
+const files=clipboardImageFiles(event.clipboardData);
+if(!files.length){
+const msg=msgId&&document.getElementById(msgId);
+if(msg){msg.style.color='#e53935';msg.textContent='Clipboard does not contain an image.'}
+return
+}
+event.preventDefault();
+handler(files);
+flashPasteZone(zoneId)
+}
+
+async function pasteToMediaLibrary(){
+const msg=document.getElementById('mediaMsg');
+try{
+const files=await readClipboardImages();
+flashPasteZone('mediaPasteZone');
+uploadToMedia(files)
+}catch(e){
+if(msg){msg.style.color='#e53935';msg.textContent=e.message}
+const el=document.getElementById('mediaPasteZone');if(el)el.focus()
+}}
+
+async function pasteToPhotoStudio(){
+const msg=document.getElementById('psGenerateMsg');
+try{
+const files=await readClipboardImages();
+flashPasteZone('psPasteZone');
+psHandleFile(files)
+}catch(e){
+if(msg){msg.style.color='#e53935';msg.textContent=e.message}
+const el=document.getElementById('psPasteZone');if(el)el.focus()
+}}
+
 function initDropZones(){
 setupDropZone(document.getElementById('uploadZone'),files=>{
 const dt=new DataTransfer();
@@ -1109,6 +1205,18 @@ files.forEach(f=>dt.items.add(f));
 document.getElementById('aFiles').files=dt.files;
 previewFiles(dt.files)});
 setupDropZone(document.getElementById('mediaZone'),files=>uploadToMedia(files));
+const mediaPaste=document.getElementById('mediaPasteZone');
+if(mediaPaste&&!mediaPaste._pasteBound){
+mediaPaste._pasteBound=true;
+mediaPaste.addEventListener('click',()=>{mediaPaste.focus();const msg=document.getElementById('mediaMsg');if(msg){msg.style.color='var(--sub)';msg.textContent='Paste copied images now.'}});
+mediaPaste.addEventListener('paste',e=>handlePasteImages(e,'mediaPasteZone',files=>uploadToMedia(files),'mediaMsg'))
+}
+const psPaste=document.getElementById('psPasteZone');
+if(psPaste&&!psPaste._pasteBound){
+psPaste._pasteBound=true;
+psPaste.addEventListener('click',()=>{psPaste.focus();const msg=document.getElementById('psGenerateMsg');if(msg){msg.style.color='var(--sub)';msg.textContent='Paste copied product photos now.'}});
+psPaste.addEventListener('paste',e=>handlePasteImages(e,'psPasteZone',files=>psHandleFile(files),'psGenerateMsg'))
+}
 // Block browser from opening dropped files anywhere else
 window.addEventListener('dragover',e=>e.preventDefault());
 window.addEventListener('drop',e=>e.preventDefault())}
