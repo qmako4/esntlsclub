@@ -340,6 +340,30 @@ function base64ToBlob(base64, type = 'image/png') {
   return new Blob([bytes], { type });
 }
 
+function normalizeOpenAIImageMime(type, filename = '') {
+  const raw = String(type || '').split(';')[0].trim().toLowerCase();
+  if (raw === 'image/jpeg' || raw === 'image/jpg' || raw === 'image/pjpeg') return 'image/jpeg';
+  if (raw === 'image/png') return 'image/png';
+  if (raw === 'image/webp') return 'image/webp';
+
+  const name = String(filename || '').toLowerCase();
+  if (/\.(jpe?g)$/.test(name)) return 'image/jpeg';
+  if (/\.png$/.test(name)) return 'image/png';
+  if (/\.webp$/.test(name)) return 'image/webp';
+
+  return raw || 'image/jpeg';
+}
+
+async function openAIImagePart(part, fallbackFilename = 'image.jpg') {
+  const blob = part instanceof Blob ? part : part && part.blob;
+  if (!(blob instanceof Blob)) throw new Error('Missing image blob');
+  const filename = (part && (part.filename || part.name)) || fallbackFilename;
+  const type = normalizeOpenAIImageMime((part && part.type) || blob.type, filename);
+  const currentType = String(blob.type || '').split(';')[0].trim().toLowerCase();
+  if (currentType === type) return { blob, filename };
+  return { blob: new Blob([await blob.arrayBuffer()], { type }), filename };
+}
+
 async function blobToBase64(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   let binary = '';
@@ -353,8 +377,8 @@ async function blobToBase64(blob) {
 async function fetchImageBlob(url, label) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${label} download failed: ${response.status}`);
-  const type = response.headers.get('content-type') || 'image/png';
   const pathname = new URL(url).pathname;
+  const type = normalizeOpenAIImageMime(response.headers.get('content-type'), pathname);
   return { blob: await response.blob(), type, filename: slugify(pathname.split('/').pop()) || 'image' };
 }
 
@@ -583,15 +607,17 @@ async function proxyYupooImage(rawUrl) {
 
 async function requestOpenAIImageEdit(env, product, source, background, model, size) {
   const form = new FormData();
+  const sourcePart = await openAIImagePart(source, 'source.jpg');
+  const backgroundPart = background ? await openAIImagePart(background, 'esntls-background.jpg') : null;
   form.append('model', model);
   form.append('prompt', buildShopifyImagePrompt(product, !!background));
   form.append('size', size);
   if (env.OPENAI_IMAGE_QUALITY) form.append('quality', env.OPENAI_IMAGE_QUALITY);
-  if (background) {
-    form.append('image[]', source.blob, source.filename || 'source.jpg');
-    form.append('image[]', background.blob, 'esntls-background.jpg');
+  if (backgroundPart) {
+    form.append('image[]', sourcePart.blob, sourcePart.filename);
+    form.append('image[]', backgroundPart.blob, backgroundPart.filename);
   } else {
-    form.append('image', source.blob, source.filename || 'source.jpg');
+    form.append('image', sourcePart.blob, sourcePart.filename);
   }
   const response = await fetch('https://api.openai.com/v1/images/edits', {
     method: 'POST',
@@ -624,9 +650,11 @@ function buildGrassImagePrompt(prompt) {
 
 async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality) {
   const form = new FormData();
+  const sourcePart = await openAIImagePart(source, 'product.jpg');
+  const backgroundPart = background ? await openAIImagePart(background, 'esntls-background.jpg') : null;
   form.append('model', model);
-  form.append('image[]', source.blob, source.filename || 'product.jpg');
-  if (background) form.append('image[]', background.blob, background.filename || 'esntls-background.jpg');
+  form.append('image[]', sourcePart.blob, sourcePart.filename);
+  if (backgroundPart) form.append('image[]', backgroundPart.blob, backgroundPart.filename);
   form.append('prompt', buildGrassImagePrompt(prompt));
   form.append('size', size);
   if (quality) form.append('quality', quality);
@@ -658,7 +686,7 @@ async function createGrassPreview(env, formData) {
   if (backgroundFile instanceof Blob) {
     background = {
       blob: backgroundFile,
-      type: backgroundFile.type || 'image/jpeg',
+      type: normalizeOpenAIImageMime(backgroundFile.type, backgroundFile.name),
       filename: backgroundFile.name || 'esntls-background.jpg'
     };
   } else {
@@ -668,7 +696,7 @@ async function createGrassPreview(env, formData) {
 
   const source = {
     blob: image,
-    type: image.type || 'image/jpeg',
+    type: normalizeOpenAIImageMime(image.type, image.name),
     filename: image.name || 'product.jpg'
   };
   const prompt = formData.get('prompt') || '';

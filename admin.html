@@ -1181,19 +1181,44 @@ const files=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('image/'
 if(files.length)handler(files)})}
 
 function pastedImageName(type,index){
-const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'}[type]||'png');
+const normalized=normalizeOpenAIImageMime(type);
+const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'}[normalized]||'png');
 return 'pasted_'+Date.now()+'_'+index+'.'+ext
+}
+
+function normalizeOpenAIImageMime(type,filename=''){
+const raw=String(type||'').split(';')[0].trim().toLowerCase();
+if(raw==='image/jpeg'||raw==='image/jpg'||raw==='image/pjpeg')return'image/jpeg';
+if(raw==='image/png')return'image/png';
+if(raw==='image/webp')return'image/webp';
+const name=String(filename||'').toLowerCase();
+if(/\.(jpe?g)$/.test(name))return'image/jpeg';
+if(/\.png$/.test(name))return'image/png';
+if(/\.webp$/.test(name))return'image/webp';
+return raw||'image/jpeg'
+}
+
+function normalizedPastedImageFile(file,index){
+const name=file.name||pastedImageName(file.type,index);
+return new File([file],name,{type:normalizeOpenAIImageMime(file.type,name),lastModified:file.lastModified||Date.now()})
+}
+
+async function normalizedOpenAIImageFile(file,fallbackName){
+const name=(file&&file.name)||fallbackName||'product.jpg';
+const type=normalizeOpenAIImageMime(file&&file.type,name);
+if(file instanceof File&&file.type===type&&file.name)return file;
+return new File([file],name,{type,lastModified:(file&&file.lastModified)||Date.now()})
 }
 
 function clipboardImageFiles(data){
 const files=[...(data?.files||[])].filter(f=>f.type&&f.type.startsWith('image/'));
-if(files.length)return files;
+if(files.length)return files.map((file,index)=>normalizedPastedImageFile(file,index));
 return [...(data?.items||[])]
 .filter(item=>item.kind==='file'&&item.type&&item.type.startsWith('image/'))
 .map((item,index)=>{
 const file=item.getAsFile();
 if(!file)return null;
-return file.name?file:new File([file],pastedImageName(file.type,index),{type:file.type})
+return normalizedPastedImageFile(file,index)
 })
 .filter(Boolean)
 }
@@ -1206,7 +1231,8 @@ for(const item of items){
 const type=item.types.find(t=>t.startsWith('image/'));
 if(!type)continue;
 const blob=await item.getType(type);
-files.push(new File([blob],pastedImageName(type,files.length),{type}))
+const normalizedType=normalizeOpenAIImageMime(type);
+files.push(new File([blob],pastedImageName(normalizedType,files.length),{type:normalizedType}))
 }
 if(!files.length)throw new Error('Clipboard does not contain an image.');
 return files
@@ -1490,9 +1516,11 @@ base
 
 async function requestGrassImageEdit(source,bgBlob,s,prompt,model,size,quality='medium'){
 const form=new FormData();
+const sourceFile=await normalizedOpenAIImageFile(source,'product.jpg');
+const bgFile=await normalizedOpenAIImageFile(bgBlob,'esntls-background.jpg');
 form.append('model',model);
-form.append('image[]',source,source.name||'product.jpg');
-form.append('image[]',bgBlob,'esntls-background.jpg');
+form.append('image[]',sourceFile,sourceFile.name||'product.jpg');
+form.append('image[]',bgFile,bgFile.name||'esntls-background.jpg');
 form.append('prompt',prompt);
 form.append('size',size);
 form.append('quality',quality);
@@ -1522,8 +1550,10 @@ return !!(s.openaiKey||psCanUseWorker());
 async function requestGrassImageEditViaWorker(source,bgBlob,prompt,quality='medium'){
 if(!psCanUseWorker())throw new Error('Worker not configured');
 const form=new FormData();
-form.append('image',source,source.name||'product.jpg');
-if(bgBlob)form.append('background',bgBlob,'esntls-background.jpg');
+const sourceFile=await normalizedOpenAIImageFile(source,'product.jpg');
+const bgFile=bgBlob?await normalizedOpenAIImageFile(bgBlob,'esntls-background.jpg'):null;
+form.append('image',sourceFile,sourceFile.name||'product.jpg');
+if(bgFile)form.append('background',bgFile,bgFile.name||'esntls-background.jpg');
 form.append('prompt',prompt);
 form.append('quality',quality);
 const r=await fetch(WORKER_URL+'/grass-preview',{
