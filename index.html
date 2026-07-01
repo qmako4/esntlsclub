@@ -441,9 +441,11 @@ function shopifyCheckoutLinkForId(id){
   return SHOPIFY_CHECKOUT_BASE+'blank-item-'+String(n).padStart(3,'0');
 }
 function wixCheckoutLinkForProduct(p){return p.wixLink||p.link||''}
+function isShopifyCheckoutLink(url){return /^https?:\/\/[^/]*myshopify\.com\/products\//i.test(String(url||''))}
 function checkoutLinkForProduct(p){
   const wix=wixCheckoutLinkForProduct(p);
-  const shop=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
+  const savedLink=p.link||'';
+  const shop=p.shopifyLink||(isShopifyCheckoutLink(savedLink)?savedLink:'')||shopifyCheckoutLinkForId(p.id);
   return CHECKOUT_PROVIDER==='shopify' ? (shop||wix) : wix;
 }
 
