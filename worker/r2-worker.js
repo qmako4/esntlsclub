@@ -189,6 +189,14 @@ function buildPlaceholderTitle(product) {
   return color ? `The ${base} - ${color}` : `The ${base}`;
 }
 
+function normalizePlaceholderTitleOverride(value) {
+  const title = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!title) return '';
+  if (title.length < 3) throw new Error('Shopify name must be at least 3 characters');
+  if (title.length > 80) throw new Error('Shopify name must be 80 characters or less');
+  return title;
+}
+
 function slugify(value) {
   return String(value || 'product')
     .toLowerCase()
@@ -1104,7 +1112,8 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 
   const existing = await findExistingShopifyProduct(env, product);
   let status = 'created';
-  let visibleTitle = existing?.title || buildPlaceholderTitle(product);
+  const titleOverride = normalizePlaceholderTitleOverride(requestBody.shopifyTitleOverride || requestBody.shopifyTitle || requestBody.visibleTitle);
+  let visibleTitle = existing?.title || titleOverride || buildPlaceholderTitle(product);
   let shopifyProduct;
   let uploadedFilename = '';
 
@@ -1135,6 +1144,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     sourceTitle: product.title,
     shopifyProductId: shopifyProduct.id,
     shopifyTitle: shopifyProduct.title,
+    requestedShopifyTitle: titleOverride || '',
     shopifyUrl,
     uploadedFilename,
     sizes: shopifyProduct.sizes || inferSizes(product, env),

@@ -2107,6 +2107,7 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
 </div>
 </label>
+<label class="field"><span>Shopify Name</span><input id="st_${id}" value="${p.shopifyPlaceholder?.shopifyTitle||''}" placeholder="Optional, e.g. The Gel Runners - Pink"></label>
 <button type="button" class="btn btn-outline" id="sb_${id}" onclick="generateShopifyPlaceholder(${id})">Generate Shopify Product</button>
 <div class="msg" id="sm_${id}"></div>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
@@ -2158,9 +2159,10 @@ function collectEditValues(id){
 const name=document.getElementById('en_'+id)?.value.trim()||'';
 const price=document.getElementById('ep_'+id)?.value.trim()||'';
 const link=document.getElementById('el_'+id)?.value.trim()||'';
+const shopifyTitleOverride=document.getElementById('st_'+id)?.value.trim()||'';
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
-return {name,price,link,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
+return {name,price,link,shopifyTitleOverride,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
 }
 
 async function generateShopifyPlaceholder(id){
@@ -2189,7 +2191,7 @@ didSave=true;
 const r=await fetch(WORKER_URL+'/shopify-create-product',{
 method:'POST',
 headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
-body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink:!!values.link})
+body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink:!!values.link,shopifyTitleOverride:values.shopifyTitleOverride})
 });
 const data=await r.json().catch(()=>({}));
 if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
@@ -2198,6 +2200,8 @@ if(!shopifyUrl)throw new Error('No Shopify link returned');
 p.link=shopifyUrl;
 const linkInput=document.getElementById('el_'+id);
 if(linkInput)linkInput.value=shopifyUrl;
+const titleInput=document.getElementById('st_'+id);
+if(titleInput&&data.shopify&&data.shopify.shopifyTitle)titleInput.value=data.shopify.shopifyTitle;
 let html=`Created Shopify product: <a href="${escapeAdminHTML(shopifyUrl)}" target="_blank" style="color:#00C853;font-weight:700">open link</a>`;
 const wixUrl=data.wixBackup&&data.wixBackup.url;
 if(wixUrl)html+=`<br>Wix backup created: <a href="${escapeAdminHTML(wixUrl)}" target="_blank" style="color:#00C853;font-weight:700">open backup</a>`;
