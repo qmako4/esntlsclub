@@ -72,6 +72,7 @@ img,svg,video{max-width:100%;height:auto}
 .product-item{padding:14px;background:#fff;border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:12px;transition:border-color .12s}
 .product-item:hover{border-color:#ccc}
 .product-item .oos-flag{background:#ffebee;color:#c62828;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;margin-left:6px}
+.product-item .archived-flag{background:#eef0f2;color:#555;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;margin-left:6px}
 .product-item .meta-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
 .product-item .meta-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:#f1f3f5;color:#555;text-transform:uppercase;letter-spacing:.3px}
 
@@ -467,6 +468,7 @@ margin:0;
 box-shadow:0 10px 24px rgba(7,17,11,.045);
 transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)
 }
+.product-item.archived{opacity:.72;background:#f7f8f7;border-style:dashed}
 .product-item:hover{transform:translateY(-1px);border-color:#c5d8ce;box-shadow:0 16px 34px rgba(7,17,11,.08)}
 .product-item img{width:62px;height:62px;border-radius:16px}
 .product-item .name{font-size:14px}
@@ -797,6 +799,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">-</span></div>
 <div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">-</span></div>
 <div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">-</span></div>
+<div class="filter-chip" data-status="archived" onclick="setProductFilter('status','archived')">Archived <span id="ctArchived">-</span></div>
 </div>
 <div class="filter-chips" id="productCategoryChips"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
@@ -1847,6 +1850,7 @@ link,
 delivery:selectedDelivery.join(','),
 images:imageUrls,
 created_at:createdAt,
+active:true,
 grassBackground:grassMeta
 };
 products.unshift(newProduct);
@@ -1990,6 +1994,8 @@ btn.disabled=false;
 // RENDER PRODUCT LIST
 // ─── Product list state: search + filter + sort ───
 const productFilters={status:'all',category:'all',q:''};
+function isArchivedProduct(p){return !!(p&&(p.active===false||p.archived===true||p.hidden===true))}
+function activeProducts(){return products.filter(p=>!isArchivedProduct(p))}
 function setProductFilter(key,val){productFilters[key]=val;renderProductList()}
 function renderProductList(){
 const list=document.getElementById('productList');
@@ -2005,17 +2011,21 @@ const sortEl=document.getElementById('productSort');
 const sortBy=sortEl?sortEl.value:'recent';
 
 // Pre-compute counts so the chips can show numbers next to the labels
-const oosCount=products.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
-const inCount=products.length-oosCount;
-const ctAll=document.getElementById('ctAll');if(ctAll)ctAll.textContent=`(${products.length})`;
+const visibleProducts=activeProducts();
+const archivedCount=products.filter(isArchivedProduct).length;
+const oosCount=visibleProducts.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
+const inCount=visibleProducts.length-oosCount;
+const ctAll=document.getElementById('ctAll');if(ctAll)ctAll.textContent=`(${visibleProducts.length})`;
 const ctIn=document.getElementById('ctIn');if(ctIn)ctIn.textContent=`(${inCount})`;
 const ctOos=document.getElementById('ctOos');if(ctOos)ctOos.textContent=`(${oosCount})`;
+const ctArchived=document.getElementById('ctArchived');if(ctArchived)ctArchived.textContent=`(${archivedCount})`;
 
 // Build category chips from both saved categories and legacy brand values.
-const usedCategories=[...new Set(products.flatMap(effectiveCategories))].sort();
+const categorySource=productFilters.status==='archived'?products.filter(isArchivedProduct):visibleProducts;
+const usedCategories=[...new Set(categorySource.flatMap(effectiveCategories))].sort();
 const categoryChipsEl=document.getElementById('productCategoryChips');
 if(categoryChipsEl){
-  const sig=usedCategories.join('|')+'::'+productFilters.category;
+  const sig=productFilters.status+'::'+usedCategories.join('|')+'::'+productFilters.category;
   if(categoryChipsEl._sig!==sig){
     categoryChipsEl._sig=sig;
     categoryChipsEl.innerHTML=`<div class="filter-chip${productFilters.category==='all'?' on-g':''}" onclick="setProductFilter('category','all')">All categories</div>`+
@@ -2029,6 +2039,12 @@ document.querySelectorAll('#productStatusChips .filter-chip').forEach(c=>{
 
 // Apply filters
 let filtered=products.filter(p=>{
+  const archived=isArchivedProduct(p);
+  if(productFilters.status==='archived'){
+    if(!archived)return false;
+  }else if(archived){
+    return false;
+  }
   const isOos=String(p.price).toLowerCase().includes('out of stock');
   if(productFilters.status==='instock'&&isOos)return false;
   if(productFilters.status==='oos'&&!isOos)return false;
@@ -2050,7 +2066,8 @@ filtered.sort((a,b)=>{
 });
 
 const summary=document.getElementById('productCountSummary');
-if(summary)summary.textContent=`${filtered.length} of ${products.length} shown`;
+const summaryTotal=productFilters.status==='archived'?archivedCount:visibleProducts.length;
+if(summary)summary.textContent=`${filtered.length} of ${summaryTotal} shown`;
 
 if(!filtered.length){
   list.innerHTML=`<div class="empty"><div class="icon">🔍</div><div class="title">No matches</div><div class="hint">Try clearing the search or filters</div></div>`;
@@ -2059,12 +2076,13 @@ if(!filtered.length){
 
 list.innerHTML=filtered.map(p=>{
   const isOos=String(p.price).toLowerCase().includes('out of stock');
+  const archived=isArchivedProduct(p);
   const photos=p.images?p.images.length:0;
   return `<div style="margin-bottom:10px">
-<div class="product-item">
+<div class="product-item${archived?' archived':''}">
 <img src="${p.images&&p.images[0]||''}" onerror="this.style.background='#eee'">
 <div class="info">
-<div class="name">${p.name||'(no name)'}${isOos?'<span class="oos-flag">OOS</span>':''}</div>
+<div class="name">${p.name||'(no name)'}${archived?'<span class="archived-flag">Archived</span>':(isOos?'<span class="oos-flag">OOS</span>':'')}</div>
 <div class="meta" style="color:var(--g);font-weight:700">${p.price}</div>
 <div class="meta-pills">
 ${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdminHTML(c)}</span>`).join('')}
@@ -2075,6 +2093,7 @@ ${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdmi
 <button class="action-btn" style="background:#f0f4ff" onclick="toggleEdit(${p.id})" title="Edit">⚙️</button>
 <button class="action-btn" style="background:#f0fdf4" onclick="toggleImgEdit(${p.id})" title="Images">✏️</button>
 <button class="action-btn" style="background:#fff3e0" onclick="quickToggleOOS(${p.id})" title="${isOos?'Mark in stock':'Mark out of stock'}">${isOos?'✅':'🚫'}</button>
+<button class="action-btn" style="background:${archived?'#e8f5e9':'#eef0f2'};color:${archived?'#2e7d32':'#555'};width:auto;min-width:44px;padding:0 8px;font-size:10px" onclick="toggleArchiveProduct(${p.id})" title="${archived?'Restore product':'Archive / hide product'}">${archived?'Show':'Hide'}</button>
 <button class="action-btn" style="background:#fef2f2" onclick="deleteProduct(${p.id})" title="Delete">🗑️</button>
 </div>
 </div>
@@ -2108,6 +2127,32 @@ async function quickToggleOOS(id){
 }
 
 // ─── Toast notifications ───
+async function toggleArchiveProduct(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  const wasArchived=isArchivedProduct(p);
+  const prev={active:p.active,archived:p.archived,hidden:p.hidden,archived_at:p.archived_at};
+  if(wasArchived){
+    p.active=true;
+    p.archived=false;
+    p.hidden=false;
+    p.archived_at='';
+  }else{
+    p.active=false;
+    p.archived=true;
+    p.hidden=false;
+    p.archived_at=new Date().toISOString();
+  }
+  try{
+    await saveProducts();
+    toast(`${p.name}: ${wasArchived?'restored':'archived and hidden from site'}`,'success',3600);
+    renderProductList();
+    if(typeof syncDashboard==='function')syncDashboard();
+  }catch(e){
+    Object.assign(p,prev);
+    toast('Archive save failed: '+e.message,'error',5000);
+  }
+}
+
 function toast(msg,type='info',ms=2800){
   const host=document.getElementById('toastHost');if(!host)return;
   const el=document.createElement('div');
@@ -2121,8 +2166,9 @@ function toast(msg,type='info',ms=2800){
 // ─── Live dashboard strip ───
 let _lastSyncTime=Date.now();
 function syncDashboard(){
-  const c=document.getElementById('dashCount');if(c)c.textContent=products.length;
-  const oc=document.getElementById('dashOosCount');if(oc)oc.textContent=products.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
+  const visible=activeProducts();
+  const c=document.getElementById('dashCount');if(c)c.textContent=visible.length;
+  const oc=document.getElementById('dashOosCount');if(oc)oc.textContent=visible.filter(p=>String(p.price).toLowerCase().includes('out of stock')).length;
   // Image count gets refreshed via Media tab
   const it=document.getElementById('dashSyncTime');if(it){
     const m=Math.floor((Date.now()-_lastSyncTime)/60000);
