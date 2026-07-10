@@ -709,28 +709,36 @@ async function requestOpenAIImageEdit(env, product, source, background, model, s
   throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
 }
 
-function buildGrassImagePrompt(prompt) {
+function buildGrassImagePrompt(prompt, hasReferences = false) {
   const fallback = [
-    'Simple edit: replace only the background with the provided ESNTLS grass background.',
-    'Keep the product exactly as it is. If a hand, arm, hanger, tag, lace position, or other real foreground detail is already in the source image, keep it unchanged.',
-    'Preserve the original camera angle, perspective, product size, hand position, colours, logos, textures, stitching, text, materials, shadows on the product, and lighting on the foreground.',
-    'Do not zoom in, crop closer, enlarge the item, change the angle, redesign, recolour, rebrand, remove the hand, remove product details, or add new details.',
-    'Keep the subject naturally sized in the frame with comfortable grass visible around it. If extra canvas is needed for the 3:4 output, fill only the background with matching grass.',
-    'Add only a subtle realistic grounding shadow if needed. No harsh halos, fake floating shadows, dramatic lighting, extra objects, text, or watermark.'
+    'BACKGROUND REPLACEMENT ONLY. Image 1 is the source photo and Image 2 is the required grass background.',
+    'Keep every foreground pixel from Image 1 unchanged, including the complete product, hands, arms, hangers, tags, laces, packaging and existing foreground shadows.',
+    'The foreground must stay at exactly the same coordinates, scale, camera angle, perspective, crop, colours, logos, text, materials, textures, stitching and lighting as Image 1.',
+    'Change only the pixels belonging to the old background. Do not redraw, recreate, beautify, restyle, move, resize, rotate, crop, remove or add any foreground detail.',
+    'Use the grass from Image 2 at a natural scale. If the 3:4 canvas needs extension, extend only the grass background.',
+    'Do not add a new shadow unless required to prevent floating; if required, use one very soft contact shadow only. No props, text, watermark or dramatic lighting.'
   ].join(' ');
-  return String(prompt || fallback).trim() || fallback;
+  const referenceLine = hasReferences
+    ? 'Use the additional reference images only to match the finished ESNTLS artificial-grass product-photo look: real phone photo, natural scale, camera distance, soft grounding, and grass texture. Do not copy or add products, boxes, cards, logos, stickers, packaging, hands, props, text, or layout from the reference images.'
+    : '';
+  return [String(prompt || fallback).trim() || fallback, referenceLine].filter(Boolean).join(' ');
 }
 
-async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality) {
+async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality, references = []) {
   const form = new FormData();
   const sourcePart = await openAIImagePart(source, 'product.jpg');
   const backgroundPart = background ? await openAIImagePart(background, 'esntls-background.jpg') : null;
   form.append('model', model);
   form.append('image[]', sourcePart.blob, sourcePart.filename);
   if (backgroundPart) form.append('image[]', backgroundPart.blob, backgroundPart.filename);
-  form.append('prompt', buildGrassImagePrompt(prompt));
+  for (const reference of references.slice(0, 6)) {
+    const referencePart = await openAIImagePart(reference, reference.filename || 'esntls-reference.jpg');
+    form.append('image[]', referencePart.blob, referencePart.filename);
+  }
+  form.append('prompt', buildGrassImagePrompt(prompt, references.length > 0));
   form.append('size', size);
   if (quality) form.append('quality', quality);
+  form.append('input_fidelity', 'high');
   form.append('n', '1');
 
   const response = await fetch('https://api.openai.com/v1/images/edits', {
@@ -774,6 +782,22 @@ async function createGrassPreview(env, formData) {
   };
   const prompt = formData.get('prompt') || '';
   const quality = formData.get('quality') || env.OPENAI_IMAGE_QUALITY || 'medium';
+  const referenceFiles = [
+    ...formData.getAll('reference'),
+    ...formData.getAll('reference[]')
+  ].filter(item => item instanceof Blob).map((file, index) => ({
+    blob: file,
+    type: normalizeOpenAIImageMime(file.type, file.name),
+    filename: file.name || `esntls-reference-${index + 1}.jpg`
+  }));
+  const referenceUrls = [
+    ...formData.getAll('referenceUrl'),
+    ...formData.getAll('referenceUrl[]')
+  ].map(value => String(value || '').trim()).filter(Boolean);
+  const references = [...referenceFiles];
+  for (const referenceUrl of referenceUrls.slice(0, Math.max(0, 6 - references.length))) {
+    references.push(await fetchImageBlob(referenceUrl, 'Reference image'));
+  }
   try {
     const result = await requestOpenAIGrassImageEdit(
       env,
@@ -782,7 +806,8 @@ async function createGrassPreview(env, formData) {
       prompt,
       env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
       env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
-      quality
+      quality,
+      references
     );
     return {
       ok: true,
@@ -799,7 +824,8 @@ async function createGrassPreview(env, formData) {
       prompt,
       env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
       env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
-      quality
+      quality,
+      references
     );
     return {
       ok: true,
