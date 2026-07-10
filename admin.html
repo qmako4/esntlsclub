@@ -940,6 +940,10 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div id="psOriginalPreview" style="display:none;margin-bottom:12px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
 <div id="psOriginalTitle" style="font-size:11px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Original photos</div>
+<div id="psOriginalSelectActions" class="studio-select-actions">
+<button type="button" onclick="psSetAllOriginalsSelected(true)">All</button>
+<button type="button" onclick="psSetAllOriginalsSelected(false)">None</button>
+</div>
 <button type="button" onclick="psClearFiles()" style="border:1px solid var(--border);background:#fff;color:var(--sub);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;font-family:inherit">Clear</button>
 </div>
 <div id="psOriginalGrid" class="studio-grid"></div>
@@ -2995,6 +2999,7 @@ let psState={
   file:null,
   originalDataUrls:[],
   fileDataUrl:null,
+  selectedFileKeys:new Set(),
   resultItems:[],
   resultBlob:null,
   resultDataUrl:null,
@@ -3054,6 +3059,14 @@ function psFileToDataUrl(file){
 }
 function psFileKey(file){
   return [file.name,file.size,file.lastModified,file.type].join('|');
+}
+function psSelectedFileKeySet(){
+  if(!(psState.selectedFileKeys instanceof Set))psState.selectedFileKeys=new Set(psState.selectedFileKeys||[]);
+  return psState.selectedFileKeys;
+}
+function psSelectedOriginalFiles(){
+  const selected=psSelectedFileKeySet();
+  return (psState.files||[]).filter(file=>selected.has(psFileKey(file)));
 }
 function psSetYupooMsg(text,color){
   const msg=document.getElementById('psYupooMsg');
@@ -3132,6 +3145,7 @@ function psClearFiles(){
   psState.file=null;
   psState.originalDataUrls=[];
   psState.fileDataUrl=null;
+  psState.selectedFileKeys=new Set();
   psState.resultItems=[];
   psState.resultBlob=null;
   psState.resultDataUrl=null;
@@ -3145,13 +3159,51 @@ function psRenderOriginals(){
   const preview=document.getElementById('psOriginalPreview');
   const grid=document.getElementById('psOriginalGrid');
   const title=document.getElementById('psOriginalTitle');
+  const selectActions=document.getElementById('psOriginalSelectActions');
   if(!preview||!grid||!title)return;
   const files=psState.files||[];
-  if(!files.length){preview.style.display='none';grid.innerHTML='';return}
-  title.textContent=files.length===1?'Original photo':'Original photos ('+files.length+')';
-  grid.innerHTML=files.map((f,i)=>`<div class="studio-tile"><img src="${psState.originalDataUrls[i]||''}" alt=""><div class="caption">${i+1}. ${psEscapeHtml(f.name||'image')}</div></div>`).join('');
+  if(!files.length){
+    preview.style.display='none';
+    grid.innerHTML='';
+    if(selectActions)selectActions.style.display='none';
+    return
+  }
+  const selected=psSelectedFileKeySet();
+  const validKeys=new Set(files.map(psFileKey));
+  [...selected].forEach(key=>{if(!validKeys.has(key))selected.delete(key)});
+  const selectedCount=files.filter(file=>selected.has(psFileKey(file))).length;
+  title.textContent=files.length===1?('Original photo - '+(selectedCount?'selected':'skipped')):('Original photos - '+selectedCount+'/'+files.length+' selected');
+  grid.innerHTML=files.map((f,i)=>{
+    const key=psFileKey(f);
+    const isSelected=selected.has(key);
+    const name=psEscapeHtml(f.name||'image');
+    return `<div class="studio-tile studio-result-tile${isSelected?' selected':''}" onclick="psToggleOriginalSelected(${i})"><img src="${psState.originalDataUrls[i]||''}" alt=""><button type="button" class="studio-check" onclick="event.stopPropagation();psToggleOriginalSelected(${i})">${isSelected?'Generate':'Skip'}</button><div class="caption">${i+1}. ${name}</div></div>`;
+  }).join('');
+  if(selectActions)selectActions.style.display=files.length>1?'flex':'none';
   preview.style.display='block';
 }
+
+function psToggleOriginalSelected(index){
+  if(psState.isGenerating)return;
+  const file=(psState.files||[])[index];
+  if(!file)return;
+  const selected=psSelectedFileKeySet();
+  const key=psFileKey(file);
+  if(selected.has(key))selected.delete(key);
+  else selected.add(key);
+  psRenderOriginals();
+  psUpdateGenerateState();
+}
+
+function psSetAllOriginalsSelected(selected){
+  if(psState.isGenerating)return;
+  const set=psSelectedFileKeySet();
+  set.clear();
+  if(selected)(psState.files||[]).forEach(file=>set.add(psFileKey(file)));
+  psRenderOriginals();
+  psUpdateGenerateState();
+}
+
 function psRenderResults(){
   const preview=document.getElementById('psResultPreview');
   const grid=document.getElementById('psResultGrid');
@@ -3229,26 +3281,33 @@ async function psHandleFile(files){
     psState.file=psState.files[0]||null;
     psState.originalDataUrls=[...(psState.originalDataUrls||[]).slice(0,existing.length),...newDataUrls];
     psState.fileDataUrl=psState.originalDataUrls[0]||null;
+    const selectedSet=psSelectedFileKeySet();
+    additions.forEach(file=>selectedSet.add(psFileKey(file)));
     psRenderOriginals();
-    if(msg&&existing.length){msg.style.color='var(--g)';msg.textContent='Added '+additions.length+' photo'+(additions.length===1?'':'s')+' - '+psState.files.length+' selected.'}
+    if(msg){
+      const selectedCount=psSelectedOriginalFiles().length;
+      msg.style.color='var(--g)';
+      msg.textContent=(existing.length?'Added '+additions.length+' photo'+(additions.length===1?'':'s')+' - ':'')+selectedCount+'/'+psState.files.length+' selected for generation.';
+    }
   }catch(e){
     if(msg){msg.style.color='#e53935';msg.textContent=e.message}
   }
   psUpdateGenerateState();
 }
 function psUpdateGenerateState(){
-  const fileCount=(psState.files&&psState.files.length)||(psState.file?1:0);
-  const hasFile=!!fileCount;
+  const totalCount=(psState.files&&psState.files.length)||(psState.file?1:0);
+  const selectedCount=psSelectedOriginalFiles().length;
+  const hasFile=!!totalCount;
   const hasBackend=psHasGenerationBackend();
-  const ready=!!(hasFile&&hasBackend);
+  const ready=!!(selectedCount&&hasBackend);
   const btn=document.getElementById('psGenerateBtn');
   const cancelBtn=document.getElementById('psCancelBtn');
   const generating=!!psState.isGenerating;
   if(btn){
     btn.disabled=generating||!ready;
     btn.style.opacity=generating?'.55':(ready?'1':'.5');
-    btn.textContent=generating?'Generating...':(ready?(fileCount>1?'Generate '+fileCount:'Generate'):'Generate');
-    btn.title=generating?'Generation is running':(ready?(psGetSettings().openaiKey?'Ready: using browser OpenAI key':'Ready: using secure Worker key'):(hasFile?'Worker/OpenAI setup needed':'Upload a product photo first'));
+    btn.textContent=generating?'Generating...':(ready?(selectedCount>1?'Generate '+selectedCount:'Generate'):'Generate');
+    btn.title=generating?'Generation is running':(ready?(psGetSettings().openaiKey?'Ready: using browser OpenAI key':'Ready: using secure Worker key'):(hasFile?'Select at least one photo to generate':'Upload a product photo first'));
   }
   if(cancelBtn){
     cancelBtn.style.display=generating?'block':'none';
@@ -3349,9 +3408,9 @@ async function psGenerate(){
     psCancelGeneration();
     return;
   }
-  const files=(psState.files&&psState.files.length)?psState.files:(psState.file?[psState.file]:[]);
+  const files=psSelectedOriginalFiles();
   if(!files.length){
-    msg.style.color='#e53935';msg.textContent='Upload product photos first.';
+    msg.style.color='#e53935';msg.textContent=(psState.files&&psState.files.length)?'Select at least one photo to generate.':'Upload product photos first.';
     psUpdateGenerateState();
     return;
   }
