@@ -738,7 +738,9 @@ async function requestOpenAIGrassImageEdit(env, source, background, prompt, mode
   form.append('prompt', buildGrassImagePrompt(prompt, references.length > 0));
   form.append('size', size);
   if (quality) form.append('quality', quality);
-  form.append('input_fidelity', 'high');
+  if (model === 'gpt-image-1' || model.startsWith('gpt-image-1.5')) {
+    form.append('input_fidelity', 'high');
+  }
   form.append('n', '1');
 
   const response = await fetch('https://api.openai.com/v1/images/edits', {

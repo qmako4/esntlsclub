@@ -1605,7 +1605,7 @@ form.append('image[]',ref,ref.name||('esntls-reference-'+(i+1)+'.jpg'));
 form.append('prompt',prompt);
 form.append('size',size);
 form.append('quality',quality);
-form.append('input_fidelity','high');
+if(model==='gpt-image-1'||model.startsWith('gpt-image-1.5'))form.append('input_fidelity','high');
 form.append('n','1');
 const r=await fetch('https://api.openai.com/v1/images/edits',{
 method:'POST',
