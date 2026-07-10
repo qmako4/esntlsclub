@@ -737,6 +737,13 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <h3>Add Product</h3>
 <label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
+<label class="field"><span>Variation (optional)</span>
+<div style="display:grid;grid-template-columns:1fr;gap:6px">
+<input id="aVariationName" placeholder="Option name, e.g. Colour or Type">
+<input id="aVariationValues" placeholder="Values, e.g. Black, White, Tracksuit, Hoodie">
+</div>
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Separate values with commas. These become Shopify product options when generated.</span>
+</label>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
 <input id="aLink" placeholder="Paste checkout link or generate Shopify after saving" style="flex:1 1 100%;min-width:0">
@@ -1343,6 +1350,13 @@ if(tab==='media'){loadMedia().then(renderMedia)}
 
 // CATEGORY / DELIVERY PILLS
 function escapeAdminHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function parseAdminList(value){return String(value||'').split(',').map(v=>v.trim()).filter(Boolean)}
+function productVariationValues(p){
+const raw=p&&p.variationValues!==undefined?p.variationValues:(p&&p.variations!==undefined?p.variations:'');
+return Array.isArray(raw)?raw.map(String).map(v=>v.trim()).filter(Boolean):parseAdminList(raw)
+}
+function productVariationName(p){return (p&&(p.variationName||p.variantOptionName||p.optionName))||''}
+function productVariationText(p){return productVariationValues(p).join(', ')}
 function initCatPills(){
 const cats=document.getElementById('addCats');
 if(cats)cats.innerHTML=CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${selectedCats.includes(c)?' on':''}" onclick="toggleAddCat(this)" data-cat="${safe}">${safe}</div>`}).join('');
@@ -1818,6 +1832,8 @@ async function addProduct(){
 const n=document.getElementById('aName').value.trim();
 const price=document.getElementById('aPrice').value.trim();
 const link=document.getElementById('aLink').value.trim();
+const variationName=document.getElementById('aVariationName').value.trim();
+const variationValues=parseAdminList(document.getElementById('aVariationValues').value);
 const msg=document.getElementById('addMsg');
 const cat=selectedCats.join(',')||'Footwear';
 const brand=inferBrand(selectedCats);
@@ -1851,6 +1867,8 @@ category:cat,
 brand,
 price,
 link,
+variationName:variationValues.length?(variationName||'Style'):'',
+variationValues,
 delivery:selectedDelivery.join(','),
 images:imageUrls,
 created_at:createdAt,
@@ -1865,7 +1883,7 @@ await saveProducts();
 msg.style.color='var(--g)';msg.textContent='Product added!';
 if(typeof toast==='function')toast(`Added "${newProduct.name}"`,'success');
 if(typeof syncDashboard==='function')syncDashboard();
-['aName','aPrice','aLink','aNewCategory'].forEach(id=>document.getElementById(id).value='');
+['aName','aPrice','aLink','aVariationName','aVariationValues','aNewCategory'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
@@ -2090,6 +2108,7 @@ list.innerHTML=filtered.map(p=>{
 <div class="meta" style="color:var(--g);font-weight:700">${p.price}</div>
 <div class="meta-pills">
 ${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdminHTML(c)}</span>`).join('')}
+${productVariationValues(p).length?`<span class="meta-pill">${productVariationValues(p).length} variants</span>`:''}
 <span class="meta-pill">${photos} 📷</span>
 </div>
 </div>
@@ -2191,9 +2210,18 @@ const p=products.find(x=>x.id===id);
 if(!p)return;
 const pCats=effectiveCategories(p);
 const pDel=(p.delivery||'').split(',').map(d=>d.trim());
+const pVariationName=productVariationName(p);
+const pVariationText=productVariationText(p);
 el.innerHTML=`
 <label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
 <label class="field"><span>Price</span><input id="ep_${id}" value="${p.price}"></label>
+<label class="field"><span>Variation (optional)</span>
+<div style="display:grid;grid-template-columns:1fr;gap:6px">
+<input id="evn_${id}" value="${escapeAdminHTML(pVariationName)}" placeholder="Option name, e.g. Colour or Type">
+<input id="evv_${id}" value="${escapeAdminHTML(pVariationText)}" placeholder="Values, e.g. Black, White, Tracksuit, Hoodie">
+</div>
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">These become Shopify product variations when you generate the blank product.</span>
+</label>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
 <div class="cats" id="ec_${id}">
@@ -2219,6 +2247,8 @@ async function saveEdit(id){
 const name=document.getElementById('en_'+id).value.trim();
 const price=document.getElementById('ep_'+id).value.trim();
 const link=document.getElementById('el_'+id).value.trim();
+const variationName=document.getElementById('evn_'+id)?.value.trim()||'';
+const variationValues=parseAdminList(document.getElementById('evv_'+id)?.value||'');
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
 const brand=inferBrand(cats);
@@ -2227,11 +2257,11 @@ const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
-const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues};
 const oldNumericPrice=numericPriceAmount(orig.price);
 const newNumericPrice=numericPriceAmount(price);
 const priceChanged=oldNumericPrice!==newNumericPrice;
-Object.assign(p,{name,price,category:cat,brand,link,delivery});
+Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues});
 try{
 await saveProducts();
 let toastText=`Updated "${name}"`;
@@ -2262,9 +2292,11 @@ const name=document.getElementById('en_'+id)?.value.trim()||'';
 const price=document.getElementById('ep_'+id)?.value.trim()||'';
 const link=document.getElementById('el_'+id)?.value.trim()||'';
 const shopifyTitleOverride=document.getElementById('st_'+id)?.value.trim()||'';
+const variationName=document.getElementById('evn_'+id)?.value.trim()||'';
+const variationValues=parseAdminList(document.getElementById('evv_'+id)?.value||'');
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
-return {name,price,link,shopifyTitleOverride,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
+return {name,price,link,shopifyTitleOverride,variationName:variationValues.length?(variationName||'Style'):'',variationValues,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
 }
 
 async function generateShopifyPlaceholder(id){
@@ -2281,7 +2313,7 @@ const values=collectEditValues(id);
 if(!values.name){msg.style.color='#e53935';msg.textContent='Add a product name first.';return}
 if(!values.price){msg.style.color='#e53935';msg.textContent='Add a price first.';return}
 if(values.link&&!confirm('This product already has a Buy Link. Replace it with a Shopify link?'))return;
-const original={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery};
+const original={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues};
 Object.assign(p,values);
 let didSave=false;
 try{

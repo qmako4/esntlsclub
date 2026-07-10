@@ -212,6 +212,29 @@ function splitList(value) {
   return String(value).split(',').map(item => item.trim()).filter(Boolean);
 }
 
+function uniqueList(values) {
+  const out = [];
+  const seen = new Set();
+  for (const value of values || []) {
+    const clean = String(value || '').replace(/\s+/g, ' ').trim();
+    const key = clean.toLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key);
+    out.push(clean);
+  }
+  return out;
+}
+
+function splitOptionValues(value) {
+  if (Array.isArray(value) || typeof value === 'string') return uniqueList(splitList(value));
+  return [];
+}
+
+function cleanOptionName(value, fallback = 'Style') {
+  const name = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  return name || fallback;
+}
+
 function priceAmount(value) {
   const cleaned = String(value || '').replace(/[£$,\s]/g, '');
   const match = cleaned.match(/\d+(?:\.\d+)?/);
@@ -222,6 +245,10 @@ function normalizeStoredProduct(raw) {
   const title = raw.name || raw.title || raw.productName || '';
   const categories = splitList(raw.category || raw.categories);
   const image = raw.image || raw.imageUrl || raw.featuredImage || raw.thumbnail || raw.images?.[0]?.url || raw.images?.[0] || '';
+  const variationValues = splitOptionValues(raw.variationValues ?? raw.variations ?? raw.variantValues ?? raw.colours ?? raw.colors);
+  const variationName = variationValues.length
+    ? cleanOptionName(raw.variationName || raw.variantOptionName || raw.optionName || raw.optionLabel, 'Style')
+    : '';
   return {
     id: raw.id || raw.productId || raw.slug || slugify(title),
     title,
@@ -229,6 +256,8 @@ function normalizeStoredProduct(raw) {
     link: raw.link || '',
     image,
     sizes: splitList(raw.sizes || raw.size || raw.availableSizes),
+    variationName,
+    variationValues,
     categories,
     active: raw.active !== false,
     raw
@@ -248,6 +277,50 @@ function inferSizes(product, env) {
     return splitList(env.DEFAULT_ACCESSORY_SIZES || 'One Size');
   }
   return splitList(env.DEFAULT_SIZES || 'One Size');
+}
+
+function buildProductVariantPlan(product, env) {
+  const sizes = uniqueList(inferSizes(product, env));
+  const variationValues = splitOptionValues(product.variationValues);
+  let variationName = variationValues.length ? cleanOptionName(product.variationName, 'Style') : '';
+  if (variationName.toLowerCase() === 'size') variationName = 'Style';
+
+  const productOptions = [];
+  if (sizes.length) {
+    productOptions.push({ name: 'Size', position: 1, values: sizes.map(size => ({ name: size })) });
+  }
+  if (variationValues.length) {
+    productOptions.push({
+      name: variationName,
+      position: productOptions.length + 1,
+      values: variationValues.map(value => ({ name: value }))
+    });
+  }
+
+  const sizeList = sizes.length ? sizes : [null];
+  const variationList = variationValues.length ? variationValues : [null];
+  const variants = [];
+  for (const size of sizeList) {
+    for (const variation of variationList) {
+      const optionValues = [];
+      const skuParts = ['ESNTLS', slugify(product.id)];
+      if (size) {
+        optionValues.push({ optionName: 'Size', name: size });
+        skuParts.push(slugify(size).toUpperCase());
+      }
+      if (variation) {
+        optionValues.push({ optionName: variationName, name: variation });
+        skuParts.push(slugify(variation).toUpperCase());
+      }
+      variants.push({
+        optionValues,
+        price: product.price,
+        sku: skuParts.join('-')
+      });
+    }
+  }
+
+  return { sizes, variationName, variationValues, productOptions, variants };
 }
 
 function sourceTags(product) {
@@ -854,7 +927,7 @@ async function publishProductToOnlineStore(env, productId) {
 }
 
 async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle) {
-  const sizes = inferSizes(product, env);
+  const variantPlan = buildProductVariantPlan(product, env);
   const productSet = await shopifyGraphql(env, PRODUCT_SET_MUTATION, {
     synchronous: true,
     input: {
@@ -864,12 +937,8 @@ async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle
       productType: env.SHOPIFY_PRODUCT_TYPE || 'Placeholder',
       status: env.SHOPIFY_PRODUCT_STATUS || 'ACTIVE',
       tags: sourceTags(product),
-      productOptions: [{ name: 'Size', position: 1, values: sizes.map(size => ({ name: size })) }],
-      variants: sizes.map(size => ({
-        optionValues: [{ optionName: 'Size', name: size }],
-        price: product.price,
-        sku: `ESNTLS-${slugify(product.id)}-${slugify(size).toUpperCase()}`
-      }))
+      productOptions: variantPlan.productOptions,
+      variants: variantPlan.variants
     }
   });
   const errors = productSet.productSet.userErrors;
@@ -884,7 +953,10 @@ async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle
   await publishProductToOnlineStore(env, created.id);
   return {
     ...created,
-    sizes,
+    sizes: variantPlan.sizes,
+    variationName: variantPlan.variationName,
+    variationValues: variantPlan.variationValues,
+    variantCount: variantPlan.variants.length,
     featuredImageUrl: mediaUpdate.productUpdate.product.featuredMedia?.preview?.image?.url || null,
     shopifyUrl: storefrontUrl(env, created.handle)
   };
@@ -894,8 +966,23 @@ async function createWixBackupProduct(env, product, visibleTitle) {
   if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
     return { status: 'skipped', reason: 'WIX_API_TOKEN or WIX_SITE_ID is not configured' };
   }
-  const sizes = inferSizes(product, env);
+  const variantPlan = buildProductVariantPlan(product, env);
   const variantPrice = { actualPrice: { amount: product.price } };
+  const options = [];
+  if (variantPlan.sizes.length) {
+    options.push({
+      name: 'Size',
+      optionRenderType: 'TEXT_CHOICES',
+      choicesSettings: { choices: variantPlan.sizes.map(size => ({ choiceType: 'CHOICE_TEXT', name: size })) }
+    });
+  }
+  if (variantPlan.variationValues.length) {
+    options.push({
+      name: variantPlan.variationName,
+      optionRenderType: 'TEXT_CHOICES',
+      choicesSettings: { choices: variantPlan.variationValues.map(value => ({ choiceType: 'CHOICE_TEXT', name: value })) }
+    });
+  }
   const response = await fetch('https://www.wixapis.com/stores/v3/products', {
     method: 'POST',
     headers: {
@@ -909,15 +996,13 @@ async function createWixBackupProduct(env, product, visibleTitle) {
         visible: true,
         productType: 'PHYSICAL',
         physicalProperties: {},
-        options: [{
-          name: 'Size',
-          optionRenderType: 'TEXT_CHOICES',
-          choicesSettings: { choices: sizes.map(size => ({ choiceType: 'CHOICE_TEXT', name: size })) }
-        }],
+        options,
         variantsInfo: {
-          variants: sizes.map(size => ({
+          variants: variantPlan.variants.map(variant => ({
             visible: true,
-            choices: [{ optionChoiceNames: { optionName: 'Size', choiceName: size, renderType: 'TEXT_CHOICES' } }],
+            choices: variant.optionValues.map(optionValue => ({
+              optionChoiceNames: { optionName: optionValue.optionName, choiceName: optionValue.name, renderType: 'TEXT_CHOICES' }
+            })),
             price: variantPrice,
             physicalProperties: {}
           }))
@@ -1176,6 +1261,9 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     shopifyUrl,
     uploadedFilename,
     sizes: shopifyProduct.sizes || inferSizes(product, env),
+    variationName: shopifyProduct.variationName || product.variationName || '',
+    variationValues: shopifyProduct.variationValues || product.variationValues || [],
+    variantCount: shopifyProduct.variantCount || 0,
     generatedAt: new Date().toISOString()
   };
   if (wixBackup) rawProduct.wixBackupPlaceholder = wixBackup;
