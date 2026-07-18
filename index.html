@@ -596,7 +596,7 @@ const stockBadge=oos
   :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">🔥 Only ${sc} left</div>`
   :isBestSeller?`<div style="position:absolute;top:8px;left:8px;background:#111;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">🔥 Bestseller</div>`:'';
  const sourceId=productSourceId(p);
- return `<a class="pc" href="#" onclick="event.preventDefault();legacyProductModal('${jsString(sourceId)}');return false" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
+ return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
  <div class="pc-media">
  <img src="${p.img}" alt="${escapeHTML(p.n)}" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
  ${stockBadge}
@@ -1517,7 +1517,7 @@ setTimeout(()=>{bindPickerEvents();updateBuyNowState()},0);
 
 function openProduct(id){
   const p=allProducts().find(x=>String(x.id)===String(id)||String(productSourceId(x))===String(id));
-  if(p)legacyProductModal(productSourceId(p));
+  if(p)window.location.href=productPageHref(p);
 }
 
 function updateQuickGallery(index){
