@@ -33,7 +33,7 @@ img{display:block;max-width:100%}
 .gallery-track::-webkit-scrollbar{display:none}
 .gallery-slide{appearance:none;background:#f4f4f4;border:0;cursor:zoom-in;flex:0 0 100%;padding:0;scroll-snap-align:start}
 .gallery-slide img{aspect-ratio:4/5;height:100%;object-fit:cover;width:100%}
-.gallery-arrow{align-items:center;background:rgba(255,255,255,.92);border:0;border-radius:999px;box-shadow:0 3px 12px rgba(0,0,0,.16);color:#111;cursor:pointer;display:none;font-size:20px;height:42px;justify-content:center;position:absolute;top:50%;transform:translateY(-50%);width:42px;z-index:1}
+.gallery-arrow{align-items:center;background:rgba(255,255,255,.92);border:0;border-radius:999px;box-shadow:0 3px 12px rgba(0,0,0,.16);color:#111;cursor:pointer;display:none;font-size:20px;height:42px;justify-content:center;position:absolute;top:50%;touch-action:manipulation;transform:translateY(-50%);width:42px;z-index:3}
 .gallery-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.05)}
 .gallery-arrow.previous{left:12px}
 .gallery-arrow.next{right:12px}
@@ -236,10 +236,10 @@ function renderProduct(){
     +'<div class="gallery-stage">'
     +'<div id="galleryTrack" class="gallery-track" aria-label="Swipe through product images">'
     +gallery.map(function(image,index){
-      return '<button class="gallery-slide" type="button" onclick="openFullscreen()" aria-label="Open image '+(index+1)+' of '+gallery.length+' fullscreen"><img src="'+escapeHTML(image)+'" alt="'+escapeHTML(product.name)+' - image '+(index+1)+'"></button>';
+      return '<button class="gallery-slide" type="button" onclick="openProductGalleryImage(event)" aria-label="View image '+(index+1)+'"><img src="'+escapeHTML(image)+'" alt="'+escapeHTML(product.name)+' - image '+(index+1)+'"></button>';
     }).join('')
     +'</div>'
-    +(gallery.length>1?'<button class="gallery-arrow previous" type="button" onclick="scrollGallery(-1)" aria-label="Previous image">&larr;</button><button class="gallery-arrow next" type="button" onclick="scrollGallery(1)" aria-label="Next image">&rarr;</button>':'')
+    +(gallery.length>1?'<button class="gallery-arrow previous" type="button" onclick="return advanceProductGallery(event,-1)" aria-label="Previous image">&larr;</button><button class="gallery-arrow next" type="button" onclick="return advanceProductGallery(event,1)" aria-label="Next image">&rarr;</button>':'')
     +(gallery.length>1?'<span class="image-count" id="imageCount">'+(activeImage+1)+' / '+gallery.length+'</span>':'')
     +'</div>'
     +(gallery.length>1?'<div class="thumbs" aria-label="Choose product image">'+gallery.map(function(image,index){
@@ -299,6 +299,18 @@ function selectImage(index){
 
 function scrollGallery(direction){
   selectImage(activeImage+direction);
+}
+
+function advanceProductGallery(event,direction){
+  if(event){event.preventDefault();event.stopPropagation();}
+  scrollGallery(direction);
+  return false;
+}
+
+function openProductGalleryImage(event){
+  if(event&&event.defaultPrevented)return;
+  if(window.matchMedia('(max-width:819px)').matches)return;
+  openFullscreen();
 }
 
 function openFullscreen(){
