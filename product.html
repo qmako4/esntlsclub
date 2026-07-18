@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Product | ESNTLS CLUB</title>
+<meta name="description" content="Shop premium streetwear from ESNTLS CLUB.">
+<meta name="theme-color" content="#00C853">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#fff;scroll-behavior:smooth}
+body{background:#fff;color:#111;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+img{display:block;max-width:100%}
+.announcement{background:#00c853;color:#fff;font-size:10px;font-weight:700;letter-spacing:1.4px;padding:9px 16px;text-align:center;text-transform:uppercase}
+.site-nav{align-items:center;border-bottom:1px solid #ececec;display:flex;justify-content:space-between;min-height:64px;padding:0 18px}
+.wordmark{font-family:'Bebas Neue',sans-serif;font-size:25px;letter-spacing:1.5px;line-height:1}
+.wordmark span{color:#00c853}
+.nav-links{display:flex;gap:18px}
+.nav-links a{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.nav-links a:hover{color:#00a844}
+.product-shell{margin:0 auto;max-width:1480px;padding:20px 14px 52px}
+.back-link{align-items:center;color:#666;display:inline-flex;font-size:12px;font-weight:700;gap:7px;margin:0 0 18px;text-transform:uppercase}
+.back-link:hover{color:#111}
+.product-layout{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+.gallery{min-width:0}
+.main-image{background:#f4f4f4;cursor:zoom-in;overflow:hidden;position:relative}
+.main-image img{aspect-ratio:4/5;height:100%;object-fit:cover;width:100%}
+.image-count{background:rgba(17,17,17,.72);bottom:12px;color:#fff;font-size:11px;font-weight:700;padding:6px 9px;position:absolute;right:12px}
+.thumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.thumbs::-webkit-scrollbar{display:none}
+.thumb{background:#f4f4f4;border:2px solid transparent;cursor:pointer;flex:0 0 66px;height:82px;overflow:hidden;padding:0}
+.thumb.active{border-color:#111}
+.thumb img{height:100%;object-fit:cover;width:100%}
+.product-info{align-self:start;min-width:0}
+.eyebrow{color:#00a844;font-size:10px;font-weight:800;letter-spacing:1.8px;margin-bottom:10px;text-transform:uppercase}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weight:400;letter-spacing:1px;line-height:.98;margin-bottom:14px;overflow-wrap:anywhere}
+.prices{align-items:baseline;display:flex;gap:10px;margin-bottom:20px}
+.price{font-size:21px;font-weight:700}
+.was{color:#929292;font-size:14px;text-decoration:line-through}
+.stock{background:#effaf2;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:18px;padding:7px 9px;text-transform:uppercase}
+.stock.sold{background:#f4f4f4;color:#777}
+.product-copy{border-top:1px solid #ebebeb;color:#595959;font-size:13px;line-height:1.65;padding:18px 0}
+.facts{border-top:1px solid #ebebeb;display:grid;gap:0;margin-bottom:18px}
+.fact{align-items:center;border-bottom:1px solid #ebebeb;display:flex;gap:12px;justify-content:space-between;padding:13px 0}
+.fact-label{color:#777;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.fact-value{color:#111;font-size:12px;font-weight:700;text-align:right}
+.buy-button{align-items:center;background:#00c853;border:0;color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;min-height:54px;padding:14px;width:100%}
+.buy-button:hover{background:#00ad46}
+.buy-button:active{transform:scale(.99)}
+.sold-button{background:#111;text-decoration:none}
+.checkout-note{color:#555;font-size:12px;font-weight:700;line-height:1.45;padding:11px 2px 0;text-align:center}
+.support{border-bottom:1px solid #ebebeb;color:#111;display:block;font-size:12px;font-weight:700;padding:13px 0;text-align:center}
+.support:hover{color:#00a844}
+.related{border-top:1px solid #ebebeb;margin-top:58px;padding-top:26px}
+.related-head{align-items:end;display:flex;justify-content:space-between;margin-bottom:16px}
+.related h2{font-family:'Bebas Neue',sans-serif;font-size:30px;font-weight:400;letter-spacing:1px}
+.related-head a{font-size:11px;font-weight:700;text-transform:uppercase}
+.related-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.related-item{display:block;min-width:0}
+.related-item img{aspect-ratio:4/5;background:#f4f4f4;object-fit:cover;width:100%}
+.related-meta{display:flex;gap:8px;justify-content:space-between;padding:8px 1px}
+.related-name{font-size:11px;font-weight:700;line-height:1.35}
+.related-price{font-size:11px;font-weight:700;white-space:nowrap}
+.state{align-items:center;display:flex;justify-content:center;min-height:50vh;padding:32px;text-align:center}
+.state>div{max-width:100%}
+.state h1{font-size:clamp(26px,8vw,34px);margin-bottom:10px}
+.state p{color:#666;font-size:13px;margin-bottom:18px}
+.state a{background:#111;color:#fff;display:inline-flex;font-size:12px;font-weight:700;padding:13px 18px;text-transform:uppercase}
+.confirm{align-items:center;background:rgba(0,0,0,.5);display:flex;inset:0;justify-content:center;opacity:0;padding:16px;pointer-events:none;position:fixed;transition:opacity .2s;z-index:20}
+.confirm.open{opacity:1;pointer-events:auto}
+.confirm-box{background:#fff;max-width:430px;padding:24px;width:100%}
+.confirm-box h2{font-family:'Bebas Neue',sans-serif;font-size:31px;font-weight:400;letter-spacing:.7px;line-height:1;margin:0 0 15px}
+.confirm-box p{color:#555;font-size:13px;line-height:1.55;margin-bottom:20px}
+.confirm-actions{display:grid;gap:9px}
+.confirm-actions button{border:0;cursor:pointer;font-size:13px;font-weight:800;min-height:48px}
+.confirm-go{background:#00c853;color:#fff}
+.confirm-back{background:#f2f2f2;color:#111}
+.fullscreen{align-items:center;background:rgba(0,0,0,.96);display:none;inset:0;justify-content:center;padding:18px;position:fixed;z-index:30}
+.fullscreen.open{display:flex}
+.fullscreen img{max-height:100%;max-width:100%;object-fit:contain}
+.fullscreen button{background:rgba(255,255,255,.14);border:0;color:#fff;cursor:pointer;font-size:22px;height:44px;position:absolute;right:16px;top:16px;width:44px}
+@media(min-width:820px){
+  .site-nav{padding:0 28px}
+  .product-shell{padding:28px 28px 70px}
+  .product-layout{gap:clamp(32px,5vw,78px);grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr)}
+  .product-info{position:sticky;top:24px}
+  .related-grid{gap:12px;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .thumb{flex-basis:78px;height:98px}
+}
+</style>
+</head>
+<body>
+<div class="announcement">Free UK shipping on all orders</div>
+<header class="site-nav">
+  <a class="wordmark" href="./">ESNTLS <span>CLUB</span></a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="./">Shop</a>
+    <a href="./#stock">Next day</a>
+  </nav>
+</header>
+<main id="productApp" class="state" aria-live="polite"><p>Loading product...</p></main>
+<div id="checkoutConfirm" class="confirm" aria-hidden="true"></div>
+<div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
+<script>
+const R2_BASE='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const SHOPIFY_CHECKOUT_BASE='https://nr00an-yh.myshopify.com/products/';
+const requestedId=new URLSearchParams(window.location.search).get('id');
+let product=null;
+let products=[];
+let activeImage=0;
+
+function escapeHTML(value){
+  return String(value==null?'':value).replace(/[&<>"']/g,function(char){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+  });
+}
+
+function productId(item){
+  return String(item&&item.dbId!=null?item.dbId:(item&&item.id||'')).replace(/^r2_/,'');
+}
+
+function productHref(item){
+  return 'product.html?id='+encodeURIComponent(productId(item));
+}
+
+function normaliseProduct(item){
+  const images=Array.isArray(item.images)?item.images.filter(Boolean):(Array.isArray(item.imgs)?item.imgs.filter(Boolean):[]);
+  const first=images[0]||item.image||item.img||'';
+  if(!images.length&&first)images.push(first);
+  return {
+    ...item,
+    id:productId(item),
+    name:item.name||item.n||'ESNTLS Item',
+    images,
+    image:first,
+    category:item.category||item.cat||'',
+    brand:item.brand||'ESNTLS Club',
+    price:item.price||'',
+    originalPrice:item.originalPrice||'',
+    delivery:item.delivery||'',
+    active:item.active!==false&&item.archived!==true&&item.hidden!==true
+  };
+}
+
+function isShopifyLink(url){
+  return /^https?:\/\/[^/]*myshopify\.com\/products\//i.test(String(url||''));
+}
+
+function checkoutLink(item){
+  const saved=item.link||'';
+  const shopify=item.shopifyLink||(isShopifyLink(saved)?saved:'')||SHOPIFY_CHECKOUT_BASE+'blank-item-'+String(productId(item)).padStart(3,'0');
+  return shopify||item.wixLink||saved;
+}
+
+async function loadProducts(){
+  const sources=[R2_BASE+'products.json?t='+Date.now(),'products.json?t='+Date.now()];
+  const catalogue=new Map();
+  for(const source of sources){
+    try{
+      const response=await fetch(source,{cache:'no-store'});
+      if(!response.ok)continue;
+      const data=await response.json();
+      if(Array.isArray(data)){
+        data.map(normaliseProduct).filter(function(item){return item.active;}).forEach(function(item){
+          if(!catalogue.has(item.id))catalogue.set(item.id,item);
+        });
+      }
+    }catch(error){
+      console.warn('Could not load products from',source,error);
+    }
+  }
+  return Array.from(catalogue.values());
+}
+
+function deliveryLabel(item){
+  const values=String(item.delivery||'').split(',').map(function(value){return value.trim();}).filter(Boolean);
+  return values.length?values.join(' / '):'UK delivery available';
+}
+
+function categoryLabel(item){
+  const values=String(item.category||'').split(',').map(function(value){return value.trim();}).filter(Boolean);
+  if(item.brand&&!values.includes(item.brand))values.push(item.brand);
+  return values.join(' / ');
+}
+
+function displayPrice(value){
+  const price=String(value==null?'':value);
+  if(!price||price==='Out of stock'||/[£$]/.test(price))return price;
+  return '£'+price;
+}
+
+function productCopy(item){
+  const type=String(item.category||'').split(',')[0]||'premium streetwear';
+  return 'A curated '+type.toLowerCase()+' piece from the ESNTLS CLUB collection. Review the gallery, then continue securely to checkout.';
+}
+
+function renderError(){
+  document.title='Product unavailable | ESNTLS CLUB';
+  document.getElementById('productApp').innerHTML='<div><h1>Product unavailable</h1><p>This item may no longer be live.</p><a href="./">Back to shop</a></div>';
+}
+
+function renderProduct(){
+  if(!product){renderError();return;}
+  document.title=product.name+' | ESNTLS CLUB';
+  const gallery=product.images;
+  const sold=String(product.price).toLowerCase()==='out of stock';
+  const category=categoryLabel(product);
+  const related=products.filter(function(item){
+    return item.id!==product.id&&(item.brand===product.brand||String(item.category).split(',')[0]===String(product.category).split(',')[0]);
+  }).slice(0,4);
+  const app=document.getElementById('productApp');
+  app.className='product-shell';
+  app.innerHTML=''
+    +'<a class="back-link" href="./">&larr; Back to shop</a>'
+    +'<div class="product-layout">'
+    +'<section class="gallery" aria-label="Product images">'
+    +'<button class="main-image" type="button" onclick="openFullscreen()" aria-label="View product image fullscreen">'
+    +'<img id="mainImage" src="'+escapeHTML(gallery[activeImage]||product.image)+'" alt="'+escapeHTML(product.name)+'">'
+    +(gallery.length>1?'<span class="image-count" id="imageCount">'+(activeImage+1)+' / '+gallery.length+'</span>':'')
+    +'</button>'
+    +(gallery.length>1?'<div class="thumbs" aria-label="Choose product image">'+gallery.map(function(image,index){
+      return '<button class="thumb'+(index===activeImage?' active':'')+'" type="button" data-image-index="'+index+'" onclick="selectImage('+index+')"><img src="'+escapeHTML(image)+'" alt="View '+(index+1)+' of '+escapeHTML(product.name)+'"></button>';
+    }).join('')+'</div>':'')
+    +'</section>'
+    +'<aside class="product-info">'
+    +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
+    +'<h1>'+escapeHTML(product.name)+'</h1>'
+    +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
+    +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
+    +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
+    +'<div class="facts">'
+    +'<div class="fact"><span class="fact-label">Delivery</span><span class="fact-value">'+escapeHTML(deliveryLabel(product))+'</span></div>'
+    +'<div class="fact"><span class="fact-label">Shipping</span><span class="fact-value">Free UK shipping</span></div>'
+    +'</div>'
+    +(sold
+      ?'<a class="buy-button sold-button" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">DM when back in stock</a>'
+      :'<button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+    +'<a class="support" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">Questions? DM us on Instagram</a>'
+    +'</aside></div>'
+    +(related.length?'<section class="related"><div class="related-head"><h2>You may also like</h2><a href="./">Shop all</a></div><div class="related-grid">'+related.map(function(item){
+      return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(displayPrice(item.price))+'</span></div></a>';
+    }).join('')+'</div></section>':'');
+}
+
+function selectImage(index){
+  activeImage=index;
+  const image=product.images[index];
+  const main=document.getElementById('mainImage');
+  if(main)main.src=image;
+  document.querySelectorAll('.thumb').forEach(function(button){button.classList.toggle('active',Number(button.dataset.imageIndex)===index);});
+  const count=document.getElementById('imageCount');
+  if(count)count.textContent=(index+1)+' / '+product.images.length;
+}
+
+function openFullscreen(){
+  const dialog=document.getElementById('fullscreen');
+  dialog.innerHTML='<button type="button" onclick="closeFullscreen()" aria-label="Close image">x</button><img src="'+escapeHTML(product.images[activeImage]||product.image)+'" alt="'+escapeHTML(product.name)+'">';
+  dialog.classList.add('open');
+  dialog.setAttribute('aria-hidden','false');
+}
+
+function closeFullscreen(){
+  const dialog=document.getElementById('fullscreen');
+  dialog.classList.remove('open');
+  dialog.setAttribute('aria-hidden','true');
+}
+
+function openCheckoutConfirm(){
+  const dialog=document.getElementById('checkoutConfirm');
+  dialog.innerHTML='<div class="confirm-box" role="dialog" aria-modal="true" aria-label="Checkout confirmation">'
+    +'<h2>Blank item = original item</h2>'
+    +'<p>Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
+    +'<div class="confirm-actions"><button class="confirm-go" type="button" onclick="continueToCheckout()">Open secure checkout</button><button class="confirm-back" type="button" onclick="closeCheckoutConfirm()">Back to item</button></div>'
+    +'</div>';
+  dialog.classList.add('open');
+  dialog.setAttribute('aria-hidden','false');
+}
+
+function closeCheckoutConfirm(){
+  const dialog=document.getElementById('checkoutConfirm');
+  dialog.classList.remove('open');
+  dialog.setAttribute('aria-hidden','true');
+}
+
+function continueToCheckout(){
+  const url=checkoutLink(product);
+  if(!url)return;
+  const windowRef=window.open(url,'_blank','noopener,noreferrer');
+  if(windowRef)windowRef.opener=null;
+  else window.location.href=url;
+  closeCheckoutConfirm();
+}
+
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape'){closeCheckoutConfirm();closeFullscreen();}
+});
+
+(async function(){
+  if(!requestedId){renderError();return;}
+  products=await loadProducts();
+  product=products.find(function(item){return String(item.id)===String(requestedId);})||null;
+  renderProduct();
+})();
+</script>
+</body>
+</html>

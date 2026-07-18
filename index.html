@@ -24,17 +24,23 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 ::selection{background:#00C853;color:#fff}
 
 /* ═══ PRODUCT GRID — uniform cards ═══ */
-.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:0;contain:layout style}
-@media(min-width:640px){.g2{grid-template-columns:repeat(3,1fr);gap:6px}}
-@media(min-width:1024px){.g2{grid-template-columns:repeat(4,1fr);gap:6px}}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0;contain:layout style}
+@media(min-width:640px){.g2{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
+@media(min-width:1100px){.g2{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}
 
 /* ═══ CARDS ═══ */
-.pc{background:#000;border-radius:6px;overflow:hidden;border:none;transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s ease;cursor:pointer;position:relative;opacity:0;transform:translateY(30px) scale(.97);contain:layout style paint;will-change:transform,opacity}
-.pc.vis{opacity:1;transform:translateY(0) scale(1)}
-.pc:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.2)}
-.pc:active{transform:scale(.98);transition:.1s}
-.pc img{transition:transform .4s cubic-bezier(.22,1,.36,1)}
-.pc:hover img{transform:scale(1.08)}
+.pc{display:block;min-width:0;color:#111;cursor:pointer;position:relative;opacity:0;transform:translateY(18px);transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .35s ease;contain:layout style paint;will-change:transform,opacity}
+.pc.vis{opacity:1;transform:translateY(0)}
+.pc:hover{transform:translateY(-3px)}
+.pc:active{transform:scale(.985);transition:.1s}
+.pc-media{position:relative;overflow:hidden;background:#f4f4f4;aspect-ratio:4/5}
+.pc img{width:100%;height:100%;object-fit:cover;transition:transform .45s cubic-bezier(.22,1,.36,1)}
+.pc:hover img{transform:scale(1.025)}
+.pc-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:10px 2px 2px}
+.pc-name{font-size:12px;font-weight:700;line-height:1.35;letter-spacing:.1px;min-width:0}
+.pc-price{font-size:12px;font-weight:700;color:#111;white-space:nowrap;text-align:right}
+.pc-original-price{display:block;font-size:10px;color:#969696;font-weight:500;text-decoration:line-through;margin-bottom:1px}
+@media(min-width:768px){.pc-name,.pc-price{font-size:13px}}
 
 /* ═══ SCROLLING ROWS ═══ */
 .hscroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -571,7 +577,6 @@ let currentView="home";
   ╚═══════════════════════════╝*/
 function card(p,i){
 const oos=p.price==='Out of stock';
-const pid=typeof p.id==='string'?"'"+p.id+"'":p.id;
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
 const sc=oos?null:getProductStockCount(p);
 const lowStock=sc!==null&&sc>0&&sc<=4;
@@ -581,23 +586,33 @@ const stockBadge=oos
   ?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">Sold Out</div>`
   :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">🔥 Only ${sc} left</div>`
   :isBestSeller?`<div style="position:absolute;top:8px;left:8px;background:#111;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">🔥 Bestseller</div>`:'';
-return `<div class="pc" onclick="openProduct(${pid})" ontouchstart="preloadProduct(${pid})" onmouseenter="preloadProduct(${pid})" data-delay="${i*.04}">
-<div style="position:relative;overflow:hidden;border-radius:6px">
-<div style="padding-top:120%;background:#1a1a1a"></div>
-<img src="${p.img}" alt="${p.n}" decoding="async" ${priority} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover${oos?';filter:grayscale(.4);opacity:.7':''}">
-${stockBadge}
-<div class="price-glass" style="position:absolute;top:8px;right:8px;color:#fff;font-weight:700;padding:4px 10px;border-radius:8px;text-align:right;line-height:1.1">${p.originalPrice&&!oos?`<div style="font-size:9px;font-weight:500;opacity:.7;text-decoration:line-through">${p.originalPrice}</div>`:''}<div style="font-size:11px">${p.price}</div></div>
-<div style="position:absolute;bottom:0;left:0;right:0;padding:28px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 100%)">
-<div style="font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)">${p.n}</div>
-</div>
-</div></div>`}
+ const sourceId=productSourceId(p);
+ return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
+ <div class="pc-media">
+ <img src="${p.img}" alt="${escapeHTML(p.n)}" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
+ ${stockBadge}
+ </div>
+ <div class="pc-meta">
+ <div class="pc-name">${escapeHTML(p.n)}</div>
+ <div class="pc-price">${p.originalPrice&&!oos?`<span class="pc-original-price">${escapeHTML(displayPrice(p.originalPrice))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
+ </div></a>`}
+
+function productPageHref(p){
+  return 'product.html?id='+encodeURIComponent(productSourceId(p));
+}
+
+function displayPrice(value){
+  const price=String(value==null?'':value);
+  if(!price||price==='Out of stock'||/[£$]/.test(price))return price;
+  return '£'+price;
+}
 
 // Preload gallery images when user touches/hovers a product card
 const preloaded={};
 function preloadProduct(id){
 if(preloaded[id])return;
 preloaded[id]=true;
-const p=allProducts().find(x=>String(x.id)===String(id));
+const p=allProducts().find(x=>String(x.id)===String(id)||String(productSourceId(x))===String(id));
 if(!p||!p.imgs)return;
 p.imgs.forEach(function(url){
 const img=new Image();
@@ -656,7 +671,7 @@ const byPrice=priceFn?byCat.filter(p=>{const v=parsePrice(p.price);return v!==nu
 const items=sortForCollection(byPrice,cat);
 const count=c=>(c==='All'||c==='New Items')?all.length:all.filter(p=>catMatch(p,c)).length;
 const priceKeys=Object.keys(PRICE_RANGES);
-return `<section style="padding:24px 4px 48px;max-width:1280px;margin:0 auto">
+return `<section style="padding:24px 8px 48px;max-width:1600px;margin:0 auto">
 <div style="margin-bottom:20px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 12px;letter-spacing:2px">${cat==='All'?'All Items':cat} <span style="color:#888;font-size:clamp(18px,3vw,24px)">(${items.length})</span></h2>
@@ -688,12 +703,12 @@ if(!bestSellers.length){
 }
 const b30s=inStock.filter(p=>p.brand==='B30');
 const hero=b30s.length?b30s[Math.floor(Math.random()*b30s.length)]:(inStock[0]||{n:'ESNTLS CLUB',price:'',img:'',id:0});
-const heroPid=typeof hero.id==='string'?"'"+hero.id+"'":hero.id;
+ const heroHref=productPageHref(hero);
 return `
 <!-- Hero: Featured product showcase -->
 <section style="background:linear-gradient(180deg,#fafafa 0%,#fff 100%);padding:clamp(20px,4vw,40px) 16px clamp(30px,5vw,48px);border-bottom:1px solid #eee">
 <div class="hero-grid" style="max-width:1180px;margin:0 auto">
-<div style="position:relative;border-radius:18px;overflow:hidden;background:#f5f5f5;aspect-ratio:1;animation:blurIn .8s ease both;cursor:pointer" onclick="openProduct(${heroPid})">
+<a href="${heroHref}" style="position:relative;border-radius:18px;overflow:hidden;background:#f5f5f5;aspect-ratio:1;animation:blurIn .8s ease both;display:block">
 <img src="${hero.img}" alt="${hero.n}" style="width:100%;height:100%;object-fit:cover" fetchpriority="high" decoding="async">
 <div style="position:absolute;top:14px;left:14px;background:#00C853;color:#fff;font-size:10px;font-weight:700;padding:5px 14px;border-radius:50px;letter-spacing:1.5px;text-transform:uppercase">⚡ Featured Drop</div>
 <div style="position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);padding:10px 16px;border-radius:12px;text-align:right">
@@ -701,7 +716,7 @@ return `
 ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.5px;color:#aaa;text-decoration:line-through">${hero.originalPrice}</div>`:''}
 <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#00C853">${hero.price}</div>
 </div>
-</div>
+</a>
 <div style="text-align:center;padding:4px">
 <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.15);border-radius:50px;padding:5px 14px;margin-bottom:14px;animation:blurIn .8s ease both">
 <span style="width:5px;height:5px;border-radius:50%;background:#00C853;animation:pulse 2s infinite"></span>
@@ -722,7 +737,7 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 ${catScrollHTML()}
 
 <!-- Best Sellers -->
-<section style="padding:8px 4px 36px;max-width:1280px;margin:0 auto">
+<section style="padding:8px 8px 36px;max-width:1600px;margin:0 auto">
 <div class="reveal" style="margin-bottom:14px;padding:0 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
 <div>
 <div style="font-size:11px;color:#ff5722;letter-spacing:3px;text-transform:uppercase;font-weight:800;margin-bottom:6px">🔥 Popular</div>
@@ -734,7 +749,7 @@ ${catScrollHTML()}
 </section>
 
 <!-- Featured Products -->
-<section style="padding:16px 4px 48px;max-width:1280px;margin:0 auto">
+<section style="padding:16px 8px 48px;max-width:1600px;margin:0 auto">
 <div class="reveal" style="margin-bottom:16px;padding:0 12px">
 <div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Just Dropped</div>
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0;letter-spacing:2px">New Arrivals</h2>
@@ -1407,7 +1422,7 @@ window.scrollTo({top:0,behavior:'smooth'});return false}
   ║  PRODUCT DETAIL MODAL     ║
   ╚═══════════════════════════╝*/
 let currentlyOpenProductId=null;
-function openProduct(id){
+function legacyProductModal(id){
 const all=allProducts();
 const p=all.find(x=>String(x.id)===String(id));if(!p)return;
 currentlyOpenProductId=id;
@@ -1471,6 +1486,11 @@ ${oos?`<a href="https://instagram.com/cluesntl" target="_blank" style="display:f
 </div></div>`;
 // Wire picker buttons + initial Buy Now state after the modal's HTML lands in the DOM
 setTimeout(()=>{bindPickerEvents();updateBuyNowState()},0);
+}
+
+function openProduct(id){
+  const p=allProducts().find(x=>String(x.id)===String(id)||String(productSourceId(x))===String(id));
+  if(p)window.location.href=productPageHref(p);
 }
 
 function setMain(el,src){
