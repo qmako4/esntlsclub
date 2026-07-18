@@ -1433,7 +1433,7 @@ window.scrollTo({top:0,behavior:'smooth'});return false}
 let currentlyOpenProductId=null;
 function legacyProductModal(id){
 const all=allProducts();
-const p=all.find(x=>String(x.id)===String(id));if(!p)return;
+const p=all.find(x=>String(x.id)===String(id)||String(productSourceId(x))===String(id));if(!p)return;
 currentlyOpenProductId=id;
 // Set URL hash for direct linking
 const slug=p.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
