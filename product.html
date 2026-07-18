@@ -346,10 +346,7 @@ function closeCheckoutConfirm(){
 function continueToCheckout(){
   const url=checkoutLink(product);
   if(!url)return;
-  const windowRef=window.open(url,'_blank','noopener,noreferrer');
-  if(windowRef)windowRef.opener=null;
-  else window.location.href=url;
-  closeCheckoutConfirm();
+  window.location.assign(url);
 }
 
 document.addEventListener('keydown',function(event){

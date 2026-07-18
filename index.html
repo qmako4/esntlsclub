@@ -1616,10 +1616,7 @@ setTimeout(()=>confirm.remove(),220);
 }
 function confirmCheckout(){
 if(!checkoutTargetUrl)return;
-const win=window.open(checkoutTargetUrl,'_blank','noopener,noreferrer');
-if(win)win.opener=null;
-else window.location.href=checkoutTargetUrl;
-closeCheckoutConfirm();
+window.location.assign(checkoutTargetUrl);
 }
 
 /*╔═══════════════════════════╗
