@@ -18,51 +18,60 @@ button{font:inherit}
 img{display:block;max-width:100%}
 .announcement{background:#00c853;color:#fff;font-size:10px;font-weight:700;letter-spacing:1.4px;padding:9px 16px;text-align:center;text-transform:uppercase}
 .site-nav{align-items:center;border-bottom:1px solid #ececec;display:flex;justify-content:space-between;min-height:64px;padding:0 18px}
-.wordmark{font-family:'Bebas Neue',sans-serif;font-size:25px;letter-spacing:1.5px;line-height:1}
-.wordmark span{color:#00c853}
+.home-logo{align-items:center;display:flex;line-height:1}
+.home-logo img{height:40px;object-fit:contain;width:auto}
 .nav-links{display:flex;gap:18px}
 .nav-links a{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
 .nav-links a:hover{color:#00a844}
 .product-shell{margin:0 auto;max-width:1480px;padding:20px 14px 52px}
-.back-link{align-items:center;color:#666;display:inline-flex;font-size:12px;font-weight:700;gap:7px;margin:0 0 18px;text-transform:uppercase}
-.back-link:hover{color:#111}
+.back-link{align-items:center;background:#f4f4f4;border-radius:999px;color:#555;display:inline-flex;font-size:11px;font-weight:800;gap:7px;letter-spacing:.6px;margin:0 0 18px;padding:9px 13px;text-transform:uppercase}
+.back-link:hover{background:#e9e9e9;color:#111}
 .product-layout{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
 .gallery{min-width:0}
-.main-image{background:#f4f4f4;cursor:zoom-in;overflow:hidden;position:relative}
-.main-image img{aspect-ratio:4/5;height:100%;object-fit:cover;width:100%}
-.image-count{background:rgba(17,17,17,.72);bottom:12px;color:#fff;font-size:11px;font-weight:700;padding:6px 9px;position:absolute;right:12px}
+.gallery-stage{background:#f4f4f4;border-radius:16px;overflow:hidden;position:relative}
+.gallery-track{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-behavior:smooth;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x}
+.gallery-track::-webkit-scrollbar{display:none}
+.gallery-slide{appearance:none;background:#f4f4f4;border:0;cursor:zoom-in;flex:0 0 100%;padding:0;scroll-snap-align:start}
+.gallery-slide img{aspect-ratio:4/5;height:100%;object-fit:cover;width:100%}
+.gallery-arrow{align-items:center;background:rgba(255,255,255,.92);border:0;border-radius:999px;box-shadow:0 3px 12px rgba(0,0,0,.16);color:#111;cursor:pointer;display:none;font-size:20px;height:42px;justify-content:center;position:absolute;top:50%;transform:translateY(-50%);width:42px;z-index:1}
+.gallery-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.05)}
+.gallery-arrow.previous{left:12px}
+.gallery-arrow.next{right:12px}
+.image-count{background:rgba(17,17,17,.78);border-radius:999px;bottom:12px;color:#fff;font-size:11px;font-weight:700;padding:7px 10px;pointer-events:none;position:absolute;right:12px}
 .thumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .thumbs::-webkit-scrollbar{display:none}
-.thumb{background:#f4f4f4;border:2px solid transparent;cursor:pointer;flex:0 0 66px;height:82px;overflow:hidden;padding:0}
+.thumb{background:#f4f4f4;border:2px solid transparent;border-radius:10px;cursor:pointer;flex:0 0 66px;height:82px;overflow:hidden;padding:0}
 .thumb.active{border-color:#111}
 .thumb img{height:100%;object-fit:cover;width:100%}
 .product-info{align-self:start;min-width:0}
 .eyebrow{color:#00a844;font-size:10px;font-weight:800;letter-spacing:1.8px;margin-bottom:10px;text-transform:uppercase}
 h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weight:400;letter-spacing:1px;line-height:.98;margin-bottom:14px;overflow-wrap:anywhere}
-.prices{align-items:baseline;display:flex;gap:10px;margin-bottom:20px}
+.prices{align-items:baseline;display:flex;gap:10px;margin-bottom:14px}
 .price{font-size:21px;font-weight:700}
 .was{color:#929292;font-size:14px;text-decoration:line-through}
-.stock{background:#effaf2;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:18px;padding:7px 9px;text-transform:uppercase}
+.stock{background:#effaf2;border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:14px;padding:7px 11px;text-transform:uppercase}
 .stock.sold{background:#f4f4f4;color:#777}
+.purchase-panel{margin:0 0 17px}
 .product-copy{border-top:1px solid #ebebeb;color:#595959;font-size:13px;line-height:1.65;padding:18px 0}
 .facts{border-top:1px solid #ebebeb;display:grid;gap:0;margin-bottom:18px}
 .fact{align-items:center;border-bottom:1px solid #ebebeb;display:flex;gap:12px;justify-content:space-between;padding:13px 0}
 .fact-label{color:#777;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
 .fact-value{color:#111;font-size:12px;font-weight:700;text-align:right}
-.buy-button{align-items:center;background:#00c853;border:0;color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;min-height:54px;padding:14px;width:100%}
+.buy-button{align-items:center;background:#00c853;border:0;border-radius:999px;box-shadow:0 8px 18px rgba(0,200,83,.2);color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;min-height:56px;padding:14px 20px;width:100%}
 .buy-button:hover{background:#00ad46}
 .buy-button:active{transform:scale(.99)}
 .sold-button{background:#111;text-decoration:none}
 .checkout-note{color:#555;font-size:12px;font-weight:700;line-height:1.45;padding:11px 2px 0;text-align:center}
-.support{border-bottom:1px solid #ebebeb;color:#111;display:block;font-size:12px;font-weight:700;padding:13px 0;text-align:center}
-.support:hover{color:#00a844}
+.support{align-items:center;border:1px solid #e2e2e2;border-radius:999px;color:#111;display:flex;font-size:12px;font-weight:700;justify-content:center;min-height:46px;padding:11px 18px;text-align:center}
+.support:hover{border-color:#00a844;color:#00a844}
+.mobile-buy{display:none}
 .related{border-top:1px solid #ebebeb;margin-top:58px;padding-top:26px}
 .related-head{align-items:end;display:flex;justify-content:space-between;margin-bottom:16px}
 .related h2{font-family:'Bebas Neue',sans-serif;font-size:30px;font-weight:400;letter-spacing:1px}
 .related-head a{font-size:11px;font-weight:700;text-transform:uppercase}
 .related-grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
 .related-item{display:block;min-width:0}
-.related-item img{aspect-ratio:4/5;background:#f4f4f4;object-fit:cover;width:100%}
+.related-item img{aspect-ratio:4/5;background:#f4f4f4;border-radius:12px;object-fit:cover;width:100%}
 .related-meta{display:flex;gap:8px;justify-content:space-between;padding:8px 1px}
 .related-name{font-size:11px;font-weight:700;line-height:1.35}
 .related-price{font-size:11px;font-weight:700;white-space:nowrap}
@@ -70,20 +79,20 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .state>div{max-width:100%}
 .state h1{font-size:clamp(26px,8vw,34px);margin-bottom:10px}
 .state p{color:#666;font-size:13px;margin-bottom:18px}
-.state a{background:#111;color:#fff;display:inline-flex;font-size:12px;font-weight:700;padding:13px 18px;text-transform:uppercase}
+.state a{background:#111;border-radius:999px;color:#fff;display:inline-flex;font-size:12px;font-weight:700;padding:13px 18px;text-transform:uppercase}
 .confirm{align-items:center;background:rgba(0,0,0,.5);display:flex;inset:0;justify-content:center;opacity:0;padding:16px;pointer-events:none;position:fixed;transition:opacity .2s;z-index:20}
 .confirm.open{opacity:1;pointer-events:auto}
-.confirm-box{background:#fff;max-width:430px;padding:24px;width:100%}
+.confirm-box{background:#fff;border-radius:20px;box-shadow:0 18px 42px rgba(0,0,0,.2);max-width:430px;padding:24px;width:100%}
 .confirm-box h2{font-family:'Bebas Neue',sans-serif;font-size:31px;font-weight:400;letter-spacing:.7px;line-height:1;margin:0 0 15px}
 .confirm-box p{color:#555;font-size:13px;line-height:1.55;margin-bottom:20px}
 .confirm-actions{display:grid;gap:9px}
-.confirm-actions button{border:0;cursor:pointer;font-size:13px;font-weight:800;min-height:48px}
+.confirm-actions button{border:0;border-radius:999px;cursor:pointer;font-size:13px;font-weight:800;min-height:48px}
 .confirm-go{background:#00c853;color:#fff}
 .confirm-back{background:#f2f2f2;color:#111}
 .fullscreen{align-items:center;background:rgba(0,0,0,.96);display:none;inset:0;justify-content:center;padding:18px;position:fixed;z-index:30}
 .fullscreen.open{display:flex}
 .fullscreen img{max-height:100%;max-width:100%;object-fit:contain}
-.fullscreen button{background:rgba(255,255,255,.14);border:0;color:#fff;cursor:pointer;font-size:22px;height:44px;position:absolute;right:16px;top:16px;width:44px}
+.fullscreen button{background:rgba(255,255,255,.14);border:0;border-radius:999px;color:#fff;cursor:pointer;font-size:22px;height:44px;position:absolute;right:16px;top:16px;width:44px}
 @media(min-width:820px){
   .site-nav{padding:0 28px}
   .product-shell{padding:28px 28px 70px}
@@ -91,13 +100,18 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
   .product-info{position:sticky;top:24px}
   .related-grid{gap:12px;grid-template-columns:repeat(4,minmax(0,1fr))}
   .thumb{flex-basis:78px;height:98px}
+  .gallery-arrow{display:flex}
+}
+@media(max-width:819px){
+  body{padding-bottom:78px}
+  .mobile-buy{align-items:center;background:#00c853;border:0;border-radius:999px;bottom:13px;box-shadow:0 10px 24px rgba(0,0,0,.2);color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;left:14px;min-height:54px;padding:13px 20px;position:fixed;right:14px;z-index:10}
 }
 </style>
 </head>
 <body>
 <div class="announcement">Free UK shipping on all orders</div>
 <header class="site-nav">
-  <a class="wordmark" href="./">ESNTLS <span>CLUB</span></a>
+  <a class="home-logo" href="./" aria-label="ESNTLS CLUB home"><img src="img/esntls-club-logo.jpg" alt="ESNTLS CLUB"></a>
   <nav class="nav-links" aria-label="Main navigation">
     <a href="./">Shop</a>
     <a href="./#stock">Next day</a>
@@ -219,10 +233,15 @@ function renderProduct(){
     +'<a class="back-link" href="./">&larr; Back to shop</a>'
     +'<div class="product-layout">'
     +'<section class="gallery" aria-label="Product images">'
-    +'<button class="main-image" type="button" onclick="openFullscreen()" aria-label="View product image fullscreen">'
-    +'<img id="mainImage" src="'+escapeHTML(gallery[activeImage]||product.image)+'" alt="'+escapeHTML(product.name)+'">'
+    +'<div class="gallery-stage">'
+    +'<div id="galleryTrack" class="gallery-track" aria-label="Swipe through product images">'
+    +gallery.map(function(image,index){
+      return '<button class="gallery-slide" type="button" onclick="openFullscreen()" aria-label="Open image '+(index+1)+' of '+gallery.length+' fullscreen"><img src="'+escapeHTML(image)+'" alt="'+escapeHTML(product.name)+' - image '+(index+1)+'"></button>';
+    }).join('')
+    +'</div>'
+    +(gallery.length>1?'<button class="gallery-arrow previous" type="button" onclick="scrollGallery(-1)" aria-label="Previous image">&larr;</button><button class="gallery-arrow next" type="button" onclick="scrollGallery(1)" aria-label="Next image">&rarr;</button>':'')
     +(gallery.length>1?'<span class="image-count" id="imageCount">'+(activeImage+1)+' / '+gallery.length+'</span>':'')
-    +'</button>'
+    +'</div>'
     +(gallery.length>1?'<div class="thumbs" aria-label="Choose product image">'+gallery.map(function(image,index){
       return '<button class="thumb'+(index===activeImage?' active':'')+'" type="button" data-image-index="'+index+'" onclick="selectImage('+index+')"><img src="'+escapeHTML(image)+'" alt="View '+(index+1)+' of '+escapeHTML(product.name)+'"></button>';
     }).join('')+'</div>':'')
@@ -232,29 +251,54 @@ function renderProduct(){
     +'<h1>'+escapeHTML(product.name)+'</h1>'
     +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
+    +'<div class="purchase-panel">'
+    +(sold
+      ?'<a class="buy-button sold-button" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">DM when back in stock</a>'
+      :'<button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+    +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
     +'<div class="fact"><span class="fact-label">Delivery</span><span class="fact-value">'+escapeHTML(deliveryLabel(product))+'</span></div>'
     +'<div class="fact"><span class="fact-label">Shipping</span><span class="fact-value">Free UK shipping</span></div>'
     +'</div>'
-    +(sold
-      ?'<a class="buy-button sold-button" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">DM when back in stock</a>'
-      :'<button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'<a class="support" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">Questions? DM us on Instagram</a>'
     +'</aside></div>'
     +(related.length?'<section class="related"><div class="related-head"><h2>You may also like</h2><a href="./">Shop all</a></div><div class="related-grid">'+related.map(function(item){
       return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(displayPrice(item.price))+'</span></div></a>';
     }).join('')+'</div></section>':'');
+  if(!sold)app.insertAdjacentHTML('beforeend','<button class="mobile-buy" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button>');
+  bindGalleryScroll();
+}
+
+function updateGalleryActive(index){
+  if(!product||!product.images.length)return;
+  activeImage=Math.max(0,Math.min(index,product.images.length-1));
+  document.querySelectorAll('.thumb').forEach(function(button){button.classList.toggle('active',Number(button.dataset.imageIndex)===activeImage);});
+  const count=document.getElementById('imageCount');
+  if(count)count.textContent=(activeImage+1)+' / '+product.images.length;
+}
+
+function bindGalleryScroll(){
+  const track=document.getElementById('galleryTrack');
+  if(!track)return;
+  let frame=0;
+  track.addEventListener('scroll',function(){
+    cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(function(){
+      const width=track.clientWidth||1;
+      updateGalleryActive(Math.round(track.scrollLeft/width));
+    });
+  },{passive:true});
 }
 
 function selectImage(index){
-  activeImage=index;
-  const image=product.images[index];
-  const main=document.getElementById('mainImage');
-  if(main)main.src=image;
-  document.querySelectorAll('.thumb').forEach(function(button){button.classList.toggle('active',Number(button.dataset.imageIndex)===index);});
-  const count=document.getElementById('imageCount');
-  if(count)count.textContent=(index+1)+' / '+product.images.length;
+  updateGalleryActive(index);
+  const track=document.getElementById('galleryTrack');
+  if(track)track.scrollTo({left:activeImage*track.clientWidth,behavior:'smooth'});
+}
+
+function scrollGallery(direction){
+  selectImage(activeImage+direction);
 }
 
 function openFullscreen(){
