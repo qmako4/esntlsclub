@@ -819,6 +819,11 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">-</span></div>
 <div class="filter-chip" data-status="archived" onclick="setProductFilter('status','archived')">Archived <span id="ctArchived">-</span></div>
 </div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('shopify')" style="min-height:42px;font-size:12px">Use Shopify links</button>
+<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('wix')" style="min-height:42px;font-size:12px">Use Wix backups</button>
+</div>
+<div class="msg" id="checkoutModeMsg" style="margin-top:0"></div>
 <div class="filter-chips" id="productCategoryChips"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
 <span id="productCountSummary">-</span>
@@ -2022,6 +2027,71 @@ if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
 return data;
 }
 
+function adminIsShopifyUrl(value){
+return /myshopify\.com\/products\/|shopify\.com\/products\//i.test(String(value||''))
+}
+
+function adminIsWixUrl(value){
+return /essentialsblanks\.net\/product-page\/|wixsite|checkout\.wix|wix\.to/i.test(String(value||''))
+}
+
+function productCheckoutLinks(p){
+const saved=(p&&p.checkoutLinks&&typeof p.checkoutLinks==='object')?p.checkoutLinks:{};
+const link=p&&p.link||'';
+return {
+shopify:(p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.shopifyUrl)||saved.shopify||(adminIsShopifyUrl(link)?link:''),
+wix:(p&&p.wixBackupPlaceholder&&p.wixBackupPlaceholder.url)||saved.wix||saved.originalWix||(adminIsWixUrl(link)?link:'')
+}
+}
+
+function productCheckoutModeLabel(p){
+const link=p&&p.link||'';
+if(adminIsShopifyUrl(link))return 'Shopify';
+if(adminIsWixUrl(link))return 'Wix';
+return link?'Manual link':'No link'
+}
+
+async function setCheckoutLinkMode(mode,id){
+const isBulk=id===undefined||id===null;
+const msg=document.getElementById(isBulk?'checkoutModeMsg':'cm_'+id);
+if(!WORKER_URL||!ADMIN_SECRET){
+if(msg){msg.style.color='#e53935';msg.textContent='Worker not configured.'}
+return
+}
+const label=mode==='wix'?'Wix backup':'Shopify';
+const confirmText=isBulk
+?`Switch all products to their saved ${label} checkout links?`
+:`Switch this product to its saved ${label} checkout link?`;
+if(!confirm(confirmText))return;
+if(msg){msg.style.color='var(--sub)';msg.textContent=isBulk?`Switching all products to ${label}...`:`Switching to ${label}...`}
+try{
+const body={mode,createMissingWixBackup:true};
+if(!isBulk)body.productId=id;
+else body.includeArchived=true;
+const r=await fetch(WORKER_URL+'/checkout-link-mode',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify(body)
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
+await loadProducts();
+if(isBulk){
+renderProductList();
+if(msg){msg.style.color='var(--g)';msg.textContent=`Using ${label} links for ${data.updated||0} products. ${data.skipped?data.skipped+' skipped.':''}`}
+}else{
+const p=products.find(x=>String(x.id)===String(id));
+const input=document.getElementById('el_'+id);
+if(input&&p)input.value=p.link||'';
+if(msg){msg.style.color='var(--g)';msg.textContent=`Now using ${label}.`}
+}
+if(typeof toast==='function')toast(`Checkout links switched to ${label}`,'success',3800);
+}catch(e){
+if(msg){msg.style.color='#e53935';msg.textContent='Switch failed: '+e.message}
+if(typeof toast==='function')toast('Checkout switch failed','error',3800);
+}
+}
+
 // SYNC PRICE / CATEGORY / BRAND FROM REPO products.json INTO R2 (existing IDs only)
 async function syncPricesFromRepo(){
 const msg=document.getElementById('syncMsg');
@@ -2281,6 +2351,8 @@ const pCats=effectiveCategories(p);
 const pDel=(p.delivery||'').split(',').map(d=>d.trim());
 const pVariationName=productVariationName(p);
 const pVariationText=productVariationText(p);
+const checkoutLinks=productCheckoutLinks(p);
+const checkoutMode=productCheckoutModeLabel(p);
 el.innerHTML=`
 <label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
 <label class="field"><span>Price</span><input id="ep_${id}" value="${p.price}"></label>
@@ -2306,6 +2378,17 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 <input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
 </div>
 </label>
+<div style="border:1px solid var(--line);border-radius:16px;padding:12px;margin:-4px 0 14px;background:#fbfdfb">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+<span style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px">Active checkout</span>
+<strong style="font-size:12px;color:var(--ink)">${escapeAdminHTML(checkoutMode)}</strong>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('shopify',${id})" style="min-height:42px;font-size:12px" ${checkoutLinks.shopify?'':'title="Generate a Shopify product first"'}>Use Shopify</button>
+<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('wix',${id})" style="min-height:42px;font-size:12px">Use Wix backup</button>
+</div>
+<div class="msg" id="cm_${id}" style="margin-top:8px"></div>
+</div>
 <label class="field"><span>Shopify Name</span><input id="st_${id}" value="${p.shopifyPlaceholder?.shopifyTitle||''}" placeholder="Optional, e.g. The Gel Runners - Pink"></label>
 <label class="field"><span>Shopify Variant IDs</span><textarea id="sv_${id}" placeholder='{"UK 8":"1234567890","UK 9":"1234567891"}' style="width:100%;min-height:94px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:ui-monospace,Consolas,monospace;outline:none;resize:vertical">${escapeAdminHTML(productShopifyVariantText(p))}</textarea><span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Used by the website cart. Format: JSON, or one line per size like UK 8 = 1234567890.</span></label>
 <button type="button" class="btn btn-outline" id="sb_${id}" onclick="generateShopifyPlaceholder(${id})">Generate Shopify Product</button>
@@ -2404,6 +2487,13 @@ if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
 const shopifyUrl=data.shopifyUrl||(data.shopify&&data.shopify.shopifyUrl)||'';
 if(!shopifyUrl)throw new Error('No Shopify link returned');
 p.link=shopifyUrl;
+if(data.shopify)p.shopifyPlaceholder=data.shopify;
+if(data.wixBackup)p.wixBackupPlaceholder=data.wixBackup;
+if(data.checkoutLinks)p.checkoutLinks=data.checkoutLinks;
+if(data.shopify&&data.shopify.variants){
+  p.shopifyVariants=data.shopify.variants;
+  p.shopifyVariantId=Object.values(data.shopify.variants)[0]||'';
+}
 const linkInput=document.getElementById('el_'+id);
 if(linkInput)linkInput.value=shopifyUrl;
 const titleInput=document.getElementById('st_'+id);

@@ -25,6 +25,8 @@
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 //   POST   /sync-linked-price → updates linked Shopify/Wix placeholder prices after an admin price edit.
 //                                Body: { productId: string|number, price: string|number }
+//   POST   /checkout-link-mode → switches products between saved Shopify and Wix checkout links.
+//                                Body: { mode: 'shopify'|'wix', productId?: string|number }
 //   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
@@ -399,6 +401,68 @@ function extractWixSlug(value) {
   } catch {
     return '';
   }
+}
+
+function isShopifyCheckoutUrl(value, env) {
+  return !!extractShopifyHandle(value, env);
+}
+
+function isWixCheckoutUrl(value) {
+  return !!extractWixSlug(value);
+}
+
+function hasUsableWixBackup(backup) {
+  return !!(backup && (backup.url || backup.id) && backup.status !== 'error' && backup.status !== 'skipped');
+}
+
+function getCheckoutLinks(rawProduct, env) {
+  const existing = rawProduct.checkoutLinks && typeof rawProduct.checkoutLinks === 'object'
+    ? { ...rawProduct.checkoutLinks }
+    : {};
+  const currentLink = rawProduct.link || '';
+
+  if (!existing.shopify) {
+    const shopifyUrl = rawProduct.shopifyPlaceholder?.shopifyUrl || rawProduct.shopifyUrl || '';
+    if (shopifyUrl) existing.shopify = shopifyUrl;
+  }
+  if (!existing.shopify && currentLink && isShopifyCheckoutUrl(currentLink, env)) {
+    existing.shopify = currentLink;
+  }
+
+  if (!existing.originalWix && currentLink && isWixCheckoutUrl(currentLink)) {
+    existing.originalWix = currentLink;
+  }
+  if (!existing.wix) {
+    const wixUrl = rawProduct.wixBackupPlaceholder?.url || rawProduct.wixLink || rawProduct.wixUrl || existing.originalWix || '';
+    if (wixUrl) existing.wix = wixUrl;
+  }
+
+  if (!existing.active) {
+    existing.active = isShopifyCheckoutUrl(currentLink, env) ? 'shopify' : (isWixCheckoutUrl(currentLink) ? 'wix' : '');
+  }
+  return existing;
+}
+
+function rememberCheckoutLinks(rawProduct, env, updates = {}) {
+  const links = getCheckoutLinks(rawProduct, env);
+  if (updates.shopifyUrl) links.shopify = updates.shopifyUrl;
+  if (updates.wixUrl) links.wix = updates.wixUrl;
+  if (updates.originalWix && !links.originalWix) links.originalWix = updates.originalWix;
+  if (updates.active) links.active = updates.active;
+  links.updatedAt = new Date().toISOString();
+  rawProduct.checkoutLinks = links;
+  return links;
+}
+
+function checkoutUrlForMode(rawProduct, env, mode) {
+  const links = getCheckoutLinks(rawProduct, env);
+  if (mode === 'shopify') {
+    return rawProduct.shopifyPlaceholder?.shopifyUrl || links.shopify || (isShopifyCheckoutUrl(rawProduct.link, env) ? rawProduct.link : '');
+  }
+  if (mode === 'wix') {
+    return rawProduct.wixBackupPlaceholder?.url || links.wix || links.originalWix || (isWixCheckoutUrl(rawProduct.link) ? rawProduct.link : '');
+  }
+  return '';
 }
 
 function buildDescriptionHtml() {
@@ -1267,6 +1331,97 @@ async function syncLinkedPriceFromR2(env, requestBody) {
   return result;
 }
 
+async function ensureWixBackupForProduct(env, rawProduct, product, visibleTitle) {
+  let wixBackup = rawProduct.wixBackupPlaceholder || null;
+  if (hasUsableWixBackup(wixBackup)) return wixBackup;
+  try {
+    wixBackup = await createWixBackupProduct(env, product, visibleTitle);
+  } catch (error) {
+    wixBackup = { status: 'error', error: error.message };
+  }
+  rawProduct.wixBackupPlaceholder = wixBackup;
+  return wixBackup;
+}
+
+async function switchCheckoutLinksFromR2(env, requestBody) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+  const mode = String(requestBody.mode || '').toLowerCase();
+  if (!['shopify', 'wix'].includes(mode)) throw new Error('Mode must be shopify or wix');
+
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const list = Array.isArray(payload) ? payload : payload.products;
+  if (!Array.isArray(list)) throw new Error('products.json is not an array');
+
+  const productId = requestBody.productId;
+  const targets = productId === undefined || productId === null || productId === ''
+    ? list
+    : list.filter(item => String(item.id) === String(productId));
+  if (productId !== undefined && productId !== null && productId !== '' && !targets.length) {
+    throw new Error(`Product ${productId} was not found`);
+  }
+
+  const updated = [];
+  const skipped = [];
+  for (const rawProduct of targets) {
+    if (!requestBody.includeArchived && (rawProduct.active === false || rawProduct.archived === true || rawProduct.hidden === true)) {
+      skipped.push({ id: rawProduct.id, name: rawProduct.name || rawProduct.title || '', reason: 'Product is hidden or archived' });
+      continue;
+    }
+
+    const product = normalizeStoredProduct(rawProduct);
+    rememberCheckoutLinks(rawProduct, env);
+
+    if (!checkoutUrlForMode(rawProduct, env, 'wix') && requestBody.createMissingWixBackup !== false) {
+      if (!product.title || !product.price) {
+        if (mode === 'wix') {
+          skipped.push({ id: product.id, name: product.title, reason: 'Missing product name or price for Wix backup' });
+          continue;
+        }
+      } else {
+        const visibleTitle = rawProduct.shopifyPlaceholder?.shopifyTitle || buildPlaceholderTitle(product);
+        const wixBackup = await ensureWixBackupForProduct(env, rawProduct, product, visibleTitle);
+        if (hasUsableWixBackup(wixBackup) && wixBackup.url) {
+          rememberCheckoutLinks(rawProduct, env, { wixUrl: wixBackup.url });
+        }
+      }
+    }
+
+    const url = checkoutUrlForMode(rawProduct, env, mode);
+    if (!url) {
+      skipped.push({ id: product.id, name: product.title, reason: `No ${mode} checkout link saved` });
+      continue;
+    }
+
+    rawProduct.link = url;
+    const links = rememberCheckoutLinks(rawProduct, env, { active: mode });
+    updated.push({
+      id: product.id,
+      name: product.title,
+      link: url,
+      active: links.active,
+      shopify: links.shopify || '',
+      wix: links.wix || ''
+    });
+  }
+
+  await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
+    httpMetadata: { contentType: 'application/json' }
+  });
+
+  return {
+    ok: true,
+    mode,
+    scope: productId === undefined || productId === null || productId === '' ? 'all' : 'single',
+    updated: updated.length,
+    skipped: skipped.length,
+    products: updated,
+    skippedProducts: skipped,
+    updatedAt: new Date().toISOString()
+  };
+}
+
 async function createShopifyPlaceholderFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
   const productId = requestBody.productId;
@@ -1283,6 +1438,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
   if (!product.title) throw new Error('Product is missing a name');
   if (!product.price) throw new Error('Product is missing a valid price');
   if (!product.image) throw new Error('Product is missing an image');
+  rememberCheckoutLinks(rawProduct, env);
 
   const existing = await findExistingShopifyProduct(env, product);
   let status = 'created';
@@ -1308,18 +1464,19 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
   }
 
   let wixBackup = rawProduct.wixBackupPlaceholder || null;
-  if (!wixBackup && requestBody.createWixBackup !== false) {
-    try {
-      wixBackup = await createWixBackupProduct(env, product, visibleTitle);
-    } catch (error) {
-      wixBackup = { status: 'error', error: error.message };
-    }
+  if (requestBody.createWixBackup !== false && !hasUsableWixBackup(wixBackup)) {
+    wixBackup = await ensureWixBackupForProduct(env, rawProduct, product, visibleTitle);
   }
 
   const shopifyUrl = shopifyProduct.shopifyUrl;
   rawProduct.link = shopifyUrl;
   rawProduct.shopifyVariants = shopifyProduct.shopifyVariants || {};
   rawProduct.shopifyVariantId = Object.values(rawProduct.shopifyVariants)[0] || '';
+  rememberCheckoutLinks(rawProduct, env, {
+    shopifyUrl,
+    wixUrl: hasUsableWixBackup(wixBackup) ? wixBackup.url : '',
+    active: 'shopify'
+  });
   rawProduct.shopifyPlaceholder = {
     status,
     sourceId: product.id,
@@ -1342,7 +1499,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     httpMetadata: { contentType: 'application/json' }
   });
 
-  return { ok: true, status, productId: product.id, shopifyUrl, shopify: rawProduct.shopifyPlaceholder, wixBackup };
+  return { ok: true, status, productId: product.id, shopifyUrl, shopify: rawProduct.shopifyPlaceholder, wixBackup, checkoutLinks: rawProduct.checkoutLinks };
 }
 
 export default {
@@ -1371,6 +1528,16 @@ export default {
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await syncLinkedPriceFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'checkout-link-mode') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await switchCheckoutLinksFromR2(env, body));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
