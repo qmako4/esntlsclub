@@ -6,6 +6,7 @@
 <title>ESNTLS CLUB — Premium Streetwear</title>
 <meta name="description" content="Curated designer footwear, jackets & accessories. Free UK shipping.">
 <meta name="theme-color" content="#00C853">
+<meta name="referrer" content="no-referrer">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -394,6 +395,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div id="modal" class="modal-bg" style="display:none" onclick="closeModal()"></div>
 
 
+<script src="cart.js"></script>
 <script>
 /*╔═══════════════════════════════════════════╗
   ║  PRODUCT DATA — CORRECT PRICES FROM SITE  ║
@@ -493,7 +495,7 @@ if(/\b(sandals?|sliders?|slides?)\b/i.test(p.name||'')){
 }
 const wixLink=wixCheckoutLinkForProduct(p);
 const shopifyLink=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
-return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[],createdAt:p.created_at||p.createdAt||''};
+return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:(p.images&&p.images[0])||'',imgs:p.images||[],createdAt:p.created_at||p.createdAt||'',sizes:p.sizes||p.availableSizes||[],variationName:p.variationName||p.variantOptionName||p.optionName||'',variationValues:p.variationValues||p.variants||p.variantValues||[],shopifyVariants:p.shopifyVariants||p.variantIds||p.variantsMap||null,shopifyVariantId:p.shopifyVariantId||p.variantId||p.defaultVariantId||'',shopifyPlaceholder:p.shopifyPlaceholder||null};
 });
 render();
 }catch(e){console.log('R2 products load error:',e)}}
@@ -1616,7 +1618,7 @@ setTimeout(()=>confirm.remove(),220);
 }
 function confirmCheckout(){
 if(!checkoutTargetUrl)return;
-window.location.assign(checkoutTargetUrl);
+EsntlsCart.navigateNoReferrer(checkoutTargetUrl);
 }
 
 /*╔═══════════════════════════╗

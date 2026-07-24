@@ -1392,6 +1392,29 @@ return Array.isArray(raw)?raw.map(String).map(v=>v.trim()).filter(Boolean):parse
 }
 function productVariationName(p){return (p&&(p.variationName||p.variantOptionName||p.optionName))||''}
 function productVariationText(p){return productVariationValues(p).join(', ')}
+function productShopifyVariantText(p){
+  const source=p&&(p.shopifyVariants||p.variantIds||p.variantsMap);
+  if(!source)return '';
+  try{return JSON.stringify(source,null,2)}catch(e){return ''}
+}
+function parseShopifyVariantMap(value){
+  const raw=String(value||'').trim();
+  if(!raw)return null;
+  try{
+    const parsed=JSON.parse(raw);
+    return parsed&&typeof parsed==='object'?parsed:null;
+  }catch(e){
+    const map={};
+    raw.split(/\n|,/).forEach(line=>{
+      const parts=line.split(/=>|=/);
+      if(parts.length<2)return;
+      const key=parts[0].trim();
+      const val=parts.slice(1).join('=').trim();
+      if(key&&val)map[key]=val;
+    });
+    return Object.keys(map).length?map:null;
+  }
+}
 function initCatPills(){
 const cats=document.getElementById('addCats');
 if(cats)cats.innerHTML=CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${selectedCats.includes(c)?' on':''}" onclick="toggleAddCat(this)" data-cat="${safe}">${safe}</div>`}).join('');
@@ -2284,6 +2307,7 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 </div>
 </label>
 <label class="field"><span>Shopify Name</span><input id="st_${id}" value="${p.shopifyPlaceholder?.shopifyTitle||''}" placeholder="Optional, e.g. The Gel Runners - Pink"></label>
+<label class="field"><span>Shopify Variant IDs</span><textarea id="sv_${id}" placeholder='{"UK 8":"1234567890","UK 9":"1234567891"}' style="width:100%;min-height:94px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:ui-monospace,Consolas,monospace;outline:none;resize:vertical">${escapeAdminHTML(productShopifyVariantText(p))}</textarea><span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Used by the website cart. Format: JSON, or one line per size like UK 8 = 1234567890.</span></label>
 <button type="button" class="btn btn-outline" id="sb_${id}" onclick="generateShopifyPlaceholder(${id})">Generate Shopify Product</button>
 <div class="msg" id="sm_${id}"></div>
 <button class="btn" onclick="saveEdit(${id})">Save Changes</button>
@@ -2295,6 +2319,7 @@ const price=document.getElementById('ep_'+id).value.trim();
 const link=document.getElementById('el_'+id).value.trim();
 const variationName=document.getElementById('evn_'+id)?.value.trim()||'';
 const variationValues=parseAdminList(document.getElementById('evv_'+id)?.value||'');
+const shopifyVariants=parseShopifyVariantMap(document.getElementById('sv_'+id)?.value||'');
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
 const brand=inferBrand(cats);
@@ -2303,11 +2328,12 @@ const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
-const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues};
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,shopifyVariants:p.shopifyVariants,variantIds:p.variantIds,variantsMap:p.variantsMap,shopifyVariantId:p.shopifyVariantId};
 const oldNumericPrice=numericPriceAmount(orig.price);
 const newNumericPrice=numericPriceAmount(price);
 const priceChanged=oldNumericPrice!==newNumericPrice;
-Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues});
+Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues,shopifyVariants:shopifyVariants||{}});
+p.shopifyVariantId=shopifyVariants?Object.values(shopifyVariants)[0]||'':'';
 try{
 await saveProducts();
 let toastText=`Updated "${name}"`;

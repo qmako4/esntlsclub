@@ -63,7 +63,7 @@ query ProductVariantsForPriceSync($id: ID!) {
     title
     handle
     variants(first: 100) {
-      nodes { id price }
+      nodes { id title sku price }
     }
   }
 }`;
@@ -321,6 +321,38 @@ function buildProductVariantPlan(product, env) {
   }
 
   return { sizes, variationName, variationValues, productOptions, variants };
+}
+
+function numericShopifyVariantId(value) {
+  const match = String(value || '').match(/(\d+)(?:\D*)$/);
+  return match ? match[1] : '';
+}
+
+function shopifyVariantKey(optionValues) {
+  return (optionValues || []).map(optionValue => optionValue.name).filter(Boolean).join('|') || 'Default';
+}
+
+function buildShopifyVariantMap(shopifyVariants, variantPlan) {
+  const nodes = Array.isArray(shopifyVariants) ? shopifyVariants : [];
+  const map = {};
+  const planned = variantPlan?.variants || [];
+  planned.forEach((plannedVariant, index) => {
+    const node = nodes[index];
+    const id = numericShopifyVariantId(node?.id);
+    if (id) map[shopifyVariantKey(plannedVariant.optionValues)] = id;
+  });
+  if (Object.keys(map).length) return map;
+  nodes.forEach(node => {
+    const id = numericShopifyVariantId(node?.id);
+    if (id) map[node.title || 'Default'] = id;
+  });
+  return map;
+}
+
+async function shopifyVariantMapForProduct(env, productId, sourceProduct) {
+  const variantPlan = buildProductVariantPlan(sourceProduct, env);
+  const data = await shopifyGraphql(env, PRODUCT_VARIANTS_QUERY, { id: productId });
+  return buildShopifyVariantMap(data.product?.variants?.nodes || [], variantPlan);
 }
 
 function sourceTags(product) {
@@ -985,6 +1017,7 @@ async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle
     variationName: variantPlan.variationName,
     variationValues: variantPlan.variationValues,
     variantCount: variantPlan.variants.length,
+    shopifyVariants: buildShopifyVariantMap(created.variants?.nodes || [], variantPlan),
     featuredImageUrl: mediaUpdate.productUpdate.product.featuredMedia?.preview?.image?.url || null,
     shopifyUrl: storefrontUrl(env, created.handle)
   };
@@ -1260,7 +1293,13 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 
   if (existing) {
     status = 'existing';
-    shopifyProduct = { id: existing.id, title: existing.title, handle: existing.handle, shopifyUrl: storefrontUrl(env, existing.handle) };
+    shopifyProduct = {
+      id: existing.id,
+      title: existing.title,
+      handle: existing.handle,
+      shopifyUrl: storefrontUrl(env, existing.handle),
+      shopifyVariants: await shopifyVariantMapForProduct(env, existing.id, product)
+    };
   } else {
     const generatedImage = await generateBlankImage(env, product);
     const upload = await uploadProductImageToShopify(env, product, generatedImage);
@@ -1279,6 +1318,8 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 
   const shopifyUrl = shopifyProduct.shopifyUrl;
   rawProduct.link = shopifyUrl;
+  rawProduct.shopifyVariants = shopifyProduct.shopifyVariants || {};
+  rawProduct.shopifyVariantId = Object.values(rawProduct.shopifyVariants)[0] || '';
   rawProduct.shopifyPlaceholder = {
     status,
     sourceId: product.id,
@@ -1292,6 +1333,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     variationName: shopifyProduct.variationName || product.variationName || '',
     variationValues: shopifyProduct.variationValues || product.variationValues || [],
     variantCount: shopifyProduct.variantCount || 0,
+    variants: rawProduct.shopifyVariants,
     generatedAt: new Date().toISOString()
   };
   if (wixBackup) rawProduct.wixBackupPlaceholder = wixBackup;

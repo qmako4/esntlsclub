@@ -6,6 +6,7 @@
 <title>Product | ESNTLS CLUB</title>
 <meta name="description" content="Shop premium streetwear from ESNTLS CLUB.">
 <meta name="theme-color" content="#00C853">
+<meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,6 +53,14 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .stock{background:#effaf2;border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:14px;padding:7px 11px;text-transform:uppercase}
 .stock.sold{background:#f4f4f4;color:#777}
 .purchase-panel{margin:0 0 17px}
+.esntls-option-panel{display:grid;gap:13px;margin:0 0 14px}
+.esntls-option-label{color:#555;font-size:11px;font-weight:800;letter-spacing:.8px;margin-bottom:8px;text-transform:uppercase}
+.esntls-option-grid{display:flex;flex-wrap:wrap;gap:8px}
+.esntls-option-grid label{cursor:pointer;display:block}
+.esntls-option-grid input{position:absolute;opacity:0;pointer-events:none}
+.esntls-option-grid span{align-items:center;background:#fff;border:1.5px solid #e2e2e2;border-radius:999px;color:#111;display:flex;font-size:12px;font-weight:800;justify-content:center;min-height:42px;min-width:58px;padding:10px 15px;transition:all .15s}
+.esntls-option-grid input:checked+span{background:#111;border-color:#111;color:#fff}
+.buy-actions{display:grid;gap:9px}
 .product-copy{border-top:1px solid #ebebeb;color:#595959;font-size:13px;line-height:1.65;padding:18px 0}
 .facts{border-top:1px solid #ebebeb;display:grid;gap:0;margin-bottom:18px}
 .fact{align-items:center;border-bottom:1px solid #ebebeb;display:flex;gap:12px;justify-content:space-between;padding:13px 0}
@@ -60,6 +69,8 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .buy-button{align-items:center;background:#00c853;border:0;border-radius:999px;box-shadow:0 8px 18px rgba(0,200,83,.2);color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;min-height:56px;padding:14px 20px;width:100%}
 .buy-button:hover{background:#00ad46}
 .buy-button:active{transform:scale(.99)}
+.cart-button{align-items:center;background:#fff;border:1.5px solid #111;border-radius:999px;color:#111;cursor:pointer;display:flex;font-size:13px;font-weight:900;justify-content:center;min-height:50px;padding:13px 18px;width:100%}
+.cart-button:hover{border-color:#00a844;color:#00a844}
 .sold-button{background:#111;text-decoration:none}
 .checkout-note{color:#555;font-size:12px;font-weight:700;line-height:1.45;padding:11px 2px 0;text-align:center}
 .support{align-items:center;border:1px solid #e2e2e2;border-radius:999px;color:#111;display:flex;font-size:12px;font-weight:700;justify-content:center;min-height:46px;padding:11px 18px;text-align:center}
@@ -120,6 +131,7 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <main id="productApp" class="state" aria-live="polite"><p>Loading product...</p></main>
 <div id="checkoutConfirm" class="confirm" aria-hidden="true"></div>
 <div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
+<script src="cart.js"></script>
 <script>
 const R2_BASE='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const SHOPIFY_CHECKOUT_BASE='https://nr00an-yh.myshopify.com/products/';
@@ -157,6 +169,14 @@ function normaliseProduct(item){
     price:item.price||'',
     originalPrice:item.originalPrice||'',
     delivery:item.delivery||'',
+    sizes:item.sizes||item.availableSizes||[],
+    variationName:item.variationName||item.variantOptionName||item.optionName||'',
+    variationValues:item.variationValues||item.variants||item.variantValues||[],
+    shopifyVariants:item.shopifyVariants||item.variantIds||item.variantsMap||null,
+    shopifyVariantId:item.shopifyVariantId||item.variantId||item.defaultVariantId||'',
+    shopifyPlaceholder:item.shopifyPlaceholder||null,
+    shopifyLink:item.shopifyLink||'',
+    wixLink:item.wixLink||'',
     active:item.active!==false&&item.archived!==true&&item.hidden!==true
   };
 }
@@ -252,16 +272,17 @@ function renderProduct(){
     +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
     +'<div class="purchase-panel">'
+    +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
     +(sold
-      ?'<a class="buy-button sold-button" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">DM when back in stock</a>'
-      :'<button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+      ?'<a class="buy-button sold-button" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">DM when back in stock</a>'
+      :'<div class="buy-actions"><button class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
     +'<div class="fact"><span class="fact-label">Delivery</span><span class="fact-value">'+escapeHTML(deliveryLabel(product))+'</span></div>'
     +'<div class="fact"><span class="fact-label">Shipping</span><span class="fact-value">Free UK shipping</span></div>'
     +'</div>'
-    +'<a class="support" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer">Questions? DM us on Instagram</a>'
+    +'<a class="support" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Questions? DM us on Instagram</a>'
     +'</aside></div>'
     +(related.length?'<section class="related"><div class="related-head"><h2>You may also like</h2><a href="./">Shop all</a></div><div class="related-grid">'+related.map(function(item){
       return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(displayPrice(item.price))+'</span></div></a>';
@@ -327,10 +348,12 @@ function closeFullscreen(){
 }
 
 function openCheckoutConfirm(){
+  const selected=EsntlsCart.selectedOptionsFrom('productOptions');
+  const optionText=Object.entries(selected).filter(function(entry){return entry[1];}).map(function(entry){return entry[0]+': '+entry[1];}).join(' / ');
   const dialog=document.getElementById('checkoutConfirm');
   dialog.innerHTML='<div class="confirm-box" role="dialog" aria-modal="true" aria-label="Checkout confirmation">'
     +'<h2>Blank item = original item</h2>'
-    +'<p>Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
+    +'<p>You are buying: <strong>'+escapeHTML(product.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
     +'<div class="confirm-actions"><button class="confirm-go" type="button" onclick="continueToCheckout()">Open secure checkout</button><button class="confirm-back" type="button" onclick="closeCheckoutConfirm()">Back to item</button></div>'
     +'</div>';
   dialog.classList.add('open');
@@ -344,9 +367,11 @@ function closeCheckoutConfirm(){
 }
 
 function continueToCheckout(){
-  const url=checkoutLink(product);
-  if(!url)return;
-  window.location.assign(url);
+  EsntlsCart.checkoutSingle(product,EsntlsCart.selectedOptionsFrom('productOptions'));
+}
+
+function addCurrentToCart(){
+  EsntlsCart.add(product,EsntlsCart.selectedOptionsFrom('productOptions'),1);
 }
 
 document.addEventListener('keydown',function(event){
