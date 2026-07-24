@@ -46,11 +46,11 @@
   function inferSizes(product){
     const explicit = splitList(product && (product.sizes || product.size || product.availableSizes));
     if(explicit.length) return explicit;
-    const placeholderSizes = splitList(product && product.shopifyPlaceholder && product.shopifyPlaceholder.sizes);
-    if(placeholderSizes.length) return placeholderSizes;
     const keys = Object.keys(product && (product.shopifyVariants || product.variantIds || {}) || {});
     const optionKeys = keys.map(key => key.split('|')[0].trim()).filter(Boolean);
     if(optionKeys.length) return Array.from(new Set(optionKeys));
+    const placeholderSizes = splitList(product && product.shopifyPlaceholder && product.shopifyPlaceholder.sizes);
+    if(placeholderSizes.length) return placeholderSizes;
     if(isFootwear(product)) return ['UK 5','UK 6','UK 7','UK 8','UK 9','UK 10','UK 11','UK 12'];
     if(/\b(shirts?|t-?shirts?|hoodies?|tracksuits?|shorts?|jackets?|clothing|pants|joggers?)\b/i.test([product && product.name, product && product.n, product && product.category, product && product.cat].join(' '))){
       return ['XS','S','M','L','XL'];

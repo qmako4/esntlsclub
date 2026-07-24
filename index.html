@@ -473,7 +473,7 @@ try{
 const res=await fetch(R2_BASE+'products.json?t='+Math.floor(Date.now()/60000));
 if(!res.ok){if(res.status!==404)console.log('products.json HTTP',res.status);return}
 const data=await res.json();
-const arr=Array.isArray(data)?data:[];
+const arr=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:[]);
 const liveArr=arr.filter(p=>p&&p.active!==false&&p.archived!==true&&p.hidden!==true);
 for(const p of liveArr){
 const discovered=[...(p.category||'').split(','),p.brand].map(c=>(c||'').trim()).filter(c=>c&&c!=='Other');

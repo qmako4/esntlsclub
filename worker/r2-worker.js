@@ -338,10 +338,25 @@ function buildShopifyVariantMap(shopifyVariants, variantPlan) {
   const nodes = Array.isArray(shopifyVariants) ? shopifyVariants : [];
   const map = {};
   const planned = variantPlan?.variants || [];
+
+  nodes.forEach(node => {
+    const id = numericShopifyVariantId(node?.id);
+    if (!id) return;
+    const title = String(node?.title || '').trim();
+    if (title && title.toLowerCase() !== 'default title') {
+      map[title] = id;
+      const normalizedTitle = title.split(/\s*\/\s*/).filter(Boolean).join('|');
+      if (normalizedTitle && normalizedTitle !== title) map[normalizedTitle] = id;
+    }
+  });
+  if (Object.keys(map).length) return map;
+
   planned.forEach((plannedVariant, index) => {
+    const key = shopifyVariantKey(plannedVariant.optionValues);
+    if (map[key]) return;
     const node = nodes[index];
     const id = numericShopifyVariantId(node?.id);
-    if (id) map[shopifyVariantKey(plannedVariant.optionValues)] = id;
+    if (id) map[key] = id;
   });
   if (Object.keys(map).length) return map;
   nodes.forEach(node => {

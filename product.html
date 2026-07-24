@@ -199,8 +199,9 @@ async function loadProducts(){
       const response=await fetch(source,{cache:'no-store'});
       if(!response.ok)continue;
       const data=await response.json();
-      if(Array.isArray(data)){
-        data.map(normaliseProduct).filter(function(item){return item.active;}).forEach(function(item){
+      const list=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:[]);
+      if(list.length){
+        list.map(normaliseProduct).filter(function(item){return item.active;}).forEach(function(item){
           if(!catalogue.has(item.id))catalogue.set(item.id,item);
         });
       }
