@@ -1,6 +1,9 @@
 (function(){
   const SHOPIFY_HOST = 'nr00an-yh.myshopify.com';
+  const PRODUCT_FEED_URL = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json';
   const CART_KEY = 'esntls_cart_v1';
+  let cataloguePromise = null;
+  let repairPromise = null;
 
   function ensureNoReferrer(){
     let meta = document.querySelector('meta[name="referrer"]');
@@ -25,7 +28,11 @@
   }
 
   function productId(product){
-    return String(product && product.dbId != null ? product.dbId : (product && product.id || '')).replace(/^r2_/,'');
+    return String(product && product.dbId != null ? product.dbId : (product && (product.id || product.productId) || '')).replace(/^r2_/,'');
+  }
+
+  function isShopifyProductUrl(url){
+    return /^https?:\/\/[^/]*myshopify\.com\/products\//i.test(String(url || ''));
   }
 
   function displayPrice(value){
@@ -148,6 +155,91 @@
     renderCart();
   }
 
+  function normaliseProduct(product){
+    const images = Array.isArray(product && product.images) ? product.images.filter(Boolean) : (Array.isArray(product && product.imgs) ? product.imgs.filter(Boolean) : []);
+    const first = images[0] || product && (product.image || product.img) || '';
+    if(!images.length && first) images.push(first);
+    const checkoutLinks = product && product.checkoutLinks || {};
+    const shopifyLink = product && (product.shopifyLink || (checkoutLinks.shopify && checkoutLinks.shopify.url) || (isShopifyProductUrl(product.link) ? product.link : '')) || '';
+    const wixLink = product && (product.wixLink || (checkoutLinks.wix && checkoutLinks.wix.url) || (!isShopifyProductUrl(product.link) ? product.link : '')) || '';
+    return Object.assign({}, product, {
+      id: productId(product),
+      dbId: productId(product),
+      name: product && (product.name || product.n) || 'ESNTLS Item',
+      n: product && (product.name || product.n) || 'ESNTLS Item',
+      image: first,
+      img: first,
+      images,
+      imgs: images,
+      category: product && (product.category || product.cat) || '',
+      cat: product && (product.category || product.cat) || '',
+      sizes: product && (product.sizes || product.availableSizes) || [],
+      variationName: product && (product.variationName || product.variantOptionName || product.optionName) || '',
+      variationValues: product && (product.variationValues || product.variants || product.variantValues) || [],
+      shopifyVariants: product && (product.shopifyVariants || product.variantIds || product.variantsMap) || null,
+      shopifyVariantId: product && (product.shopifyVariantId || product.variantId || product.defaultVariantId) || '',
+      shopifyLink,
+      wixLink,
+      link: shopifyLink || wixLink || product && product.link || ''
+    });
+  }
+
+  async function loadCatalogue(){
+    if(cataloguePromise) return cataloguePromise;
+    cataloguePromise = fetch(PRODUCT_FEED_URL + '?t=' + Date.now(), {cache:'no-store'})
+      .then(response => response.ok ? response.json() : [])
+      .then(data => {
+        const list = Array.isArray(data) ? data : (Array.isArray(data.products) ? data.products : []);
+        return list
+          .filter(product => product && product.active !== false && product.archived !== true && product.hidden !== true)
+          .map(normaliseProduct);
+      })
+      .catch(() => []);
+    return cataloguePromise;
+  }
+
+  function findCatalogueProduct(item, catalogue){
+    const id = productId(item);
+    const byId = catalogue.find(product => productId(product) === id);
+    if(byId) return byId;
+    const fallback = String(item && item.fallbackUrl || '');
+    if(!fallback) return null;
+    return catalogue.find(product => {
+      const links = [product.link, product.shopifyLink, product.wixLink, product.shopifyPlaceholder && product.shopifyPlaceholder.shopifyUrl].filter(Boolean).map(String);
+      return links.includes(fallback);
+    }) || null;
+  }
+
+  async function repairSavedCart(){
+    if(repairPromise) return repairPromise;
+    repairPromise = (async () => {
+      const cart = readCart();
+      if(!cart.some(item => !item.variantId)) return cart;
+      const catalogue = await loadCatalogue();
+      let changed = false;
+      const repaired = cart.map(item => {
+        if(item.variantId) return item;
+        const product = findCatalogueProduct(item, catalogue);
+        if(!product) return item;
+        const variantId = selectedVariantId(product, item.options || {});
+        if(!variantId) return item;
+        changed = true;
+        return Object.assign({}, item, {
+          name: item.name || product.name || product.n,
+          price: item.price || product.price,
+          image: item.image || product.image || product.img,
+          variantId,
+          fallbackUrl: product.shopifyLink || product.link || item.fallbackUrl
+        });
+      });
+      if(changed) localStorage.setItem(CART_KEY, JSON.stringify(repaired));
+      return changed ? repaired : cart;
+    })().finally(() => {
+      repairPromise = null;
+    });
+    return repairPromise;
+  }
+
   function sameLine(a,b){
     return String(a.productId) === String(b.productId) &&
       String(a.variantId || '') === String(b.variantId || '') &&
@@ -177,8 +269,9 @@
     return line;
   }
 
-  function checkout(items){
-    const cart = items || readCart();
+  async function checkout(items){
+    let cart = items || readCart();
+    if(cart.some(item => !item.variantId)) cart = await repairSavedCart();
     const url = checkoutUrlForItems(cart);
     if(url){
       navigateNoReferrer(url);
@@ -191,8 +284,13 @@
     alert('This cart needs Shopify variant IDs before it can be sent to checkout.');
   }
 
-  function checkoutSingle(product, selections){
-    const variantId = selectedVariantId(product, selections || {});
+  async function checkoutSingle(product, selections){
+    let variantId = selectedVariantId(product, selections || {});
+    if(!variantId){
+      const catalogue = await loadCatalogue();
+      const fresh = findCatalogueProduct({id:productId(product), fallbackUrl:product && (product.shopifyLink || product.link || '')}, catalogue);
+      if(fresh) variantId = selectedVariantId(fresh, selections || {});
+    }
     if(variantId){
       navigateNoReferrer('https://' + SHOPIFY_HOST + '/cart/' + cleanId(variantId) + ':1');
       return true;
@@ -235,6 +333,11 @@
   function renderCart(){
     ensureShell();
     const items = readCart();
+    if(items.some(item => !item.variantId)){
+      repairSavedCart().then(repaired => {
+        if(repaired.some(item => item.variantId) && repaired.some((item,index) => item.variantId !== (items[index] && items[index].variantId))) renderCart();
+      });
+    }
     const bubble = document.getElementById('esntlsCartCount');
     if(bubble) bubble.textContent = String(count());
     const body = document.getElementById('esntlsCartBody');
@@ -252,7 +355,7 @@
         '<div class="esntls-cart-line-info">' +
         '<strong>' + escapeHTML(item.name) + '</strong>' +
         (optionText ? '<span>' + optionText + '</span>' : '') +
-        (!item.variantId ? '<em>Variant ID needed for direct Shopify cart checkout</em>' : '') +
+        (!item.variantId ? '<em>Checkout details loading. If this stays, remove and re-add this item.</em>' : '') +
         '<b>' + escapeHTML(displayPrice(item.price)) + '</b>' +
         '<div class="esntls-cart-qty"><button type="button" onclick="EsntlsCart.setQty(' + index + ',' + (Number(item.qty || 1)-1) + ')">-</button><input value="' + escapeHTML(item.qty || 1) + '" inputmode="numeric" onchange="EsntlsCart.setQty(' + index + ',this.value)"><button type="button" onclick="EsntlsCart.setQty(' + index + ',' + (Number(item.qty || 1)+1) + ')">+</button></div>' +
         '</div>' +
