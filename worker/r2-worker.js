@@ -25,6 +25,8 @@
 //                                Body: { name: string, priceAmount: string, comparePriceAmount?: string }
 //   POST   /sync-linked-price → updates linked Shopify/Wix placeholder prices after an admin price edit.
 //                                Body: { productId: string|number, price: string|number }
+//   POST   /restore-standard-stock → makes selected R2 products buyable on 7-12 day delivery and restores linked Wix stock.
+//                                Body: { products: [{ id, price }], delivery?: string, inventoryQuantity?: number }
 //   POST   /checkout-link-mode → switches products between saved Shopify and Wix checkout links.
 //                                Body: { mode: 'shopify'|'wix', productId?: string|number }
 //   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
@@ -1230,6 +1232,14 @@ async function resolveWixProductIdsForPriceSync(env, rawProduct) {
       String(item.url || '').toLowerCase().includes(`/product-page/${slug.toLowerCase()}`)
     );
     if (hit?.id) ids.add(String(hit.id));
+    if (!hit?.id && env.WIX_API_TOKEN && env.WIX_SITE_ID) {
+      try {
+        const product = await fetchWixProductBySlug(env, slug);
+        if (product?.id) ids.add(String(product.id));
+      } catch {
+        // A stale or missing Wix cache should not block Shopify-only price syncs.
+      }
+    }
   }
 
   return [...ids];
@@ -1250,6 +1260,16 @@ async function fetchWixProduct(env, productId) {
   });
   const data = await readJsonResponse(response);
   if (!response.ok) throw new Error(`Wix get product ${productId} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.product || data;
+}
+
+async function fetchWixProductBySlug(env, slug) {
+  const response = await fetch(`https://www.wixapis.com/stores/v3/products/slug/${encodeURIComponent(slug)}`, {
+    method: 'GET',
+    headers: wixHeaders(env)
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix get product by slug ${slug} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
   return data.product || data;
 }
 
@@ -1298,6 +1318,209 @@ async function updateWixLinkedPrices(env, rawProduct, price) {
   }
 
   return { status: 'updated', count: products.length, products };
+}
+
+async function searchWixInventoryItems(env, productId) {
+  const response = await fetch('https://www.wixapis.com/stores/v3/inventory-items/search', {
+    method: 'POST',
+    headers: wixHeaders(env),
+    body: JSON.stringify({
+      search: {
+        filter: { productId: { $eq: productId } },
+        cursorPaging: { limit: 100 }
+      }
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix inventory search ${productId} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.inventoryItems || [];
+}
+
+async function createWixInventoryItem(env, productId, variantId) {
+  const inventoryItem = {
+    productId,
+    trackQuantity: false,
+    inStock: true
+  };
+  if (variantId) inventoryItem.variantId = variantId;
+
+  const response = await fetch('https://www.wixapis.com/stores/v3/inventory-items', {
+    method: 'POST',
+    headers: wixHeaders(env),
+    body: JSON.stringify({ inventoryItem })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix inventory create ${productId} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.inventoryItem || data;
+}
+
+async function patchWixInventoryItemInStock(env, item, inventoryQuantity) {
+  if (!item?.id || item.revision === undefined || item.revision === null) {
+    throw new Error('Wix inventory item is missing id or revision');
+  }
+
+  const quantity = Math.max(Number(item.quantity) || 0, inventoryQuantity);
+  const inventoryItem = {
+    id: item.id,
+    revision: item.revision,
+    trackQuantity: item.trackQuantity === true
+  };
+  if (item.trackQuantity === true) {
+    inventoryItem.quantity = quantity;
+  } else {
+    inventoryItem.inStock = true;
+  }
+
+  const response = await fetch(`https://www.wixapis.com/stores/v3/inventory-items/${encodeURIComponent(item.id)}`, {
+    method: 'PATCH',
+    headers: wixHeaders(env),
+    body: JSON.stringify({ inventoryItem, reason: 'MANUAL' })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok) throw new Error(`Wix inventory update ${item.id} failed: ${response.status} ${JSON.stringify(data).slice(0, 500)}`);
+  return data.inventoryItem || data;
+}
+
+async function restoreWixProductInventory(env, productId, inventoryQuantity) {
+  let items = await searchWixInventoryItems(env, productId);
+  let created = 0;
+
+  if (!items.length) {
+    const product = await fetchWixProduct(env, productId);
+    const variants = product.variantsInfo?.variants || [];
+    if (variants.length) {
+      items = [];
+      for (const variant of variants) {
+        if (!variant.id) continue;
+        items.push(await createWixInventoryItem(env, productId, variant.id));
+        created++;
+      }
+    } else {
+      items = [await createWixInventoryItem(env, productId, '')];
+      created++;
+    }
+  }
+
+  const updatedItems = [];
+  for (const item of items) {
+    updatedItems.push(await patchWixInventoryItemInStock(env, item, inventoryQuantity));
+  }
+
+  return {
+    productId,
+    created,
+    updated: updatedItems.length,
+    itemIds: updatedItems.map(item => item.id).filter(Boolean)
+  };
+}
+
+async function updateWixLinkedAvailability(env, rawProduct, inventoryQuantity, cache = null) {
+  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
+    return { status: 'skipped', reason: 'WIX_API_TOKEN or WIX_SITE_ID is not configured', products: [] };
+  }
+  const ids = await resolveWixProductIdsForPriceSync(env, rawProduct);
+  if (!ids.length) return { status: 'skipped', reason: 'No linked Wix product found', products: [] };
+
+  const products = [];
+  for (const id of ids) {
+    if (cache?.has(id)) {
+      products.push(cache.get(id));
+      continue;
+    }
+    const restored = await restoreWixProductInventory(env, id, inventoryQuantity);
+    if (cache) cache.set(id, restored);
+    products.push(restored);
+  }
+  return { status: 'updated', count: products.length, products };
+}
+
+async function restoreStandardStockFromR2(env, requestBody) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+
+  const defaults = [
+    { id: 25, price: '£49.99' },
+    { id: 26, price: '£49.99' },
+    { id: 34, price: '£89.99' }
+  ];
+  const delivery = String(requestBody.delivery || '7-12 Days').trim() || '7-12 Days';
+  const inventoryQuantity = Number(requestBody.inventoryQuantity) > 0
+    ? Math.floor(Number(requestBody.inventoryQuantity))
+    : 100;
+  const requestedProducts = Array.isArray(requestBody.products) && requestBody.products.length
+    ? requestBody.products
+    : defaults;
+
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const list = Array.isArray(payload) ? payload : payload.products;
+  if (!Array.isArray(list)) throw new Error('products.json is not an array');
+
+  const updated = [];
+  const skipped = [];
+  const wixInventoryCache = new Map();
+  for (const update of requestedProducts) {
+    const rawProduct = list.find(item => String(item.id) === String(update.id));
+    if (!rawProduct) {
+      skipped.push({ id: update.id, reason: 'Product was not found' });
+      continue;
+    }
+
+    const price = update.price || rawProduct.price;
+    rawProduct.price = String(price);
+    rawProduct.delivery = delivery;
+    rawProduct.active = rawProduct.active !== false;
+    rawProduct.archived = false;
+    rawProduct.hidden = false;
+    rawProduct.outOfStock = false;
+
+    const result = {
+      id: rawProduct.id,
+      name: rawProduct.name || rawProduct.title || '',
+      price: rawProduct.price,
+      delivery,
+      wixPrice: { status: 'skipped', reason: 'Not attempted', products: [] },
+      wixInventory: { status: 'skipped', reason: 'Not attempted', products: [] }
+    };
+
+    const numericPrice = priceAmount(rawProduct.price);
+    if (numericPrice) {
+      try {
+        result.wixPrice = await updateWixLinkedPrices(env, rawProduct, numericPrice);
+      } catch (error) {
+        result.wixPrice = { status: 'error', error: error.message, products: [] };
+      }
+    }
+
+    try {
+      result.wixInventory = await updateWixLinkedAvailability(env, rawProduct, inventoryQuantity, wixInventoryCache);
+    } catch (error) {
+      result.wixInventory = { status: 'error', error: error.message, products: [] };
+    }
+
+    rawProduct.stockRestore = {
+      delivery,
+      inventoryQuantity,
+      result,
+      updatedAt: new Date().toISOString()
+    };
+    updated.push(result);
+  }
+
+  await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
+    httpMetadata: { contentType: 'application/json' }
+  });
+
+  return {
+    ok: true,
+    delivery,
+    inventoryQuantity,
+    updated: updated.length,
+    skipped: skipped.length,
+    products: updated,
+    skippedProducts: skipped,
+    updatedAt: new Date().toISOString()
+  };
 }
 
 async function syncLinkedPriceFromR2(env, requestBody) {
@@ -1548,6 +1771,16 @@ export default {
       }
     }
 
+    if (req.method === 'POST' && parts[0] === 'restore-standard-stock') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await restoreStandardStockFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
     if (req.method === 'POST' && parts[0] === 'checkout-link-mode') {
       let body;
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
@@ -1626,7 +1859,10 @@ export default {
       let cursor = null;
       let pages = 0;
       do {
-        const body = JSON.stringify({ search: { paging: { limit: 100, cursor } } });
+        const search = cursor
+          ? { cursorPaging: { limit: 100, cursor } }
+          : { cursorPaging: { limit: 100 } };
+        const body = JSON.stringify({ search });
         const r = await fetch('https://www.wixapis.com/stores/v3/products/search', {
           method: 'POST',
           headers: {
