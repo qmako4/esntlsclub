@@ -2,6 +2,9 @@
   const SHOPIFY_HOST = 'nr00an-yh.myshopify.com';
   const PRODUCT_FEED_URL = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json';
   const CART_KEY = 'esntls_cart_v1';
+  const B30_BUNDLE_CODE = 'B30PAIR';
+  const B30_BUNDLE_DISCOUNT = 20;
+  const B30_PRODUCT_IDS = new Set(['7','8','9','10','11','12','13','14','15','16','17','18']);
   let cataloguePromise = null;
   let repairPromise = null;
 
@@ -125,7 +128,8 @@
     const valid = items.filter(item => item.variantId);
     if(!valid.length) return '';
     const lines = valid.map(item => cleanId(item.variantId) + ':' + Math.max(1, Number(item.qty || 1) || 1)).join(',');
-    return 'https://' + SHOPIFY_HOST + '/cart/' + lines;
+    const discount = b30Quantity(valid) >= 2 ? '?discount=' + encodeURIComponent(B30_BUNDLE_CODE) : '';
+    return 'https://' + SHOPIFY_HOST + '/cart/' + lines + discount;
   }
 
   function navigateNoReferrer(url){
@@ -246,20 +250,24 @@
       JSON.stringify(a.options || {}) === JSON.stringify(b.options || {});
   }
 
-  function add(product, selections, qty){
+  function buildLine(product, selections, qty){
     const options = selections || {};
-    const variantId = selectedVariantId(product, options);
     const sourceLink = product && (product.shopifyLink || product.link || product.wixLink || '');
-    const line = {
+    return {
       productId: productId(product),
       name: product && (product.name || product.n) || 'ESNTLS Item',
       price: product && product.price || '',
       image: product && (product.image || product.img || (product.images && product.images[0]) || (product.imgs && product.imgs[0])) || '',
       options,
-      variantId,
+      variantId: selectedVariantId(product, options),
       fallbackUrl: sourceLink,
+      brand: product && product.brand || '',
       qty: Math.max(1, Number(qty || 1) || 1)
     };
+  }
+
+  function add(product, selections, qty){
+    const line = buildLine(product, selections, qty);
     const cart = readCart();
     const existing = cart.find(item => sameLine(item,line));
     if(existing) existing.qty += line.qty;
@@ -267,6 +275,26 @@
     writeCart(cart);
     openCart();
     return line;
+  }
+
+  function addBundle(entries){
+    const lines = (entries || []).map(entry => buildLine(entry.product, entry.selections, 1));
+    if(lines.length !== 2 || lines.some(line => !line.variantId)){
+      throw new Error('Choose a colour and size for both B30s.');
+    }
+    if(lines.some(line => !B30_PRODUCT_IDS.has(String(line.productId)))){
+      throw new Error('This offer is only available on B30 products.');
+    }
+    const cart = readCart();
+    lines.forEach(line => {
+      line.bundleOffer = 'b30-pair';
+      const existing = cart.find(item => sameLine(item,line));
+      if(existing) existing.qty += 1;
+      else cart.push(line);
+    });
+    writeCart(cart);
+    openCart();
+    return lines;
   }
 
   async function checkout(items){
@@ -326,8 +354,17 @@
     return match ? Number(match[0]) : 0;
   }
 
-  function cartTotal(items){
-    return items.reduce((sum,item) => sum + moneyToNumber(item.price) * (Number(item.qty) || 1), 0);
+  function b30Quantity(items){
+    return items.reduce((sum,item) => {
+      const eligible = B30_PRODUCT_IDS.has(String(item.productId)) || String(item.brand || '').toLowerCase() === 'b30';
+      return sum + (eligible ? Math.max(1, Number(item.qty) || 1) : 0);
+    }, 0);
+  }
+
+  function cartPricing(items){
+    const subtotal = items.reduce((sum,item) => sum + moneyToNumber(item.price) * (Number(item.qty) || 1), 0);
+    const discount = b30Quantity(items) >= 2 ? B30_BUNDLE_DISCOUNT : 0;
+    return {subtotal, discount, total:Math.max(0, subtotal-discount)};
   }
 
   function renderCart(){
@@ -362,7 +399,10 @@
         '<button class="esntls-cart-remove" type="button" onclick="EsntlsCart.remove(' + index + ')" aria-label="Remove item">x</button>' +
         '</div>';
     }).join('');
-    footer.innerHTML = '<div class="esntls-cart-total"><span>Total</span><strong>£' + cartTotal(items).toFixed(2) + '</strong></div>' +
+    const pricing = cartPricing(items);
+    footer.innerHTML = (pricing.discount ? '<div class="esntls-cart-saving"><span>B30 pair saving</span><strong>-£' + pricing.discount.toFixed(2) + '</strong></div>' : '') +
+      '<div class="esntls-cart-total"><span>Total</span><strong>£' + pricing.total.toFixed(2) + '</strong></div>' +
+      (pricing.discount ? '<div class="esntls-cart-promo-note">Any 2 B30s for £179.99 applied at Shopify checkout</div>' : '') +
       '<button class="esntls-cart-checkout" type="button" onclick="EsntlsCart.checkout()">Checkout</button>' +
       '<button class="esntls-cart-continue" type="button" onclick="EsntlsCart.closeCart()">Keep shopping</button>';
   }
@@ -408,8 +448,10 @@
       .esntls-cart-qty button{background:#f1f1f1;border:0;border-radius:999px;cursor:pointer;font-weight:900;height:30px;width:30px}
       .esntls-cart-qty input{border:1px solid #e3e3e3;border-radius:999px;font-size:12px;font-weight:800;height:30px;text-align:center;width:44px}
       .esntls-cart-footer{border-top:1px solid #eee;padding:14px}
+      .esntls-cart-saving{align-items:center;background:#edfff4;border-radius:10px;color:#008d3a;display:flex;font-size:12px;font-weight:800;justify-content:space-between;margin-bottom:8px;padding:9px 11px}
       .esntls-cart-total{align-items:center;display:flex;font-size:13px;justify-content:space-between;margin-bottom:10px}
       .esntls-cart-total strong{font-size:18px}
+      .esntls-cart-promo-note{color:#666;font-size:10px;font-weight:700;line-height:1.4;margin:-3px 0 10px;text-align:center}
       .esntls-cart-checkout{background:#00C853;border:0;border-radius:999px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:900;min-height:52px;width:100%}
       .esntls-cart-continue{background:#fff;border:1.5px solid #e5e5e5;border-radius:999px;color:#111;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:800;margin-top:9px;min-height:44px;width:100%}
       @media(max-width:819px){.esntls-cart-fab{top:auto;bottom:82px;right:14px}.esntls-cart-drawer{max-width:none}}
@@ -455,6 +497,7 @@
 
   window.EsntlsCart = {
     add,
+    addBundle,
     checkout,
     checkoutSingle,
     closeCart,

@@ -241,6 +241,16 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .gthumb{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all .3s cubic-bezier(.22,1,.36,1)}
 .gthumb:hover{transform:scale(1.1);border-color:rgba(0,200,83,.4)}
 .gthumb.active{border-color:#00C853;transform:scale(1.05);box-shadow:0 0 12px rgba(0,200,83,.3)}
+
+/* B30 pair bundle */
+.bundle-grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.bundle-pick{background:#fff;border:1px solid #e7e7e7;border-radius:8px;display:grid;gap:12px;grid-template-columns:112px 1fr;padding:12px}
+.bundle-pick img{aspect-ratio:1;background:#f4f4f4;border-radius:6px;height:auto;object-fit:cover;width:112px}
+.bundle-field{display:grid;gap:5px}
+.bundle-field label{color:#777;font-size:10px;font-weight:800;text-transform:uppercase}
+.bundle-field select{appearance:none;background:#f6f6f6;border:1px solid #e2e2e2;border-radius:999px;color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;min-height:42px;padding:0 34px 0 14px;width:100%}
+.bundle-field-wrap{position:relative}.bundle-field-wrap:after{content:'\25BE';font-size:11px;pointer-events:none;position:absolute;right:14px;top:13px}
+@media(max-width:700px){.bundle-grid{grid-template-columns:1fr}.bundle-pick{grid-template-columns:92px 1fr}.bundle-pick img{width:92px}}
 </style>
 </head>
 <body>
@@ -278,6 +288,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div class="desktop-menu-panel">
 <a href="#" onclick="showCat('New Items')" class="desktop-menu-item">New Items</a>
 <a href="#" onclick="showCat('Best Sellers')" class="desktop-menu-item">🔥 Best Sellers</a>
+<a href="#" onclick="showB30Bundle()" class="desktop-menu-item">B30 Bundle - Save £20</a>
 <a href="#" onclick="showCat('Essentials')" class="desktop-menu-item">⭐ Essentials</a>
 <a href="#" onclick="showCat('Old Money')" class="desktop-menu-item">🏛️ Old Money</a>
 </div>
@@ -340,6 +351,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
         <div class="mob-section-head">⭐ Featured</div>
         <a href="#" class="mob-item" data-keywords="new items latest recent arrivals newest drops uploaded" onclick="showCat('New Items');toggleMenu()">New Items</a>
         <a href="#" class="mob-item" data-keywords="best sellers popular hot top trending bestsellers" onclick="showCat('Best Sellers');toggleMenu()">🔥 Best Sellers</a>
+        <a href="#" class="mob-item" data-keywords="bundle deal offer b30 two pair save" onclick="showB30Bundle();toggleMenu()">B30 Bundle - Save £20</a>
         <a href="#" class="mob-item" data-keywords="essentials featured curated" onclick="showCat('Essentials');toggleMenu()">⭐ Essentials</a>
         <a href="#" class="mob-item" data-keywords="old money classic luxury preppy heritage featured" onclick="showCat('Old Money');toggleMenu()">🏛️ Old Money</a>
       </div>
@@ -648,6 +660,82 @@ return `<section style="padding:16px 0 28px;max-width:100vw">
 /*╔═══════════════════════════╗
   ║  CUSTOMER REVIEWS         ║
   ╚═══════════════════════════╝*/
+function b30BundleSizes(product){
+  const source=product&&(product.shopifyVariants||product.variantIds||product.variantsMap)||{};
+  const sizes=Object.keys(source).map(key=>key.split('|')[0].trim()).filter(Boolean);
+  return sizes.length?[...new Set(sizes)]:['UK 6','UK 7','UK 8','UK 9','UK 10','UK 11','UK 12'];
+}
+
+function b30BundleProductOptions(products,selectedId){
+  return products.map(product=>`<option value="${escapeHTML(productSourceId(product))}"${String(productSourceId(product))===String(selectedId)?' selected':''}>${escapeHTML(product.n)}</option>`).join('');
+}
+
+function b30BundleSizeOptions(product){
+  return b30BundleSizes(product).map(size=>`<option value="${escapeHTML(size)}">${escapeHTML(size)}</option>`).join('');
+}
+
+function b30BundlePicker(slot,product,products){
+  return `<div class="bundle-pick">
+    <img id="bundleImg${slot}" src="${escapeHTML(product.img)}" alt="${escapeHTML(product.n)}">
+    <div style="display:grid;gap:9px;align-content:center;min-width:0">
+      <div style="font-size:10px;color:#00C853;font-weight:900;letter-spacing:1px;text-transform:uppercase">Pair ${slot}</div>
+      <div class="bundle-field"><label for="bundleProduct${slot}">Colour</label><div class="bundle-field-wrap"><select id="bundleProduct${slot}" onchange="updateB30Bundle(${slot})">${b30BundleProductOptions(products,productSourceId(product))}</select></div></div>
+      <div class="bundle-field"><label for="bundleSize${slot}">UK size</label><div class="bundle-field-wrap"><select id="bundleSize${slot}">${b30BundleSizeOptions(product)}</select></div></div>
+    </div>
+  </div>`;
+}
+
+function b30BundleHTML(products){
+  const eligible=products.filter(product=>product.price!=='Out of stock'&&Object.keys(product.shopifyVariants||{}).length);
+  if(eligible.length<2)return '';
+  return `<section id="b30-bundle" style="background:#111;padding:38px 16px;margin:0 0 40px;color:#fff;scroll-margin-top:72px">
+    <div style="max-width:1080px;margin:0 auto">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:20px">
+        <div>
+          <div style="color:#00C853;font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Bundle offer</div>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,7vw,56px);letter-spacing:2px;line-height:.95;margin:0 0 8px">ANY 2 B30s FOR £179.99</h2>
+          <p style="color:#aaa;font-size:13px;line-height:1.5;margin:0">Mix any two colours. Choose each size separately.</p>
+        </div>
+        <div style="background:#00C853;border-radius:999px;color:#fff;font-size:13px;font-weight:900;padding:10px 18px;white-space:nowrap">SAVE £20</div>
+      </div>
+      <div class="bundle-grid">
+        ${b30BundlePicker(1,eligible[0],eligible)}
+        ${b30BundlePicker(2,eligible[1],eligible)}
+      </div>
+      <div id="b30BundleError" style="color:#ff8b8b;font-size:11px;font-weight:700;min-height:16px;margin-top:8px;text-align:center"></div>
+      <button type="button" onclick="addB30Bundle()" class="glow-btn" style="background:#00C853;border:0;border-radius:999px;color:#fff;cursor:pointer;display:block;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:900;margin:4px auto 0;min-height:52px;padding:0 34px;width:min(100%,440px)">Add Both to Cart - £179.99</button>
+      <div style="color:#777;font-size:10px;font-weight:700;margin-top:10px;text-align:center">Discount applied automatically at checkout</div>
+    </div>
+  </section>`;
+}
+
+function updateB30Bundle(slot){
+  const id=document.getElementById('bundleProduct'+slot)?.value;
+  const product=allProducts().find(item=>String(productSourceId(item))===String(id));
+  if(!product)return;
+  const image=document.getElementById('bundleImg'+slot);
+  const size=document.getElementById('bundleSize'+slot);
+  if(image){image.src=product.img;image.alt=product.n}
+  if(size)size.innerHTML=b30BundleSizeOptions(product);
+}
+
+function addB30Bundle(){
+  const error=document.getElementById('b30BundleError');
+  try{
+    const entries=[1,2].map(slot=>{
+      const id=document.getElementById('bundleProduct'+slot)?.value;
+      const size=document.getElementById('bundleSize'+slot)?.value;
+      const product=allProducts().find(item=>String(productSourceId(item))===String(id));
+      if(!product||!size)throw new Error('Choose a colour and size for both B30s.');
+      return {product,selections:{Size:size}};
+    });
+    EsntlsCart.addBundle(entries);
+    if(error)error.textContent='';
+  }catch(bundleError){
+    if(error)error.textContent=bundleError.message||'Please check both selections.';
+  }
+}
+
 const REVIEWS=[
 {name:"Jordan M.",loc:"London",text:"Received my B22s next day. Quality is insane for the price, my mates thought they were retail. 10/10 will order again.",product:"B22 White",stars:5,date:"Mar 2026"},
 {name:"Kai T.",loc:"Birmingham",text:"Copped the Wyndham parka — fits perfect, warm as anything. The fur hood is proper quality. Already looking at the MacMillan.",product:"Wyndham Parka",stars:5,date:"Feb 2026"},
@@ -746,6 +834,8 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 
 <!-- Auto-scrolling Categories (directly under How To Order) -->
 ${catScrollHTML()}
+
+${b30BundleHTML(b30s)}
 
 <!-- Best Sellers -->
 <section style="padding:8px 8px 36px;max-width:1600px;margin:0 auto">
@@ -962,6 +1052,12 @@ wrap.addEventListener('click',e=>{
 },true);
 }
 function goHome(){currentView='home';render();return false}
+function showB30Bundle(){
+  currentView='home';
+  render();
+  setTimeout(()=>document.getElementById('b30-bundle')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  return false;
+}
 
 /*╔═══════════════════════════╗
   ║  PUBLIC STOCK PAGE        ║
