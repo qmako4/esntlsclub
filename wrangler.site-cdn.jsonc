@@ -4,6 +4,12 @@
   "main": "worker/site-cdn-worker.js",
   "compatibility_date": "2026-08-07",
   "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "esntls-images"
+    }
+  ],
   "routes": [
     {
       "pattern": "esntlsclub.com/*",

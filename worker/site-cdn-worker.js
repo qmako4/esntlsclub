@@ -1,5 +1,6 @@
 const GITHUB_ORIGIN = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
+const MEDIA_CACHE_VERSION = '2';
 
 const PUBLIC_ROOT_FILES = new Set([
   'admin.html',
@@ -105,51 +106,76 @@ function responseHeaders(originHeaders, file, browserTtl, colo) {
   return headers;
 }
 
-async function serveMedia(request, key) {
+async function serveMedia(request, key, env, context) {
   const extension = extensionFor(key);
   const isJson = extension === '.json';
   const browserTtl = isJson ? 30 : 604800;
   const edgeTtl = isJson ? 60 : 2592000;
-  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
-  const originUrl = `${R2_PUBLIC_ORIGIN}/${encodedKey}`;
-  const originResponse = await fetch(originUrl, {
-    cf: {
-      cacheEverything: true,
-      cacheTtl: edgeTtl,
-      cacheTtlByStatus: {
-        '200-299': edgeTtl,
-        '404': 60,
-        '500-599': 0,
+  const cacheUrl = new URL(request.url);
+  cacheUrl.search = '';
+  cacheUrl.searchParams.set('__edge', MEDIA_CACHE_VERSION);
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+  const cache = caches.default;
+  const cached = await cache.match(cacheKey);
+
+  if (cached) {
+    const cachedHeaders = new Headers(cached.headers);
+    cachedHeaders.set('Cache-Control', `public, max-age=${browserTtl}`);
+    cachedHeaders.set('X-ESNTLS-Edge', request.cf && request.cf.colo || 'unknown');
+    cachedHeaders.set('X-ESNTLS-Media-Cache', 'HIT');
+    return new Response(request.method === 'HEAD' ? null : cached.body, {
+      status: cached.status,
+      statusText: cached.statusText,
+      headers: cachedHeaders,
+    });
+  }
+
+  const object = await env.MEDIA_BUCKET.get(key);
+  if (object === null) {
+    return new Response('Not found', {
+      status: 404,
+      headers: {
+        'Cache-Control': 'public, max-age=60',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'X-ESNTLS-Edge': request.cf && request.cf.colo || 'unknown',
       },
-    },
-  });
+    });
+  }
+
+  const objectHeaders = new Headers();
+  object.writeHttpMetadata(objectHeaders);
+  objectHeaders.set('etag', object.httpEtag);
   const headers = responseHeaders(
-    originResponse.headers,
+    objectHeaders,
     key,
     browserTtl,
     request.cf && request.cf.colo,
   );
   headers.set('X-ESNTLS-Media', 'edge');
+  headers.set('X-ESNTLS-Media-Cache', 'MISS');
+  headers.set('Cache-Control', `public, max-age=${browserTtl}, s-maxage=${edgeTtl}`);
 
-  if (isJson && originResponse.ok) {
+  let body = object.body;
+  if (isJson) {
     headers.delete('etag');
-    const body = (await originResponse.text()).split(`${R2_PUBLIC_ORIGIN}/`).join('/media/');
-    return new Response(request.method === 'HEAD' ? null : body, {
-      status: originResponse.status,
-      statusText: originResponse.statusText,
-      headers,
-    });
+    body = (await object.text()).split(`${R2_PUBLIC_ORIGIN}/`).join('/media/');
   }
 
-  return new Response(request.method === 'HEAD' ? null : originResponse.body, {
-    status: originResponse.status,
-    statusText: originResponse.statusText,
+  const response = new Response(request.method === 'HEAD' ? null : body, {
+    status: 200,
     headers,
   });
+  if (request.method === 'GET') {
+    const cacheResponse = response.clone();
+    cacheResponse.headers.set('Cache-Control', `public, max-age=${edgeTtl}`);
+    context.waitUntil(cache.put(cacheKey, cacheResponse));
+  }
+  return response;
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, context) {
     const url = new URL(request.url);
 
     if (url.hostname === 'www.esntlsclub.com') {
@@ -166,7 +192,7 @@ export default {
     }
 
     const mediaKey = mediaKeyFor(url.pathname);
-    if (mediaKey) return serveMedia(request, mediaKey);
+    if (mediaKey) return serveMedia(request, mediaKey, env, context);
 
     const file = publicFileFor(url.pathname);
     if (!file) {
