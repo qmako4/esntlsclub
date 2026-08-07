@@ -873,15 +873,30 @@ async function requestOpenAIImageEdit(env, product, source, background, model, s
   throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
 }
 
-function buildGrassImagePrompt(prompt, hasReferences = false) {
-  const fallback = [
-    'BACKGROUND REPLACEMENT ONLY. Image 1 is the source photo and Image 2 is the required grass background.',
-    'Keep every foreground pixel from Image 1 unchanged, including the complete product, hands, arms, hangers, tags, laces, packaging and existing foreground shadows.',
-    'The foreground must stay at exactly the same coordinates, scale, camera angle, perspective, crop, colours, logos, text, materials, textures, stitching and lighting as Image 1.',
-    'Change only the pixels belonging to the old background. Do not redraw, recreate, beautify, restyle, move, resize, rotate, crop, remove or add any foreground detail.',
-    'Use the grass from Image 2 at a natural scale. If the 3:4 canvas needs extension, extend only the grass background.',
-    'Do not add a new shadow unless required to prevent floating; if required, use one very soft contact shadow only. No props, text, watermark or dramatic lighting.'
+function grassReplacementPrompt(productName = 'uploaded product') {
+  return [
+    'Use case: realistic ecommerce flat-lay background replacement for ESNTLSCLUB.',
+    `Input image 1 is the product photo named "${String(productName || 'uploaded product').trim() || 'uploaded product'}".`,
+    'Input image 2 is the original ESNTLSCLUB green grass background. Use it as the physical ground surface that the product is lying on.',
+    'Create a 3:4 overhead flat-lay product photo where the product appears naturally placed on that exact supplied grass background.',
+    'Preserve the product exactly: its shape, silhouette, colour, logos, printed text, texture, stitching, fabric grain, mesh holes, tags, defects, marks, wear, folds, and edge details.',
+    'Preserve the exact number of products shown. Do not add duplicates, alternative colourways, extra garments, props, or a different arrangement. If the input contains a group or set, keep the same items and overlap order.',
+    'Preserve any existing hands, arms, hangers, packaging, and other foreground details exactly. Do not add or remove them.',
+    'Do not smooth, repaint, recolour, relight, retouch, redesign, clean, repair, de-wrinkle, upscale, or restyle the product. Avoid AI smoothing and retain the genuine fabric and material texture.',
+    "Preserve the supplied ESNTLSCLUB background's exact green grass colour, texture, blade pattern, lighting, and natural imperfections. Do not replace it with different grass or generate a new outdoor environment.",
+    'Do not invent, duplicate, extend, or add ESNTLSCLUB text, logos, watermarks, labels, props, hands, hangers, flowers, plants, soil, walls, or scenery.',
+    'Only add subtle realism where the product touches the grass: a soft natural contact shadow, slight grass compression, and a small amount of grass naturally overlapping the lowest product edges.',
+    'Shadows must be soft and believable. Do not create dramatic, floating, glossy, harsh, oversized, or unrealistic shadows.',
+    'Keep realistic product scale and perspective. Size the product proportionally to the background like a genuine overhead photograph, not an oversized pasted cutout.',
+    'Leave visible green grass around the product on every side. Most clothing should fill approximately 50-68% of the canvas. Shoes, watches, jewellery, and smaller accessories should appear proportionally smaller.',
+    'Do not let the product touch the image borders unless it is already intentionally cropped in the source image.',
+    'Centre the product like a clean ecommerce flat-lay. The result should look naturally photographed on grass, not AI-generated or digitally composited.',
+    'If anything is uncertain, prioritise preserving the uploaded product and supplied grass background over inventing or improving details.'
   ].join(' ');
+}
+
+function buildGrassImagePrompt(prompt, hasReferences = false) {
+  const fallback = grassReplacementPrompt();
   const referenceLine = hasReferences
     ? 'Use the additional reference images only to match the finished ESNTLS artificial-grass product-photo look: real phone photo, natural scale, camera distance, soft grounding, and grass texture. Do not copy or add products, boxes, cards, logos, stickers, packaging, hands, props, text, or layout from the reference images.'
     : '';

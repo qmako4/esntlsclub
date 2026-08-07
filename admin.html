@@ -1602,17 +1602,40 @@ function addGeneratedFilesReady(){
 return addBgState.generatedItems.length&&filesMatch(addBgState.sourceFiles,pendingFiles);
 }
 
-function addBackgroundPrompt(){
+function psProductNameFromFile(file){
+const raw=String(file&&file.name||'uploaded product').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
+return raw||'uploaded product';
+}
+
+function esntlsGrassReplacementPrompt(productName){
+const safeName=String(productName||'uploaded product').trim()||'uploaded product';
+return [
+'Use case: realistic ecommerce flat-lay background replacement for ESNTLSCLUB.',
+`Input image 1 is the product photo named "${safeName}".`,
+'Input image 2 is the original ESNTLSCLUB green grass background. Use it as the physical ground surface that the product is lying on.',
+'Create a 3:4 overhead flat-lay product photo where the product appears naturally placed on that exact supplied grass background.',
+'Preserve the product exactly: its shape, silhouette, colour, logos, printed text, texture, stitching, fabric grain, mesh holes, tags, defects, marks, wear, folds, and edge details.',
+'Preserve the exact number of products shown. Do not add duplicates, alternative colourways, extra garments, props, or a different arrangement. If the input contains a group or set, keep the same items and overlap order.',
+'Preserve any existing hands, arms, hangers, packaging, and other foreground details exactly. Do not add or remove them.',
+'Do not smooth, repaint, recolour, relight, retouch, redesign, clean, repair, de-wrinkle, upscale, or restyle the product. Avoid AI smoothing and retain the genuine fabric and material texture.',
+"Preserve the supplied ESNTLSCLUB background's exact green grass colour, texture, blade pattern, lighting, and natural imperfections. Do not replace it with different grass or generate a new outdoor environment.",
+'Do not invent, duplicate, extend, or add ESNTLSCLUB text, logos, watermarks, labels, props, hands, hangers, flowers, plants, soil, walls, or scenery.',
+'Only add subtle realism where the product touches the grass: a soft natural contact shadow, slight grass compression, and a small amount of grass naturally overlapping the lowest product edges.',
+'Shadows must be soft and believable. Do not create dramatic, floating, glossy, harsh, oversized, or unrealistic shadows.',
+'Keep realistic product scale and perspective. Size the product proportionally to the background like a genuine overhead photograph, not an oversized pasted cutout.',
+'Leave visible green grass around the product on every side. Most clothing should fill approximately 50-68% of the canvas. Shoes, watches, jewellery, and smaller accessories should appear proportionally smaller.',
+'Do not let the product touch the image borders unless it is already intentionally cropped in the source image.',
+'Centre the product like a clean ecommerce flat-lay. The result should look naturally photographed on grass, not AI-generated or digitally composited.',
+'If anything is uncertain, prioritise preserving the uploaded product and supplied grass background over inventing or improving details.'
+].join(' ');
+}
+
+function addBackgroundPrompt(productName){
 const s=psGetSettings();
 const preset=s.stylePreset||'sneaker';
 const base=PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
 return [
-'BACKGROUND REPLACEMENT ONLY. Image 1 is the source photo and Image 2 is the required grass background.',
-'Keep every foreground pixel from Image 1 unchanged, including the complete product, hands, arms, hangers, tags, laces, packaging and existing foreground shadows.',
-'The foreground must stay at exactly the same coordinates, scale, camera angle, perspective, crop, colours, logos, text, materials, textures, stitching and lighting as Image 1.',
-'Change only the pixels belonging to the old background. Do not redraw, recreate, beautify, restyle, move, resize, rotate, crop, remove or add any foreground detail.',
-'Use the grass from Image 2 at a natural scale. If the 3:4 canvas needs extension, extend only the grass background.',
-'Do not add a new shadow unless required to prevent floating; if required, use one very soft contact shadow only. No props, text, watermark or dramatic lighting.',
+esntlsGrassReplacementPrompt(productName),
 psReferenceUrlsForGeneration().length?psReferenceInstruction():'',
 base
 ].filter(Boolean).join(' ');
@@ -1732,7 +1755,7 @@ return {sourceFile:source,generatedFile:new File([normalized.blob],fileName,{typ
 }
 
 async function generateSingleAddBackground(source,index,bgBlob,s,referenceContext={}){
-const prompt=addBackgroundPrompt();
+const prompt=addBackgroundPrompt(psProductNameFromFile(source));
 return generateGrassPreviewFile(source,index,bgBlob,s,prompt,'medium',undefined,referenceContext);
 }
 
@@ -3185,8 +3208,8 @@ const PS_GRASS_BG_VERSION=2;
 const PS_REFERENCE_LOOK_VERSION=2;
 const PS_MAX_REFERENCE_IMAGES=6;
 const PS_STYLE_PROMPTS={
-  sneaker:'Simple background swap only. Keep the foreground product and any hand exactly unchanged. Preserve the original perspective and scale with natural grass visible around the subject.',
-  'sneaker-card':'Simple background swap only with a little more visible grass around the subject. Keep the product and any hand unchanged. Do not add props.',
+  sneaker:'Default composition: a clean overhead ecommerce flat-lay with realistic scale and green grass visible on every side.',
+  'sneaker-card':'Use slightly more visible grass around the exact preserved subject. Do not add props or change the arrangement.',
   flatlay:'Simple background swap only. Preserve the original crop, angle, product size, and any hand or foreground detail.',
   lifestyle:'Simple natural phone-photo background swap. Keep the product and any hand unchanged; make only the background grass.'
 };
@@ -3657,21 +3680,17 @@ async function psBuildReferenceContext(s,signal){
   }
   return context
 }
-function psBuildPrompt(){
+function psBuildPrompt(productName){
   const custom=document.getElementById('psPrompt').value.trim();
   const preset=document.getElementById('psStylePreset').value;
-  const base=custom||(preset==='custom'
+  const base=preset==='custom'
     ?'Simple grass background swap only. Keep the product and any hand unchanged.'
-    :PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker);
+    :PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
   return [
-    'BACKGROUND REPLACEMENT ONLY. Image 1 is the source photo and Image 2 is the required grass background.',
-    'Keep every foreground pixel from Image 1 unchanged, including the complete product, hands, arms, hangers, tags, laces, packaging and existing foreground shadows.',
-    'The foreground must stay at exactly the same coordinates, scale, camera angle, perspective, crop, colours, logos, text, materials, textures, stitching and lighting as Image 1.',
-    'Change only the pixels belonging to the old background. Do not redraw, recreate, beautify, restyle, move, resize, rotate, crop, remove or add any foreground detail.',
-    'Use the grass from Image 2 at a natural scale. If the 3:4 canvas needs extension, extend only the grass background.',
-    'Do not add a new shadow unless required to prevent floating; if required, use one very soft contact shadow only. No props, text, watermark or dramatic lighting.',
+    esntlsGrassReplacementPrompt(productName),
     psReferenceUrlsForGeneration().length?psReferenceInstruction():'',
-    base
+    base,
+    custom
   ].filter(Boolean).join(' ');
 }
 async function psGenerateSingleLegacy(){
@@ -3694,7 +3713,7 @@ async function psGenerateSingleLegacy(){
   msg.style.color='var(--sub)';msg.textContent=s.openaiKey?'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...':'Calling ESNTLS Worker...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
-    const item=await generateGrassPreviewFile(psState.file,0,bgBlob,s,psBuildPrompt(),quality);
+    const item=await generateGrassPreviewFile(psState.file,0,bgBlob,s,psBuildPrompt(psProductNameFromFile(psState.file)),quality);
     psState.resultDataUrl=item.dataUrl;
     document.getElementById('psResultImg').src=psState.resultDataUrl;
     document.getElementById('psResultPreview').style.display='block';
@@ -3785,7 +3804,6 @@ async function psGenerate(){
     const bgBlob=await psFetchAsBlob(s.brandBg,bgController.signal);
     const referenceContext=await psBuildReferenceContext(s,bgController.signal);
     psState.activeController=null;
-    const prompt=psBuildPrompt();
     for(let i=0;i<files.length;i++){
       if(psGenerationStopped(token)){stopped=true;break}
       btn.textContent=files.length>1?'Generating '+(i+1)+'/'+files.length:'Generating...';
@@ -3795,6 +3813,7 @@ async function psGenerate(){
       try{
         const itemController=new AbortController();
         psState.activeController=itemController;
+        const prompt=psBuildPrompt(psProductNameFromFile(files[i]));
         const item=await generateGrassPreviewFile(files[i],i,bgBlob,s,prompt,quality,itemController.signal,referenceContext);
         psState.activeController=null;
         if(psGenerationStopped(token)){stopped=true;break}
