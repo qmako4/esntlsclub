@@ -3,7 +3,7 @@
   const PRODUCT_FEED_URL = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json';
   const CART_KEY = 'esntls_cart_v1';
   const B30_BUNDLE_CODE = 'B30PAIR';
-  const B30_BUNDLE_DISCOUNT = 20;
+  const B30_BUNDLE_DISCOUNT = 19.99;
   const B30_PRODUCT_IDS = new Set(['7','8','9','10','11','12','13','14','15','16','17','18']);
   let cataloguePromise = null;
   let repairPromise = null;

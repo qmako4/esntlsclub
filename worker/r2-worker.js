@@ -133,17 +133,15 @@ mutation PublishProductToOnlineStore($id: ID!, $publicationId: ID!) {
 }`;
 
 const DISCOUNT_BY_CODE_QUERY = `
-query DiscountByCode($query: String!) {
-  discountNodes(first: 1, query: $query) {
-    nodes {
-      id
-      discount {
-        ... on DiscountCodeBasic {
-          title
-          status
-          summary
-          codes(first: 1) { nodes { code } }
-        }
+query DiscountByCode($code: String!) {
+  codeDiscountNodeByCode(code: $code) {
+    id
+    codeDiscount {
+      ... on DiscountCodeBasic {
+        title
+        status
+        summary
+        codes(first: 1) { nodes { code } }
       }
     }
   }
@@ -152,6 +150,24 @@ query DiscountByCode($query: String!) {
 const B30_DISCOUNT_CREATE_MUTATION = `
 mutation CreateB30BundleDiscount($input: DiscountCodeBasicInput!) {
   discountCodeBasicCreate(basicCodeDiscount: $input) {
+    codeDiscountNode {
+      id
+      codeDiscount {
+        ... on DiscountCodeBasic {
+          title
+          status
+          summary
+          codes(first: 1) { nodes { code } }
+        }
+      }
+    }
+    userErrors { field code message }
+  }
+}`;
+
+const B30_DISCOUNT_UPDATE_MUTATION = `
+mutation UpdateB30BundleDiscount($id: ID!, $input: DiscountCodeBasicInput!) {
+  discountCodeBasicUpdate(id: $id, basicCodeDiscount: $input) {
     codeDiscountNode {
       id
       codeDiscount {
@@ -1070,11 +1086,8 @@ async function shopifyGraphql(env, query, variables) {
 
 async function launchB30BundleDiscount(env) {
   const code = 'B30PAIR';
-  const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { query: `code:${code}` });
-  const existing = existingData.discountNodes.nodes[0];
-  if (existing) {
-    return { ok: true, status: 'existing', id: existing.id, discount: existing.discount };
-  }
+  const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
+  const existing = existingData.codeDiscountNodeByCode;
 
   const object = await env.BUCKET.get('products.json');
   if (!object) throw new Error('products.json was not found in R2');
@@ -1086,25 +1099,28 @@ async function launchB30BundleDiscount(env) {
     .filter(Boolean))];
   if (productIds.length < 2) throw new Error('At least two linked B30 Shopify products are required');
 
-  const data = await shopifyGraphql(env, B30_DISCOUNT_CREATE_MUTATION, {
-    input: {
-      title: 'Any 2 B30s for GBP 179.99',
-      code,
-      startsAt: new Date(Date.now() - 60000).toISOString(),
-      context: { all: 'ALL' },
-      minimumRequirement: { quantity: { greaterThanOrEqualToQuantity: '2' } },
-      customerGets: {
-        value: { discountAmount: { amount: '20.00', appliesOnEachItem: false } },
-        items: { products: { productsToAdd: productIds } }
-      },
-      combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true }
-    }
-  });
-  const result = data.discountCodeBasicCreate;
+  const input = {
+    title: 'Any 2 B30s for GBP 179.99',
+    code,
+    startsAt: new Date(Date.now() - 60000).toISOString(),
+    context: { all: 'ALL' },
+    minimumRequirement: { quantity: { greaterThanOrEqualToQuantity: '2' } },
+    customerGets: {
+      value: { discountAmount: { amount: '19.99', appliesOnEachItem: false } },
+      items: { products: { productsToAdd: productIds } }
+    },
+    combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true }
+  };
+  const updateInput = { ...input };
+  delete updateInput.code;
+  const data = existing
+    ? await shopifyGraphql(env, B30_DISCOUNT_UPDATE_MUTATION, { id: existing.id, input: updateInput })
+    : await shopifyGraphql(env, B30_DISCOUNT_CREATE_MUTATION, { input });
+  const result = existing ? data.discountCodeBasicUpdate : data.discountCodeBasicCreate;
   if (result.userErrors.length) throw new Error(`Shopify B30 discount failed: ${JSON.stringify(result.userErrors)}`);
   return {
     ok: true,
-    status: 'created',
+    status: existing ? 'updated' : 'created',
     eligibleProductCount: productIds.length,
     id: result.codeDiscountNode.id,
     discount: result.codeDiscountNode.codeDiscount
