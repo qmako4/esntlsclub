@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "esntls-site-edge",
+  "main": "worker/site-cdn-worker.js",
+  "compatibility_date": "2026-08-07",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "esntlsclub.com/*",
+      "zone_name": "esntlsclub.com"
+    },
+    {
+      "pattern": "www.esntlsclub.com/*",
+      "zone_name": "esntlsclub.com"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

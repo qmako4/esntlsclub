@@ -1,6 +1,7 @@
 (function(){
   const SHOPIFY_HOST = 'nr00an-yh.myshopify.com';
-  const PRODUCT_FEED_URL = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/products.json';
+  const R2_PUBLIC = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+  const PRODUCT_FEED_URL = '/media/products.json';
   const CART_KEY = 'esntls_cart_v1';
   const B30_BUNDLE_CODE = 'B30PAIR';
   const B30_BUNDLE_DISCOUNT = 19.99;
@@ -159,9 +160,13 @@
     renderCart();
   }
 
+  function edgeMediaUrl(value){
+    return typeof value === 'string' && value.startsWith(R2_PUBLIC) ? '/media/' + value.slice(R2_PUBLIC.length) : value;
+  }
+
   function normaliseProduct(product){
-    const images = Array.isArray(product && product.images) ? product.images.filter(Boolean) : (Array.isArray(product && product.imgs) ? product.imgs.filter(Boolean) : []);
-    const first = images[0] || product && (product.image || product.img) || '';
+    const images = (Array.isArray(product && product.images) ? product.images.filter(Boolean) : (Array.isArray(product && product.imgs) ? product.imgs.filter(Boolean) : [])).map(edgeMediaUrl);
+    const first = images[0] || edgeMediaUrl(product && (product.image || product.img) || '');
     if(!images.length && first) images.push(first);
     const checkoutLinks = product && product.checkoutLinks || {};
     const shopifyLink = product && (product.shopifyLink || (checkoutLinks.shopify && checkoutLinks.shopify.url) || (isShopifyProductUrl(product.link) ? product.link : '')) || '';

@@ -5,6 +5,7 @@ node_modules
 .vercel
 dist
 coverage
+.wrangler-bundle/
 *.tsbuildinfo
 outputs/blank-product-workflow/state.json
 outputs/blank-product-workflow/generated/

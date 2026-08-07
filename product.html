@@ -133,7 +133,8 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
 <script src="cart.js?v=20260806-b30pair"></script>
 <script>
-const R2_BASE='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const R2_BASE='/media/';
 const SHOPIFY_CHECKOUT_BASE='https://nr00an-yh.myshopify.com/products/';
 const requestedId=new URLSearchParams(window.location.search).get('id');
 let product=null;
@@ -154,9 +155,13 @@ function productHref(item){
   return 'product.html?id='+encodeURIComponent(productId(item));
 }
 
+function edgeMediaUrl(value){
+  return typeof value==='string'&&value.startsWith(R2_PUBLIC)?R2_BASE+value.slice(R2_PUBLIC.length):value;
+}
+
 function normaliseProduct(item){
-  const images=Array.isArray(item.images)?item.images.filter(Boolean):(Array.isArray(item.imgs)?item.imgs.filter(Boolean):[]);
-  const first=images[0]||item.image||item.img||'';
+  const images=(Array.isArray(item.images)?item.images.filter(Boolean):(Array.isArray(item.imgs)?item.imgs.filter(Boolean):[])).map(edgeMediaUrl);
+  const first=images[0]||edgeMediaUrl(item.image||item.img||'');
   if(!images.length&&first)images.push(first);
   return {
     ...item,
