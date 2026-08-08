@@ -6,6 +6,9 @@
   const B30_BUNDLE_CODE = 'B30PAIR';
   const B30_BUNDLE_DISCOUNT = 19.99;
   const B30_PRODUCT_IDS = new Set(['7','8','9','10','11','12','13','14','15','16','17','18']);
+  const B22_BUNDLE_CODE = 'B22PAIR';
+  const B22_BUNDLE_DISCOUNT = 29.99;
+  const B22_PRODUCT_IDS = new Set(['1','2','3','4','5','6']);
   let cataloguePromise = null;
   let repairPromise = null;
 
@@ -129,7 +132,8 @@
     const valid = items.filter(item => item.variantId);
     if(!valid.length) return '';
     const lines = valid.map(item => cleanId(item.variantId) + ':' + Math.max(1, Number(item.qty || 1) || 1)).join(',');
-    const discount = b30Quantity(valid) >= 2 ? '?discount=' + encodeURIComponent(B30_BUNDLE_CODE) : '';
+    const offer = activeBundleOffer(valid);
+    const discount = offer ? '?discount=' + encodeURIComponent(offer.code) : '';
     return 'https://' + SHOPIFY_HOST + '/cart/' + lines + discount;
   }
 
@@ -282,17 +286,20 @@
     return line;
   }
 
-  function addBundle(entries){
+  function addBundle(entries, bundleType){
+    const isB22 = String(bundleType || '').toLowerCase() === 'b22';
+    const eligibleIds = isB22 ? B22_PRODUCT_IDS : B30_PRODUCT_IDS;
+    const label = isB22 ? 'B22' : 'B30';
     const lines = (entries || []).map(entry => buildLine(entry.product, entry.selections, 1));
     if(lines.length !== 2 || lines.some(line => !line.variantId)){
-      throw new Error('Choose a colour and size for both B30s.');
+      throw new Error('Choose a colour and size for both ' + label + 's.');
     }
-    if(lines.some(line => !B30_PRODUCT_IDS.has(String(line.productId)))){
-      throw new Error('This offer is only available on B30 products.');
+    if(lines.some(line => !eligibleIds.has(String(line.productId)))){
+      throw new Error('This offer is only available on ' + label + ' products.');
     }
     const cart = readCart();
     lines.forEach(line => {
-      line.bundleOffer = 'b30-pair';
+      line.bundleOffer = isB22 ? 'b22-pair' : 'b30-pair';
       const existing = cart.find(item => sameLine(item,line));
       if(existing) existing.qty += 1;
       else cart.push(line);
@@ -366,10 +373,28 @@
     }, 0);
   }
 
+  function b22Quantity(items){
+    return items.reduce((sum,item) => {
+      const eligible = B22_PRODUCT_IDS.has(String(item.productId)) || String(item.brand || '').toLowerCase() === 'b22';
+      return sum + (eligible ? Math.max(1, Number(item.qty) || 1) : 0);
+    }, 0);
+  }
+
+  function activeBundleOffer(items){
+    if(b22Quantity(items) >= 2){
+      return {code:B22_BUNDLE_CODE, discount:B22_BUNDLE_DISCOUNT, label:'B22 pair saving', note:'Any 2 B22s for £229.99 applied at Shopify checkout'};
+    }
+    if(b30Quantity(items) >= 2){
+      return {code:B30_BUNDLE_CODE, discount:B30_BUNDLE_DISCOUNT, label:'B30 pair saving', note:'Any 2 B30s for £179.99 applied at Shopify checkout'};
+    }
+    return null;
+  }
+
   function cartPricing(items){
     const subtotal = items.reduce((sum,item) => sum + moneyToNumber(item.price) * (Number(item.qty) || 1), 0);
-    const discount = b30Quantity(items) >= 2 ? B30_BUNDLE_DISCOUNT : 0;
-    return {subtotal, discount, total:Math.max(0, subtotal-discount)};
+    const offer = activeBundleOffer(items);
+    const discount = offer ? offer.discount : 0;
+    return {subtotal, discount, offer, total:Math.max(0, subtotal-discount)};
   }
 
   function renderCart(){
@@ -405,9 +430,9 @@
         '</div>';
     }).join('');
     const pricing = cartPricing(items);
-    footer.innerHTML = (pricing.discount ? '<div class="esntls-cart-saving"><span>B30 pair saving</span><strong>-£' + pricing.discount.toFixed(2) + '</strong></div>' : '') +
+    footer.innerHTML = (pricing.offer ? '<div class="esntls-cart-saving"><span>' + escapeHTML(pricing.offer.label) + '</span><strong>-£' + pricing.discount.toFixed(2) + '</strong></div>' : '') +
       '<div class="esntls-cart-total"><span>Total</span><strong>£' + pricing.total.toFixed(2) + '</strong></div>' +
-      (pricing.discount ? '<div class="esntls-cart-promo-note">Any 2 B30s for £179.99 applied at Shopify checkout</div>' : '') +
+      (pricing.offer ? '<div class="esntls-cart-promo-note">' + escapeHTML(pricing.offer.note) + '</div>' : '') +
       '<button class="esntls-cart-checkout" type="button" onclick="EsntlsCart.checkout()">Checkout</button>' +
       '<button class="esntls-cart-continue" type="button" onclick="EsntlsCart.closeCart()">Keep shopping</button>';
   }

@@ -1,6 +1,7 @@
 const GITHUB_ORIGIN = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
 const MEDIA_CACHE_VERSION = '2';
+const SOURCE_CACHE_VERSION = '4';
 
 const PUBLIC_ROOT_FILES = new Set([
   'admin.html',
@@ -207,7 +208,7 @@ export default {
     }
 
     const { browserTtl, edgeTtl } = cacheSettings(file);
-    const originUrl = `${GITHUB_ORIGIN}/${file}`;
+    const originUrl = `${GITHUB_ORIGIN}/${file}?edge=${SOURCE_CACHE_VERSION}`;
     const originResponse = await fetch(originUrl, {
       cf: {
         cacheEverything: true,

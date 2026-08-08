@@ -1099,8 +1099,8 @@ async function shopifyGraphql(env, query, variables) {
   return data.data;
 }
 
-async function launchB30BundleDiscount(env) {
-  const code = 'B30PAIR';
+async function launchFootwearBundleDiscount(env, bundle) {
+  const code = bundle.code;
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
   const existing = existingData.codeDiscountNodeByCode;
 
@@ -1109,19 +1109,19 @@ async function launchB30BundleDiscount(env) {
   const payload = JSON.parse(await object.text());
   const products = Array.isArray(payload) ? payload : (Array.isArray(payload.products) ? payload.products : []);
   const productIds = [...new Set(products
-    .filter(product => String(product.brand || '').toLowerCase() === 'b30')
+    .filter(product => String(product.brand || '').toLowerCase() === bundle.brand)
     .map(product => product.shopifyPlaceholder?.shopifyProductId || product.shopifyProductId)
     .filter(Boolean))];
-  if (productIds.length < 2) throw new Error('At least two linked B30 Shopify products are required');
+  if (productIds.length < 2) throw new Error(`At least two linked ${bundle.label} Shopify products are required`);
 
   const input = {
-    title: 'Any 2 B30s for GBP 179.99',
+    title: bundle.title,
     code,
     startsAt: new Date(Date.now() - 60000).toISOString(),
     context: { all: 'ALL' },
     minimumRequirement: { quantity: { greaterThanOrEqualToQuantity: '2' } },
     customerGets: {
-      value: { discountAmount: { amount: '19.99', appliesOnEachItem: false } },
+      value: { discountAmount: { amount: bundle.discountAmount, appliesOnEachItem: false } },
       items: { products: { productsToAdd: productIds } }
     },
     combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true }
@@ -1132,7 +1132,7 @@ async function launchB30BundleDiscount(env) {
     ? await shopifyGraphql(env, B30_DISCOUNT_UPDATE_MUTATION, { id: existing.id, input: updateInput })
     : await shopifyGraphql(env, B30_DISCOUNT_CREATE_MUTATION, { input });
   const result = existing ? data.discountCodeBasicUpdate : data.discountCodeBasicCreate;
-  if (result.userErrors.length) throw new Error(`Shopify B30 discount failed: ${JSON.stringify(result.userErrors)}`);
+  if (result.userErrors.length) throw new Error(`Shopify ${bundle.label} discount failed: ${JSON.stringify(result.userErrors)}`);
   return {
     ok: true,
     status: existing ? 'updated' : 'created',
@@ -1140,6 +1140,26 @@ async function launchB30BundleDiscount(env) {
     id: result.codeDiscountNode.id,
     discount: result.codeDiscountNode.codeDiscount
   };
+}
+
+async function launchB30BundleDiscount(env) {
+  return launchFootwearBundleDiscount(env, {
+    brand: 'b30',
+    label: 'B30',
+    code: 'B30PAIR',
+    title: 'Any 2 B30s for GBP 179.99',
+    discountAmount: '19.99'
+  });
+}
+
+async function launchB22BundleDiscount(env) {
+  return launchFootwearBundleDiscount(env, {
+    brand: 'b22',
+    label: 'B22',
+    code: 'B22PAIR',
+    title: 'Any 2 B22s for GBP 229.99',
+    discountAmount: '29.99'
+  });
 }
 
 async function findExistingShopifyProduct(env, product) {
@@ -1873,6 +1893,14 @@ export default {
     if (req.method === 'POST' && parts[0] === 'launch-b30-bundle') {
       try {
         return json(await launchB30BundleDiscount(env));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'launch-b22-bundle') {
+      try {
+        return json(await launchB22BundleDiscount(env));
       } catch (error) {
         return json({ error: error.message }, 500);
       }

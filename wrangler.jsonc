@@ -3,6 +3,9 @@
   "name": "esntls-r2",
   "main": "worker/r2-worker.js",
   "compatibility_date": "2026-08-05",
+  "vars": {
+    "SHOPIFY_STORE_DOMAIN": "nr00an-yh.myshopify.com"
+  },
   "r2_buckets": [
     {
       "binding": "BUCKET",
