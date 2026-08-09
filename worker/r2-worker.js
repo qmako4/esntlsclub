@@ -1475,6 +1475,38 @@ function outputGrassJobFilename(originalName, contentType) {
   return `${base}-grass.${extensionForContentType(contentType)}`;
 }
 
+function validateR2ObjectKey(value, label) {
+  const key = String(value || '').trim();
+  if (!key) throw new Error(`${label} is required`);
+  if (key.startsWith('/') || key.includes('..') || key.includes('\\')) throw new Error(`${label} is invalid`);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,240}$/.test(key)) throw new Error(`${label} contains unsupported characters`);
+  return key;
+}
+
+function validateR2ImageKey(value, label) {
+  const key = validateR2ObjectKey(value, label);
+  if (!/\.(?:jpe?g|png|webp|gif|avif)$/i.test(key)) throw new Error(`${label} must be an image key`);
+  return key;
+}
+
+async function copyR2Object(env, requestBody) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+  const sourceKey = validateR2ImageKey(requestBody.sourceKey, 'sourceKey');
+  const destKey = validateR2ImageKey(requestBody.destKey, 'destKey');
+  const object = await env.BUCKET.get(sourceKey);
+  if (!object) throw new Error('Source image was not found');
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  const contentType = normalizeOpenAIImageMime(headers.get('content-type'), sourceKey);
+  await env.BUCKET.put(destKey, await object.arrayBuffer(), {
+    httpMetadata: { contentType, cacheControl: 'public, max-age=31536000, immutable' },
+    customMetadata: { createdBy: 'esntls-admin-copy', sourceKey }
+  });
+
+  return { ok: true, sourceKey, key: destKey, url: PUBLIC_BASE + destKey };
+}
+
 async function generateBlankImage(env, product) {
   if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
   if (!product.image) throw new Error('Product is missing an image');
@@ -2505,6 +2537,16 @@ export default {
         cursor = r.truncated ? r.cursor : null;
       } while (cursor);
       return json({ objects: out });
+    }
+
+    if (req.method === 'POST' && parts[0] === 'copy-r2-object') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await copyR2Object(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
     }
 
     if (req.method === 'PUT' && parts[0] === 'upload') {

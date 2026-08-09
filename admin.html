@@ -131,6 +131,8 @@ label.field input:focus{border-color:var(--g)}
 .studio-tile{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#f5f5f5;min-width:0}
 .studio-tile img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#eef3ef}
 .studio-tile .caption{padding:7px 8px;font-size:10px;font-weight:700;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
+.studio-image-error{display:none;width:100%;aspect-ratio:3/4;align-items:center;justify-content:center;text-align:center;padding:12px;background:#fff5f5;color:#e53935;font-size:11px;font-weight:800}
+.studio-result-tile.load-error .studio-image-error{display:flex}
 .studio-tile.failed{display:flex;min-height:140px;align-items:center;justify-content:center;text-align:center;padding:12px;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700}
 .studio-result-tile{position:relative;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
 .studio-result-tile:hover{transform:translateY(-1px)}
@@ -1180,6 +1182,15 @@ async function r2Upload(file,key){
 const res=await r2Fetch('PUT',key,file);
 if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
 return R2_PUBLIC+key}
+
+async function r2CopyViaWorker(sourceKey,destKey){
+if(!psCanUseWorker())throw new Error('Worker copy is not configured');
+const data=await psWorkerJson('/copy-r2-object',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({sourceKey,destKey})
+});
+return data.url||R2_PUBLIC+destKey}
 
 async function r2Delete(key){
 const res=await r2Fetch('DELETE',key);
@@ -3576,6 +3587,25 @@ function psSetAllOriginalsSelected(selected){
   psUpdateGenerateState();
 }
 
+function psCacheBustedImageUrl(url,token){
+  const value=String(url||'');
+  if(!value||value.startsWith('data:')||value.startsWith('blob:'))return value;
+  try{
+    const parsed=new URL(value,window.location.href);
+    parsed.searchParams.set('v',token||Date.now());
+    return parsed.href
+  }catch(e){
+    return value
+  }
+}
+
+function psResultFileExtension(item){
+  const value=String((item&&item.resultKey)||(item&&item.dataUrl)||'').split('?')[0];
+  const match=value.match(/\.((?:jpe?g)|png|webp|gif)$/i);
+  if(!match)return 'jpg';
+  return match[1].toLowerCase()==='jpeg'?'jpg':match[1].toLowerCase();
+}
+
 function psRenderResults(){
   const preview=document.getElementById('psResultPreview');
   const grid=document.getElementById('psResultGrid');
@@ -3597,7 +3627,8 @@ function psRenderResults(){
     if(item&&item.dataUrl){
       const name=item.sourceFile&&item.sourceFile.name?item.sourceFile.name:'image';
       const isSelected=item.selected!==false;
-      return `<div class="studio-tile studio-result-tile${isSelected?' selected':''}" onclick="psToggleResultSelected(${i})"><img src="${item.dataUrl}" alt=""><button type="button" class="studio-check" onclick="event.stopPropagation();psToggleResultSelected(${i})">${isSelected?'Selected':'Select'}</button><div class="caption">${i+1}. ${psEscapeHtml(name)}</div></div>`;
+      const src=psEscapeHtml(item.displayUrl||item.dataUrl);
+      return `<div class="studio-tile studio-result-tile${isSelected?' selected':''}" onclick="psToggleResultSelected(${i})"><img src="${src}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('load-error')"><div class="studio-image-error">Image failed to load</div><button type="button" class="studio-check" onclick="event.stopPropagation();psToggleResultSelected(${i})">${isSelected?'Selected':'Select'}</button><div class="caption">${i+1}. ${psEscapeHtml(name)}</div></div>`;
     }
     const err=item&&item.error?item.error:'Failed';
     return `<div class="studio-tile failed">${i+1}. ${psEscapeHtml(err)}</div>`;
@@ -3675,10 +3706,13 @@ function psRenderBackgroundJob(){
 }
 
 function psApplyBackgroundJobResults(job, notify){
+  const token=Date.now();
   const items=(job&&job.items||[]).map(item=>{
     if(item&&item.result&&item.result.url){
+      const dataUrl=item.result.url;
       return {
-        dataUrl:item.result.url,
+        dataUrl,
+        displayUrl:psCacheBustedImageUrl(dataUrl,token),
         sourceFile:{name:item.originalName||item.result.filename||'background-job.jpg'},
         resultKey:item.result.key,
         selected:true,
@@ -3725,6 +3759,12 @@ async function psStartBackgroundJob(){
   if(psState.currentJobId){
     if(!psState.job){
       try{await psLoadBackgroundJob({quiet:true})}catch(e){}
+    }
+    if(psState.job&&psJobIsDone(psState.job)&&!Number(psState.job.completed||0)){
+      psState.currentJobId='';
+      psState.job=null;
+      localStorage.removeItem(PS_JOB_ID_KEY);
+      psRenderBackgroundJob();
     }
     if(psState.job&&!psJobIsDone(psState.job)){
       await psLoadBackgroundJob();
@@ -3781,6 +3821,10 @@ async function psLoadBackgroundJob(options={}){
     psRenderBackgroundJob();
     if(psJobIsDone(data.job)){
       psApplyBackgroundJobResults(data.job,false);
+      if(!Number(data.job.completed||0)&&['cancelled','failed'].includes(String(data.job.status||''))){
+        psState.currentJobId='';
+        localStorage.removeItem(PS_JOB_ID_KEY);
+      }
       if(psState.jobPollTimer){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null}
       if(data.job.completed&&typeof loadMedia==='function')loadMedia().then(renderMedia).catch(()=>{});
     }else{
@@ -4139,8 +4183,11 @@ async function psSaveToLibrary(){
       msg.style.color='var(--sub)';
       msg.textContent='Uploading '+(i+1)+'/'+items.length+'...';
       try{
+        const ext=psResultFileExtension(items[i]);
+        const fname='studio_'+Date.now()+'_'+i+'_'+Math.floor(Math.random()*9999)+'.'+ext;
         if(items[i].resultKey){
-          if(!firstUrl)firstUrl=items[i].dataUrl;
+          const url=await r2CopyViaWorker(items[i].resultKey,fname);
+          if(!firstUrl)firstUrl=url;
           ok++;
           continue;
         }
@@ -4150,7 +4197,6 @@ async function psSaveToLibrary(){
           const blob=await res.blob();
           file=new File([blob],'studio_'+Date.now()+'_'+i+'.jpg',{type:'image/jpeg'});
         }
-        const fname='studio_'+Date.now()+'_'+i+'_'+Math.floor(Math.random()*9999)+'.jpg';
         const url=await r2Upload(file,fname);
         if(!firstUrl)firstUrl=url;
         ok++;
