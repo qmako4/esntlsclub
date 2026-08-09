@@ -1,7 +1,7 @@
 const GITHUB_ORIGIN = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
 const MEDIA_CACHE_VERSION = '2';
-const SOURCE_CACHE_VERSION = '7';
+const SOURCE_CACHE_VERSION = '8';
 
 const PUBLIC_ROOT_FILES = new Set([
   'admin.html',
@@ -77,6 +77,10 @@ function mediaKeyFor(pathname) {
 function cacheSettings(file) {
   const extension = extensionFor(file);
 
+  if (file === 'admin.html') {
+    return { browserTtl: 0, edgeTtl: 0 };
+  }
+
   if (['.gif', '.ico', '.jpeg', '.jpg', '.png', '.svg', '.webp'].includes(extension)) {
     return { browserTtl: 86400, edgeTtl: 604800 };
   }
@@ -95,13 +99,18 @@ function responseHeaders(originHeaders, file, browserTtl, colo) {
   headers.delete('expires');
   headers.delete('x-frame-options');
 
-  headers.set('Cache-Control', `public, max-age=${browserTtl}, stale-while-revalidate=86400`);
+  if (file === 'admin.html') {
+    headers.set('Cache-Control', 'no-store, max-age=0');
+  } else {
+    headers.set('Cache-Control', `public, max-age=${browserTtl}, stale-while-revalidate=86400`);
+  }
   headers.set('Content-Type', CONTENT_TYPES[extension] || 'application/octet-stream');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-ESNTLS-Edge', colo || 'unknown');
+  headers.set('X-ESNTLS-Source-Version', SOURCE_CACHE_VERSION);
   headers.set('X-Frame-Options', 'SAMEORIGIN');
 
   return headers;
