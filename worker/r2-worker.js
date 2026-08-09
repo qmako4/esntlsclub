@@ -39,7 +39,8 @@ const SHOPIFY_API_VERSION = '2026-04';
 const YUPOO_IMPORT_LIMIT = 30;
 const YUPOO_PAGE_CRAWL_LIMIT = 12;
 const GRASS_JOB_ROOT = 'studio-jobs/';
-const GRASS_JOB_STALE_AFTER_MS = 10 * 60 * 1000;
+const GRASS_JOB_STALE_AFTER_MS = 2 * 60 * 1000;
+const GRASS_JOB_OPENAI_TIMEOUT_MS = 85 * 1000;
 const GRASS_JOB_TERMINAL_STATUSES = ['complete', 'partial', 'failed', 'cancelled'];
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
@@ -582,6 +583,37 @@ async function readJsonResponse(response) {
   }
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 0, label = 'Request') {
+  const timeout = Number(timeoutMs || 0);
+  if (!timeout) return fetch(url, options);
+
+  const controller = new AbortController();
+  const parentSignal = options.signal;
+  let timer = null;
+  const abortFromParent = () => controller.abort(parentSignal.reason);
+
+  if (parentSignal) {
+    if (parentSignal.aborted) controller.abort(parentSignal.reason);
+    else parentSignal.addEventListener('abort', abortFromParent, { once: true });
+  }
+
+  timer = setTimeout(() => {
+    controller.abort(new Error(`${label} timed out after ${Math.round(timeout / 1000)}s`));
+  }, timeout);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted && !(parentSignal && parentSignal.aborted)) {
+      throw new Error(`${label} timed out after ${Math.round(timeout / 1000)}s`);
+    }
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+    if (parentSignal) parentSignal.removeEventListener('abort', abortFromParent);
+  }
+}
+
 function base64ToBlob(base64, type = 'image/png') {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -915,7 +947,7 @@ function buildGrassImagePrompt(prompt, hasReferences = false) {
   return [String(prompt || fallback).trim() || fallback, referenceLine].filter(Boolean).join(' ');
 }
 
-async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality, references = []) {
+async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality, references = [], options = {}) {
   const form = new FormData();
   const sourcePart = await openAIImagePart(source, 'product.jpg');
   const backgroundPart = background ? await openAIImagePart(background, 'esntls-background.jpg') : null;
@@ -934,17 +966,18 @@ async function requestOpenAIGrassImageEdit(env, source, background, prompt, mode
   }
   form.append('n', '1');
 
-  const response = await fetch('https://api.openai.com/v1/images/edits', {
+  const timeoutMs = Number(options.timeoutMs || 0);
+  const response = await fetchWithTimeout('https://api.openai.com/v1/images/edits', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
     body: form
-  });
+  }, timeoutMs, `${model} image generation`);
   const data = await readJsonResponse(response);
   if (!response.ok) throw new Error(`${model}: OpenAI image generation failed: ${JSON.stringify(data)}`);
   const first = data.data && data.data[0];
   if (first && first.b64_json) return { blob: base64ToBlob(first.b64_json, 'image/png'), model, size };
   if (first && first.url) {
-    const imageResponse = await fetch(first.url);
+    const imageResponse = await fetchWithTimeout(first.url, {}, Number(options.downloadTimeoutMs || 30000), `${model} generated image download`);
     if (!imageResponse.ok) throw new Error(`${model}: Generated image URL download failed: ${imageResponse.status}`);
     return { blob: await imageResponse.blob(), model, size };
   }
@@ -1314,6 +1347,7 @@ async function processGrassJobItem(env, jobId, itemId, fallbackIndex) {
 }
 
 async function generateGrassJobImage(env, source, background, prompt, quality, references) {
+  const timeoutMs = Math.max(15000, Number(env.GRASS_JOB_OPENAI_TIMEOUT_MS || GRASS_JOB_OPENAI_TIMEOUT_MS));
   try {
     return await requestOpenAIGrassImageEdit(
       env,
@@ -1323,9 +1357,11 @@ async function generateGrassJobImage(env, source, background, prompt, quality, r
       env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
       env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
       quality,
-      references
+      references,
+      { timeoutMs }
     );
   } catch (primaryError) {
+    if (/timed out after/i.test(primaryError.message || '')) throw primaryError;
     const result = await requestOpenAIGrassImageEdit(
       env,
       source,
@@ -1334,7 +1370,8 @@ async function generateGrassJobImage(env, source, background, prompt, quality, r
       env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
       env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
       quality,
-      references
+      references,
+      { timeoutMs }
     );
     return { ...result, fallbackReason: primaryError.message };
   }
