@@ -38,6 +38,10 @@ const DEFAULT_GRASS_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-ba
 const SHOPIFY_API_VERSION = '2026-04';
 const YUPOO_IMPORT_LIMIT = 30;
 const YUPOO_PAGE_CRAWL_LIMIT = 12;
+const GRASS_JOB_ROOT = 'studio-jobs/';
+const GRASS_JOB_STALE_AFTER_MS = 10 * 60 * 1000;
+const GRASS_JOB_TERMINAL_STATUSES = ['complete', 'partial', 'failed', 'cancelled'];
+const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -1019,6 +1023,450 @@ async function createGrassPreview(env, formData) {
   }
 }
 
+async function createGrassJob(req, env, formData, ctx) {
+  if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
+  const images = [
+    ...formData.getAll('image'),
+    ...formData.getAll('image[]')
+  ].filter(item => item instanceof Blob);
+  if (!images.length) throw new Error('Missing image file');
+
+  const maxImages = Math.max(1, Math.min(Number(env.GRASS_JOB_MAX_IMAGES || 24), 40));
+  const selectedImages = images.slice(0, maxImages);
+  const jobId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const prefix = grassJobPrefix(jobId);
+  const promptList = [
+    ...formData.getAll('prompt[]'),
+    ...formData.getAll('prompts[]')
+  ].map(value => String(value || '').trim());
+  const fallbackPrompt = String(formData.get('prompt') || '').trim();
+  const quality = String(formData.get('quality') || env.OPENAI_IMAGE_QUALITY || 'medium').trim() || 'medium';
+  const referenceUrls = [
+    ...formData.getAll('referenceUrl'),
+    ...formData.getAll('referenceUrl[]')
+  ].map(value => String(value || '').trim()).filter(Boolean).slice(0, 6);
+
+  let background = { kind: 'default', url: env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_URL };
+  const backgroundFile = formData.get('background');
+  const backgroundUrl = String(formData.get('backgroundUrl') || '').trim();
+  if (backgroundFile instanceof Blob) {
+    const filename = safeJobFilename(backgroundFile.name || 'esntls-background.jpg');
+    const contentType = normalizeOpenAIImageMime(backgroundFile.type, filename);
+    const key = `${prefix}background/${crypto.randomUUID()}-${filename}`;
+    await env.BUCKET.put(key, backgroundFile, {
+      httpMetadata: { contentType, cacheControl: 'private, max-age=604800' },
+      customMetadata: { createdBy: 'esntls-grass-job', role: 'background' }
+    });
+    background = { kind: 'stored', key, filename, contentType };
+  } else if (backgroundUrl) {
+    background = { kind: 'url', url: backgroundUrl };
+  }
+
+  const items = [];
+  for (let i = 0; i < selectedImages.length; i++) {
+    const image = selectedImages[i];
+    const filename = safeJobFilename(image.name || `product-${i + 1}.jpg`);
+    const contentType = normalizeOpenAIImageMime(image.type, filename);
+    const key = `${prefix}sources/${String(i + 1).padStart(2, '0')}-${crypto.randomUUID()}-${filename}`;
+    await env.BUCKET.put(key, image, {
+      httpMetadata: { contentType, cacheControl: 'private, max-age=604800' },
+      customMetadata: { createdBy: 'esntls-grass-job', role: 'source' }
+    });
+    items.push({
+      id: crypto.randomUUID(),
+      index: i,
+      status: 'queued',
+      sourceKey: key,
+      originalName: filename,
+      contentType,
+      prompt: promptList[i] || fallbackPrompt || grassReplacementPrompt(filename),
+      createdAt: now
+    });
+  }
+
+  const job = {
+    id: jobId,
+    status: 'queued',
+    createdAt: now,
+    updatedAt: now,
+    startedAt: null,
+    finishedAt: null,
+    quality,
+    background,
+    referenceUrls,
+    total: items.length,
+    completed: 0,
+    failed: 0,
+    cancelled: 0,
+    items
+  };
+
+  await writeGrassJob(env, job);
+  const queue = enqueueGrassJob(env, job.id, ctx, 'created');
+  return json({ ok: true, job: publicGrassJob(job), queue }, 202);
+}
+
+async function getGrassJobs(req, env, ctx) {
+  const url = new URL(req.url);
+  const id = url.searchParams.get('id');
+  if (id) {
+    let job = await readGrassJob(env, id);
+    if (!job) return json({ error: 'Background job was not found' }, 404);
+    if (isStaleGrassJob(job)) {
+      job = await resumeGrassJob(env, job, ctx, 'stale-read-recovery');
+    }
+    return json({ ok: true, job: publicGrassJob(job) });
+  }
+
+  const listed = await env.BUCKET.list({ prefix: GRASS_JOB_ROOT, limit: 100 });
+  const jobs = [];
+  for (const object of listed.objects || []) {
+    if (!object.key.endsWith('/job.json')) continue;
+    const record = await env.BUCKET.get(object.key);
+    if (!record) continue;
+    try {
+      jobs.push(publicGrassJob(await record.json(), { includeItems: false }));
+    } catch {}
+  }
+  jobs.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit') || 12), 30));
+  return json({ ok: true, jobs: jobs.slice(0, limit), truncated: listed.truncated, cursor: listed.cursor || null });
+}
+
+async function resumeGrassJobFromRequest(req, env, ctx) {
+  const body = await req.json().catch(() => ({}));
+  const id = body.id || new URL(req.url).searchParams.get('id');
+  if (!id) return json({ error: 'Missing background job id' }, 400);
+  const job = await readGrassJob(env, id);
+  if (!job) return json({ error: 'Background job was not found' }, 404);
+  if (isGrassJobTerminal(job.status)) return json({ ok: true, job: publicGrassJob(job), alreadyFinished: true });
+  const resumed = await resumeGrassJob(env, job, ctx, 'manual-resume');
+  return json({ ok: true, job: publicGrassJob(resumed) }, 202);
+}
+
+async function retryFailedGrassJob(req, env, ctx) {
+  const body = await req.json().catch(() => ({}));
+  const id = body.id || new URL(req.url).searchParams.get('id');
+  if (!id) return json({ error: 'Missing background job id' }, 400);
+  const job = await readGrassJob(env, id);
+  if (!job) return json({ error: 'Background job was not found' }, 404);
+
+  let retried = 0;
+  const now = new Date().toISOString();
+  for (const item of job.items || []) {
+    if (item.status !== 'failed') continue;
+    item.status = 'queued';
+    item.error = null;
+    item.finishedAt = null;
+    item.retriedAt = now;
+    item.retryCount = Number(item.retryCount || 0) + 1;
+    retried++;
+  }
+  if (!retried) return json({ ok: true, job: publicGrassJob(job), retried: 0 });
+
+  job.status = 'queued';
+  job.finishedAt = null;
+  job.failed = 0;
+  job.completed = (job.items || []).filter(item => item.status === 'complete').length;
+  job.cancelled = (job.items || []).filter(item => item.status === 'cancelled').length;
+  await writeGrassJob(env, job);
+  const queue = enqueueGrassJob(env, job.id, ctx, 'retry-failed');
+  const queuedJob = await readGrassJob(env, job.id);
+  return json({ ok: true, retried, job: publicGrassJob(queuedJob || job), queue }, 202);
+}
+
+async function cancelGrassJob(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const id = body.id || new URL(req.url).searchParams.get('id');
+  if (!id) return json({ error: 'Missing background job id' }, 400);
+  const job = await readGrassJob(env, id);
+  if (!job) return json({ error: 'Background job was not found' }, 404);
+  if (isGrassJobTerminal(job.status)) return json({ ok: true, job: publicGrassJob(job), alreadyFinished: true });
+
+  const now = new Date().toISOString();
+  for (const item of job.items || []) {
+    if (['queued', 'running'].includes(item.status)) {
+      item.status = 'cancelled';
+      item.error = null;
+      item.cancelledAt = now;
+    }
+  }
+  job.status = 'cancelled';
+  job.cancelledAt = now;
+  job.finishedAt = now;
+  job.completed = (job.items || []).filter(item => item.status === 'complete').length;
+  job.failed = (job.items || []).filter(item => item.status === 'failed').length;
+  job.cancelled = (job.items || []).filter(item => item.status === 'cancelled').length;
+  await writeGrassJob(env, job);
+  return json({ ok: true, job: publicGrassJob(job) });
+}
+
+function enqueueGrassJob(env, jobId, ctx, reason) {
+  if (!ctx || typeof ctx.waitUntil !== 'function') throw new Error('Background execution context is unavailable');
+  ctx.waitUntil(processGrassJob(env, jobId));
+  return { method: 'waitUntil', reason, enqueuedAt: new Date().toISOString() };
+}
+
+async function resumeGrassJob(env, job, ctx, reason) {
+  for (const item of job.items || []) {
+    if (item.status === 'running') {
+      item.status = 'queued';
+      item.error = null;
+      item.resumedAt = new Date().toISOString();
+    }
+  }
+  job.status = 'queued';
+  job.finishedAt = null;
+  await writeGrassJob(env, job);
+  enqueueGrassJob(env, job.id, ctx, reason);
+  return (await readGrassJob(env, job.id)) || job;
+}
+
+async function processGrassJob(env, jobId) {
+  let job = await readGrassJob(env, jobId);
+  if (!job || isGrassJobTerminal(job.status)) return;
+
+  for (let i = 0; i < (job.items || []).length; i++) {
+    job = await readGrassJob(env, jobId);
+    if (!job || isGrassJobTerminal(job.status)) return;
+    const item = job.items[i];
+    if (!item || ['complete', 'failed', 'cancelled'].includes(item.status)) continue;
+    await processGrassJobItem(env, jobId, item.id, i);
+  }
+}
+
+async function processGrassJobItem(env, jobId, itemId, fallbackIndex) {
+  let job = await readGrassJob(env, jobId);
+  if (!job || isGrassJobTerminal(job.status)) return;
+  const foundIndex = (job.items || []).findIndex(item => item.id === itemId);
+  const index = foundIndex >= 0 ? foundIndex : fallbackIndex;
+  const item = job.items[index];
+  if (!item || ['complete', 'failed', 'cancelled'].includes(item.status)) {
+    await finalizeGrassJob(env, jobId);
+    return;
+  }
+
+  item.status = 'running';
+  item.startedAt = item.startedAt || new Date().toISOString();
+  item.lastAttemptAt = new Date().toISOString();
+  item.error = null;
+  job.status = 'running';
+  job.startedAt = job.startedAt || new Date().toISOString();
+  job.finishedAt = null;
+  await writeGrassJob(env, job);
+
+  try {
+    const source = await grassJobBlobPart(env, item.sourceKey, item.originalName);
+    const background = await grassJobBackgroundPart(env, job);
+    const references = await grassJobReferenceParts(job.referenceUrls || []);
+    const generated = await generateGrassJobImage(env, source, background, item.prompt, job.quality, references);
+    const latest = await readGrassJob(env, jobId);
+    if (!latest || latest.status === 'cancelled') return;
+    const latestIndex = (latest.items || []).findIndex(entry => entry.id === item.id);
+    const latestItem = latest.items[latestIndex >= 0 ? latestIndex : index];
+    if (!latestItem || latestItem.status === 'cancelled') return;
+
+    const bytes = new Uint8Array(await generated.blob.arrayBuffer());
+    const filename = outputGrassJobFilename(item.originalName, generated.blob.type);
+    const key = `${grassJobPrefix(jobId)}outputs/${String((latestIndex >= 0 ? latestIndex : index) + 1).padStart(2, '0')}-${crypto.randomUUID()}-${filename}`;
+    await env.BUCKET.put(key, bytes, {
+      httpMetadata: { contentType: generated.blob.type || 'image/png', cacheControl: 'public, max-age=31536000, immutable' },
+      customMetadata: { createdBy: 'esntls-grass-job', source: item.originalName || '' }
+    });
+
+    latestItem.status = 'complete';
+    latestItem.finishedAt = new Date().toISOString();
+    latestItem.error = null;
+    latestItem.result = {
+      key,
+      url: PUBLIC_BASE + key,
+      filename,
+      contentType: generated.blob.type || 'image/png',
+      size: bytes.byteLength,
+      model: generated.model,
+      imageSize: generated.size,
+      fallbackReason: generated.fallbackReason || ''
+    };
+    await writeGrassJob(env, latest);
+  } catch (error) {
+    const latest = await readGrassJob(env, jobId);
+    if (!latest || latest.status === 'cancelled') return;
+    const latestIndex = (latest.items || []).findIndex(entry => entry.id === item.id);
+    const latestItem = latest.items[latestIndex >= 0 ? latestIndex : index];
+    if (latestItem && latestItem.status !== 'cancelled') {
+      latestItem.status = 'failed';
+      latestItem.finishedAt = new Date().toISOString();
+      latestItem.error = error.message || 'Generation failed';
+      await writeGrassJob(env, latest);
+    }
+  }
+
+  await finalizeGrassJob(env, jobId);
+}
+
+async function generateGrassJobImage(env, source, background, prompt, quality, references) {
+  try {
+    return await requestOpenAIGrassImageEdit(
+      env,
+      source,
+      background,
+      prompt,
+      env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
+      env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
+      quality,
+      references
+    );
+  } catch (primaryError) {
+    const result = await requestOpenAIGrassImageEdit(
+      env,
+      source,
+      background,
+      prompt,
+      env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
+      env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
+      quality,
+      references
+    );
+    return { ...result, fallbackReason: primaryError.message };
+  }
+}
+
+async function finalizeGrassJob(env, jobId) {
+  const job = await readGrassJob(env, jobId);
+  if (!job) return null;
+  job.completed = (job.items || []).filter(item => item.status === 'complete').length;
+  job.failed = (job.items || []).filter(item => item.status === 'failed').length;
+  job.cancelled = (job.items || []).filter(item => item.status === 'cancelled').length;
+  const total = job.total || (job.items || []).length || 0;
+  if (job.status === 'cancelled') {
+    job.finishedAt = job.finishedAt || new Date().toISOString();
+  } else if (job.completed + job.failed + job.cancelled >= total) {
+    job.status = job.completed === total ? 'complete' : job.completed > 0 ? 'partial' : job.cancelled ? 'cancelled' : 'failed';
+    job.finishedAt = new Date().toISOString();
+  } else {
+    job.status = 'running';
+    job.finishedAt = null;
+  }
+  await writeGrassJob(env, job);
+  return job;
+}
+
+function grassJobPrefix(jobId) {
+  return `${GRASS_JOB_ROOT}${jobId}/`;
+}
+
+function grassJobRecordKey(jobId) {
+  return `${grassJobPrefix(jobId)}job.json`;
+}
+
+async function readGrassJob(env, jobId) {
+  const object = await env.BUCKET.get(grassJobRecordKey(jobId));
+  if (!object) return null;
+  return await object.json();
+}
+
+async function writeGrassJob(env, job) {
+  const record = { ...job, updatedAt: new Date().toISOString() };
+  await env.BUCKET.put(grassJobRecordKey(job.id), JSON.stringify(record, null, 2) + '\n', {
+    httpMetadata: { contentType: JSON_CONTENT_TYPE, cacheControl: 'private, max-age=0, no-store' },
+    customMetadata: { createdBy: 'esntls-grass-job', role: 'record' }
+  });
+  return record;
+}
+
+function isGrassJobTerminal(status) {
+  return GRASS_JOB_TERMINAL_STATUSES.includes(String(status || ''));
+}
+
+function isStaleGrassJob(job) {
+  if (!job || isGrassJobTerminal(job.status)) return false;
+  const updatedAt = Date.parse(job.updatedAt || job.startedAt || job.createdAt || '');
+  if (!Number.isFinite(updatedAt)) return false;
+  const incomplete = Number(job.completed || 0) + Number(job.failed || 0) + Number(job.cancelled || 0) < Number(job.total || job.items?.length || 0);
+  return incomplete && Date.now() - updatedAt > GRASS_JOB_STALE_AFTER_MS;
+}
+
+function publicGrassJob(job, options = {}) {
+  const includeItems = options.includeItems !== false;
+  const publicValue = {
+    id: job.id,
+    status: job.status,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    startedAt: job.startedAt || null,
+    finishedAt: job.finishedAt || null,
+    quality: job.quality || 'medium',
+    total: job.total || job.items?.length || 0,
+    completed: job.completed || 0,
+    failed: job.failed || 0,
+    cancelled: job.cancelled || 0
+  };
+  if (includeItems) {
+    publicValue.items = (job.items || []).map((item, index) => ({
+      id: item.id,
+      status: item.status,
+      originalName: item.originalName || `product-${index + 1}.jpg`,
+      error: item.error || null,
+      result: item.result || null
+    }));
+  }
+  return publicValue;
+}
+
+async function grassJobBlobPart(env, key, fallbackFilename) {
+  const object = await env.BUCKET.get(key);
+  if (!object) throw new Error('Stored job source image was not found');
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  const contentType = normalizeOpenAIImageMime(headers.get('content-type'), fallbackFilename || key);
+  return {
+    blob: new Blob([await object.arrayBuffer()], { type: contentType }),
+    type: contentType,
+    filename: fallbackFilename || key.split('/').pop() || 'image.jpg'
+  };
+}
+
+async function grassJobBackgroundPart(env, job) {
+  if (job.background?.kind === 'stored' && job.background.key) {
+    return await grassJobBlobPart(env, job.background.key, job.background.filename || 'esntls-background.jpg');
+  }
+  const url = job.background?.url || env.GRASS_BACKGROUND_IMAGE_URL || DEFAULT_GRASS_BACKGROUND_URL;
+  return await fetchImageBlob(url, 'Grass background image');
+}
+
+async function grassJobReferenceParts(referenceUrls) {
+  const references = [];
+  for (const referenceUrl of (referenceUrls || []).slice(0, 6)) {
+    references.push(await fetchImageBlob(referenceUrl, 'Reference image'));
+  }
+  return references;
+}
+
+function safeJobFilename(value) {
+  const clean = String(value || 'image.jpg')
+    .replace(/[\/'\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 96);
+  return clean || 'image.jpg';
+}
+
+function extensionForContentType(contentType) {
+  const type = String(contentType || '').split(';')[0].trim().toLowerCase();
+  if (type === 'image/jpeg' || type === 'image/jpg') return 'jpg';
+  if (type === 'image/webp') return 'webp';
+  if (type === 'image/gif') return 'gif';
+  if (type === 'image/avif') return 'avif';
+  return 'png';
+}
+
+function outputGrassJobFilename(originalName, contentType) {
+  const base = safeJobFilename(originalName || 'esntls-grass-output.png').replace(/\.[a-z0-9]+$/i, '') || 'esntls-grass-output';
+  return `${base}-grass.${extensionForContentType(contentType)}`;
+}
+
 async function generateBlankImage(env, product) {
   if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
   if (!product.image) throw new Error('Product is missing an image');
@@ -1870,7 +2318,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
     if (req.headers.get('X-Admin-Secret') !== env.ADMIN_SECRET) {
@@ -1943,6 +2391,50 @@ export default {
         return json(await createGrassPreview(env, formData));
       } catch (error) {
         return json({ error: error.message }, 500);
+      }
+    }
+
+    if (parts[0] === 'grass-jobs') {
+      if (req.method === 'POST' && !parts[1]) {
+        let formData;
+        try { formData = await req.formData(); } catch (e) { return json({ error: 'Invalid multipart form data' }, 400); }
+        try {
+          return await createGrassJob(req, env, formData, ctx);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
+      }
+
+      if (req.method === 'GET' && !parts[1]) {
+        try {
+          return await getGrassJobs(req, env, ctx);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
+      }
+
+      if (req.method === 'POST' && parts[1] === 'resume') {
+        try {
+          return await resumeGrassJobFromRequest(req, env, ctx);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
+      }
+
+      if (req.method === 'POST' && parts[1] === 'retry-failed') {
+        try {
+          return await retryFailedGrassJob(req, env, ctx);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
+      }
+
+      if (req.method === 'POST' && parts[1] === 'cancel') {
+        try {
+          return await cancelGrassJob(req, env);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
       }
     }
 

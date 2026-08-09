@@ -152,7 +152,17 @@ label.field input:focus{border-color:var(--g)}
 .studio-reference-tile img{width:100%;height:100%;object-fit:cover;display:block}
 .studio-reference-tile button{position:absolute;top:5px;right:5px;width:24px;height:24px;border:none;border-radius:999px;background:rgba(17,17,17,.72);color:#fff;font-size:13px;font-weight:800;cursor:pointer}
 .studio-actions{display:flex;gap:8px;margin-bottom:0}
-.studio-actions .btn{margin:0}
+.studio-actions .btn{margin:0;width:auto;flex:1 1 0}
+.studio-job-panel{display:none;border:1px solid rgba(0,200,83,.24);border-radius:16px;background:#f4fff8;padding:12px;margin:12px 0 14px}
+.studio-job-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
+.studio-job-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#063f1f}
+.studio-job-meta{font-size:11px;color:#537262;line-height:1.35;margin-top:2px}
+.studio-job-badge{flex:0 0 auto;border-radius:999px;background:#111;color:#fff;font-size:10px;font-weight:900;padding:5px 9px;text-transform:uppercase}
+.studio-job-bar{height:7px;background:#dceee4;border-radius:999px;overflow:hidden;margin:8px 0}
+.studio-job-bar span{display:block;height:100%;background:var(--g);width:0%;transition:width .25s}
+.studio-job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.studio-job-actions button{border:1px solid var(--border);background:#fff;color:#111;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
+.studio-job-actions button.danger{color:#e53935;border-color:#ffcdd2;background:#fff5f5}
 
 .btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
 .btn:active{transform:scale(.97)}
@@ -908,7 +918,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <details id="psSettingsBox" style="background:#f8f9fa;border-radius:10px;padding:10px 14px;margin-bottom:14px">
 <summary style="font-size:13px;font-weight:600;cursor:pointer;color:#555">Settings</summary>
 <div style="margin-top:12px">
-<label class="field"><span>OpenAI API key (stored in this browser only, never committed)</span>
+<label class="field"><span>OpenAI API key fallback (stored in this browser only, used only if the Worker is unavailable)</span>
 <input id="psOpenaiKey" type="password" placeholder="sk-proj-..." style="font-family:monospace;font-size:12px">
 </label>
 <div style="font-size:11px;color:var(--sub);margin-bottom:10px">
@@ -955,7 +965,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </label>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button type="button" data-ps-yupoo-btn class="btn btn-outline" onclick="psImportYupoo(false)" style="flex:1 1 140px;margin:0">Import only</button>
-<button type="button" data-ps-yupoo-btn class="btn" onclick="psImportYupoo(true)" style="flex:1 1 160px;margin:0">Import + Generate</button>
+<button type="button" data-ps-yupoo-btn class="btn" onclick="psImportYupoo(true)" style="flex:1 1 160px;margin:0">Import + Background</button>
 </div>
 <div class="msg" id="psYupooMsg"></div>
 </div>
@@ -998,11 +1008,13 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <div class="studio-actions">
-<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">Generate</button>
+<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">Generate now</button>
+<button type="button" id="psBackgroundBtn" class="btn btn-outline" onclick="psStartBackgroundJob()" disabled style="opacity:.5">Background</button>
 <button type="button" id="psCancelBtn" class="btn btn-danger" onclick="psCancelGeneration()" style="display:none;flex:0 0 112px">Stop</button>
 </div>
 <div class="progress" id="psStudioProgress"><div class="progress-bar" id="psStudioBar"></div></div>
 <div class="msg" id="psGenerateMsg"></div>
+<div id="psJobPanel" class="studio-job-panel"></div>
 
 <div id="psResultPreview" style="display:none;margin-top:14px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -1185,6 +1197,7 @@ for(const c of contents){
 const k=c.getElementsByTagName('Key')[0]?.textContent;
 const sz=parseInt(c.getElementsByTagName('Size')[0]?.textContent||'0');
 const lm=c.getElementsByTagName('LastModified')[0]?.textContent||'';
+if(/^studio-jobs\/[^/]+\/(?:sources|background)\//.test(k||''))continue;
 if(k&&/\.(jpe?g|png|webp|gif|avif)$/i.test(k))out.push({name:k,url:R2_PUBLIC+k,size:sz,created:lm})}
 out.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
 return out}
@@ -1658,12 +1671,17 @@ form.append('size',size);
 form.append('quality',quality);
 if(model==='gpt-image-1'||model.startsWith('gpt-image-1.5'))form.append('input_fidelity','high');
 form.append('n','1');
-const r=await fetch('https://api.openai.com/v1/images/edits',{
+let r;
+try{
+r=await fetch('https://api.openai.com/v1/images/edits',{
 method:'POST',
 headers:{'Authorization':'Bearer '+s.openaiKey},
 body:form,
 signal
 });
+}catch(e){
+throw new Error(psFriendlyNetworkError(e,'OpenAI'));
+}
 let data={};
 try{data=await r.json()}catch(e){data={error:{message:'Invalid OpenAI response'}}}
 if(!r.ok)throw new Error(model+': '+((data.error&&data.error.message)||('HTTP '+r.status)));
@@ -1674,6 +1692,14 @@ return {model,size,b64};
 
 function psCanUseWorker(){
 return !!(WORKER_URL&&ADMIN_SECRET);
+}
+
+function psFriendlyNetworkError(error,target){
+const msg=(error&&error.message)||String(error||'');
+if(/Load failed|Failed to fetch|NetworkError|Network request failed/i.test(msg)){
+return target+' request could not be reached from this browser. Check that the Worker is deployed, reachable, and allowed by the browser.';
+}
+return msg||target+' request failed';
 }
 
 function psHasGenerationBackend(){
@@ -1691,12 +1717,17 @@ if(bgFile)form.append('background',bgFile,bgFile.name||'esntls-background.jpg');
 referenceUrls.slice(0,PS_MAX_REFERENCE_IMAGES).forEach(url=>form.append('referenceUrl[]',url));
 form.append('prompt',prompt);
 form.append('quality',quality);
-const r=await fetch(WORKER_URL+'/grass-preview',{
+let r;
+try{
+r=await fetch(WORKER_URL+'/grass-preview',{
 method:'POST',
 headers:{'X-Admin-Secret':ADMIN_SECRET},
 body:form,
 signal
 });
+}catch(e){
+throw new Error(psFriendlyNetworkError(e,'ESNTLS Worker'));
+}
 let data={};
 try{data=await r.json()}catch(e){data={error:'Invalid worker response'}}
 if(!r.ok)throw new Error(data.error||data.detail||('Worker HTTP '+r.status));
@@ -1734,7 +1765,7 @@ return {blob,dataUrl:canvas.toDataURL('image/jpeg',0.95)};
 
 async function generateGrassPreviewFile(source,index,bgBlob,s,prompt,quality='medium',signal,referenceContext={}){
 let result;
-if(!s.openaiKey&&psCanUseWorker()){
+if(psCanUseWorker()){
 result=await requestGrassImageEditViaWorker(source,bgBlob,prompt,quality,signal,referenceContext.urls||[]);
 }else{
 try{
@@ -3204,6 +3235,7 @@ loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
 /* ═══════════════ PHOTO STUDIO ═══════════════ */
 // Settings live in localStorage so the OpenAI API key never lands in the repo.
 const PS_LS_KEY='esntlsPhotoStudio';
+const PS_JOB_ID_KEY='esntlsPhotoStudioBackgroundJobIdV1';
 const PS_GRASS_BG_VERSION=2;
 const PS_REFERENCE_LOOK_VERSION=2;
 const PS_MAX_REFERENCE_IMAGES=6;
@@ -3225,7 +3257,10 @@ let psState={
   isGenerating:false,
   cancelRequested:false,
   generationToken:0,
-  activeController:null
+  activeController:null,
+  currentJobId:localStorage.getItem(PS_JOB_ID_KEY)||'',
+  job:null,
+  jobPollTimer:null
 };
 
 function psDefaultBrandBg(){
@@ -3466,8 +3501,9 @@ async function psImportYupoo(generateAfter){
     await psHandleFile(files);
     psSetYupooMsg('Imported '+files.length+' Yupoo photo'+(files.length===1?'':'s')+(failed?' - '+failed+' skipped':''),'var(--g)');
     if(generateAfter){
-      psSetYupooMsg('Imported '+files.length+' - starting background generation...','var(--g)');
-      await psGenerate();
+      psSetYupooMsg('Imported '+files.length+' - starting background job...','var(--g)');
+      if(psCanUseBackgroundJobs())await psStartBackgroundJob();
+      else await psGenerate();
     }
   }catch(e){
     psSetYupooMsg('Yupoo import failed: '+e.message,'#e53935');
@@ -3589,6 +3625,215 @@ function psSetAllResultsSelected(selected){
   psRenderResults();
 }
 
+function psCanUseBackgroundJobs(){
+  return psCanUseWorker();
+}
+
+function psJobIsDone(job){
+  return ['complete','partial','failed','cancelled'].includes(String(job&&job.status||''));
+}
+
+function psJobStatusLabel(job){
+  const status=String(job&&job.status||'').toLowerCase();
+  if(status==='complete')return'Complete';
+  if(status==='partial')return'Partial';
+  if(status==='failed')return'Failed';
+  if(status==='cancelled')return'Cancelled';
+  if(status==='running')return'Running';
+  return'Queued';
+}
+
+function psJobProgress(job){
+  const total=Number(job&&job.total||0);
+  if(!total)return 0;
+  const done=Number(job.completed||0)+Number(job.failed||0)+Number(job.cancelled||0);
+  return Math.max(0,Math.min(100,Math.round((done/total)*100)));
+}
+
+function psRenderBackgroundJob(){
+  const panel=document.getElementById('psJobPanel');
+  if(!panel)return;
+  const job=psState.job;
+  if(!job){
+    panel.style.display='none';
+    panel.innerHTML='';
+    return;
+  }
+  const total=Number(job.total||0);
+  const completed=Number(job.completed||0);
+  const failed=Number(job.failed||0);
+  const cancelled=Number(job.cancelled||0);
+  const done=completed+failed+cancelled;
+  const progress=psJobProgress(job);
+  const terminal=psJobIsDone(job);
+  const failedButton=failed?`<button type="button" onclick="psRetryBackgroundJob()">Retry failed</button>`:'';
+  const cancelButton=!terminal?`<button type="button" class="danger" onclick="psCancelBackgroundJob()">Cancel</button>`:'';
+  const resumeButton=!terminal?`<button type="button" onclick="psResumeBackgroundJob()">Resume</button>`:'';
+  const loadButton=completed?`<button type="button" onclick="psApplyBackgroundJobResults(psState.job,true)">Load results</button>`:'';
+  panel.style.display='block';
+  panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Background generation</div><div class="studio-job-meta">${done}/${total} finished${failed?` · ${failed} failed`:''}${cancelled?` · ${cancelled} cancelled`:''}</div></div><div class="studio-job-badge">${psJobStatusLabel(job)}</div></div><div class="studio-job-bar"><span style="width:${progress}%"></span></div><div class="studio-job-actions"><button type="button" onclick="psLoadBackgroundJob()">Refresh</button>${loadButton}${resumeButton}${failedButton}${cancelButton}<button type="button" onclick="psClearBackgroundJob()">Hide</button></div>`;
+}
+
+function psApplyBackgroundJobResults(job, notify){
+  const items=(job&&job.items||[]).map(item=>{
+    if(item&&item.result&&item.result.url){
+      return {
+        dataUrl:item.result.url,
+        sourceFile:{name:item.originalName||item.result.filename||'background-job.jpg'},
+        resultKey:item.result.key,
+        selected:true,
+        model:item.result.model,
+        size:item.result.imageSize
+      }
+    }
+    if(item&&item.status==='failed')return{sourceFile:{name:item.originalName||'image'},error:item.error||'Generation failed',selected:false};
+    if(item&&item.status==='cancelled')return{sourceFile:{name:item.originalName||'image'},error:'Cancelled',selected:false};
+    return null
+  }).filter(Boolean);
+  if(items.length){
+    psState.resultItems=items;
+    psState.resultDataUrl=(items.find(item=>item.dataUrl)||{}).dataUrl||null;
+    psRenderResults();
+    if(notify&&typeof toast==='function')toast('Loaded background job results','success');
+  }
+}
+
+function psStartJobPolling(){
+  if(psState.jobPollTimer)clearInterval(psState.jobPollTimer);
+  if(!psState.currentJobId)return;
+  psState.jobPollTimer=setInterval(()=>{
+    if(!psState.currentJobId){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null;return}
+    psLoadBackgroundJob({quiet:true}).catch(()=>{});
+    if(psState.job&&psJobIsDone(psState.job)){
+      clearInterval(psState.jobPollTimer);
+      psState.jobPollTimer=null;
+    }
+  },4500);
+}
+
+async function psWorkerJson(path,options={}){
+  if(!psCanUseWorker())throw new Error('Worker is not configured');
+  const headers={'X-Admin-Secret':ADMIN_SECRET,...(options.headers||{})};
+  const r=await fetch(WORKER_URL+path,{...options,headers});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||data.detail||('Worker HTTP '+r.status));
+  return data
+}
+
+async function psStartBackgroundJob(){
+  const msg=document.getElementById('psGenerateMsg');
+  if(psState.currentJobId){
+    if(!psState.job){
+      try{await psLoadBackgroundJob({quiet:true})}catch(e){}
+    }
+    if(psState.job&&!psJobIsDone(psState.job)){
+      await psLoadBackgroundJob();
+      return;
+    }
+  }
+  const files=psSelectedOriginalFiles();
+  if(!files.length){
+    if(msg){msg.style.color='#e53935';msg.textContent=(psState.files&&psState.files.length)?'Select at least one photo to generate.':'Upload product photos first.'}
+    psUpdateGenerateState();
+    return;
+  }
+  if(!psCanUseBackgroundJobs()){
+    if(msg){msg.style.color='#e53935';msg.textContent='Background jobs need the ESNTLS Worker.'}
+    return;
+  }
+  const btn=document.getElementById('psBackgroundBtn');
+  const s=psGetSettings();
+  const quality=document.querySelector('input[name="psQuality"]:checked').value;
+  const form=new FormData();
+  for(let i=0;i<files.length;i++){
+    const file=files[i];
+    const normalized=await normalizedOpenAIImageFile(file,file.name||('product-'+(i+1)+'.jpg'));
+    form.append('image[]',normalized,normalized.name||file.name||('product-'+(i+1)+'.jpg'));
+    form.append('prompt[]',psBuildPrompt(psProductNameFromFile(file)));
+  }
+  form.append('quality',quality);
+  form.append('backgroundUrl',s.brandBg||psDefaultBrandBg());
+  psReferenceUrlsForGeneration().forEach(url=>form.append('referenceUrl[]',url));
+  if(btn){btn.disabled=true;btn.style.opacity='.55';btn.textContent='Starting...'}
+  if(msg){msg.style.color='var(--sub)';msg.textContent='Starting background job. You can leave this page after it starts.'}
+  try{
+    const data=await psWorkerJson('/grass-jobs',{method:'POST',body:form});
+    psState.currentJobId=data.job.id;
+    psState.job=data.job;
+    localStorage.setItem(PS_JOB_ID_KEY,psState.currentJobId);
+    psRenderBackgroundJob();
+    psStartJobPolling();
+    if(msg){msg.style.color='var(--g)';msg.textContent='Background job started. You can close this page and come back later.'}
+    if(typeof toast==='function')toast('Background generation started','success');
+  }catch(e){
+    if(msg){msg.style.color='#e53935';msg.textContent='Background job failed: '+e.message}
+  }finally{
+    if(btn){btn.textContent='Background';btn.disabled=false;btn.style.opacity='1'}
+    psUpdateGenerateState();
+  }
+}
+
+async function psLoadBackgroundJob(options={}){
+  if(!psState.currentJobId)return null;
+  try{
+    const data=await psWorkerJson('/grass-jobs?id='+encodeURIComponent(psState.currentJobId),{method:'GET'});
+    psState.job=data.job;
+    psRenderBackgroundJob();
+    if(psJobIsDone(data.job)){
+      psApplyBackgroundJobResults(data.job,false);
+      if(psState.jobPollTimer){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null}
+      if(data.job.completed&&typeof loadMedia==='function')loadMedia().then(renderMedia).catch(()=>{});
+    }else{
+      psStartJobPolling();
+    }
+    if(!options.quiet){
+      const msg=document.getElementById('psGenerateMsg');
+      if(msg){msg.style.color='var(--sub)';msg.textContent='Checked background job.'}
+    }
+    return data.job
+  }catch(e){
+    if(!options.quiet){
+      const msg=document.getElementById('psGenerateMsg');
+      if(msg){msg.style.color='#e53935';msg.textContent='Job refresh failed: '+e.message}
+    }
+    throw e
+  }
+}
+
+async function psResumeBackgroundJob(){
+  if(!psState.currentJobId)return;
+  const data=await psWorkerJson('/grass-jobs/resume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:psState.currentJobId})});
+  psState.job=data.job;
+  psRenderBackgroundJob();
+  psStartJobPolling();
+}
+
+async function psRetryBackgroundJob(){
+  if(!psState.currentJobId)return;
+  const data=await psWorkerJson('/grass-jobs/retry-failed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:psState.currentJobId})});
+  psState.job=data.job;
+  psRenderBackgroundJob();
+  psStartJobPolling();
+}
+
+async function psCancelBackgroundJob(){
+  if(!psState.currentJobId||!confirm('Cancel this background generation job?'))return;
+  const data=await psWorkerJson('/grass-jobs/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:psState.currentJobId})});
+  psState.job=data.job;
+  psRenderBackgroundJob();
+  if(psState.jobPollTimer){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null}
+}
+
+function psClearBackgroundJob(){
+  if(psState.job&&!psJobIsDone(psState.job)&&!confirm('A background job is still running. Hide it from this page anyway?'))return;
+  psState.currentJobId='';
+  psState.job=null;
+  localStorage.removeItem(PS_JOB_ID_KEY);
+  if(psState.jobPollTimer){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null}
+  psRenderBackgroundJob();
+  psUpdateGenerateState();
+}
+
 async function psHandleFile(files){
   if(!files||!files.length)return;
   const msg=document.getElementById('psGenerateMsg');
@@ -3637,13 +3882,21 @@ function psUpdateGenerateState(){
   const hasBackend=psHasGenerationBackend();
   const ready=!!(selectedCount&&hasBackend);
   const btn=document.getElementById('psGenerateBtn');
+  const bgBtn=document.getElementById('psBackgroundBtn');
   const cancelBtn=document.getElementById('psCancelBtn');
   const generating=!!psState.isGenerating;
   if(btn){
     btn.disabled=generating||!ready;
     btn.style.opacity=generating?'.55':(ready?'1':'.5');
     btn.textContent=generating?'Generating...':(ready?(selectedCount>1?'Generate '+selectedCount:'Generate'):'Generate');
-    btn.title=generating?'Generation is running':(ready?(psGetSettings().openaiKey?'Ready: using browser OpenAI key':'Ready: using secure Worker key'):(hasFile?'Select at least one photo to generate':'Upload a product photo first'));
+    btn.title=generating?'Generation is running':(ready?(psCanUseWorker()?'Ready: using secure Worker key':'Ready: using browser OpenAI key'):(hasFile?'Select at least one photo to generate':'Upload a product photo first'));
+  }
+  if(bgBtn){
+    const bgReady=!!(selectedCount&&psCanUseBackgroundJobs());
+    bgBtn.disabled=generating||!bgReady;
+    bgBtn.style.opacity=generating?'.55':(bgReady?'1':'.5');
+    bgBtn.textContent=psState.job&&!psJobIsDone(psState.job)?'Check Job':'Background';
+    bgBtn.title=bgReady?'Start a Worker job that keeps running after you leave the page':'Background jobs need selected photos and the ESNTLS Worker';
   }
   if(cancelBtn){
     cancelBtn.style.display=generating?'block':'none';
@@ -3670,7 +3923,7 @@ async function psLoadReferenceFiles(urls,signal){
 async function psBuildReferenceContext(s,signal){
   const urls=psReferenceUrlsForGeneration();
   const context={urls,files:[]};
-  if(!urls.length||!s.openaiKey)return context;
+  if(!urls.length||psCanUseWorker()||!s.openaiKey)return context;
   try{
     context.files=await psLoadReferenceFiles(urls,signal)
   }catch(e){
@@ -3710,7 +3963,7 @@ async function psGenerateSingleLegacy(){
   const btn=document.getElementById('psGenerateBtn');
   const quality=document.querySelector('input[name="psQuality"]:checked').value;
   btn.disabled=true;btn.textContent='⏳ Generating… (~10–20s)';
-  msg.style.color='var(--sub)';msg.textContent=s.openaiKey?'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...':'Calling ESNTLS Worker...';
+  msg.style.color='var(--sub)';msg.textContent=psCanUseWorker()?'Calling ESNTLS Worker...':'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
     const item=await generateGrassPreviewFile(psState.file,0,bgBlob,s,psBuildPrompt(psProductNameFromFile(psState.file)),quality);
@@ -3792,7 +4045,7 @@ async function psGenerate(){
   if(prog)prog.style.display='block';
   if(bar)bar.style.width='0%';
   msg.style.color='var(--sub)';
-  msg.textContent=s.openaiKey?'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...':'Calling ESNTLS Worker...';
+  msg.textContent=psCanUseWorker()?'Calling ESNTLS Worker...':'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
   psState.resultItems=[];
   psState.resultDataUrl=null;
   psRenderResults();
@@ -3886,6 +4139,11 @@ async function psSaveToLibrary(){
       msg.style.color='var(--sub)';
       msg.textContent='Uploading '+(i+1)+'/'+items.length+'...';
       try{
+        if(items[i].resultKey){
+          if(!firstUrl)firstUrl=items[i].dataUrl;
+          ok++;
+          continue;
+        }
         let file=items[i].generatedFile;
         if(!file){
           const res=await fetch(items[i].dataUrl);
@@ -4412,7 +4670,7 @@ function updateOrderCounts(){
 const _origShowTab=showTab;
 window.showTab=function(t){
   _origShowTab.apply(this,arguments);
-  if(t==='studio'){psLoadSettings();psUpdateGenerateState()}
+  if(t==='studio'){psLoadSettings();psUpdateGenerateState();psLoadBackgroundJob({quiet:true}).catch(()=>{})}
   if(t==='orders'){
     if(!wixOrders){
       // First open — auto-load from R2 (no worker call, just snapshot)
