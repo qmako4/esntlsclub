@@ -123,6 +123,14 @@ mutation ProductUpdateMedia($product: ProductUpdateInput!, $media: [CreateMediaI
   }
 }`;
 
+const PRODUCT_UPDATE_STATUS_MUTATION = `
+mutation ProductUpdateStatus($product: ProductUpdateInput!) {
+  productUpdate(product: $product) {
+    product { id title handle status }
+    userErrors { field message }
+  }
+}`;
+
 const PUBLICATIONS_QUERY = `
 query PublicationsForStorefront {
   publications(first: 20) { nodes { id name } }
@@ -1644,6 +1652,26 @@ async function publishProductToOnlineStore(env, productId) {
   return data.publishablePublish.publishable;
 }
 
+async function activateAndPublishShopifyProduct(env, productId) {
+  const updated = await shopifyGraphql(env, PRODUCT_UPDATE_STATUS_MUTATION, {
+    product: { id: productId, status: 'ACTIVE' }
+  });
+  const errors = updated.productUpdate.userErrors;
+  if (errors.length) throw new Error(`Shopify product status update failed: ${JSON.stringify(errors)}`);
+
+  let published = null;
+  try {
+    published = await publishProductToOnlineStore(env, productId);
+  } catch (error) {
+    published = { status: 'error', error: error.message };
+  }
+
+  return {
+    ...updated.productUpdate.product,
+    published
+  };
+}
+
 async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle) {
   const variantPlan = buildProductVariantPlan(product, env);
   const productSet = await shopifyGraphql(env, PRODUCT_SET_MUTATION, {
@@ -2264,12 +2292,17 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 
   if (existing) {
     status = 'existing';
+    const activeProduct = await activateAndPublishShopifyProduct(env, existing.id);
+    const shopifyVariants = await shopifyVariantMapForProduct(env, existing.id, product);
     shopifyProduct = {
-      id: existing.id,
-      title: existing.title,
-      handle: existing.handle,
-      shopifyUrl: storefrontUrl(env, existing.handle),
-      shopifyVariants: await shopifyVariantMapForProduct(env, existing.id, product)
+      id: activeProduct.id || existing.id,
+      title: activeProduct.title || existing.title,
+      handle: activeProduct.handle || existing.handle,
+      shopifyUrl: storefrontUrl(env, activeProduct.handle || existing.handle),
+      shopifyVariants,
+      variantCount: Object.keys(shopifyVariants || {}).length,
+      productStatus: activeProduct.status || '',
+      published: activeProduct.published
     };
   } else {
     const generatedImage = await generateBlankImage(env, product);
@@ -2306,6 +2339,8 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     variationValues: shopifyProduct.variationValues || product.variationValues || [],
     variantCount: shopifyProduct.variantCount || 0,
     variants: rawProduct.shopifyVariants,
+    productStatus: shopifyProduct.productStatus || '',
+    published: shopifyProduct.published || null,
     generatedAt: new Date().toISOString()
   };
   if (wixBackup) rawProduct.wixBackupPlaceholder = wixBackup;
