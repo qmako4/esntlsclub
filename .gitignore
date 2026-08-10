@@ -6,6 +6,7 @@ node_modules
 dist
 coverage
 .wrangler-bundle/
+.wrangler/
 *.tsbuildinfo
 outputs/blank-product-workflow/state.json
 outputs/blank-product-workflow/generated/
