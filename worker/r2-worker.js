@@ -1765,6 +1765,49 @@ async function launchTelegramDiscount(env) {
   };
 }
 
+async function launchB30TelegramDiscount(env) {
+  const code = 'B30TG';
+  const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
+  const existing = existingData.codeDiscountNodeByCode;
+
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const products = Array.isArray(payload) ? payload : (Array.isArray(payload.products) ? payload.products : []);
+  const productIds = [...new Set(products
+    .filter(product => String(product.brand || '').toLowerCase() === 'b30')
+    .map(product => product.shopifyPlaceholder?.shopifyProductId || product.shopifyProductId)
+    .filter(Boolean))];
+  if (!productIds.length) throw new Error('No linked B30 Shopify products were found');
+
+  const input = {
+    title: 'Telegram B30 - GBP 10 off',
+    code,
+    startsAt: new Date(Date.now() - 60000).toISOString(),
+    context: { all: 'ALL' },
+    customerGets: {
+      value: { discountAmount: { amount: '10.00', appliesOnEachItem: false } },
+      items: { products: { productsToAdd: productIds } }
+    },
+    combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true }
+  };
+  const updateInput = { ...input };
+  delete updateInput.code;
+  const data = existing
+    ? await shopifyGraphql(env, B30_DISCOUNT_UPDATE_MUTATION, { id: existing.id, input: updateInput })
+    : await shopifyGraphql(env, B30_DISCOUNT_CREATE_MUTATION, { input });
+  const result = existing ? data.discountCodeBasicUpdate : data.discountCodeBasicCreate;
+  if (result.userErrors.length) throw new Error(`Shopify B30 Telegram discount failed: ${JSON.stringify(result.userErrors)}`);
+  return {
+    ok: true,
+    status: existing ? 'updated' : 'created',
+    code,
+    eligibleProductCount: productIds.length,
+    id: result.codeDiscountNode.id,
+    discount: result.codeDiscountNode.codeDiscount
+  };
+}
+
 async function findExistingShopifyProduct(env, product) {
   const data = await shopifyGraphql(env, PRODUCT_SEARCH_QUERY, {
     query: `(tag:ESNTLS-SOURCE-ID-${product.id}) OR (tag:ESNTLS-ID-${product.id})`
@@ -2539,6 +2582,14 @@ export default {
     if (req.method === 'POST' && parts[0] === 'launch-telegram-discount') {
       try {
         return json(await launchTelegramDiscount(env));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'launch-b30-telegram-discount') {
+      try {
+        return json(await launchB30TelegramDiscount(env));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
