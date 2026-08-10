@@ -165,6 +165,13 @@ label.field input:focus{border-color:var(--g)}
 .studio-job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .studio-job-actions button{border:1px solid var(--border);background:#fff;color:#111;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
 .studio-job-actions button.danger{color:#e53935;border-color:#ffcdd2;background:#fff5f5}
+.studio-job-actions button.primary{background:var(--g);border-color:var(--g);color:#fff}
+.studio-recent-jobs{display:block;background:#fbfdfc;border-color:var(--border)}
+.studio-recent-list{display:grid;gap:7px;margin-top:10px}
+.studio-recent-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:12px;background:#fff;padding:9px}
+.studio-recent-row-main{min-width:0}
+.studio-recent-row-title{font-size:11px;font-weight:900;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.studio-recent-row-meta{font-size:10px;color:var(--sub);margin-top:2px}
 
 .btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
 .btn:active{transform:scale(.97)}
@@ -1017,6 +1024,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="progress" id="psStudioProgress"><div class="progress-bar" id="psStudioBar"></div></div>
 <div class="msg" id="psGenerateMsg"></div>
 <div id="psJobPanel" class="studio-job-panel"></div>
+<div id="psRecentJobsPanel" class="studio-job-panel studio-recent-jobs"></div>
 
 <div id="psResultPreview" style="display:none;margin-top:14px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -3706,6 +3714,59 @@ function psRenderBackgroundJob(){
   panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Background generation</div><div class="studio-job-meta">${done}/${total} finished${failed?` · ${failed} failed`:''}${cancelled?` · ${cancelled} cancelled`:''}</div></div><div class="studio-job-badge">${psJobStatusLabel(job)}</div></div><div class="studio-job-bar"><span style="width:${progress}%"></span></div><div class="studio-job-actions"><button type="button" onclick="psLoadBackgroundJob()">Refresh</button>${loadButton}${resumeButton}${failedButton}${cancelButton}<button type="button" onclick="psClearBackgroundJob()">Hide</button></div>`;
 }
 
+function psRenderRecentJobs(jobs){
+  const panel=document.getElementById('psRecentJobsPanel');
+  if(!panel)return;
+  if(!psCanUseWorker()){
+    panel.style.display='none';
+    panel.innerHTML='';
+    return;
+  }
+  panel.style.display='block';
+  if(!Array.isArray(jobs)){
+    panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Recent background jobs</div><div class="studio-job-meta">Tap Check jobs to find finished background generations from any device.</div></div></div><div class="studio-job-actions"><button type="button" class="primary" onclick="psLoadRecentBackgroundJobs()">Check jobs</button></div>`;
+    return;
+  }
+  const rows=jobs.length?jobs.map(job=>{
+    const done=Number(job.completed||0)+Number(job.failed||0)+Number(job.cancelled||0);
+    const total=Number(job.total||0);
+    const canLoad=Number(job.completed||0)>0;
+    const id=psEscapeHtml(job.id);
+    const loadButton=canLoad?`<button type="button" class="primary" onclick="psOpenRecentBackgroundJob('${id}',true)">Load</button>`:`<button type="button" onclick="psOpenRecentBackgroundJob('${id}',false)">Open</button>`;
+    return `<div class="studio-recent-row"><div class="studio-recent-row-main"><div class="studio-recent-row-title">${psEscapeHtml(psJobStatusLabel(job))} background job</div><div class="studio-recent-row-meta">${done}/${total} finished - ${psEscapeHtml(String(job.createdAt||'').replace('T',' ').slice(0,16))}</div></div><div class="studio-job-actions" style="margin:0">${loadButton}</div></div>`
+  }).join(''):'<div class="studio-job-meta">No background jobs found yet.</div>';
+  panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Recent background jobs</div><div class="studio-job-meta">Use Load to show finished images below.</div></div></div><div class="studio-job-actions"><button type="button" onclick="psLoadRecentBackgroundJobs()">Check jobs</button></div><div class="studio-recent-list">${rows}</div>`;
+}
+
+async function psLoadRecentBackgroundJobs(options={}){
+  const msg=document.getElementById('psGenerateMsg');
+  if(!psCanUseWorker()){
+    psRenderRecentJobs([]);
+    return [];
+  }
+  try{
+    const data=await psWorkerJson('/grass-jobs?limit=8',{method:'GET'});
+    psRenderRecentJobs(data.jobs||[]);
+    if(!options.quiet&&msg){msg.style.color='var(--sub)';msg.textContent='Checked recent background jobs.'}
+    return data.jobs||[]
+  }catch(e){
+    if(msg&&!options.quiet){msg.style.color='#e53935';msg.textContent='Could not check jobs: '+e.message}
+    return []
+  }
+}
+
+async function psOpenRecentBackgroundJob(id,loadResults){
+  if(!id)return;
+  psState.currentJobId=id;
+  localStorage.setItem(PS_JOB_ID_KEY,id);
+  const job=await psLoadBackgroundJob({quiet:true});
+  if(loadResults&&job&&Number(job.completed||0)>0){
+    psApplyBackgroundJobResults(job,true);
+    const preview=document.getElementById('psResultPreview');
+    if(preview)preview.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+
 function psApplyBackgroundJobResults(job, notify){
   const token=Date.now();
   const items=(job&&job.items||[]).map(item=>{
@@ -3806,6 +3867,7 @@ async function psStartBackgroundJob(){
     psState.job=data.job;
     localStorage.setItem(PS_JOB_ID_KEY,psState.currentJobId);
     psRenderBackgroundJob();
+    psLoadRecentBackgroundJobs({quiet:true}).catch(()=>{});
     psStartJobPolling();
     if(msg){msg.style.color='var(--g)';msg.textContent='Background job started. You can close this page and come back later.'}
     if(typeof toast==='function')toast('Background generation started','success');
@@ -3833,6 +3895,7 @@ async function psLoadBackgroundJob(options={}){
       }
       if(psState.jobPollTimer){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null}
       if(data.job.completed&&typeof loadMedia==='function')loadMedia().then(renderMedia).catch(()=>{});
+      psLoadRecentBackgroundJobs({quiet:true}).catch(()=>{});
     }else{
       psStartJobPolling();
     }
@@ -4722,7 +4785,13 @@ function updateOrderCounts(){
 const _origShowTab=showTab;
 window.showTab=function(t){
   _origShowTab.apply(this,arguments);
-  if(t==='studio'){psLoadSettings();psUpdateGenerateState();psLoadBackgroundJob({quiet:true}).catch(()=>{})}
+  if(t==='studio'){
+    psLoadSettings();
+    psUpdateGenerateState();
+    psRenderRecentJobs();
+    psLoadRecentBackgroundJobs({quiet:true}).catch(()=>{});
+    psLoadBackgroundJob({quiet:true}).catch(()=>{})
+  }
   if(t==='orders'){
     if(!wixOrders){
       // First open — auto-load from R2 (no worker call, just snapshot)
