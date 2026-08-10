@@ -1734,6 +1734,37 @@ async function launchB22BundleDiscount(env) {
   });
 }
 
+async function launchTelegramDiscount(env) {
+  const code = 'TELEGRAM5';
+  const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
+  const existing = existingData.codeDiscountNodeByCode;
+  const input = {
+    title: 'Join Telegram - GBP 5 off',
+    code,
+    startsAt: new Date(Date.now() - 60000).toISOString(),
+    context: { all: 'ALL' },
+    customerGets: {
+      value: { discountAmount: { amount: '5.00', appliesOnEachItem: false } },
+      items: { all: true }
+    },
+    combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true }
+  };
+  const updateInput = { ...input };
+  delete updateInput.code;
+  const data = existing
+    ? await shopifyGraphql(env, B30_DISCOUNT_UPDATE_MUTATION, { id: existing.id, input: updateInput })
+    : await shopifyGraphql(env, B30_DISCOUNT_CREATE_MUTATION, { input });
+  const result = existing ? data.discountCodeBasicUpdate : data.discountCodeBasicCreate;
+  if (result.userErrors.length) throw new Error(`Shopify Telegram discount failed: ${JSON.stringify(result.userErrors)}`);
+  return {
+    ok: true,
+    status: existing ? 'updated' : 'created',
+    code,
+    id: result.codeDiscountNode.id,
+    discount: result.codeDiscountNode.codeDiscount
+  };
+}
+
 async function findExistingShopifyProduct(env, product) {
   const data = await shopifyGraphql(env, PRODUCT_SEARCH_QUERY, {
     query: `(tag:ESNTLS-SOURCE-ID-${product.id}) OR (tag:ESNTLS-ID-${product.id})`
@@ -2500,6 +2531,14 @@ export default {
     if (req.method === 'POST' && parts[0] === 'launch-b22-bundle') {
       try {
         return json(await launchB22BundleDiscount(env));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'launch-telegram-discount') {
+      try {
+        return json(await launchTelegramDiscount(env));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
