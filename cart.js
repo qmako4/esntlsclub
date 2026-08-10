@@ -53,6 +53,21 @@
     return String(value || '').split(',').map(v => v.trim()).filter(Boolean);
   }
 
+  function uniqueValues(values){
+    return Array.from(new Set(values.map(value => String(value).trim()).filter(Boolean)));
+  }
+
+  function isSizeOptionName(name){
+    return /^sizes?$/i.test(String(name || '').trim());
+  }
+
+  function variantKeyParts(key){
+    const text = String(key || '');
+    return (text.includes('|') ? text.split('|') : text.split(/\s+\/\s+/))
+      .map(part => part.trim())
+      .filter(Boolean);
+  }
+
   function isFootwear(product){
     return /\b(footwear|sneakers?|shoes?|runners?|b22|b30|asics|sandals?|slides?|sliders?)\b/i.test([product && product.name, product && product.n, product && product.category, product && product.cat, product && product.brand].join(' '));
   }
@@ -60,11 +75,11 @@
   function inferSizes(product){
     const explicit = splitList(product && (product.sizes || product.size || product.availableSizes));
     if(explicit.length) return explicit;
-    const keys = Object.keys(product && (product.shopifyVariants || product.variantIds || {}) || {});
-    const optionKeys = keys.map(key => key.split('|')[0].trim()).filter(Boolean);
-    if(optionKeys.length) return Array.from(new Set(optionKeys));
     const placeholderSizes = splitList(product && product.shopifyPlaceholder && product.shopifyPlaceholder.sizes);
     if(placeholderSizes.length) return placeholderSizes;
+    const keys = Object.keys(product && (product.shopifyVariants || product.variantIds || {}) || {});
+    const optionKeys = keys.map(key => variantKeyParts(key)[0]).filter(Boolean);
+    if(optionKeys.length) return uniqueValues(optionKeys);
     if(isFootwear(product)) return ['UK 5','UK 6','UK 7','UK 8','UK 9','UK 10','UK 11','UK 12'];
     if(/\b(shirts?|t-?shirts?|hoodies?|tracksuits?|shorts?|jackets?|clothing|pants|joggers?)\b/i.test([product && product.name, product && product.n, product && product.category, product && product.cat].join(' '))){
       return ['XS','S','M','L','XL'];
@@ -86,7 +101,7 @@
     if(sizes.length) defs.push({name:'Size', values:sizes, required:true});
     const values = variationValues(product);
     const name = variationName(product);
-    if(values.length) defs.push({name:name || 'Style', values, required:true});
+    if(values.length && !isSizeOptionName(name)) defs.push({name:name || 'Style', values, required:true});
     return defs;
   }
 
@@ -101,7 +116,7 @@
     }
     if(source && typeof source === 'object'){
       return Object.entries(source).map(([key,value]) => {
-        const parts = key.split('|').map(part => part.trim()).filter(Boolean);
+        const parts = variantKeyParts(key);
         const options = {};
         if(parts[0]) options.Size = parts[0];
         if(parts[1]) options[variationName(product) || 'Style'] = parts[1];
