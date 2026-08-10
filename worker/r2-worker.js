@@ -41,6 +41,7 @@ const YUPOO_PAGE_CRAWL_LIMIT = 12;
 const GRASS_JOB_ROOT = 'studio-jobs/';
 const GRASS_JOB_STALE_AFTER_MS = 2 * 60 * 1000;
 const GRASS_JOB_OPENAI_TIMEOUT_MS = 85 * 1000;
+const GRASS_JOB_FOREGROUND_TIMEOUT_MS = 180 * 1000;
 const GRASS_JOB_TERMINAL_STATUSES = ['complete', 'partial', 'failed', 'cancelled'];
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
@@ -1277,7 +1278,7 @@ async function processGrassJob(env, jobId) {
   }
 }
 
-async function processGrassJobItem(env, jobId, itemId, fallbackIndex) {
+async function processGrassJobItem(env, jobId, itemId, fallbackIndex, options = {}) {
   let job = await readGrassJob(env, jobId);
   if (!job || isGrassJobTerminal(job.status)) return;
   const foundIndex = (job.items || []).findIndex(item => item.id === itemId);
@@ -1301,7 +1302,7 @@ async function processGrassJobItem(env, jobId, itemId, fallbackIndex) {
     const source = await grassJobBlobPart(env, item.sourceKey, item.originalName);
     const background = await grassJobBackgroundPart(env, job);
     const references = await grassJobReferenceParts(job.referenceUrls || []);
-    const generated = await generateGrassJobImage(env, source, background, item.prompt, job.quality, references);
+    const generated = await generateGrassJobImage(env, source, background, item.prompt, job.quality, references, options);
     const latest = await readGrassJob(env, jobId);
     if (!latest || latest.status === 'cancelled') return;
     const latestIndex = (latest.items || []).findIndex(entry => entry.id === item.id);
@@ -1346,8 +1347,8 @@ async function processGrassJobItem(env, jobId, itemId, fallbackIndex) {
   await finalizeGrassJob(env, jobId);
 }
 
-async function generateGrassJobImage(env, source, background, prompt, quality, references) {
-  const timeoutMs = Math.max(15000, Number(env.GRASS_JOB_OPENAI_TIMEOUT_MS || GRASS_JOB_OPENAI_TIMEOUT_MS));
+async function generateGrassJobImage(env, source, background, prompt, quality, references, options = {}) {
+  const timeoutMs = Math.max(15000, Number(options.timeoutMs || env.GRASS_JOB_OPENAI_TIMEOUT_MS || GRASS_JOB_OPENAI_TIMEOUT_MS));
   try {
     return await requestOpenAIGrassImageEdit(
       env,
@@ -1395,6 +1396,52 @@ async function finalizeGrassJob(env, jobId) {
   }
   await writeGrassJob(env, job);
   return job;
+}
+
+function grassItemAttemptTime(item) {
+  return Date.parse(item.lastAttemptAt || item.startedAt || item.createdAt || '');
+}
+
+function resetStaleGrassJobItems(job, force = false) {
+  const now = Date.now();
+  let reset = 0;
+  for (const item of job.items || []) {
+    if (item.status !== 'running') continue;
+    const attemptAt = grassItemAttemptTime(item);
+    const stale = !Number.isFinite(attemptAt) || now - attemptAt > GRASS_JOB_STALE_AFTER_MS;
+    if (!force && !stale) continue;
+    item.status = 'queued';
+    item.error = null;
+    item.resumedAt = new Date().toISOString();
+    reset++;
+  }
+  if (reset) {
+    job.status = 'queued';
+    job.finishedAt = null;
+  }
+  return reset;
+}
+
+async function processNextGrassJobItem(env, jobId, options = {}) {
+  let job = await readGrassJob(env, jobId);
+  if (!job) throw new Error('Background job was not found');
+  if (isGrassJobTerminal(job.status)) return job;
+
+  const reset = resetStaleGrassJobItems(job, !!options.force);
+  if (reset) await writeGrassJob(env, job);
+
+  job = await readGrassJob(env, jobId) || job;
+  if ((job.items || []).some(item => item.status === 'running')) return job;
+
+  const index = (job.items || []).findIndex(item => item.status === 'queued');
+  if (index < 0) return await finalizeGrassJob(env, jobId) || job;
+
+  const item = job.items[index];
+  await processGrassJobItem(env, jobId, item.id, index, {
+    timeoutMs: Math.max(15000, Number(options.timeoutMs || env.GRASS_JOB_FOREGROUND_TIMEOUT_MS || GRASS_JOB_FOREGROUND_TIMEOUT_MS))
+  });
+
+  return await readGrassJob(env, jobId) || job;
 }
 
 function grassJobPrefix(jobId) {
@@ -2520,6 +2567,18 @@ export default {
       if (req.method === 'POST' && parts[1] === 'resume') {
         try {
           return await resumeGrassJobFromRequest(req, env, ctx);
+        } catch (error) {
+          return json({ error: error.message }, 500);
+        }
+      }
+
+      if (req.method === 'POST' && parts[1] === 'work') {
+        const body = await req.json().catch(() => ({}));
+        const id = body.id || url.searchParams.get('id');
+        if (!id) return json({ error: 'Missing background job id' }, 400);
+        try {
+          const job = await processNextGrassJobItem(env, id, { force: !!body.force });
+          return json({ ok: true, job: publicGrassJob(job) });
         } catch (error) {
           return json({ error: error.message }, 500);
         }

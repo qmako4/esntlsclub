@@ -3271,7 +3271,8 @@ let psState={
   activeController:null,
   currentJobId:localStorage.getItem(PS_JOB_ID_KEY)||'',
   job:null,
-  jobPollTimer:null
+  jobPollTimer:null,
+  jobWorkInFlight:false
 };
 
 function psDefaultBrandBg(){
@@ -3737,11 +3738,14 @@ function psStartJobPolling(){
   if(!psState.currentJobId)return;
   psState.jobPollTimer=setInterval(()=>{
     if(!psState.currentJobId){clearInterval(psState.jobPollTimer);psState.jobPollTimer=null;return}
-    psLoadBackgroundJob({quiet:true}).catch(()=>{});
-    if(psState.job&&psJobIsDone(psState.job)){
-      clearInterval(psState.jobPollTimer);
-      psState.jobPollTimer=null;
-    }
+    if(psState.jobWorkInFlight)return;
+    psState.jobWorkInFlight=true;
+    psLoadBackgroundJob({quiet:true,work:true}).then(job=>{
+      if(job&&psJobIsDone(job)){
+        clearInterval(psState.jobPollTimer);
+        psState.jobPollTimer=null;
+      }
+    }).catch(()=>{}).finally(()=>{psState.jobWorkInFlight=false});
   },4500);
 }
 
@@ -3816,7 +3820,9 @@ async function psStartBackgroundJob(){
 async function psLoadBackgroundJob(options={}){
   if(!psState.currentJobId)return null;
   try{
-    const data=await psWorkerJson('/grass-jobs?id='+encodeURIComponent(psState.currentJobId),{method:'GET'});
+    const data=options.work&&!psJobIsDone(psState.job)
+      ?await psWorkerJson('/grass-jobs/work',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:psState.currentJobId})})
+      :await psWorkerJson('/grass-jobs?id='+encodeURIComponent(psState.currentJobId),{method:'GET'});
     psState.job=data.job;
     psRenderBackgroundJob();
     if(psJobIsDone(data.job)){
