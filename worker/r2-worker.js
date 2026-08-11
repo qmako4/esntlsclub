@@ -615,6 +615,14 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 0, label = 'Reque
   }
 }
 
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function shouldRetryImageDownload(status) {
+  return [404, 408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status));
+}
+
 function base64ToBlob(base64, type = 'image/png') {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -656,12 +664,28 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 
-async function fetchImageBlob(url, label) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${label} download failed: ${response.status}`);
-  const pathname = new URL(url).pathname;
-  const type = normalizeOpenAIImageMime(response.headers.get('content-type'), pathname);
-  return { blob: await response.blob(), type, filename: slugify(pathname.split('/').pop()) || 'image' };
+async function fetchImageBlob(url, label, options = {}) {
+  const attempts = Math.max(1, Number(options.attempts || 5));
+  let lastStatus = 0;
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, { headers: { accept: 'image/*,*/*' } }, Number(options.timeoutMs || 15000), `${label} download`);
+      if (response.ok) {
+        const pathname = new URL(url).pathname;
+        const type = normalizeOpenAIImageMime(response.headers.get('content-type'), pathname);
+        return { blob: await response.blob(), type, filename: slugify(pathname.split('/').pop()) || 'image' };
+      }
+      lastStatus = response.status;
+      await response.body?.cancel?.();
+      if (!shouldRetryImageDownload(response.status)) break;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < attempts) await sleep(250 * attempt);
+  }
+  if (lastStatus) throw new Error(`${label} download failed: ${lastStatus}`);
+  throw new Error(`${label} download failed${lastError ? `: ${lastError.message}` : ''}`);
 }
 
 function isAllowedYupooHost(hostname) {
@@ -2537,6 +2561,9 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
     generatedAt: new Date().toISOString()
   };
   if (wixBackup) rawProduct.wixBackupPlaceholder = wixBackup;
+  delete rawProduct.checkoutCreationError;
+  rawProduct.active = true;
+  rawProduct.archived = false;
 
   await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
     httpMetadata: { contentType: 'application/json' }
