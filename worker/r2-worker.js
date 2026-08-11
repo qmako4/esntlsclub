@@ -281,6 +281,17 @@ function splitList(value) {
   return String(value).split(',').map(item => item.trim()).filter(Boolean);
 }
 
+function isDefaultClothingSizeList(value) {
+  const clothing = new Set(['XS', 'S', 'M', 'L', 'XL']);
+  const sizes = splitList(value).map(size => size.toUpperCase());
+  return sizes.length > 0 && sizes.every(size => clothing.has(size));
+}
+
+function productLooksLikeFootwear(product) {
+  const text = `${product.title || ''} ${product.categories.join(' ')}`.toLowerCase();
+  return /\b(sandals?|slides?|sliders?|trainers?|sneakers?|shoes?|footwear|gats?|b22|b30|asics|gel|kayano|saucony)\b/.test(text);
+}
+
 function uniqueList(values) {
   const out = [];
   const seen = new Set();
@@ -334,11 +345,11 @@ function normalizeStoredProduct(raw) {
 }
 
 function inferSizes(product, env) {
-  if (product.sizes.length) return product.sizes;
-  const text = `${product.title || ''} ${product.categories.join(' ')}`.toLowerCase();
-  if (/\b(sandals?|slides?|sliders?|trainers?|sneakers?|shoes?|footwear|b22|b30)\b/.test(text)) {
+  if (productLooksLikeFootwear(product) && (!product.sizes.length || isDefaultClothingSizeList(product.sizes))) {
     return splitList(env.DEFAULT_FOOTWEAR_SIZES || 'UK 5,UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12');
   }
+  if (product.sizes.length) return product.sizes;
+  const text = `${product.title || ''} ${product.categories.join(' ')}`.toLowerCase();
   if (/\b(t-?shirts?|tees?|shirts?|shorts?|jackets?|tracksuits?|hoodies?|clothing|tops?|parkas?|puffers?|coats?|casablanca)\b/.test(text)) {
     return splitList(env.DEFAULT_CLOTHING_SIZES || 'XS,S,M,L,XL');
   }
@@ -1615,10 +1626,19 @@ async function copyR2Object(env, requestBody) {
   return { ok: true, sourceKey, key: destKey, url: PUBLIC_BASE + destKey };
 }
 
-async function generateBlankImage(env, product) {
+function sourceImageFromRequestBody(value) {
+  const source = value && typeof value === 'object' ? value : null;
+  const base64 = String(source?.base64 || '').replace(/^data:[^;]+;base64,/, '');
+  if (!base64) return null;
+  const filename = slugify(source.filename || 'source-image') || 'source-image';
+  const type = normalizeOpenAIImageMime(source.contentType, filename);
+  return { blob: base64ToBlob(base64, type), type, filename };
+}
+
+async function generateBlankImage(env, product, sourceOverride = null) {
   if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
   if (!product.image) throw new Error('Product is missing an image');
-  const source = await fetchImageBlob(product.image, 'Source image');
+  const source = sourceOverride || await fetchImageBlob(product.image, 'Source image');
   let background = null;
   const backgroundUrls = splitList(env.SHOPIFY_BLANK_BACKGROUND_URL);
   if (!backgroundUrls.length) backgroundUrls.push(DEFAULT_BACKGROUND_URL, FALLBACK_BACKGROUND_URL);
@@ -2522,7 +2542,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
       published: activeProduct.published
     };
   } else {
-    const generatedImage = await generateBlankImage(env, product);
+    const generatedImage = await generateBlankImage(env, product, sourceImageFromRequestBody(requestBody.sourceImage));
     const upload = await uploadProductImageToShopify(env, product, generatedImage);
     uploadedFilename = upload.filename;
     shopifyProduct = await createShopifyProduct(env, product, upload.resourceUrl, visibleTitle);

@@ -421,6 +421,8 @@
     const AUTO_JOBS_KEY = 'esntls-v2-studio-auto-product-jobs';
     const STORE_API_BASE = location.origin;
     const CATEGORY_PRESETS = ['Accessories','Shirts','T-Shirts','Hoodies','Tracksuits','Jackets','Bottoms','Shorts','Jeans','Cargo','Footwear','Sneakers','Summer','Winter','New In','Sale','Streetwear','Designer','Bags','Hats','Watches'];
+    const DEFAULT_FOOTWEAR_SIZES = ['UK 5','UK 6','UK 7','UK 8','UK 9','UK 10','UK 11','UK 12'];
+    const DEFAULT_CLOTHING_SIZES = ['XS','S','M','L','XL'];
     const state = {
       apiBase: normalizeApiBase(localStorage.getItem('esntls-v2-studio-api')),
       files: [],
@@ -770,6 +772,19 @@
     function splitList(value){
       return String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
     }
+    function isDefaultClothingSizeList(sizes){
+      const normalized=(sizes||[]).map(size=>String(size||'').toUpperCase());
+      return normalized.length>0 && normalized.every(size=>DEFAULT_CLOTHING_SIZES.includes(size));
+    }
+    function isFootwearMeta(name,categories){
+      const text=`${name||''} ${(categories||[]).join(' ')}`.toLowerCase();
+      return /\b(shoes?|sneakers?|trainers?|footwear|slides?|sliders?|sandals?|gats?|b22|b30|asics|gel|kayano|saucony)\b/.test(text);
+    }
+    function normalizedProductSizesFor(name,categories,sizes){
+      const clean=[...new Set((sizes||[]).filter(Boolean))];
+      if(isFootwearMeta(name,categories) && (!clean.length || isDefaultClothingSizeList(clean))) return DEFAULT_FOOTWEAR_SIZES.slice();
+      return clean;
+    }
     function studioProductCategories(){
       return [...new Set([...state.productCategories, ...splitList($('studioCustomCategories').value || state.customCategories)])];
     }
@@ -777,7 +792,8 @@
       return [...new Set(splitList($('studioProductColors').value || state.productColors))];
     }
     function studioProductSizes(){
-      return [...new Set(splitList($('studioProductSizes').value || state.productSizes))];
+      const name=String($('studioProductName').value || state.productName || productNameFromYupooUrl(state.lastYupooUrl)).trim();
+      return normalizedProductSizesFor(name, studioProductCategories(), splitList($('studioProductSizes').value || state.productSizes));
     }
     function studioProductMeta(){
       const supplier=studioSupplierInfo();
@@ -2126,8 +2142,8 @@
       const colorText=cleanColors.length ? `\n\nColours: ${cleanColors.join(', ')}` : '';
       const description=`${delivery} delivery.${colorText}\n\nImported from Yupoo${yupooUrl ? `: ${yupooUrl}` : ''}`;
       const productText=`${name || ''} ${categoryNames.join(' ')}`.toLowerCase();
-      const isFootwear=/\b(shoes?|sneakers?|trainers?|footwear|slides?|sliders?|sandals?|asics|gel|kayano|saucony)\b/.test(productText);
-      const baseSizes=sizes.length ? sizes : isFootwear ? Array.from({length:8},(_,index)=>`UK ${index+5}`) : ['XS','S','M','L','XL'];
+      const isFootwear=/\b(shoes?|sneakers?|trainers?|footwear|slides?|sliders?|sandals?|gats?|b22|b30|asics|gel|kayano|saucony)\b/.test(productText);
+      const baseSizes=normalizedProductSizesFor(name, categoryNames, sizes.length ? sizes : (isFootwear ? DEFAULT_FOOTWEAR_SIZES : DEFAULT_CLOTHING_SIZES));
       const sizeRows=cleanColors.length ? cleanColors.flatMap(color=>baseSizes.map(size=>`${color} ${size}`)) : baseSizes;
       const product=await storeApi('/api/admin/products',{method:'POST',body:{
         name,

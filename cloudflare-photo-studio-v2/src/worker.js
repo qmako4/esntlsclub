@@ -17,6 +17,8 @@ const SESSION_COOKIE = "esntls_studio_session";
 const SESSION_VERSION = "v1";
 const CATALOG_KEY = "products.json";
 const BRAND_CATEGORIES = ["Apple", "Asics", "B22", "B30", "Burberry", "C Goose", "Corteiz", "CP", "Ermes", "Essentials", "Hermes", "LV", "Monc", "Nike"];
+const DEFAULT_FOOTWEAR_SIZES = ["UK 5", "UK 6", "UK 7", "UK 8", "UK 9", "UK 10", "UK 11", "UK 12"];
+const DEFAULT_CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
 
 export default {
   async fetch(request, env, ctx) {
@@ -361,6 +363,24 @@ function splitImageValues(value) {
   return [...new Set(list.map((item) => String(item?.url ?? item ?? "").trim()).filter(Boolean))];
 }
 
+function isDefaultClothingSizes(sizes) {
+  const normalized = splitValues(sizes).map((size) => size.toUpperCase());
+  return normalized.length > 0 && normalized.every((size) => DEFAULT_CLOTHING_SIZES.includes(size));
+}
+
+function isFootwearProduct(name, categories) {
+  return /\b(footwear|shoe|shoes|sneaker|sneakers|trainer|trainers|sandals?|slides?|sliders?|gats?|b22|b30|asics|gel|kayano|saucony)\b/i
+    .test(`${name || ""} ${splitValues(categories).join(" ")}`);
+}
+
+export function normalizeProductSizes(sizes, name, categories) {
+  const values = splitValues(sizes);
+  if (isFootwearProduct(name, categories) && (!values.length || isDefaultClothingSizes(values))) {
+    return DEFAULT_FOOTWEAR_SIZES;
+  }
+  return values;
+}
+
 function checkoutUrlForAdmin(product) {
   return product.checkoutLinks?.shopify || product.shopifyPlaceholder?.shopifyUrl ||
     (/\.myshopify\.com|\/products\//i.test(String(product.link || "")) ? product.link : "");
@@ -368,7 +388,8 @@ function checkoutUrlForAdmin(product) {
 
 function adminProductShape(product) {
   const categories = splitValues(product.category || product.categories);
-  const sizes = splitValues(product.sizes).map((size) => ({ size, stock: 999999 }));
+  const sizeValues = normalizeProductSizes(product.sizes, product.name || product.title, categories);
+  const sizes = sizeValues.map((size) => ({ size, stock: 999999 }));
   return {
     id: String(product.id),
     name: product.name || product.title || "",
@@ -407,16 +428,17 @@ function inferBrand(categories, fallback = "Other") {
 function productRecordFromAdmin(body, existing = {}, id) {
   const categories = splitValues(body.categories || body.category);
   const colours = splitValues(body.colours || body.colors || body.variationValues);
-  const sizes = splitValues(body.sizes);
+  const name = String(body.name || existing.name).trim();
+  const sizes = normalizeProductSizes(body.sizes, name, categories.length ? categories : splitValues(existing.category || "Footwear"));
   const price = numericPrice(body.price_gbp ?? body.price);
-  if (!String(body.name || existing.name || "").trim()) throw statusError("Product name is required.", 400);
+  if (!name) throw statusError("Product name is required.", 400);
   if (!price) throw statusError("Product price is required.", 400);
   const images = splitImageValues(body.images || existing.images);
   if (!images.length) throw statusError("Add at least one product image.", 400);
   return {
     ...existing,
     id: id ?? existing.id,
-    name: String(body.name || existing.name).trim(),
+    name,
     category: (categories.length ? categories : splitValues(existing.category || "Footwear")).join(","),
     brand: String(body.brand || inferBrand(categories, existing.brand)).trim() || "Other",
     price: `£${price.toFixed(2)}`,
@@ -486,10 +508,14 @@ async function callEsntlsStoreApi(env, path, body) {
 
 async function createAdminShopifyBlank(request, env, id) {
   const body = await request.json().catch(() => ({}));
+  const catalog = await readCatalog(env);
+  const product = catalog.products.find((entry) => String(entry.id) === String(id));
+  const sourceImage = await sourceImagePayloadForProduct(env, product).catch(() => null);
   const result = await callEsntlsStoreApi(env, "shopify-create-product", {
     productId: id,
     createWixBackup: true,
     shopifyTitleOverride: String(body.blank_title || "").trim(),
+    sourceImage,
   });
   return json({
     ok: true,
@@ -724,12 +750,13 @@ function parseJobProduct(value) {
   const price = numericPrice(body?.price);
   if (!name) throw statusError("Enter a product name before starting the job.", 400);
   if (!price) throw statusError("Enter a valid product price before starting the job.", 400);
+  const categories = splitValues(body.categories);
   return {
     name,
     price,
-    categories: splitValues(body.categories),
+    categories,
     colours: splitValues(body.colours || body.colors),
-    sizes: splitValues(body.sizes),
+    sizes: normalizeProductSizes(body.sizes, name, categories),
     supplierName: String(body.supplierName || "").trim(),
     supplierUrl: String(body.supplierUrl || "").trim(),
     delivery: String(body.delivery || "").trim(),
@@ -1314,6 +1341,7 @@ async function createProductFromCompletedJob(env, jobId) {
   try {
     const images = await saveJobImagesForProduct(env, job);
     await ensurePublicImageUrlsReady(images);
+    const checkoutSourceImage = await sourceImagePayloadFromUrl(env, images[0]).catch(() => null);
     const catalog = await readCatalog(env);
     let product = catalog.products.find((entry) => entry.studioJobId === job.id);
     if (!product) {
@@ -1351,6 +1379,7 @@ async function createProductFromCompletedJob(env, jobId) {
           productId: product.id,
           createWixBackup: true,
           shopifyTitleOverride: job.product.checkoutTitle || "",
+          sourceImage: checkoutSourceImage,
         });
       } catch (error) {
         await setCatalogProductActive(env, product.id, false, error.message);
@@ -1448,6 +1477,43 @@ async function ensurePublicImageUrlReady(url) {
     if (attempt < 5) await wait(200 * attempt);
   }
   throw statusError(`Saved product image is not publicly readable yet${lastStatus ? ` (HTTP ${lastStatus})` : ""}${lastError ? `: ${lastError.message}` : "."}`, 502);
+}
+
+async function sourceImagePayloadForProduct(env, product) {
+  const firstImage = splitImageValues(product?.images || product?.image).find(Boolean);
+  return await sourceImagePayloadFromUrl(env, firstImage);
+}
+
+function mediaKeyFromPublicUrl(env, value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  let url;
+  try {
+    url = new URL(raw, env.ESNTLS_STUDIO_PUBLIC_URL || "https://studio.local");
+  } catch {
+    return "";
+  }
+  if (!url.pathname.startsWith("/media/")) return "";
+  const key = url.pathname.slice("/media/".length).split("/").map((part) => decodeURIComponent(part)).join("/");
+  const allowedPrefix = `${cleanPrefix(env.ESNTLS_STUDIO_R2_PREFIX || "photo-studio-v2/")}generated/`;
+  return key.startsWith(allowedPrefix) ? key : "";
+}
+
+async function sourceImagePayloadFromUrl(env, url) {
+  if (!env.ESNTLS_STUDIO_MEDIA) return null;
+  const key = mediaKeyFromPublicUrl(env, url);
+  if (!key) return null;
+  const object = await env.ESNTLS_STUDIO_MEDIA.get(key);
+  if (!object) return null;
+  if (Number(object.size || 0) > 8 * 1024 * 1024) return null;
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  const contentType = headers.get("content-type") || JPEG_TYPE;
+  return {
+    filename: safeFilename(key.split("/").pop() || "source.jpg"),
+    contentType,
+    base64: arrayBufferToBase64(await object.arrayBuffer()),
+  };
 }
 
 async function setCatalogProductActive(env, productId, active, error = "") {
