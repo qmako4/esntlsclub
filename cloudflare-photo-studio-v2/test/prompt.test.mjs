@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildGenerationPrompt, normalizeExtraInstruction, normalizeImageQuality } from "../src/worker.js";
+import { buildGenerationPrompt, normalizeExtraInstruction, normalizeImageQuality, normalizeProductSizes } from "../src/worker.js";
 
 test("full-photo mode uses the permanent ESNTLS grass flat-lay rules", () => {
   const instruction = "Leave more room above the product and use softer shadows.";
@@ -38,4 +38,11 @@ test("uses medium image quality by default and accepts explicit supported values
   assert.equal(normalizeImageQuality(), "medium");
   assert.equal(normalizeImageQuality(" HIGH "), "high");
   assert.equal(normalizeImageQuality("unknown", "medium"), "medium");
+});
+
+test("footwear products do not keep stale clothing sizes", () => {
+  assert.deepEqual(
+    normalizeProductSizes(["S", "M", "L", "XL"], "MM GATS", ["Footwear"]),
+    ["UK 5", "UK 6", "UK 7", "UK 8", "UK 9", "UK 10", "UK 11", "UK 12"],
+  );
 });
