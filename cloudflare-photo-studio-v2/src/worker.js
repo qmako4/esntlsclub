@@ -74,7 +74,7 @@ export default {
         return await getDefaultBackground(request, env);
       }
 
-      if (pathname.startsWith("/media/") && request.method === "GET") {
+      if (pathname.startsWith("/media/") && ["GET", "HEAD"].includes(request.method)) {
         return await getPublicMediaObject(request, env, pathname.slice("/media/".length));
       }
 
@@ -1313,6 +1313,7 @@ async function createProductFromCompletedJob(env, jobId) {
 
   try {
     const images = await saveJobImagesForProduct(env, job);
+    await ensurePublicImageUrlsReady(images);
     const catalog = await readCatalog(env);
     let product = catalog.products.find((entry) => entry.studioJobId === job.id);
     if (!product) {
@@ -1411,6 +1412,42 @@ async function saveJobImagesForProduct(env, job) {
   }
   await writeJob(env, job);
   return urls;
+}
+
+async function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldRetryImageRead(status) {
+  return [404, 408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status));
+}
+
+async function ensurePublicImageUrlsReady(urls) {
+  for (const url of urls || []) {
+    await ensurePublicImageUrlReady(url);
+  }
+}
+
+async function ensurePublicImageUrlReady(url) {
+  if (!/^https?:\/\//i.test(String(url || ""))) return;
+  let lastStatus = 0;
+  let lastError = null;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    try {
+      const response = await fetch(url, { method: "GET", headers: { accept: "image/*,*/*" } });
+      if (response.ok) {
+        await response.body?.cancel?.();
+        return;
+      }
+      lastStatus = response.status;
+      await response.body?.cancel?.();
+      if (!shouldRetryImageRead(response.status)) break;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 5) await wait(200 * attempt);
+  }
+  throw statusError(`Saved product image is not publicly readable yet${lastStatus ? ` (HTTP ${lastStatus})` : ""}${lastError ? `: ${lastError.message}` : "."}`, 502);
 }
 
 async function setCatalogProductActive(env, productId, active, error = "") {
@@ -1683,7 +1720,7 @@ async function getPublicMediaObject(request, env, encodedKey) {
   headers.set("etag", object.httpEtag);
   headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
   headers.set("access-control-allow-origin", "*");
-  return new Response(object.body, { headers });
+  return new Response(request.method === "HEAD" ? null : object.body, { headers });
 }
 
 async function deleteMediaObject(request, env) {
