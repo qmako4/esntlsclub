@@ -1,0 +1,2518 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESNTLS Club Photo Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--y:#70C64A;--b:#0A0A0A;--w:#FAFAFA;--b2:#121212;--b3:#1C1C1C;--line:rgba(250,250,250,.1);--mut:rgba(250,250,250,.62);--red:#E5484D;--green:#70C64A;--fd:'Barlow Condensed',sans-serif;--fb:'DM Sans',sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0;letter-spacing:0}
+    body{min-height:100vh;background:var(--b);color:var(--w);font-family:var(--fb);line-height:1.55}
+    img{display:block;max-width:100%}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer;border:0}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    a{color:inherit;text-decoration:none}
+    .wrap{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:20px 0 64px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .bar{width:8px;height:42px;background:var(--y)}
+    .logo{font-family:var(--fd);font-size:clamp(2rem,6vw,4rem);font-weight:900;line-height:.85;text-transform:uppercase}
+    .back{border:1px solid var(--line);border-radius:10px;background:var(--b2);padding:10px 14px;color:var(--mut);font-size:12px;font-weight:900;text-transform:uppercase}
+    .hero{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .panel{border:1px solid var(--line);border-radius:12px;background:var(--b2)}
+    .intro{padding:18px;position:relative;overflow:hidden}
+    .intro:after{display:none}
+    .eyebrow{color:var(--y);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.14em}
+    h1,h2,h3{font-family:var(--fd);text-transform:uppercase;line-height:.9}
+    h1{font-size:clamp(2.5rem,5vw,4rem);margin:10px 0}
+    h2{font-size:2.3rem}
+    h3{font-size:1.5rem}
+    .muted{color:var(--mut)}
+    .rule{display:flex;align-items:center;gap:9px;color:rgba(250,250,250,.82);font-weight:700;font-size:13px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--y);flex:0 0 auto}
+    .bg-card{display:grid;grid-template-columns:minmax(130px,180px) 1fr;gap:14px;padding:14px}
+    .bg-img{min-height:170px;aspect-ratio:3/4;border-radius:10px;background:var(--b3);overflow:hidden}
+    .bg-img img{width:100%;height:100%;object-fit:cover}
+    .bg-copy{display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:5px}
+    details.advanced{border-top:1px solid var(--line);padding-top:12px}
+    details.setup{margin-top:12px}
+    details.setup label.small:first-of-type{margin-top:10px}
+    details.advanced summary{cursor:pointer;color:var(--mut);font-size:11px;font-weight:900;text-transform:uppercase}
+    .file-link,.link-btn{min-height:auto;border:0;background:transparent;color:var(--y);padding:0;font:inherit;font-size:12px;font-weight:900;text-transform:uppercase}
+    .file-link{display:inline-flex;margin-top:10px;cursor:pointer}
+    .grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start}
+    .side,.main{padding:16px}
+    label.small{display:grid;gap:6px;color:var(--mut);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:10px}
+    input[type="text"],input[type="password"],input[type="number"]{min-height:42px;border:1px solid var(--line);border-radius:9px;background:var(--b3);color:var(--w);padding:0 11px;font-size:13px;text-transform:none}
+    .import-block{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--b3);padding:12px}
+    .instruction-block{display:grid;gap:8px;margin-top:12px;border:1px solid rgba(112,198,74,.28);border-radius:12px;background:rgba(112,198,74,.07);padding:12px}
+    .instruction-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .instruction-head label{color:var(--w);font-size:11px;font-weight:900;text-transform:uppercase}
+    .instruction-block textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);border-radius:9px;background:#111;color:var(--w);padding:11px;font-size:13px;line-height:1.5;text-transform:none;outline:none}
+    .instruction-block textarea:focus{border-color:var(--y);box-shadow:0 0 0 3px rgba(112,198,74,.12)}
+    .instruction-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .cost-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--b3)}
+    .cost-control label{display:grid;gap:6px}
+    .cost-control select{min-width:150px;border:1px solid var(--line);border-radius:8px;background:#111;color:var(--w);padding:10px;font:inherit}
+    .cost-estimate{text-align:right;max-width:190px}
+    #instructionCount{white-space:nowrap}
+    .link-row{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center}
+    .link-row .btn{min-height:42px;padding:10px 12px}
+    .option-grid{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 10px}
+    .option-pill{border:1px solid var(--line);border-radius:999px;background:#111;color:var(--mut);padding:6px 9px;font-size:11px;font-weight:900;text-transform:uppercase;cursor:pointer}
+    .option-pill.active{border-color:var(--y);background:rgba(112,198,74,.14);color:var(--y)}
+    .item-mode{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .item-mode button{border:1px solid var(--line);border-radius:999px;background:#111;color:var(--muted);padding:6px 9px;font-size:11px;font-weight:900;text-transform:uppercase;cursor:pointer}
+    .item-mode button.active{border-color:var(--y);background:rgba(112,198,74,.14);color:var(--y)}
+    .drop,.paste-zone{border:2px dashed var(--line);border-radius:12px;background:var(--b3);display:grid;place-items:center;text-align:center;padding:20px;transition:.15s}
+    .drop{min-height:180px}
+    .paste-zone{min-height:94px;margin-top:10px;outline:0}
+    .drop.drag,.paste-zone:focus,.paste-zone.active{border-color:var(--y);background:rgba(112,198,74,.1)}
+    .btn{min-height:42px;border-radius:9px;padding:10px 14px;background:var(--b3);border:1px solid var(--line);color:var(--w);font-family:var(--fd);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .btn.y{background:var(--y);border-color:var(--y);color:var(--b)}
+    .btn.dark{background:var(--w);border-color:var(--w);color:var(--b)}
+    .btn.red{color:var(--red)}
+    .btn.cancel{border-color:rgba(229,72,77,.42);background:rgba(229,72,77,.12);color:#ff8c90}
+    .icon-btn{width:32px;height:32px;border-radius:50%;background:rgba(250,250,250,.06);border:1px solid var(--line);color:var(--mut);font-size:16px;line-height:1}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .primary-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+    .secondary-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .hidden{display:none!important}
+    .status{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--b3);padding:11px;color:var(--mut);font-size:13px}
+    .status.ok{color:var(--green)}.status.bad{color:var(--red)}
+    .job-panel{margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--b3);padding:12px}
+    .background-jobs{border:1px solid rgba(112,198,74,.28);border-radius:12px;background:rgba(112,198,74,.08);padding:12px;margin-bottom:14px}
+    .background-jobs-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .background-jobs-head h3{margin:0;font-family:var(--fd);font-size:22px;text-transform:uppercase}
+    .background-jobs-grid{display:grid;gap:8px}
+    .job-card{border:1px solid var(--line);border-radius:10px;background:rgba(10,10,10,.42);padding:10px}
+    .job-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px;margin-top:10px}
+    .job-thumb{position:relative;aspect-ratio:3/4;border-radius:8px;overflow:hidden;background:rgba(250,250,250,.08);border:1px solid var(--line)}
+    .job-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .job-thumb span{position:absolute;left:4px;right:4px;bottom:4px;border-radius:6px;background:rgba(10,10,10,.75);color:var(--w);font-size:9px;font-weight:900;text-align:center;text-transform:uppercase;padding:3px}
+    .job-bar{height:8px;border-radius:999px;background:rgba(250,250,250,.12);overflow:hidden;margin:9px 0}.job-fill{height:100%;width:0;background:var(--y);transition:.2s}
+    .job-list{display:grid;gap:6px;margin-top:10px}.job-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:11px;color:var(--mut)}.job-row strong{color:var(--w);font-size:12px;word-break:break-word}.job-state{font-weight:900;text-transform:uppercase;color:var(--y)}
+    .queue{display:grid;gap:8px;margin-top:12px}
+    .queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+    .queue-tools{display:flex;gap:6px;align-items:center}
+    .q{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--b3);padding:8px}
+    .q-preview{position:relative;width:56px;height:66px}.q img{width:56px;height:66px;object-fit:cover;border-radius:7px}.queue-check{position:absolute;left:4px;top:4px;display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:rgba(250,250,250,.94);border:1px solid rgba(0,0,0,.08)}.queue-check input{width:14px;height:14px;accent-color:var(--y)}.q strong{display:block;font-size:13px;line-height:1.2;word-break:break-word}.tiny{font-size:11px;color:var(--mut)}
+    .source-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+    .badge{display:inline-flex;align-items:center;min-height:20px;border-radius:999px;background:rgba(250,250,250,.07);border:1px solid var(--line);padding:3px 7px;color:var(--mut);font-size:10px;font-weight:900;text-transform:uppercase}
+    .badge.done{background:rgba(61,214,140,.12);border-color:rgba(61,214,140,.35);color:var(--green)}
+    .head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
+    .workspace-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .tabs{display:flex;gap:6px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--b3)}
+    .tab{min-height:34px;border-radius:7px;background:transparent;color:var(--mut);padding:7px 10px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .tab.active{background:var(--y);color:var(--b)}
+    .admin-shell{display:grid;gap:12px}
+    .admin-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--b3)}
+    .admin-tab{min-height:34px;border-radius:7px;background:transparent;color:var(--mut);padding:7px 10px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .admin-tab.active{background:var(--y);color:var(--b)}
+    .admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+    .admin-product{border:1px solid var(--line);border-radius:10px;background:var(--b3);overflow:hidden}
+    .admin-product img{width:100%;aspect-ratio:3/4;object-fit:cover;background:rgba(250,250,250,.05)}
+    .admin-product-body{display:grid;gap:8px;padding:10px}.admin-product-body strong{font-size:14px;line-height:1.2}
+    .admin-product-actions{display:flex;flex-wrap:wrap;gap:7px}
+    .admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .admin-form label{display:grid;gap:6px;font-size:11px;color:var(--mut);font-weight:900;text-transform:uppercase}
+    .admin-form .wide{grid-column:1/-1}
+    .admin-sticky-actions{position:sticky;top:10px;z-index:8;grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid rgba(112,198,74,.32);border-radius:10px;background:rgba(10,10,10,.92);padding:10px;box-shadow:0 14px 38px rgba(0,0,0,.34);backdrop-filter:blur(10px)}
+    .admin-sticky-actions strong{display:block;font-size:13px;line-height:1.2}
+    .admin-sticky-actions span{display:block;font-size:11px;color:var(--mut)}
+    .admin-image-box{grid-column:1/-1;display:grid;gap:10px}
+    .admin-image-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .admin-selected-images,.admin-media-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
+    .admin-image-tile{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--b3);overflow:hidden}
+    .admin-image-tile[draggable="true"]{cursor:grab}
+    .admin-image-tile.dragging{opacity:.48}
+    .admin-image-tile.is-main{border-color:var(--y);box-shadow:0 0 0 1px rgba(112,198,74,.3)}
+    .admin-image-tile img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:rgba(250,250,250,.05)}
+    .admin-image-badge{position:absolute;left:6px;top:6px;border-radius:999px;background:var(--y);color:var(--b);font-size:9px;font-weight:1000;text-transform:uppercase;padding:4px 6px}
+    .admin-image-actions{position:absolute;left:6px;right:6px;bottom:6px;display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}
+    .admin-image-actions .mini-btn{background:rgba(10,10,10,.82);padding:5px 7px;font-size:9px}
+    .admin-image-name{padding:7px;font-size:10px;color:var(--mut);word-break:break-word}
+    .admin-url-fallback{display:none}
+    .admin-url-fallback.open{display:grid}
+    .admin-table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    .admin-table th{font-size:11px;color:var(--mut);text-transform:uppercase;text-align:left;padding:0 8px}
+    .admin-table td{background:var(--b3);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:9px 8px;font-size:13px}
+    .admin-table td:first-child{border-left:1px solid var(--line);border-radius:9px 0 0 9px}.admin-table td:last-child{border-right:1px solid var(--line);border-radius:0 9px 9px 0}
+    .workspace-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-bottom:14px}
+    .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
+    .card{border:1px solid var(--line);border-radius:10px;background:var(--b3);overflow:hidden}
+    .shot{position:relative;aspect-ratio:3/4;background:#222}.shot img{width:100%;height:100%;object-fit:cover}
+    .check{position:absolute;left:8px;top:8px;display:flex;align-items:center;gap:6px;background:rgba(250,250,250,.94);color:var(--b);border-radius:8px;padding:5px 8px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .body{display:grid;gap:8px;padding:10px}.body strong{font-size:13px;line-height:1.2;word-break:break-word}
+    .body .link-btn{justify-self:start}
+    .card-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .mini-btn{min-height:28px;border-radius:7px;border:1px solid var(--line);background:rgba(250,250,250,.06);color:var(--w);padding:6px 8px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .mini-btn.y{background:var(--y);border-color:var(--y);color:var(--b)}
+    .mini-btn.danger{color:var(--red)}
+    .shopify-status a{color:var(--y);font-weight:900}
+    .media{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+    .media-card{border:1px solid var(--line);border-radius:10px;background:var(--b3);overflow:hidden}
+    .media-card a{display:block}
+    .media-card.broken{border-color:rgba(229,72,77,.5)}
+    .media-card.broken img{object-fit:contain;padding:12px;opacity:.45}
+    .media img{width:100%;aspect-ratio:3/4;object-fit:cover}.media span{display:block;padding:7px;font-size:11px;color:var(--mut);word-break:break-word}
+    .media-actions{display:flex;justify-content:flex-end;padding:0 7px 8px}
+    .job-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .empty{padding:18px}
+    .toast{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:20}
+    .toast div{background:var(--w);color:var(--b);border-radius:10px;padding:11px 13px;font-weight:900;box-shadow:0 16px 45px rgba(0,0,0,.35)}
+    .login-gate{position:fixed;inset:0;z-index:100;background:#0a0a0a;display:grid;place-items:center;padding:20px}
+    .login-card{width:min(420px,100%);border:1px solid var(--line);border-radius:12px;background:var(--b2);padding:24px;display:grid;gap:14px}
+    .login-card input{width:100%}.login-card .btn{width:100%}.login-error{min-height:20px;color:#ff8c90;font-size:13px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}.workspace-head{align-items:flex-start;flex-direction:column}.results{grid-template-columns:repeat(2,minmax(0,1fr))}.media{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:620px){.wrap{width:min(100% - 20px,1280px);padding-top:12px}.top{align-items:center;flex-direction:row}.logo{font-size:2rem}.bar{height:34px}.hero{grid-template-columns:1fr}.intro,.side,.main{padding:14px}h1{font-size:2.8rem}.bg-card{grid-template-columns:92px 1fr;align-items:center}.bg-img{min-height:120px}.bg-copy h2{font-size:1.8rem}.results,.media{grid-template-columns:1fr}.actions .btn,.workspace-actions .btn{flex:1 1 auto}.tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.link-row,.cost-control{grid-template-columns:1fr}.cost-estimate{text-align:left;max-width:none}.admin-form{grid-template-columns:1fr}.admin-table,.admin-table tbody,.admin-table tr,.admin-table td{display:block;width:100%}.admin-table thead{display:none}.admin-table tr{border:1px solid var(--line);border-radius:10px;background:var(--b3);padding:8px}.admin-table td{border:0!important;border-radius:0!important;background:transparent;padding:5px 0}.admin-table td::before{content:attr(data-label);display:block;color:var(--mut);font-size:10px;font-weight:900;text-transform:uppercase}}
+  </style>
+</head>
+<body>
+  <div id="loginGate" class="login-gate">
+    <form id="loginForm" class="login-card">
+      <div><span class="eyebrow">ESNTLS Club</span><h2 style="margin-top:8px">Photo Studio</h2></div>
+      <p class="muted">Log in once. This device stays remembered for 30 days.</p>
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Admin password" required>
+      <button id="loginButton" class="btn y" type="submit">Log In</button>
+      <div id="loginError" class="login-error"></div>
+    </form>
+  </div>
+  <main class="wrap">
+    <header class="top">
+      <div class="brand"><span class="bar"></span><span class="logo">ESNTLS Club</span></div>
+      <div style="display:flex;gap:8px"><a class="back" href="https://esntlsclub.com/admin.html">Admin</a><button id="logoutButton" class="back" type="button">Log Out</button></div>
+    </header>
+
+    <section class="hero">
+      <div class="panel intro">
+        <span class="eyebrow">Admin Photo Studio</span>
+        <h1>Bulk Background Swap</h1>
+        <p class="muted">Upload product shots, generate finished images on command, then save only approved images to the ESNTLS Club media library.</p>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 18px">
+          <div class="rule"><span class="dot"></span><span>Product details stay unchanged.</span></div>
+          <div class="rule"><span class="dot"></span><span>Flat-lay output is 3:4.</span></div>
+          <div class="rule"><span class="dot"></span><span>No generation happens until you press the button.</span></div>
+        </div>
+      </div>
+
+      <aside class="panel bg-card">
+        <div class="bg-img"><img id="bgPreview" src="/esntls-grass-background.jpg" alt="ESNTLS Club green artificial-grass background"></div>
+        <div class="bg-copy">
+          <div>
+            <span class="eyebrow">Default background</span>
+            <h2>Original Studio</h2>
+            <p class="muted">Every generated product uses the exact approved ESNTLS Club artificial-grass photograph.</p>
+          </div>
+          <input id="bgInput" class="hidden" type="file" accept="image/*" disabled>
+          <p id="bgStatus" class="tiny">Permanent default background</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <aside class="panel side">
+        <div id="drop" class="drop">
+          <div>
+            <strong>Drop product images here</strong>
+            <p class="tiny">Or tap to choose multiple files.</p>
+            <label class="btn y" for="productInput" style="display:inline-flex;margin-top:12px">Choose Images</label>
+            <input id="productInput" class="hidden" type="file" accept="image/*" multiple>
+          </div>
+        </div>
+        <div id="pasteZone" class="paste-zone" tabindex="0" role="button" aria-label="Paste product images">
+          <div>
+            <strong>Paste product images</strong>
+            <p class="tiny">Copy a photo, click here, then paste.</p>
+          </div>
+        </div>
+        <div class="import-block">
+          <label class="small" for="yupooUrl" style="margin-bottom:7px">Yupoo link</label>
+          <div class="link-row">
+            <input id="yupooUrl" type="text" placeholder="https://seller.x.yupoo.com/albums/...">
+            <button id="importYupooBtn" class="btn">Import</button>
+          </div>
+          <p class="tiny" style="margin-top:7px">Imports accessible Yupoo product photos into the queue.</p>
+          <div id="queue" class="queue"></div>
+          <label class="small" for="studioProductPrice" style="margin-top:10px">Product price GBP
+            <input id="studioProductPrice" type="number" min="0.99" step="0.01" placeholder="24.99">
+          </label>
+          <label class="small" for="studioProductName">Product name
+            <input id="studioProductName" type="text" placeholder="Example: Denim Tears Hoodie">
+          </label>
+          <label class="small" for="studioSupplierName">Seller / supplier name
+            <input id="studioSupplierName" type="text" placeholder="Seller name for your records">
+          </label>
+          <label class="small" for="studioSupplierUrl">Supplier link
+            <input id="studioSupplierUrl" type="text" placeholder="Yupoo, WeChat, or supplier product link">
+          </label>
+          <label class="small">Categories</label>
+          <div id="studioCategoryOptions" class="option-grid"></div>
+          <label class="small" for="studioCustomCategories">Custom categories
+            <input id="studioCustomCategories" type="text" placeholder="Accessories, Summer, Shirts">
+          </label>
+          <label class="small" for="studioProductColors">Colour options
+            <input id="studioProductColors" type="text" placeholder="Black, Grey, Blue">
+          </label>
+          <label class="small" for="studioProductSizes">Sizes
+            <input id="studioProductSizes" type="text" placeholder="UK 5, UK 6, UK 7 or XS, S, M, L, XL">
+          </label>
+          <label class="small" for="studioProductDelivery">Delivery
+            <select id="studioProductDelivery" style="min-height:42px;border:1px solid var(--line);border-radius:9px;background:#111;color:var(--w);padding:0 11px">
+              <option value="7-12 Days">7-12 Days</option>
+              <option value="Next Day">Next Day</option>
+              <option value="Next Day,7-12 Days">Next Day + 7-12 Days</option>
+            </select>
+          </label>
+          <label class="small" style="display:flex;grid-template-columns:auto 1fr;align-items:center;gap:8px;text-transform:none"><input id="studioCreateCheckout" type="checkbox" checked> Create Shopify checkout and Wix backup after the product images finish</label>
+          <label class="small" for="studioCheckoutTitle">Blank checkout name (optional)
+            <input id="studioCheckoutTitle" type="text" placeholder="Example: The Gel Runners - Pink">
+          </label>
+          <p class="tiny">The ESNTLS product is created only after every selected image has finished.</p>
+        </div>
+        <div class="instruction-block">
+          <div class="instruction-head">
+            <label for="extraInstruction">Extra AI instruction</label>
+            <span class="tiny">Optional</span>
+          </div>
+          <textarea id="extraInstruction" maxlength="2000" rows="4" placeholder="Example: Leave more space above the product and use softer shadows."></textarea>
+          <div class="instruction-meta">
+            <span class="tiny">Added to every generated image in this batch.</span>
+            <span id="instructionCount" class="tiny">0 / 2000</span>
+          </div>
+        </div>
+        <div class="cost-control">
+          <label class="small" for="imageQuality">Image quality
+            <select id="imageQuality">
+              <option value="medium">Standard - recommended</option>
+              <option value="high">Max detail</option>
+            </select>
+          </label>
+          <div id="costEstimate" class="tiny cost-estimate">Select images to see the estimated cost.</div>
+        </div>
+        <div class="primary-actions">
+          <button id="generateBtn" class="btn y">Generate Images</button>
+          <button id="cancelGenerationBtn" class="btn cancel hidden" disabled>Cancel Generation</button>
+          <div class="secondary-actions">
+            <button id="backgroundJobBtn" class="btn">Run In Background</button>
+            <button id="refreshJobBtn" class="btn" disabled>Refresh Job</button>
+          </div>
+        </div>
+        <p id="status" class="status">Upload product images, then generate finished ESNTLS Club images.</p>
+        <div id="jobPanel" class="job-panel hidden"></div>
+        <details id="setupDetails" class="advanced setup hidden">
+          <summary>Studio setup</summary>
+          <label class="small">Photo Studio Worker URL
+            <input id="apiBase" type="text" placeholder="https://esntls-photo-studio-v2.your-name.workers.dev">
+          </label>
+        </details>
+      </aside>
+
+      <section class="panel main">
+        <div class="workspace-head">
+          <div><span id="workspaceEyebrow" class="eyebrow">Ready to save</span><h2 id="workspaceTitle">Generated Images</h2></div>
+          <div class="tabs" role="tablist" aria-label="Photo studio view">
+            <button id="generatedTab" class="tab active" type="button">Generated</button>
+            <button id="savedTab" class="tab" type="button">Saved</button>
+            <button id="storeAdminTab" class="tab" type="button">Admin</button>
+          </div>
+        </div>
+        <div class="workspace-actions">
+          <button id="newBatchBtn" class="btn hidden" disabled>Start New Batch</button>
+          <button id="regenerateBtn" class="btn hidden" disabled>Regenerate Selected</button>
+          <button id="removeGeneratedBtn" class="btn red hidden" disabled>Remove Selected</button>
+          <button id="useSelectedProductBtn" class="btn y hidden" disabled>Use Selected for Product</button>
+          <button id="saveBtn" class="btn dark hidden" disabled>Save Selected</button>
+          <button id="refreshMediaBtn" class="btn hidden">Refresh Saved</button>
+        </div>
+        <div id="backgroundJobsPanel" class="background-jobs hidden"></div>
+        <div id="generatedView">
+          <div id="results" class="results">
+            <div class="panel empty"><h3>No images yet</h3><p class="muted">Upload products and press Generate Images.</p></div>
+          </div>
+        </div>
+        <div id="savedView" class="hidden">
+          <div id="media" class="media"><div class="panel empty"><p class="muted">Saved images appear here after Worker/R2 setup.</p></div></div>
+        </div>
+        <div id="storeAdminView" class="hidden">
+          <div class="admin-shell">
+            <div class="admin-toolbar">
+              <div class="admin-tabs">
+                <button id="adminProductsTab" class="admin-tab active" type="button">Products</button>
+                <button id="adminAddTab" class="admin-tab" type="button">Add Product</button>
+                <button id="adminMediaTab" class="admin-tab" type="button">Media Library</button>
+                <button id="adminOrdersTab" class="admin-tab" type="button">Orders</button>
+                <button id="adminUsersTab" class="admin-tab" type="button">Users</button>
+              </div>
+              <button id="adminRefreshBtn" class="btn" type="button">Refresh</button>
+            </div>
+            <div id="adminProductsPanel">
+              <div id="adminProductsList" class="admin-grid"><div class="panel empty">Loading products...</div></div>
+            </div>
+            <div id="adminMediaPanel" class="hidden">
+              <div id="adminMedia" class="media"><div class="panel empty"><p class="muted">Open Media Library to load saved images.</p></div></div>
+            </div>
+            <div id="adminAddPanel" class="hidden">
+              <form id="adminProductForm" class="admin-form">
+                <div class="admin-sticky-actions">
+                  <div><strong id="adminFormMode">New product</strong><span>Save changes without scrolling to the bottom.</span></div>
+                  <div class="admin-product-actions">
+                    <button id="adminTopSaveProductBtn" class="btn y" type="submit">Save Product</button>
+                    <button id="adminTopResetProductBtn" class="btn" type="button">Clear</button>
+                  </div>
+                </div>
+                <label>Name<input id="adminProductName" type="text" placeholder="Product name"></label>
+                <label>Brand<input id="adminProductBrand" type="text" value="ESNTLS Club"></label>
+                <label>Price GBP<input id="adminProductPrice" type="number" min="0.99" step="0.01" placeholder="24.99"></label>
+                <label>Sale Price GBP<input id="adminProductSale" type="number" min="0" step="0.01" placeholder="Optional"></label>
+                <label>Size Type<select id="adminProductType"><option value="clothing">Clothing</option><option value="shoe">Shoe</option></select></label>
+                <label>Status<select id="adminProductActive"><option value="true">Live</option><option value="false">Draft</option></select></label>
+                <label>Seller / Supplier<input id="adminProductSupplierName" type="text" placeholder="Private seller name"></label>
+                <label>Supplier Link<input id="adminProductSupplierUrl" type="text" placeholder="Private product or seller link"></label>
+                <label class="wide">Categories<input id="adminProductCategories" type="text" placeholder="Shirts, Summer, Streetwear"></label>
+                <label class="wide">Colours<input id="adminProductColors" type="text" placeholder="Black, Grey, Blue"></label>
+                <label class="wide">Sizes / Stock<textarea id="adminProductSizes" rows="3" placeholder="S:999999, M:999999, L:999999, XL:999999"></textarea></label>
+                <div class="admin-image-box">
+                  <div class="admin-image-head">
+                    <label class="small">Product images</label>
+                    <div class="admin-product-actions">
+                      <button id="adminRefreshMediaBtn" class="mini-btn" type="button">Refresh Media</button>
+                      <button id="adminToggleUrlBtn" class="mini-btn" type="button">Paste URL</button>
+                    </div>
+                  </div>
+                  <div id="adminSelectedImages" class="admin-selected-images"><div class="panel empty">No images selected yet.</div></div>
+                  <div id="adminUrlFallback" class="admin-url-fallback">
+                    <label class="wide">Image URLs<textarea id="adminProductImages" rows="4" placeholder="Paste one image URL per line"></textarea></label>
+                  </div>
+                  <div>
+                    <div class="admin-image-head" style="margin-bottom:8px">
+                      <span class="tiny">Saved media library</span>
+                      <span id="adminMediaCount" class="tiny">Loading...</span>
+                    </div>
+                    <div id="adminMediaPicker" class="admin-media-picker"><div class="panel empty">Loading saved media...</div></div>
+                  </div>
+                </div>
+                <label class="wide">Description<textarea id="adminProductDescription" rows="4" placeholder="7-10 days delivery."></textarea></label>
+                <div class="wide admin-product-actions">
+                  <button id="adminSaveProductBtn" class="btn y" type="submit">Save Product</button>
+                  <button id="adminResetProductBtn" class="btn" type="button">Clear</button>
+                </div>
+              </form>
+            </div>
+            <div id="adminOrdersPanel" class="hidden"><div id="adminOrdersList" class="panel empty">Open Orders to load orders.</div></div>
+            <div id="adminUsersPanel" class="hidden"><div id="adminUsersList" class="panel empty">Open Users to load users.</div></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const DEFAULT_API_BASE = location.origin;
+    const DEFAULT_BACKGROUND_SRC = '/esntls-grass-background.jpg';
+    const PRODUCT_IMAGE_TRANSFER_KEY = 'esntls-v2-product-draft-images';
+    const AUTO_JOBS_KEY = 'esntls-v2-studio-auto-product-jobs';
+    const STORE_API_BASE = location.origin;
+    const CATEGORY_PRESETS = ['Accessories','Shirts','T-Shirts','Hoodies','Tracksuits','Jackets','Bottoms','Shorts','Jeans','Cargo','Footwear','Sneakers','Summer','Winter','New In','Sale','Streetwear','Designer','Bags','Hats','Watches'];
+    const state = {
+      apiBase: normalizeApiBase(localStorage.getItem('esntls-v2-studio-api')),
+      files: [],
+      fileIds: [],
+      previews: [],
+      queueSelected: new Set(),
+      bgFile: null,
+      generated: [],
+      selected: new Set(),
+      media: [],
+      busy: false,
+      activeAbort: null,
+      activeOperation: '',
+      cancelRequested: false,
+      autoModes: {},
+      sourceModes: loadJson('esntls-v2-studio-source-modes', {}),
+      mode: 'keep-crop',
+      maxBulkImages: 24,
+      yupooImportLimit: 24,
+      currentJobId: localStorage.getItem('esntls-v2-studio-job-id') || '',
+      job: null,
+      trackedJobs: loadJson('esntls-v2-studio-auto-product-jobs', []),
+      lastYupooUrl: localStorage.getItem('esntls-v2-studio-last-yupoo-url') || '',
+      productPrice: localStorage.getItem('esntls-v2-studio-product-price') || '',
+      productName: localStorage.getItem('esntls-v2-studio-product-name') || '',
+      supplierName: localStorage.getItem('esntls-v2-studio-supplier-name') || '',
+      supplierUrl: localStorage.getItem('esntls-v2-studio-supplier-url') || '',
+      productCategories: loadJson('esntls-v2-studio-product-categories', []),
+      customCategories: localStorage.getItem('esntls-v2-studio-custom-categories') || '',
+      productColors: localStorage.getItem('esntls-v2-studio-product-colors') || '',
+      productSizes: localStorage.getItem('esntls-v2-studio-product-sizes') || '',
+      productDelivery: localStorage.getItem('esntls-v2-studio-product-delivery') || '7-12 Days',
+      createCheckout: localStorage.getItem('esntls-v2-studio-create-checkout') !== 'false',
+      checkoutTitle: localStorage.getItem('esntls-v2-studio-checkout-title') || '',
+      extraInstruction: localStorage.getItem('esntls-v2-studio-extra-instruction') || '',
+      imageQuality: localStorage.getItem('esntls-v2-studio-image-quality') === 'high' ? 'high' : 'medium',
+      jobPoll: null,
+      knownJobResultIds: new Set(),
+      activeView: localStorage.getItem('esntls-v2-studio-view') || 'generated',
+      adminSection: 'products',
+      adminProducts: [],
+      adminEditId: '',
+      adminDragImageIndex: null,
+      generatedSignatures: loadJson('esntls-v2-studio-generated-signatures', {}),
+      jobSources: loadJson(localStorage.getItem('esntls-v2-studio-job-sources-key') || (localStorage.getItem('esntls-v2-studio-job-id') ? `esntls-v2-studio-job-sources-${localStorage.getItem('esntls-v2-studio-job-id')}` : ''), {})
+    };
+    const $ = id => document.getElementById(id);
+
+    function loadJson(key, fallback){
+      if(!key) return fallback;
+      try{ return JSON.parse(localStorage.getItem(key) || ''); }
+      catch{ return fallback; }
+    }
+
+    function init(){
+      $('loginForm').addEventListener('submit',loginAdmin);
+      $('logoutButton').addEventListener('click',logoutAdmin);
+      state.apiBase = normalizeApiBase(state.apiBase, true);
+      $('apiBase').value = state.apiBase;
+      $('studioProductPrice').value = state.productPrice;
+      $('studioProductName').value = state.productName;
+      $('studioSupplierName').value = state.supplierName;
+      $('studioSupplierUrl').value = state.supplierUrl;
+      $('studioCustomCategories').value = state.customCategories;
+      $('studioProductColors').value = state.productColors;
+      $('studioProductSizes').value = state.productSizes;
+      $('studioProductDelivery').value = state.productDelivery;
+      $('studioCreateCheckout').checked = state.createCheckout;
+      $('studioCheckoutTitle').value = state.checkoutTitle;
+      $('extraInstruction').value = state.extraInstruction;
+      $('imageQuality').value = state.imageQuality;
+      updateInstructionCount();
+      updateCostEstimate();
+      renderCategoryOptions();
+      resetAdminProductForm();
+      localStorage.removeItem('esntls-v2-studio-token');
+      $('apiBase').addEventListener('change',()=>saveSettings());
+      $('studioProductPrice').addEventListener('input',()=>{ state.productPrice=$('studioProductPrice').value; localStorage.setItem('esntls-v2-studio-product-price',state.productPrice); });
+      $('studioProductName').addEventListener('input',()=>{ state.productName=$('studioProductName').value; localStorage.setItem('esntls-v2-studio-product-name',state.productName); });
+      $('studioSupplierName').addEventListener('input',()=>{ state.supplierName=$('studioSupplierName').value; localStorage.setItem('esntls-v2-studio-supplier-name',state.supplierName); });
+      $('studioSupplierUrl').addEventListener('input',()=>{ state.supplierUrl=$('studioSupplierUrl').value; localStorage.setItem('esntls-v2-studio-supplier-url',state.supplierUrl); });
+      $('studioCustomCategories').addEventListener('input',()=>{ state.customCategories=$('studioCustomCategories').value; localStorage.setItem('esntls-v2-studio-custom-categories',state.customCategories); });
+      $('studioProductColors').addEventListener('input',()=>{ state.productColors=$('studioProductColors').value; localStorage.setItem('esntls-v2-studio-product-colors',state.productColors); });
+      $('studioProductSizes').addEventListener('input',()=>{ state.productSizes=$('studioProductSizes').value; localStorage.setItem('esntls-v2-studio-product-sizes',state.productSizes); });
+      $('studioProductDelivery').addEventListener('change',()=>{ state.productDelivery=$('studioProductDelivery').value; localStorage.setItem('esntls-v2-studio-product-delivery',state.productDelivery); });
+      $('studioCreateCheckout').addEventListener('change',()=>{ state.createCheckout=$('studioCreateCheckout').checked; localStorage.setItem('esntls-v2-studio-create-checkout',String(state.createCheckout)); updateCostEstimate(); });
+      $('studioCheckoutTitle').addEventListener('input',()=>{ state.checkoutTitle=$('studioCheckoutTitle').value; localStorage.setItem('esntls-v2-studio-checkout-title',state.checkoutTitle); });
+      $('extraInstruction').addEventListener('input',()=>{
+        state.extraInstruction=$('extraInstruction').value;
+        localStorage.setItem('esntls-v2-studio-extra-instruction',state.extraInstruction);
+        updateInstructionCount();
+      });
+      $('imageQuality').addEventListener('change',()=>{
+        state.imageQuality=currentImageQuality();
+        localStorage.setItem('esntls-v2-studio-image-quality',state.imageQuality);
+        updateCostEstimate();
+      });
+      $('productInput').onchange = e => addFiles(e.target.files);
+      $('bgInput').onchange = e => setBg(e.target.files?.[0]);
+      $('importYupooBtn').onclick = importYupoo;
+      $('yupooUrl').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); importYupoo(); } });
+      $('generateBtn').onclick = generate;
+      $('cancelGenerationBtn').onclick = cancelGeneration;
+      $('backgroundJobBtn').onclick = startBackgroundJob;
+      $('refreshJobBtn').onclick = () => loadJob({quiet:false});
+      $('generatedTab').onclick = () => setActiveView('generated');
+      $('savedTab').onclick = () => setActiveView('saved');
+      $('storeAdminTab').onclick = () => setActiveView('admin');
+      $('adminProductsTab').onclick = () => setStoreAdminSection('products');
+      $('adminAddTab').onclick = () => setStoreAdminSection('add');
+      $('adminMediaTab').onclick = () => setStoreAdminSection('media');
+      $('adminOrdersTab').onclick = () => setStoreAdminSection('orders');
+      $('adminUsersTab').onclick = () => setStoreAdminSection('users');
+      $('adminRefreshBtn').onclick = refreshStoreAdmin;
+      $('adminProductForm').onsubmit = saveAdminProduct;
+      $('adminResetProductBtn').onclick = resetAdminProductForm;
+      $('adminTopResetProductBtn').onclick = resetAdminProductForm;
+      $('adminRefreshMediaBtn').onclick = () => loadMedia({quiet:false});
+      $('adminToggleUrlBtn').onclick = () => $('adminUrlFallback').classList.toggle('open');
+      $('adminProductImages').addEventListener('input',renderAdminSelectedImages);
+      $('adminProductsList').addEventListener('click',handleAdminProductClick);
+      $('adminSelectedImages').addEventListener('click',handleAdminSelectedImageClick);
+      $('adminSelectedImages').addEventListener('dragstart',handleAdminSelectedImageDragStart);
+      $('adminSelectedImages').addEventListener('dragover',event=>event.preventDefault());
+      $('adminSelectedImages').addEventListener('drop',handleAdminSelectedImageDrop);
+      $('adminSelectedImages').addEventListener('dragend',handleAdminSelectedImageDragEnd);
+      $('adminMediaPicker').addEventListener('click',handleAdminMediaPickerClick);
+      $('newBatchBtn').onclick = startNewBatch;
+      $('refreshMediaBtn').onclick = () => loadMedia({quiet:false});
+      $('regenerateBtn').onclick = regenerateSelected;
+      $('removeGeneratedBtn').onclick = removeSelectedGenerated;
+      $('useSelectedProductBtn').onclick = useSelectedForProduct;
+      $('saveBtn').onclick = saveSelected;
+      const drop=$('drop');
+      ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));
+      ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+      drop.addEventListener('drop', e=>addFiles(e.dataTransfer.files));
+      const pasteZone=$('pasteZone');
+      pasteZone.onclick = () => { pasteZone.focus(); setStatus('Paste copied product images now.'); };
+      pasteZone.addEventListener('paste', e=>{ e.stopPropagation(); handlePaste(e); });
+      document.addEventListener('paste', e=>{
+        if(e.defaultPrevented) return;
+        const target=e.target;
+        if(target && target.closest && target.closest('input,textarea,[contenteditable="true"]')) return;
+        handlePaste(e);
+      });
+      setActiveView(state.activeView, false);
+      renderQueue();
+      updateActionButtons();
+      checkSession();
+    }
+
+    async function checkSession(){
+      try{
+        const r=await fetch('/api/session',{credentials:'include'});
+        const d=await r.json().catch(()=>({authenticated:false}));
+        $('loginGate').classList.toggle('hidden',Boolean(r.ok && d.authenticated));
+        if(r.ok && d.authenticated){
+          $('loginPassword').value='';
+          await Promise.allSettled([loadConfig(),loadMedia({quiet:true}),syncServerJobs()]);
+        }
+      }catch{
+        $('loginGate').classList.remove('hidden');
+      }
+    }
+
+    async function loginAdmin(event){
+      event.preventDefault();
+      const button=$('loginButton');
+      const error=$('loginError');
+      button.disabled=true;
+      error.textContent='';
+      try{
+        const r=await fetch('/api/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('loginPassword').value})});
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(d.error || 'Login failed.');
+        $('loginGate').classList.add('hidden');
+        $('loginPassword').value='';
+        await Promise.allSettled([loadConfig(),loadMedia({quiet:true}),syncServerJobs()]);
+      }catch(e){ error.textContent=e.message || 'Login failed.'; }
+      finally{ button.disabled=false; }
+    }
+
+    async function logoutAdmin(){
+      await fetch('/api/logout',{method:'POST',credentials:'include'}).catch(()=>{});
+      $('loginGate').classList.remove('hidden');
+      $('loginPassword').focus();
+    }
+
+    function isLiveAdminPage(){
+      return location.protocol === 'https:' && [
+        'qmako4.github.io',
+        'esntls.com',
+        'www.esntls.com'
+      ].includes(location.hostname);
+    }
+    function isLocalWorkerUrl(url){
+      return ['localhost','127.0.0.1','0.0.0.0','::1'].includes(url.hostname);
+    }
+    function normalizeApiBase(value, persist=false){
+      const raw = String(value || '').trim().replace(/\/+$/,'');
+      let finalValue = raw || DEFAULT_API_BASE;
+      try{
+        const url = new URL(finalValue);
+        if(isLiveAdminPage() && (url.protocol !== 'https:' || isLocalWorkerUrl(url))){
+          finalValue = DEFAULT_API_BASE;
+        }
+      }catch{
+        finalValue = DEFAULT_API_BASE;
+      }
+      if(persist || finalValue !== raw) localStorage.setItem('esntls-v2-studio-api', finalValue);
+      return finalValue;
+    }
+    function resetApiBase(){
+      state.apiBase = DEFAULT_API_BASE;
+      localStorage.setItem('esntls-v2-studio-api', DEFAULT_API_BASE);
+      $('apiBase').value = DEFAULT_API_BASE;
+      return DEFAULT_API_BASE;
+    }
+    function friendlyFetchError(error){
+      if(/failed to fetch|networkerror|load failed/i.test(error?.message || '')){
+        resetApiBase();
+        return 'Could not reach the Photo Studio Worker. I reset the Worker URL to the deployed one, so press the button again.';
+      }
+      if(/invalid image file or mode/i.test(error?.message || '')){
+        return 'OpenAI rejected one of the images even after cleanup. Remove that queued image and try a normal JPG/PNG export, or screenshot/save it again before uploading.';
+      }
+      return error?.message || 'Request failed.';
+    }
+    function saveSettings(){
+      state.apiBase = normalizeApiBase($('apiBase').value, true);
+      $('apiBase').value = state.apiBase;
+      localStorage.setItem('esntls-v2-studio-api', state.apiBase);
+      localStorage.removeItem('esntls-v2-studio-token');
+    }
+    function apiUrl(path){ const base=normalizeApiBase($('apiBase').value || state.apiBase, true); $('apiBase').value=base; return base + path; }
+    function yupooPreviewUrl(image){
+      return apiUrl('/api/yupoo-preview?url='+encodeURIComponent(image.url)+'&pageUrl='+encodeURIComponent(image.pageUrl || image.url));
+    }
+    function auth(){ return {}; }
+    async function studioFetch(url,options={}){
+      const response=await fetch(url,{...options,credentials:'include'});
+      if(response.status===401) $('loginGate').classList.remove('hidden');
+      return response;
+    }
+    async function storeApi(path,{method='GET',body,headers={}}={}){
+      const r=await fetch(`${STORE_API_BASE}${path}`,{
+        method,
+        credentials:'include',
+        headers:{...headers, ...(body!==undefined ? {'Content-Type':'application/json'} : {})},
+        body: body!==undefined ? JSON.stringify(body) : undefined
+      });
+      const d=await r.json().catch(()=>({}));
+      if(r.status===401) $('loginGate').classList.remove('hidden');
+      if(!r.ok) throw new Error(d.error || d.message || 'Store admin request failed');
+      return d;
+    }
+    function setStatus(msg, cls=''){ $('status').className='status '+cls; $('status').textContent=msg; }
+    function toast(msg){ const el=document.createElement('div'); el.textContent=msg; $('toast').appendChild(el); setTimeout(()=>el.remove(),3600); }
+    function currentImageQuality(){ return $('imageQuality')?.value === 'high' ? 'high' : 'medium'; }
+    function updateCostEstimate(){
+      const targets=selectedQueueItems();
+      const generated=targets.filter(source=>source.mode!=='keep').length;
+      const kept=targets.length-generated;
+      const quality=currentImageQuality();
+      const checkoutGeneration=$('studioCreateCheckout')?.checked && targets.length ? 1 : 0;
+      const rate=quality==='high' ? .165 : .041;
+      const estimatedOutputUsd=(generated*rate)+(checkoutGeneration*.041);
+      if(!generated && !checkoutGeneration){
+        $('costEstimate').textContent=kept ? `${kept} kept original image${kept===1?'':'s'} - no OpenAI charge.` : 'Select images to see the estimated cost.';
+        return;
+      }
+      const keptText=kept ? ` ${kept} kept original image${kept===1?' is':'s are'} free.` : '';
+      const checkoutText=checkoutGeneration ? ' Includes one standard-quality checkout blank image.' : '';
+      $('costEstimate').textContent=`About $${estimatedOutputUsd.toFixed(2)} output cost, plus image input processing.${checkoutText}${keptText}`;
+    }
+    function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+    function jsString(v){ return JSON.stringify(String(v??'')).replace(/</g,'\\u003c'); }
+    function blankTitleForProduct(product){
+      const text=`${product?.name || ''} ${product?.description || ''} ${product?.size_type || ''} ${(product?.categories || []).join(' ')}`.toLowerCase();
+      if(/\b(caps?|hats?|beanies?|accessories|bags?|belts?|wallets?|watches?)\b/.test(text)) return 'Blank Accessory';
+      if(/\b(slides?|sliders?|sandals?)\b/.test(text)) return 'Blank Slides';
+      if(/\b(shoes?|sneakers?|trainers?|footwear|asics|gel|kayano|nike|rick owens)\b/.test(text)) return 'Blank Sneakers';
+      if(/\b(shorts?|swimshorts?)\b/.test(text)) return 'Blank Shorts';
+      if(/\b(joggers?|jogging|tracksuit bottoms?|pants|trousers)\b/.test(text)) return 'Blank Joggers';
+      if(/\b(polos?)\b/.test(text)) return 'Blank Polo';
+      if(/\b(crewnecks?|sweatshirts?|hoodies?)\b/.test(text)) return 'Blank Crewneck';
+      if(/\b(vests?|basketball vest|tank tops?)\b/.test(text)) return 'Blank Vest';
+      if(/\b(long sleeve|long-sleeve|longsleeve)\b/.test(text)) return 'Blank Long Sleeve';
+      return 'Blank T-Shirt';
+    }
+    function sellerNameFromUrl(url){
+      try{
+        const host=new URL(url).hostname.replace(/^www\./,'');
+        return host.split('.')[0].replace(/[-_]+/g,' ').trim();
+      }catch{ return ''; }
+    }
+    function studioSupplierInfo(){
+      const supplierUrl=String($('studioSupplierUrl')?.value || state.supplierUrl || state.lastYupooUrl || '').trim();
+      const supplierName=String($('studioSupplierName')?.value || state.supplierName || sellerNameFromUrl(supplierUrl) || '').trim();
+      return {supplierName,supplierUrl};
+    }
+    function currentExtraInstruction(){
+      return String($('extraInstruction')?.value || state.extraInstruction || '').trim();
+    }
+    function updateInstructionCount(){
+      $('instructionCount').textContent=`${$('extraInstruction').value.length} / 2000`;
+    }
+    function normalizeUiMode(mode){
+      if(mode === 'flatlay') return 'flatlay';
+      if(mode === 'skip') return 'skip';
+      if(mode === 'keep') return 'keep';
+      return 'keep-crop';
+    }
+    function modeLabel(mode){
+      const normalized=normalizeUiMode(mode);
+      if(normalized === 'flatlay') return 'Full photo';
+      if(normalized === 'skip') return 'Skip';
+      if(normalized === 'keep') return 'Keep';
+      return 'Close up';
+    }
+    function sourceMode(id){
+      return normalizeUiMode(state.sourceModes[id] || state.mode);
+    }
+    function setMode(mode){
+      state.mode = normalizeUiMode(mode) === 'skip' ? 'keep-crop' : normalizeUiMode(mode);
+    }
+    function setSourceMode(id, mode){
+      state.sourceModes[id]=normalizeUiMode(mode);
+      localStorage.setItem('esntls-v2-studio-source-modes',JSON.stringify(state.sourceModes));
+      renderQueue();
+    }
+    function renderCategoryOptions(){
+      $('studioCategoryOptions').innerHTML=CATEGORY_PRESETS.map(name=>{
+        const active=state.productCategories.includes(name);
+        return `<button type="button" class="option-pill ${active?'active':''}" onclick="toggleProductCategory('${esc(name)}')">${esc(name)}</button>`;
+      }).join('');
+    }
+    function toggleProductCategory(name){
+      const value=String(name||'').trim();
+      if(!value) return;
+      if(state.productCategories.includes(value)) state.productCategories=state.productCategories.filter(x=>x!==value);
+      else state.productCategories=[...state.productCategories,value];
+      localStorage.setItem('esntls-v2-studio-product-categories',JSON.stringify(state.productCategories));
+      renderCategoryOptions();
+    }
+    function splitList(value){
+      return String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
+    }
+    function studioProductCategories(){
+      return [...new Set([...state.productCategories, ...splitList($('studioCustomCategories').value || state.customCategories)])];
+    }
+    function studioProductColors(){
+      return [...new Set(splitList($('studioProductColors').value || state.productColors))];
+    }
+    function studioProductSizes(){
+      return [...new Set(splitList($('studioProductSizes').value || state.productSizes))];
+    }
+    function studioProductMeta(){
+      const supplier=studioSupplierInfo();
+      return {
+        name:String($('studioProductName').value || state.productName || productNameFromYupooUrl(state.lastYupooUrl)).trim(),
+        price:Number(studioProductPrice()),
+        categories:studioProductCategories(),
+        colours:studioProductColors(),
+        sizes:studioProductSizes(),
+        supplierName:supplier.supplierName,
+        supplierUrl:supplier.supplierUrl,
+        delivery:$('studioProductDelivery').value || state.productDelivery || '7-12 Days',
+        yupooUrl:state.lastYupooUrl || '',
+        createProduct:true,
+        createCheckout:$('studioCreateCheckout').checked,
+        checkoutTitle:String($('studioCheckoutTitle').value || '').trim()
+      };
+    }
+    function setActiveView(view, persist=true){
+      state.activeView = view === 'saved' || view === 'admin' ? view : 'generated';
+      if(persist) localStorage.setItem('esntls-v2-studio-view', state.activeView);
+      $('generatedTab').classList.toggle('active',state.activeView==='generated');
+      $('savedTab').classList.toggle('active',state.activeView==='saved');
+      $('storeAdminTab').classList.toggle('active',state.activeView==='admin');
+      $('generatedView').classList.toggle('hidden',state.activeView!=='generated');
+      $('savedView').classList.toggle('hidden',state.activeView!=='saved');
+      $('storeAdminView').classList.toggle('hidden',state.activeView!=='admin');
+      $('workspaceEyebrow').textContent = state.activeView === 'admin' ? 'Store dashboard' : state.activeView === 'saved' ? 'R2 media library' : 'Ready to save';
+      $('workspaceTitle').textContent = state.activeView === 'admin' ? 'Admin Panel' : state.activeView === 'saved' ? 'Saved Images' : 'Generated Images';
+      if(state.activeView==='saved') loadMedia({quiet:false});
+      if(state.activeView==='admin') refreshStoreAdmin();
+      updateActionButtons();
+    }
+    function setStoreAdminSection(section){
+      state.adminSection = ['products','add','media','orders','users'].includes(section) ? section : 'products';
+      ['Products','Add','Media','Orders','Users'].forEach(name=>{
+        const key=name.toLowerCase();
+        const active=state.adminSection===key;
+        $(`admin${name}Tab`).classList.toggle('active',active);
+        $(`admin${name}Panel`).classList.toggle('hidden',!active);
+      });
+      refreshStoreAdmin();
+      if(state.adminSection==='add'){
+        renderAdminSelectedImages();
+        loadMedia({quiet:true});
+      }
+    }
+    async function refreshStoreAdmin(){
+      if(state.activeView!=='admin') return;
+      if(state.adminSection==='products') return loadStoreProducts();
+      if(state.adminSection==='media') return loadMedia({quiet:false});
+      if(state.adminSection==='orders') return loadStoreOrders();
+      if(state.adminSection==='users') return loadStoreUsers();
+    }
+    function splitAdminList(value){
+      return String(value||'').split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
+    }
+    function parseAdminSizes(value){
+      const parts=splitAdminList(value);
+      const sizes=parts.map(part=>{
+        const [rawSize,rawStock]=part.split(':');
+        const size=String(rawSize||'').trim();
+        if(!size) return null;
+        return {size,stock:parseInt(rawStock,10)||999999};
+      }).filter(Boolean);
+      return sizes.length ? sizes : ['S','M','L','XL'].map(size=>({size,stock:999999}));
+    }
+    function adminProductPayload(){
+      const price=parseFloat($('adminProductPrice').value);
+      if(!$('adminProductName').value.trim()) throw new Error('Product name is required.');
+      if(Number.isNaN(price)) throw new Error('Price is required.');
+      const sale=$('adminProductSale').value ? parseFloat($('adminProductSale').value) : null;
+      return {
+        name:$('adminProductName').value.trim(),
+        brand:$('adminProductBrand').value.trim() || 'ESNTLS Club',
+        price_gbp:price,
+        sale_price_gbp:Number.isNaN(sale) ? null : sale,
+        size_type:$('adminProductType').value,
+        active:$('adminProductActive').value==='true',
+        supplier_name:$('adminProductSupplierName').value.trim(),
+        supplier_url:$('adminProductSupplierUrl').value.trim(),
+        categories:splitAdminList($('adminProductCategories').value),
+        colours:splitAdminList($('adminProductColors').value),
+        sizes:parseAdminSizes($('adminProductSizes').value),
+        images:splitAdminList($('adminProductImages').value),
+        description:$('adminProductDescription').value.trim()
+      };
+    }
+    function setAdminProductFormMode(mode){
+      const isEdit=mode==='edit';
+      const label=isEdit ? 'Update Product' : 'Save Product';
+      $('adminSaveProductBtn').textContent=label;
+      $('adminTopSaveProductBtn').textContent=label;
+      $('adminFormMode').textContent=isEdit ? 'Editing product' : 'New product';
+    }
+    function resetAdminProductForm(){
+      state.adminEditId='';
+      $('adminProductForm').reset();
+      $('adminProductBrand').value='ESNTLS Club';
+      $('adminProductType').value='clothing';
+      $('adminProductActive').value='true';
+      $('adminProductSupplierName').value='';
+      $('adminProductSupplierUrl').value='';
+      $('adminProductColors').value='';
+      $('adminProductSizes').value='S:999999, M:999999, L:999999, XL:999999';
+      $('adminProductDescription').value='7-10 days delivery.';
+      setAdminProductFormMode('new');
+      renderAdminSelectedImages();
+      renderAdminMediaPicker();
+    }
+    async function saveAdminProduct(event){
+      event?.preventDefault?.();
+      const buttons=[$('adminSaveProductBtn'),$('adminTopSaveProductBtn')];
+      buttons.forEach(btn=>btn.disabled=true);
+      try{
+        const body=adminProductPayload();
+        if(state.adminEditId) await storeApi(`/api/admin/products/${state.adminEditId}`,{method:'PATCH',body});
+        else await storeApi('/api/admin/products',{method:'POST',body});
+        toast(state.adminEditId ? 'Product updated' : 'Product created');
+        resetAdminProductForm();
+        setStoreAdminSection('products');
+      }catch(e){ toast(e.message); }
+      finally{ buttons.forEach(btn=>btn.disabled=false); }
+    }
+    async function loadStoreProducts(){
+      $('adminProductsList').innerHTML='<div class="panel empty">Loading products...</div>';
+      try{
+        const {products=[]}=await storeApi('/api/admin/products');
+        state.adminProducts=products;
+        $('adminProductsList').innerHTML=products.length ? products.map(p=>{
+          const img=p.images?.[0]?.url || '';
+          const shopifyUrl=p.shopify_url || '';
+          const supplierName=p.supplier_name || '';
+          const supplierUrl=p.supplier_url || '';
+          const supplierLine=supplierUrl ? `<a href="${esc(supplierUrl)}" target="_blank" rel="noreferrer">${esc(supplierName || 'Supplier link')}</a>` : supplierName ? esc(supplierName) : '';
+          return `<article class="admin-product">
+            ${img ? `<img src="${esc(img)}" alt="">` : '<div style="aspect-ratio:3/4;display:grid;place-items:center;color:var(--mut)">No image</div>'}
+            <div class="admin-product-body">
+              <strong>${esc(p.name)}</strong>
+              <div class="tiny">${esc(p.brand||'')} · £${Number(p.price_gbp||0).toFixed(2)} · ${p.active?'Live':'Draft'}</div>
+              ${supplierLine ? `<div class="tiny shopify-status">Supplier: ${supplierLine}</div>` : ''}
+              <div class="tiny shopify-status">${shopifyUrl ? `<a href="${esc(shopifyUrl)}" target="_blank" rel="noreferrer">Blank item linked</a>` : 'No Shopify blank yet'}</div>
+              <div class="admin-product-actions">
+                <button class="mini-btn" type="button" data-admin-product-action="edit" data-id="${esc(p.id)}" onclick="event.stopPropagation();handleAdminProductAction('edit',this)">Edit</button>
+                ${shopifyUrl ? `<a class="mini-btn y" href="${esc(shopifyUrl)}" target="_blank" rel="noreferrer" onclick="event.stopPropagation()">View Blank</a>` : `<button class="mini-btn y" type="button" data-admin-product-action="shopify" data-id="${esc(p.id)}" onclick="event.stopPropagation();handleAdminProductAction('shopify',this)">Create Blank</button>`}
+                <button class="mini-btn" type="button" data-admin-product-action="toggle" data-id="${esc(p.id)}" data-active="${p.active?'false':'true'}" onclick="event.stopPropagation();handleAdminProductAction('toggle',this)">${p.active?'Draft':'Make Live'}</button>
+                <button class="mini-btn danger" type="button" data-admin-product-action="delete" data-id="${esc(p.id)}" data-name="${esc(p.name)}" onclick="event.stopPropagation();handleAdminProductAction('delete',this)">Delete</button>
+              </div>
+            </div>
+          </article>`;
+        }).join('') : '<div class="panel empty">No products yet.</div>';
+      }catch(e){ $('adminProductsList').innerHTML=`<div class="panel empty">${esc(e.message)}</div>`; }
+    }
+    function handleAdminProductClick(event){
+      const btn=event.target.closest('[data-admin-product-action]');
+      if(!btn) return;
+      handleAdminProductAction(btn.dataset.adminProductAction,btn);
+    }
+    async function handleAdminProductAction(action,btn){
+      const id=btn?.dataset?.id || '';
+      if(action==='edit') await editStoreProduct(id);
+      if(action==='shopify') await generateShopifyBlankProduct(id,btn);
+      if(action==='toggle') await toggleStoreProduct(id,btn?.dataset?.active);
+      if(action==='delete') await deleteStoreProduct(id,btn?.dataset?.name || 'product');
+    }
+    function normalizeAdminProductId(id){
+      return String(id || "").trim();
+    }
+
+    async function editStoreProduct(id){
+      const normalizedId = normalizeAdminProductId(id);
+      let p=state.adminProducts.find(x=>normalizeAdminProductId(x.id)===normalizedId);
+      if(!p){
+        try{
+          const {products=[]}=await storeApi('/api/admin/products');
+          state.adminProducts=products;
+          p=state.adminProducts.find(x=>normalizeAdminProductId(x.id)===normalizedId);
+        }catch(e){
+          toast(e.message || 'Could not load product');
+          return;
+        }
+      }
+      if(!p){ toast('Product was not found. Press Refresh and try again.'); return; }
+      state.adminEditId=id;
+      $('adminProductName').value=p.name||'';
+      $('adminProductBrand').value=p.brand||'ESNTLS Club';
+      $('adminProductPrice').value=p.price_gbp ?? '';
+      $('adminProductSale').value=p.sale_price_gbp ?? '';
+      $('adminProductType').value=p.size_type||'clothing';
+      $('adminProductActive').value=String(Boolean(p.active));
+      $('adminProductSupplierName').value=p.supplier_name||'';
+      $('adminProductSupplierUrl').value=p.supplier_url||'';
+      $('adminProductCategories').value=(p.categories||[]).join(', ');
+      $('adminProductColors').value=(p.colours||[]).join(', ');
+      $('adminProductSizes').value=(p.sizes||[]).map(s=>`${s.size}:${s.stock}`).join(', ') || 'S:999999, M:999999, L:999999, XL:999999';
+      $('adminProductImages').value=(p.images||[]).map(i=>i.url).join('\n');
+      $('adminProductDescription').value=p.description||'';
+      setAdminProductFormMode('edit');
+      renderAdminSelectedImages();
+      setStoreAdminSection('add');
+    }
+    async function toggleStoreProduct(id, active){
+      const p=state.adminProducts.find(x=>x.id===id);
+      if(!p) return;
+      try{
+        await storeApi(`/api/admin/products/${id}`,{method:'PATCH',body:{...p,active:active==='true',images:(p.images||[]).map(i=>i.url)}});
+        toast(active==='true' ? 'Product is live' : 'Product moved to draft');
+        await loadStoreProducts();
+      }catch(e){ toast(e.message); }
+    }
+    async function deleteStoreProduct(id,name){
+      if(!confirm(`Delete "${name}"?`)) return;
+      try{ await storeApi(`/api/admin/products/${id}`,{method:'DELETE'}); toast('Product deleted'); await loadStoreProducts(); }
+      catch(e){ toast(e.message); }
+    }
+    async function generateShopifyBlankProduct(id,btn){
+      if(!id) return;
+      const product=state.adminProducts.find(p=>normalizeAdminProductId(p.id)===normalizeAdminProductId(id));
+      if(product?.shopify_url){
+        window.open(product.shopify_url,'_blank','noopener');
+        return;
+      }
+      const suggested=blankTitleForProduct(product);
+      const blankTitle=prompt('Name the Shopify blank item shown at checkout:', suggested);
+      if(blankTitle===null) return;
+      const cleanTitle=blankTitle.trim();
+      if(!cleanTitle){ toast('Blank item name is required'); return; }
+      const originalText=btn?.textContent || 'Create Blank';
+      if(btn){ btn.disabled=true; btn.textContent='Creating image...'; }
+      try{
+        const result=await storeApi(`/api/admin/products/${id}/shopify-blank`,{method:'POST',body:{blank_title:cleanTitle}});
+        state.adminProducts=state.adminProducts.map(p=>p.id===id ? {...p,shopify_url:result.shopify_url,shopify_product_id:result.shopify_product_id,shopify_handle:result.shopify_handle} : p);
+        toast(result.already ? 'Blank item already linked' : 'Custom blank image and Shopify product created');
+        await loadStoreProducts();
+      }catch(e){ toast(e.message); }
+      finally{ if(btn){ btn.disabled=false; btn.textContent=originalText; } }
+    }
+    async function loadStoreOrders(){
+      $('adminOrdersList').innerHTML='<div class="panel empty">Loading orders...</div>';
+      try{
+        const {orders=[]}=await storeApi('/api/admin/orders');
+        $('adminOrdersList').innerHTML=orders.length ? `<table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody>${orders.map(o=>`<tr><td data-label="Order">#${esc(String(o.id).slice(0,8).toUpperCase())}</td><td data-label="Customer">${esc(o.user_email||'')}</td><td data-label="Total">£${Number(o.total_gbp||0).toFixed(2)}</td><td data-label="Status">${esc(o.status||'')}</td></tr>`).join('')}</tbody></table>` : '<div class="panel empty">No orders yet.</div>';
+      }catch(e){ $('adminOrdersList').innerHTML=`<div class="panel empty">${esc(e.message)}</div>`; }
+    }
+    async function loadStoreUsers(){
+      $('adminUsersList').innerHTML='<div class="panel empty">Loading users...</div>';
+      try{
+        const {users=[]}=await storeApi('/api/admin/users');
+        $('adminUsersList').innerHTML=users.length ? `<table class="admin-table"><thead><tr><th>Email</th><th>Balance</th><th>Role</th></tr></thead><tbody>${users.map(u=>`<tr><td data-label="Email">${esc(u.email||'')}</td><td data-label="Balance">£${Number(u.balance_gbp||0).toFixed(2)}</td><td data-label="Role">${u.is_admin?'Admin':'User'}</td></tr>`).join('')}</tbody></table>` : '<div class="panel empty">No users yet.</div>';
+      }catch(e){ $('adminUsersList').innerHTML=`<div class="panel empty">${esc(e.message)}</div>`; }
+    }
+    function addImagesToAdminProductForm(urls){
+      const images=[...new Set((urls||[]).filter(Boolean))];
+      if(!images.length) return;
+      const existing=splitAdminList($('adminProductImages').value);
+      $('adminProductImages').value=[...new Set([...existing,...images])].join('\n');
+      renderAdminSelectedImages();
+      if(!$('adminProductName').value.trim()){
+        $('adminProductName').value=$('studioProductName').value.trim() || 'New ESNTLS Club Product';
+      }
+      if(!$('adminProductPrice').value && $('studioProductPrice').value) $('adminProductPrice').value=$('studioProductPrice').value;
+      if(!$('adminProductCategories').value) $('adminProductCategories').value=studioProductCategories().join(', ');
+      setActiveView('admin');
+      setStoreAdminSection('add');
+      toast(images.length===1 ? 'Image added to product form' : 'Images added to product form');
+    }
+    function removeAdminProductImage(url){
+      const next=splitAdminList($('adminProductImages').value).filter(item=>item!==url);
+      $('adminProductImages').value=next.join('\n');
+      renderAdminSelectedImages();
+      renderAdminMediaPicker();
+    }
+    function setAdminProductImageList(urls){
+      $('adminProductImages').value=[...new Set((urls||[]).filter(Boolean))].join('\n');
+      renderAdminSelectedImages();
+      renderAdminMediaPicker();
+    }
+    function makeAdminProductMain(index){
+      const urls=splitAdminList($('adminProductImages').value);
+      if(index<=0 || index>=urls.length) return;
+      const [main]=urls.splice(index,1);
+      setAdminProductImageList([main,...urls]);
+      toast('Main product image updated');
+    }
+    function handleAdminSelectedImageClick(event){
+      const btn=event.target.closest('[data-admin-image-action]');
+      if(!btn) return;
+      const index=Number(btn.dataset.index);
+      const url=btn.dataset.url || '';
+      if(btn.dataset.adminImageAction==='main') makeAdminProductMain(index);
+      if(btn.dataset.adminImageAction==='remove') removeAdminProductImage(url);
+    }
+    function handleAdminSelectedImageDragStart(event){
+      const tile=event.target.closest('[data-admin-image-index]');
+      if(!tile) return;
+      state.adminDragImageIndex=Number(tile.dataset.adminImageIndex);
+      event.dataTransfer?.setData?.('text/plain',String(state.adminDragImageIndex));
+      if(event.dataTransfer) event.dataTransfer.effectAllowed='move';
+      tile.classList.add('dragging');
+    }
+    function handleAdminSelectedImageDragEnd(event){
+      state.adminDragImageIndex=null;
+      event.target.closest('[data-admin-image-index]')?.classList.remove('dragging');
+    }
+    function handleAdminSelectedImageDrop(event){
+      const tile=event.target.closest('[data-admin-image-index]');
+      if(!tile) return;
+      event.preventDefault();
+      const targetIndex=Number(tile.dataset.adminImageIndex);
+      const from=Number(event.dataTransfer?.getData?.('text/plain') || state.adminDragImageIndex);
+      const urls=splitAdminList($('adminProductImages').value);
+      if(!Number.isInteger(from) || from<0 || from>=urls.length || targetIndex<0 || targetIndex>=urls.length || from===targetIndex) return;
+      const [moved]=urls.splice(from,1);
+      urls.splice(targetIndex,0,moved);
+      setAdminProductImageList(urls);
+    }
+    function imageLabelFromUrl(url){
+      try{ return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'product image'); }
+      catch{ return String(url||'').split('/').pop() || 'product image'; }
+    }
+    function studioImageName(item){
+      if(!item) return 'saved image';
+      const value=item.key || item.filename || item.originalName || item.publicUrl || item.rawUrl || '';
+      return imageLabelFromUrl(value);
+    }
+    function renderAdminSelectedImages(){
+      const urls=splitAdminList($('adminProductImages')?.value || '');
+      $('adminSelectedImages').innerHTML=urls.length ? urls.map((url,index)=>`<div class="admin-image-tile ${index===0?'is-main':''}" draggable="true" data-admin-image-index="${index}"><img src="${esc(url)}" alt="">${index===0?'<span class="admin-image-badge">Main</span>':''}<div class="admin-image-actions">${index>0?`<button class="mini-btn y" type="button" data-admin-image-action="main" data-index="${index}">Make Main</button>`:''}<button class="mini-btn danger" type="button" data-admin-image-action="remove" data-url="${esc(url)}">Remove</button></div><div class="admin-image-name">${index+1}. ${esc(imageLabelFromUrl(url))}</div></div>`).join('') : '<div class="panel empty">No images selected yet. Add from the saved media library below.</div>';
+      renderAdminMediaPicker();
+    }
+    function renderAdminMediaPicker(){
+      const picker=$('adminMediaPicker');
+      if(!picker) return;
+      const selected=new Set(splitAdminList($('adminProductImages')?.value || ''));
+      $('adminMediaCount').textContent=state.media.length ? `${state.media.length} saved` : 'No saved media';
+      picker.innerHTML=state.media.length ? state.media.map((item,index)=>{
+        const src=savedMediaUrl(item);
+        const added=selected.has(src);
+        return `<div class="admin-image-tile"><img src="${esc(src)}" alt=""><div class="admin-image-actions"><button class="mini-btn ${added?'':'y'}" type="button" ${added?'disabled':''} data-admin-media-index="${index}">${added?'Added':'Add'}</button></div><div class="admin-image-name">${esc(studioImageName(item))}</div></div>`;
+      }).join('') : '<div class="panel empty">No saved media yet. Save generated images first, then press Refresh Media.</div>';
+    }
+    function handleAdminMediaPickerClick(event){
+      const btn=event.target.closest('[data-admin-media-index]');
+      if(!btn) return;
+      addSavedMediaToAdminProduct(Number(btn.dataset.adminMediaIndex));
+    }
+    function addSavedMediaToAdminProduct(index){
+      const item=state.media[index];
+      const url=savedMediaUrl(item);
+      if(!url){ toast('Saved image was not found'); return; }
+      addImagesToAdminProductForm([url]);
+    }
+    function sourceSignature(file){
+      if(!file) return '';
+      if(file.isRemote) return `remote:${file.url}`;
+      return `file:${comparableName(file.name)}:${file.size || 0}:${file.type || ''}`;
+    }
+    function sourceMeta(source){
+      const file=source?.file ?? source;
+      const signature=sourceSignature(file);
+      return signature ? state.generatedSignatures[signature] || null : null;
+    }
+    function generatedCountForSource(file){
+      return Number(sourceMeta(file)?.count || 0);
+    }
+    function rememberGeneratedSignature(signature, name, amount=1, resultId=''){
+      if(!signature) return false;
+      const current=state.generatedSignatures[signature] || {count:0};
+      current.resultIds=Array.isArray(current.resultIds) ? current.resultIds : [];
+      if(resultId && current.resultIds.includes(resultId)) return false;
+      current.count=Number(current.count || 0) + amount;
+      if(resultId) current.resultIds.push(resultId);
+      current.name=name || current.name || 'Product image';
+      current.lastGeneratedAt=new Date().toISOString();
+      state.generatedSignatures[signature]=current;
+      localStorage.setItem('esntls-v2-studio-generated-signatures',JSON.stringify(state.generatedSignatures));
+      return true;
+    }
+    function rememberGeneratedForSource(source, amount=1, resultId=''){
+      if(!source?.file) return false;
+      return rememberGeneratedSignature(sourceSignature(source.file), source.file.name, amount, resultId);
+    }
+    function duplicateTargets(targets){
+      return targets.filter(source=>generatedCountForSource(source.file)>0);
+    }
+    function duplicateNotice(targets){
+      const duplicates=duplicateTargets(targets);
+      if(!duplicates.length) return '';
+      return `${duplicates.length} selected image${duplicates.length===1?' has':'s have'} already generated previews. `;
+    }
+    function createId(prefix){ return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`; }
+    function bytes(n){ return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB'; }
+    function imageExt(type){ return ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif'}[type] || 'png'); }
+    function pastedName(type,index){ return `pasted-product-${Date.now()}-${index}.${imageExt(type)}`; }
+    function chunkSize(){ return Math.max(1, Math.min(Number(state.maxBulkImages||24), 24)); }
+    function comparableName(value){ return String(value||'').toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,''); }
+    async function defaultBackgroundFile(){
+      const response=await fetch(DEFAULT_BACKGROUND_SRC,{cache:'reload'});
+      if(!response.ok) throw new Error('Default ESNTLS Club background could not load.');
+      const blob=await response.blob();
+      return new File([blob],'esntls-original-background.png',{type:blob.type||'image/png'});
+    }
+    function baseName(value,fallback='image'){
+      return String(value||fallback).replace(/\.[a-z0-9]+$/i,'').replace(/[^a-z0-9._-]+/gi,'-').replace(/^-+|-+$/g,'') || fallback;
+    }
+    function canvasBlob(canvas,type,quality){
+      return new Promise((resolve,reject)=>{
+        canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not prepare image for OpenAI.')),type,quality);
+      });
+    }
+    function loadImageElement(file){
+      return new Promise((resolve,reject)=>{
+        const url=URL.createObjectURL(file);
+        const img=new Image();
+        img.onload=()=>{ URL.revokeObjectURL(url); resolve(img); };
+        img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error(`${file.name || 'Image'} could not be decoded. Try a normal JPG or PNG export.`)); };
+        img.src=url;
+      });
+    }
+    async function inspectProductFraming(file){
+      const img=await loadImageElement(file);
+      const width=img.naturalWidth || img.width;
+      const height=img.naturalHeight || img.height;
+      const size=96;
+      const band=8;
+      const canvas=document.createElement('canvas');
+      canvas.width=size;
+      canvas.height=size;
+      const ctx=canvas.getContext('2d',{alpha:false});
+      ctx.drawImage(img,0,0,size,size);
+      const data=ctx.getImageData(0,0,size,size).data;
+      const edges=[
+        ['top',0,0,size,band],
+        ['right',size-band,0,band,size],
+        ['bottom',0,size-band,size,band],
+        ['left',0,0,band,size]
+      ].map(([name,x,y,w,h])=>edgeStats(data,size,x,y,w,h,name));
+      const busyEdges=edges.filter(edge=>edge.busy);
+      const ratio=width/height;
+      const edgeNames=busyEdges.map(edge=>edge.name).join(', ');
+      const keepCrop =
+        busyEdges.length >= 2 ||
+        (busyEdges.length >= 1 && ratio > .82) ||
+        ratio > 1.35 ||
+        ratio < .55;
+      return {
+        mode: keepCrop ? 'keep-crop' : 'flatlay',
+        reason: keepCrop
+          ? `edge/crop risk${edgeNames ? ` (${edgeNames})` : ''}`
+          : 'full product framing'
+      };
+    }
+    function edgeStats(data,size,x,y,w,h,name){
+      const values=[];
+      let satTotal=0;
+      let dark=0;
+      for(let yy=y; yy<y+h; yy+=1){
+        for(let xx=x; xx<x+w; xx+=1){
+          const i=(yy*size+xx)*4;
+          const r=data[i], g=data[i+1], b=data[i+2];
+          const max=Math.max(r,g,b);
+          const min=Math.min(r,g,b);
+          const luma=.299*r+.587*g+.114*b;
+          const sat=max ? (max-min)/max : 0;
+          values.push([r,g,b,luma]);
+          satTotal+=sat;
+          if(luma<95) dark+=1;
+        }
+      }
+      const count=values.length || 1;
+      const mean=values.reduce((acc,p)=>[acc[0]+p[0],acc[1]+p[1],acc[2]+p[2],acc[3]+p[3]],[0,0,0,0]).map(v=>v/count);
+      const variance=values.reduce((sum,p)=>sum+(p[0]-mean[0])**2+(p[1]-mean[1])**2+(p[2]-mean[2])**2+(p[3]-mean[3])**2,0)/count;
+      const spread=Math.sqrt(variance);
+      const saturation=satTotal/count;
+      const darkShare=dark/count;
+      return {
+        name,
+        busy: spread>34 || saturation>.24 || darkShare>.18
+      };
+    }
+    async function sanitizeImageForOpenAi(file,label){
+      if(!file || !file.size) throw new Error(`${label} is missing.`);
+      const img=await loadImageElement(file);
+      const w=img.naturalWidth || img.width;
+      const h=img.naturalHeight || img.height;
+      if(!w || !h) throw new Error(`${label} is not a valid image.`);
+      const maxSide=1600;
+      const scale=Math.min(1,maxSide/Math.max(w,h));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(w*scale));
+      canvas.height=Math.max(1,Math.round(h*scale));
+      const ctx=canvas.getContext('2d',{alpha:true});
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality='high';
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+      const nameBase=baseName(file.name,label.toLowerCase().replace(/\s+/g,'-'));
+      const maxBytes=19*1024*1024;
+      const jpegCanvas=document.createElement('canvas');
+      jpegCanvas.width=canvas.width;
+      jpegCanvas.height=canvas.height;
+      const jpegCtx=jpegCanvas.getContext('2d',{alpha:false});
+      jpegCtx.fillStyle='#ffffff';
+      jpegCtx.fillRect(0,0,jpegCanvas.width,jpegCanvas.height);
+      jpegCtx.drawImage(canvas,0,0);
+      let quality=.98;
+      let jpeg=await canvasBlob(jpegCanvas,'image/jpeg',quality);
+      while(jpeg.size>maxBytes && quality>.9){
+        quality-=.02;
+        jpeg=await canvasBlob(jpegCanvas,'image/jpeg',quality);
+      }
+      if(jpeg.size<=maxBytes) return new File([jpeg],`${nameBase}-openai.jpg`,{type:'image/jpeg'});
+      const png=await canvasBlob(canvas,'image/png');
+      if(png.size<=maxBytes) return new File([png],`${nameBase}-openai.png`,{type:'image/png'});
+      throw new Error(`${label} is too large after cleanup. Try a smaller export.`);
+    }
+    async function remoteFileForGeneration(file){
+      const response=await fetch(yupooPreviewUrl(file));
+      if(!response.ok) throw new Error(`Could not load ${file.name || 'remote image'} from Yupoo.`);
+      const blob=await response.blob();
+      return new File([blob],file.name || `yupoo-product-${Date.now()}.jpg`,{type:blob.type || file.type || 'image/jpeg'});
+    }
+    function isSkippableYupooImageError(error, source){
+      const message=String(error?.message || '');
+      return !!source?.file?.isRemote && /could not load .* from yupoo/i.test(message);
+    }
+    async function rawFileForGeneration(source){
+      const file=source.file;
+      return file.isRemote ? await remoteFileForGeneration(file) : file;
+    }
+    async function productFileForGeneration(source, rawOverride=null){
+      const file=source.file;
+      const raw=rawOverride || await rawFileForGeneration(source);
+      return sanitizeImageForOpenAi(raw,file?.name || `Product ${source.index+1}`);
+    }
+    async function autoModeForSource(source, rawFile){
+      if(state.mode !== 'auto') return {mode:state.mode, reason:'manual'};
+      const signature=sourceSignature(source.file);
+      if(signature && state.autoModes[signature]) return state.autoModes[signature];
+      const choice=await inspectProductFraming(rawFile || source.file);
+      if(signature) state.autoModes[signature]=choice;
+      return choice;
+    }
+    function autoModeText(mode){
+      return mode === 'keep-crop' ? 'background-only' : '3:4 flat-lay';
+    }
+    async function backgroundFileForGeneration(background){
+      return sanitizeImageForOpenAi(background,'ESNTLS Club background');
+    }
+    async function loadConfig(){
+      try{
+        const r=await studioFetch(apiUrl('/api/config'));
+        const d=await r.json();
+        if(r.ok && d.ok){
+          state.maxBulkImages=Number(d.maxBulkImages||state.maxBulkImages||24);
+          state.yupooImportLimit=Number(d.yupooImportLimit||state.yupooImportLimit||24);
+        }
+      }catch{}
+    }
+
+    function addFiles(list){
+      const incoming=[...(list||[])].filter(f=>f.type.startsWith('image/'));
+      incoming.forEach(file=>{
+        const id=createId('queue');
+        state.files.push(file);
+        state.fileIds.push(id);
+        state.sourceModes[id]=state.mode;
+        state.queueSelected.add(id);
+        state.previews.push(URL.createObjectURL(file));
+      });
+      $('productInput').value='';
+      renderQueue();
+      if(incoming.length) setStatus(`${incoming.length} image${incoming.length===1?'':'s'} ready. Generate images when you are happy with the queue.`);
+    }
+    function addRemoteImages(images){
+      const incoming=(images||[]).filter(image=>image && image.url && !isLikelyNonProductYupooImage(image));
+      incoming.forEach((image,index)=>{
+        const id=createId('queue');
+        state.files.push({
+          isRemote:true,
+          url:image.url,
+          pageUrl:image.pageUrl || image.url,
+          name:image.filename || `yupoo-product-${Date.now()}-${index+1}.jpg`,
+          type:image.contentType || 'image/jpeg',
+          size:0
+        });
+        state.fileIds.push(id);
+        state.sourceModes[id]=state.mode;
+        state.queueSelected.add(id);
+        state.previews.push(yupooPreviewUrl(image));
+      });
+      renderQueue();
+      return incoming.length;
+    }
+    function isLikelyNonProductYupooImage(image){
+      const text=`${image.filename || ''} ${image.url || ''}`.toLowerCase();
+      return /(?:^|[-_/])(avatar|banner|brand|button|captcha|cart|close|empty|flag|icon|logo|qrcode|qr|search|sprite|wechat|weixin)(?:[-_.\/]|$)/i.test(text);
+    }
+    function clipboardFiles(data){
+      const files=Array.from(data?.files||[]).filter(f=>f.type.startsWith('image/'));
+      if(files.length) return files;
+      return Array.from(data?.items||[])
+        .filter(item=>item.kind==='file' && item.type.startsWith('image/'))
+        .map((item,index)=>{
+          const file=item.getAsFile();
+          if(!file) return null;
+          return file.name ? file : new File([file], pastedName(file.type,index+1), {type:file.type});
+        })
+        .filter(Boolean);
+    }
+    function handlePaste(event){
+      const files=clipboardFiles(event.clipboardData);
+      if(!files.length){ setStatus('Clipboard does not contain an image.','bad'); return; }
+      event.preventDefault();
+      addFiles(files);
+      $('pasteZone').classList.add('active');
+      setTimeout(()=>$('pasteZone').classList.remove('active'),700);
+      toast(`${files.length} pasted image${files.length===1?'':'s'} added`);
+    }
+    async function importYupoo(){
+      saveSettings();
+      const url=$('yupooUrl').value.trim();
+      if(!url){ setStatus('Paste a Yupoo link first.','bad'); return; }
+      state.lastYupooUrl=url;
+      localStorage.setItem('esntls-v2-studio-last-yupoo-url',url);
+      if(!$('studioSupplierUrl').value.trim()){
+        state.supplierUrl=url;
+        $('studioSupplierUrl').value=url;
+        localStorage.setItem('esntls-v2-studio-supplier-url',url);
+      }
+      if(!$('studioSupplierName').value.trim()){
+        const seller=sellerNameFromUrl(url);
+        if(seller){
+          state.supplierName=seller;
+          $('studioSupplierName').value=seller;
+          localStorage.setItem('esntls-v2-studio-supplier-name',seller);
+        }
+      }
+      setBusy(true); setStatus('Importing product photos from Yupoo...');
+      try{
+        const r=await studioFetch(apiUrl('/api/yupoo-images'),{
+          method:'POST',
+          headers:{...auth(),'Content-Type':'application/json'},
+          body:JSON.stringify({url,limit:state.yupooImportLimit})
+        });
+        const d=await r.json().catch(()=>({ok:false,error:'Yupoo import failed.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Yupoo import failed');
+        const imported=addRemoteImages(d.images||[]);
+        if(!imported) throw new Error('No Yupoo images were returned.');
+        const limitNote=d.truncated ? ` Imported first ${imported} of ${d.totalFound} found images.` : ` Imported ${imported} image${imported===1?'':'s'}.`;
+        const failNote=d.failed ? ` ${d.failed} image${d.failed===1?'':'s'} could not download.` : '';
+        setStatus(`${limitNote}${failNote} Press Generate Images when ready.`,'ok');
+        toast(`Yupoo import added ${imported} image${imported===1?'':'s'}`);
+        scrollQueueIntoView();
+      }catch(e){
+        if(/worker url/i.test(e.message||'')) $('setupDetails').open=true;
+        setStatus(friendlyFetchError(e),'bad');
+      }
+      finally{ setBusy(false); }
+    }
+    function dataUrlToFile(dataUrl, filename, contentType){
+      const text=String(dataUrl||'');
+      const match=text.match(/^data:([^;]+);base64,(.+)$/);
+      if(!match) throw new Error('Imported Yupoo image data was invalid.');
+      const type=contentType||match[1]||'image/jpeg';
+      const binary=atob(match[2]);
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i+=1) bytes[i]=binary.charCodeAt(i);
+      return new File([bytes],filename,{type});
+    }
+    function setBg(file){
+      if(!file || !file.type.startsWith('image/')) return;
+      state.bgFile=file;
+      $('bgPreview').src=URL.createObjectURL(file);
+      $('bgStatus').textContent='Using override: '+file.name;
+    }
+    function removeFile(i){
+      if(!state.files[i]?.isRemote) URL.revokeObjectURL(state.previews[i]);
+      state.queueSelected.delete(state.fileIds[i]);
+      state.files.splice(i,1); state.fileIds.splice(i,1); state.previews.splice(i,1); renderQueue();
+    }
+    function toggleQueue(id,on){
+      on ? state.queueSelected.add(id) : state.queueSelected.delete(id);
+      updateActionButtons();
+      renderQueue();
+    }
+    function setQueueSelection(on){
+      state.queueSelected = new Set(on ? state.fileIds : []);
+      renderQueue();
+      updateActionButtons();
+    }
+    function clearQueue(){
+      state.files.forEach((file,index)=>{ if(!file?.isRemote && state.previews[index]) URL.revokeObjectURL(state.previews[index]); });
+      state.fileIds.forEach(id=>delete state.sourceModes[id]);
+      localStorage.setItem('esntls-v2-studio-source-modes',JSON.stringify(state.sourceModes));
+      state.files=[];
+      state.fileIds=[];
+      state.previews=[];
+      state.queueSelected=new Set();
+      renderQueue();
+      setStatus('Cleared the queued product images. Upload or import the next batch.','ok');
+    }
+    function removeFile(i){
+      const id=state.fileIds[i];
+      if(!state.files[i]?.isRemote && state.previews[i]) URL.revokeObjectURL(state.previews[i]);
+      state.files.splice(i,1);
+      state.fileIds.splice(i,1);
+      state.previews.splice(i,1);
+      delete state.sourceModes[id];
+      localStorage.setItem('esntls-v2-studio-source-modes',JSON.stringify(state.sourceModes));
+      state.queueSelected.delete(id);
+      renderQueue();
+    }
+    function selectedQueueItems(){
+      return state.files
+        .map((file,index)=>({file,index,id:state.fileIds[index],preview:state.previews[index],mode:sourceMode(state.fileIds[index])}))
+        .filter(item=>state.queueSelected.has(item.id) && item.mode !== 'skip');
+    }
+    function studioProductPrice(){
+      const raw=Number($('studioProductPrice').value || state.productPrice || 0);
+      if(!Number.isFinite(raw) || raw < 0.99) return 0;
+      return Number(raw.toFixed(2));
+    }
+    function requireStudioProductPrice(targets){
+      const name=String($('studioProductName').value || state.productName || productNameFromYupooUrl(state.lastYupooUrl)).trim();
+      if(!name){
+        setStatus('Enter the product name before generating.','bad');
+        $('studioProductName').focus();
+        return false;
+      }
+      const price=studioProductPrice();
+      if(price) return true;
+      setStatus('Enter the product price before generating. Example: 34.99','bad');
+      $('studioProductPrice').focus();
+      return false;
+    }
+    function scrollQueueIntoView(){
+      requestAnimationFrame(()=>$('queue')?.scrollIntoView({behavior:'smooth',block:'start'}));
+    }
+    function renderQueue(){
+      const readyCount=state.fileIds.filter(id=>state.queueSelected.has(id) && sourceMode(id) !== 'skip').length;
+      $('queue').innerHTML = state.files.length
+        ? `<div class="queue-head"><span class="tiny">${readyCount} ready, ${state.files.length-readyCount} skipped/unselected</span><div class="queue-tools"><button class="mini-btn" onclick="setQueueSelection(true)">All</button><button class="mini-btn" onclick="setQueueSelection(false)">None</button><button class="mini-btn danger" onclick="clearQueue()">Clear</button></div></div>` + state.files.map((f,i)=>{
+            const id=state.fileIds[i];
+            const generatedCount=generatedCountForSource(f);
+            const generatedBadge=generatedCount ? `<span class="badge done">${generatedCount} generated</span>` : '';
+            const itemMode=sourceMode(id);
+            return `<div class="q"><div class="q-preview"><img src="${state.previews[i]}" alt=""><label class="queue-check" aria-label="Select ${esc(f.name)}"><input type="checkbox" ${state.queueSelected.has(id)?'checked':''} onchange="toggleQueue('${id}',this.checked)"></label></div><div><strong>${esc(f.name)}</strong><div class="source-meta"><span class="tiny">${f.isRemote?'Yupoo link':bytes(f.size)}</span><span class="badge">${modeLabel(itemMode)}</span>${generatedBadge}</div><div class="item-mode" aria-label="Generation mode for ${esc(f.name)}"><button class="${itemMode==='keep-crop'?'active':''}" onclick="setSourceMode('${id}','keep-crop')">Close up</button><button class="${itemMode==='flatlay'?'active':''}" onclick="setSourceMode('${id}','flatlay')">Full photo</button><button class="${itemMode==='keep'?'active':''}" onclick="setSourceMode('${id}','keep')">Keep</button><button class="${itemMode==='skip'?'active':''}" onclick="setSourceMode('${id}','skip')">Skip</button></div></div><button class="icon-btn" onclick="removeFile(${i})" aria-label="Remove ${esc(f.name)}">&times;</button></div>`;
+          }).join('')
+        : '';
+      updateCostEstimate();
+      updateActionButtons();
+    }
+
+    async function generate(){
+      saveSettings();
+      const targets=selectedQueueItems();
+      const generationTargets=targets;
+      if(!state.files.length){ setStatus('Upload product images first.','bad'); return; }
+      if(!targets.length){ setStatus('Set at least one image to Close up, Full photo, or Keep before generating.','bad'); return; }
+      if(!requireStudioProductPrice(targets)) return;
+      const duplicateText=duplicateNotice(targets);
+      const signal=beginOperation('generate');
+      setStatus(`${duplicateText}Generating realistic ESNTLS Club images. First run may take a moment.`);
+      try{
+        state.generated=[];
+        state.selected=new Set();
+        renderResults();
+        const allErrors=[];
+        const background=state.bgFile || await defaultBackgroundFile();
+        const total=generationTargets.length;
+        for(let position=0; position<total; position+=1){
+          if(state.cancelRequested || signal.aborted) break;
+          const source=generationTargets[position];
+          const label=source.file?.name || `product-${source.index+1}`;
+          setStatus(`Generating image ${position+1} of ${total}: ${label}. ${state.generated.length} finished so far.`);
+          try{
+            const newResults=await generateSource(source, background, signal);
+            if(state.cancelRequested || signal.aborted) break;
+            state.generated.push(...newResults);
+            newResults.forEach(x=>state.selected.add(x.id));
+            let sourceHistoryChanged=false;
+            newResults.forEach(result=>{ sourceHistoryChanged=rememberGeneratedForSource(source,1,result.id) || sourceHistoryChanged; });
+            if(sourceHistoryChanged) renderQueue();
+            renderResults();
+            setStatus(`Generated ${state.generated.length} of ${total}. Continuing with image ${Math.min(position+2,total)} of ${total}.`,'ok');
+          }catch(error){
+            const message=error.message || 'Generation failed.';
+            if(/worker url/i.test(message)) throw error;
+            if(isAbortError(error) || state.cancelRequested) throw error;
+            allErrors.push({originalName:label,error:message});
+            setStatus(`Image ${position+1} failed: ${message}`);
+          }
+        }
+        if(state.cancelRequested || signal.aborted){
+          renderResults();
+          setStatus(`Cancelled generation. ${state.generated.length} finished image${state.generated.length===1?'':'s'} kept in the preview list.`,'ok');
+          return;
+        }
+        if(!state.generated.length && generationTargets.length){
+          const firstError=allErrors[0]?.error;
+          throw new Error(firstError || 'No image was returned. Try one product photo first.');
+        }
+        renderResults();
+        const errorNote=allErrors.length ? ` ${allErrors.length} image${allErrors.length===1?'':'s'} failed.` : '';
+        setStatus(`Generated ${state.generated.length} realistic ESNTLS Club image${state.generated.length===1?'':'s'}.${errorNote}`,'ok');
+        if(!allErrors.length){
+          await createProductForGeneratedBatch(targets);
+        }
+      }catch(e){
+        if(isAbortError(e) || state.cancelRequested){
+          renderResults();
+          setStatus(`Cancelled generation. ${state.generated.length} finished image${state.generated.length===1?'':'s'} kept in the preview list.`,'ok');
+          return;
+        }
+        if(/worker url/i.test(e.message||'')) $('setupDetails').open=true;
+        setStatus(friendlyFetchError(e),'bad');
+      }
+      finally{ endOperation(); }
+    }
+
+    async function generateSource(source, background, signal){
+      const file=source.file;
+      const label=file?.name || `product-${source.index+1}`;
+      const form=new FormData();
+      const rawProduct=await rawFileForGeneration(source);
+      const modeChoice={mode:source.mode || sourceMode(source.id), reason:'manual'};
+      const preparedProduct=await productFileForGeneration(source, rawProduct);
+      const preparedBackground=await backgroundFileForGeneration(background);
+      form.append('products',preparedProduct,preparedProduct.name||file.name||'product.png');
+      form.append('background',preparedBackground,preparedBackground.name||'esntls-original-background.png');
+      form.append('mode',modeChoice.mode);
+      form.append('quality',currentImageQuality());
+      const extraInstruction=currentExtraInstruction();
+      if(extraInstruction) form.append('extraInstruction',extraInstruction);
+      const r=await studioFetch(apiUrl('/api/generate'),{method:'POST',headers:auth(),body:form,signal});
+      const d=await r.json().catch(()=>({ok:false,error:'Generation failed.'}));
+      if(!r.ok || !d.ok) throw new Error(d.error||'Generation failed');
+      const workerErrors=(d.errors||[]).filter(Boolean);
+      const newResults=(d.results||[]).filter(x=>x && x.dataUrl).map(result=>({
+        ...result,
+        sourceQueueId: source.id,
+        sourceIndex: source.index,
+        sourceName: label,
+        sourceFile: file,
+        sourcePreview: source.preview,
+        modeChoice
+      }));
+      if(!newResults.length){
+        throw new Error(workerErrors[0]?.error || 'No image was returned.');
+      }
+      return newResults;
+    }
+    async function appendSelectedSourcesToForm(form, targets){
+      const choices=[];
+      const preparedSources=[];
+      const skipped=[];
+      for(let index=0; index<targets.length; index+=1){
+        if(state.cancelRequested) throw new DOMException('Generation cancelled.', 'AbortError');
+        const source=targets[index];
+        try{
+          const rawProduct=await rawFileForGeneration(source);
+          const modeChoice={mode:source.mode || sourceMode(source.id), reason:'manual'};
+          setStatus(`Preparing image ${index+1} of ${targets.length} as ${modeLabel(modeChoice.mode)}.`);
+          const preparedProduct=await productFileForGeneration(source, rawProduct);
+          form.append('products',preparedProduct,preparedProduct.name||source.file.name||`product-${index+1}.png`);
+          choices.push(modeChoice);
+          preparedSources.push(source);
+        }catch(error){
+          if(!isSkippableYupooImageError(error, source)) throw error;
+          skipped.push({source,error:error.message || 'Could not load image from Yupoo.'});
+          setStatus(`Skipped ${source.file?.name || `image ${index+1}`} because Yupoo did not return a usable product image.`);
+        }
+      }
+      return {choices, sources:preparedSources, skipped};
+    }
+    function persistJobSources(job, targets){
+      const map={};
+      (job.items||[]).forEach((item,index)=>{
+        const source=targets[index];
+        if(!item?.id || !source?.file) return;
+        map[item.id]={
+          queueId:source.id,
+          index:source.index,
+          signature:sourceSignature(source.file),
+          name:source.file.name,
+          preview:source.preview
+        };
+      });
+      state.jobSources=map;
+      const key=`esntls-v2-studio-job-sources-${job.id}`;
+      localStorage.setItem(key,JSON.stringify(map));
+      localStorage.setItem('esntls-v2-studio-job-sources-key',key);
+    }
+    function jobSourceForItem(item){
+      const stored=state.jobSources?.[item?.id];
+      if(stored) return stored;
+      const matchedIndex=state.files.findIndex(file=>comparableName(file.name)===comparableName(item?.originalName));
+      if(matchedIndex<0) return null;
+      return {
+        queueId:state.fileIds[matchedIndex],
+        index:matchedIndex,
+        signature:sourceSignature(state.files[matchedIndex]),
+        name:state.files[matchedIndex].name,
+        preview:state.previews[matchedIndex]
+      };
+    }
+    async function startBackgroundJob(){
+      saveSettings();
+      const targets=selectedQueueItems();
+      if(!state.files.length){ setStatus('Upload product images first.','bad'); return; }
+      if(!targets.length){ setStatus('Set at least one image to Close up, Full photo, or Keep before starting a background job.','bad'); return; }
+      if(!requireStudioProductPrice(targets)) return;
+      const duplicateText=duplicateNotice(targets);
+      const signal=beginOperation('background-start');
+      setStatus(`${duplicateText}Starting background job for ${targets.length} image${targets.length===1?'':'s'}...`);
+      try{
+        const form=new FormData();
+        const prepared=await appendSelectedSourcesToForm(form, targets);
+        const modeChoices=prepared.choices;
+        if(!modeChoices.length){
+          throw new Error(prepared.skipped?.length ? 'None of the selected Yupoo images could be loaded. Re-import the Yupoo link and skip any logo/icon images.' : 'No images were prepared for generation.');
+        }
+        const fallbackMode=modeChoices.some(choice=>choice.mode==='keep-crop') ? 'keep-crop' : 'flatlay';
+        form.append('mode',fallbackMode);
+        form.append('productModes',JSON.stringify(modeChoices.map(choice=>choice.mode)));
+        form.append('quality',currentImageQuality());
+        form.append('product',JSON.stringify(studioProductMeta()));
+        form.append('idempotencyKey',`studio-${Date.now()}-${targets.map(source=>sourceSignature(source.file)).join('-').slice(0,72)}`);
+        const extraInstruction=currentExtraInstruction();
+        if(extraInstruction) form.append('extraInstruction',extraInstruction);
+        state.generated=[];
+        state.selected=new Set();
+        state.knownJobResultIds=new Set();
+        renderResults();
+        const r=await studioFetch(apiUrl('/api/jobs'),{method:'POST',headers:auth(),body:form,signal});
+        const d=await r.json().catch(()=>({ok:false,error:'Background job failed to start.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Background job failed to start.');
+        state.currentJobId=d.job.id;
+        localStorage.setItem('esntls-v2-studio-job-id',state.currentJobId);
+        persistJobSources(d.job,prepared.sources);
+        trackAutoProductJob(d.job, prepared.sources, []);
+        state.job=d.job;
+        renderJob(d.job);
+        applyJobResults(d.job);
+        startJobPolling();
+        resetQueueForNextYupoo();
+        const skippedNote=prepared.skipped?.length ? ` Skipped ${prepared.skipped.length} broken Yupoo image${prepared.skipped.length===1?'':'s'}.` : '';
+        setStatus(`Background job started.${skippedNote} This Yupoo product will be created when every requested image finishes. You can import the next Yupoo link now.`,'ok');
+        toast('Background job started');
+      }catch(e){
+        if(isAbortError(e) || state.cancelRequested){
+          setStatus('Cancelled before the background job started.','ok');
+          return;
+        }
+        if(/worker url/i.test(e.message||'')) $('setupDetails').open=true;
+        setStatus(friendlyFetchError(e),'bad');
+      }finally{ endOperation(); }
+    }
+    async function loadJob({quiet=false}={}){
+      if(state.trackedJobs.length){
+        await loadTrackedJobs({quiet});
+        return;
+      }
+      if(!state.currentJobId) return;
+      if(!quiet) setStatus('Checking background job...');
+      try{
+        const r=await studioFetch(apiUrl('/api/jobs?id='+encodeURIComponent(state.currentJobId)),{headers:auth()});
+        const d=await r.json().catch(()=>({ok:false,error:'Background job could not be loaded.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Background job could not be loaded.');
+        state.job=d.job;
+        renderJob(d.job);
+        const added=applyJobResults(d.job);
+        if(jobIsDone(d.job)){
+          stopJobPolling();
+          const cls=d.job.status==='failed' ? 'bad' : 'ok';
+          if(!quiet || added) setStatus(`Background job ${d.job.status}. ${d.job.completed||0} of ${d.job.total||0} image${(d.job.total||0)===1?'':'s'} generated.`,cls);
+        }else{
+          startJobPolling();
+          if(!quiet || added) setStatus(`Background job running. ${d.job.completed||0} of ${d.job.total||0} image${(d.job.total||0)===1?'':'s'} finished.`,added?'ok':'');
+        }
+      }catch(e){
+        if(!quiet) setStatus(friendlyFetchError(e),'bad');
+      }finally{
+        updateActionButtons();
+      }
+    }
+    function startJobPolling(){
+      stopJobPolling();
+      state.jobPoll=setInterval(()=>loadJob({quiet:true}),5000);
+    }
+    function stopJobPolling(){
+      if(state.jobPoll){
+        clearInterval(state.jobPoll);
+        state.jobPoll=null;
+      }
+    }
+    function jobIsDone(job){
+      return ['complete','partial','failed','cancelled'].includes(String(job?.status||''));
+    }
+    function statusLabel(value){
+      return String(value||'queued').replace(/-/g,' ');
+    }
+    function renderJob(job){
+      const panel=$('jobPanel');
+      const mainPanel=$('backgroundJobsPanel');
+      const jobs=state.trackedJobs.length ? state.trackedJobs : (job ? [job] : []);
+      if(!jobs.length){
+        panel.classList.add('hidden');
+        panel.innerHTML='';
+        mainPanel.classList.add('hidden');
+        mainPanel.innerHTML='';
+        return;
+      }
+      panel.classList.remove('hidden');
+      mainPanel.classList.remove('hidden');
+      const cards=jobs.map(entry=>{
+        const total=Number(entry.total||0);
+        const complete=Number(entry.completed||0);
+        const failed=Number(entry.failed||0);
+        const cancelled=Number(entry.cancelled||0);
+        const done=complete+failed+cancelled;
+        const pct=total ? Math.round((done/total)*100) : 0;
+        const productText=entry.productId ? `Created product ${String(entry.productId)}` : entry.autoProductStatus==='creating' ? 'Creating product' : entry.autoProductStatus==='complete' ? 'Product created' : entry.autoProductStatus==='failed' ? 'Product create failed' : entry.autoProductStatus==='waiting' ? 'Waiting for all images' : 'Auto product queued';
+        const rows=(entry.items||[]).map(item=>{
+          const stateText=item.result?.deleted ? 'removed' : item.error ? item.error : statusLabel(item.status);
+          return `<div class="job-row"><strong>${esc(item.originalName||'Product image')}</strong><span class="job-state">${esc(stateText)}</span></div>`;
+        }).join('');
+        const thumbs=(entry.items||[]).map(item=>{
+          if(item.status==='complete' && item.result?.rawUrl && !item.result.deleted){
+            return `<div class="job-thumb"><img src="${apiUrl(item.result.rawUrl)}" alt=""><span>Done</span></div>`;
+          }
+          return `<div class="job-thumb"><span>${esc(statusLabel(item.status))}</span></div>`;
+        }).join('');
+        const cancelledText=cancelled ? `, ${cancelled} cancelled` : '';
+        const canCreateProduct=!entry.productId && String(entry.status||'')==='complete' && entry.autoProductStatus==='failed';
+        const canRetryFailed=!entry.productId && failed>0;
+        const canRemoveJob=jobIsDone(entry);
+        const actions=[
+          canRetryFailed ? `<button class="mini-btn" onclick='retryFailedJob(${jsString(entry.id)})'>Retry Failed</button>` : '',
+          canCreateProduct ? `<button class="mini-btn" onclick="createProductFromTrackedJob(${jsString(entry.id)})">Retry Product</button>` : '',
+          canRemoveJob ? `<button class="mini-btn" onclick='removeTrackedJob(${jsString(entry.id)})'>Remove Job</button>` : ''
+        ].filter(Boolean).join('');
+        return `<div class="job-card"><div class="job-row"><strong>${esc(entry.productName || `Product job ${entry.id.slice(0,8)}`)}</strong><span class="job-state">${esc(statusLabel(entry.status))}</span></div><div class="job-bar" aria-label="Job progress"><div class="job-fill" style="width:${pct}%"></div></div><p class="tiny">${complete} complete, ${failed} failed${cancelledText}, ${total} total - ${esc(productText)}</p>${actions?`<div class="job-actions">${actions}</div>`:''}${thumbs?`<div class="job-thumbs">${thumbs}</div>`:''}${entry.error?`<p class="tiny">${esc(entry.error)}</p>`:''}${rows?`<div class="job-list">${rows}</div>`:''}</div>`;
+      }).join('');
+      panel.innerHTML=cards;
+      const failedJobs=jobs.filter(entry=>!entry.productId && Number(entry.failed||0)>0).length;
+      mainPanel.innerHTML=`<div class="background-jobs-head"><div><span class="eyebrow">Running in background</span><h3>Background Products</h3></div><div>${failedJobs?`<button class="mini-btn" onclick="retryAllFailedJobs()">Retry All Failed (${failedJobs})</button>`:'<p class="tiny">You can import the next Yupoo link while these finish.</p>'}</div></div><div class="background-jobs-grid">${cards}</div>`;
+    }
+    function persistTrackedJobs(){
+      localStorage.setItem(AUTO_JOBS_KEY,JSON.stringify(state.trackedJobs));
+    }
+    function productNameFromYupooUrl(url){
+      const chosen=String($('studioProductName')?.value || state.productName || '').trim();
+      if(chosen) return chosen;
+      try{
+        const u=new URL(url);
+        const parts=u.pathname.split('/').filter(Boolean);
+        const raw=decodeURIComponent(parts[parts.length-1] || parts[parts.length-2] || u.hostname);
+        const cleaned=raw.replace(/\.(html?|php)$/i,'').replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+        return cleaned && !/^\d+$/.test(cleaned) ? cleaned : `Yupoo Product ${new Date().toISOString().slice(0,10)}`;
+      }catch{
+        return `Yupoo Product ${new Date().toISOString().slice(0,10)}`;
+      }
+    }
+    function trackAutoProductJob(job, targets, keepImages=[]){
+      const existing=new Set(state.trackedJobs.map(x=>x.id));
+      if(existing.has(job.id)) return;
+      state.trackedJobs.unshift({
+        id:job.id,
+        status:job.status || 'queued',
+        total:job.total || targets.length,
+        completed:job.completed || 0,
+        failed:job.failed || 0,
+        cancelled:job.cancelled || 0,
+        items:job.items || [],
+        productName:job.productName || String($('studioProductName').value || productNameFromYupooUrl(state.lastYupooUrl)).trim(),
+        yupooUrl:state.lastYupooUrl,
+        priceGbp:studioProductPrice(),
+        supplierName:studioSupplierInfo().supplierName,
+        supplierUrl:studioSupplierInfo().supplierUrl,
+        categories:studioProductCategories(),
+        colors:studioProductColors(),
+        sizes:studioProductSizes(),
+        delivery:$('studioProductDelivery').value,
+        keepImages,
+        autoProductStatus:job.autoProduct?.status || 'waiting',
+        productId:job.autoProduct?.productId || '',
+        createdAt:new Date().toISOString()
+      });
+      state.trackedJobs=state.trackedJobs.slice(0,12);
+      persistTrackedJobs();
+    }
+    function resetQueueForNextYupoo(){
+      state.files.forEach((file,index)=>{ if(!file?.isRemote && state.previews[index]) URL.revokeObjectURL(state.previews[index]); });
+      state.fileIds.forEach(id=>delete state.sourceModes[id]);
+      localStorage.setItem('esntls-v2-studio-source-modes',JSON.stringify(state.sourceModes));
+      state.files=[];
+      state.fileIds=[];
+      state.previews=[];
+      state.queueSelected=new Set();
+      $('yupooUrl').value='';
+      $('studioProductName').value='';
+      $('studioSupplierName').value='';
+      $('studioSupplierUrl').value='';
+      $('studioCustomCategories').value='';
+      $('studioProductColors').value='';
+      $('studioProductSizes').value='';
+      $('studioCheckoutTitle').value='';
+      $('studioProductPrice').value='';
+      state.productName='';
+      state.supplierName='';
+      state.supplierUrl='';
+      state.customCategories='';
+      state.productColors='';
+      state.productSizes='';
+      state.checkoutTitle='';
+      state.productPrice='';
+      state.lastYupooUrl='';
+      state.productCategories=[];
+      localStorage.removeItem('esntls-v2-studio-product-name');
+      localStorage.removeItem('esntls-v2-studio-supplier-name');
+      localStorage.removeItem('esntls-v2-studio-supplier-url');
+      localStorage.removeItem('esntls-v2-studio-custom-categories');
+      localStorage.removeItem('esntls-v2-studio-product-colors');
+      localStorage.removeItem('esntls-v2-studio-product-sizes');
+      localStorage.removeItem('esntls-v2-studio-checkout-title');
+      localStorage.removeItem('esntls-v2-studio-product-price');
+      localStorage.removeItem('esntls-v2-studio-product-categories');
+      localStorage.removeItem('esntls-v2-studio-last-yupoo-url');
+      renderCategoryOptions();
+      renderQueue();
+      updateActionButtons();
+    }
+    async function syncServerJobs(){
+      const r=await studioFetch(apiUrl('/api/jobs?limit=12'),{headers:auth()});
+      const d=await r.json().catch(()=>({ok:false,jobs:[]}));
+      if(!r.ok || !d.ok) throw new Error(d.error || 'Background products could not be loaded.');
+      for(const job of (d.jobs||[]).reverse()){
+        const existing=state.trackedJobs.find(entry=>entry.id===job.id);
+        const values={
+          id:job.id,
+          status:job.status,
+          total:job.total||0,
+          completed:job.completed||0,
+          failed:job.failed||0,
+          cancelled:job.cancelled||0,
+          productName:job.productName||existing?.productName||'Background product',
+          autoProductStatus:job.autoProduct?.status||existing?.autoProductStatus||'waiting',
+          productId:job.autoProduct?.productId||existing?.productId||'',
+          shopifyUrl:job.autoProduct?.shopifyUrl||existing?.shopifyUrl||'',
+          wixUrl:job.autoProduct?.wixUrl||existing?.wixUrl||'',
+          createdAt:job.createdAt||existing?.createdAt||new Date().toISOString()
+        };
+        if(existing) Object.assign(existing,values);
+        else state.trackedJobs.unshift(values);
+      }
+      state.trackedJobs=state.trackedJobs.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,12);
+      persistTrackedJobs();
+      await loadTrackedJobs({quiet:true});
+    }
+    async function removeTrackedJob(id){
+      const entry=state.trackedJobs.find(job=>job.id===id);
+      if(!entry || !jobIsDone(entry)) return;
+      const r=await studioFetch(apiUrl('/api/jobs?id='+encodeURIComponent(id)),{method:'DELETE',headers:auth()});
+      const d=await r.json().catch(()=>({ok:false}));
+      if(!r.ok || !d.ok){ setStatus(d.error||'Background job could not be removed.','bad'); return; }
+      state.trackedJobs=state.trackedJobs.filter(job=>job.id!==id);
+      if(state.currentJobId===id){ state.currentJobId=''; state.job=null; localStorage.removeItem(JOB_KEY); }
+      persistTrackedJobs();
+      renderJob(state.job);
+      toast('Background job removed');
+    }
+    async function loadTrackedJobs({quiet=false}={}){
+      const jobs=[...state.trackedJobs];
+      let changed=false;
+      for(const entry of jobs){
+        try{
+          if(entry.productId) continue;
+          const r=await studioFetch(apiUrl('/api/jobs?id='+encodeURIComponent(entry.id)),{headers:auth()});
+          const d=await r.json().catch(()=>({ok:false,error:'Background job could not be loaded.'}));
+          if(!r.ok || !d.ok){ entry.error=d.error || 'Could not load job'; changed=true; continue; }
+          Object.assign(entry,{
+            status:d.job.status,
+            total:d.job.total || entry.total,
+            completed:d.job.completed || 0,
+            failed:d.job.failed || 0,
+            cancelled:d.job.cancelled || 0,
+            items:d.job.items || [],
+            productName:d.job.productName || entry.productName,
+            autoProductStatus:d.job.autoProduct?.status || entry.autoProductStatus,
+            productId:d.job.autoProduct?.productId || entry.productId || '',
+            shopifyUrl:d.job.autoProduct?.shopifyUrl || entry.shopifyUrl || '',
+            wixUrl:d.job.autoProduct?.wixUrl || entry.wixUrl || '',
+            error:d.job.autoProduct?.error || ''
+          });
+          if(entry.id===state.currentJobId){
+            state.job=d.job;
+            applyJobResults(d.job);
+          }
+          if(jobIsDone(d.job) && d.job.status!=='complete'){
+            entry.autoProductStatus='failed';
+            entry.error=`Not all requested images generated (${d.job.completed||0}/${d.job.total||0}). Product was not created.`;
+          }
+          changed=true;
+        }catch(error){
+          entry.autoProductStatus='failed';
+          entry.error=error.message || 'Product creation failed.';
+          changed=true;
+        }
+      }
+      if(changed){
+        persistTrackedJobs();
+        renderJob(state.job);
+      }
+      if(state.trackedJobs.some(x=>!jobIsDone(x) || ['waiting','creating'].includes(x.autoProductStatus))) startJobPolling();
+      else stopJobPolling();
+      if(!quiet) setStatus('Checked background product jobs.','ok');
+      updateActionButtons();
+    }
+    async function retryFailedJob(id,{quiet=false}={}){
+      const entry=state.trackedJobs.find(job=>job.id===id);
+      if(!entry) throw new Error('Background product job was not found.');
+      const r=await studioFetch(apiUrl('/api/jobs/retry-failed'),{
+        method:'POST',
+        headers:{...auth(),'content-type':'application/json'},
+        body:JSON.stringify({id})
+      });
+      const d=await r.json().catch(()=>({ok:false,error:'Failed images could not be restarted.'}));
+      if(!r.ok || !d.ok) throw new Error(d.error||'Failed images could not be restarted.');
+      Object.assign(entry,{
+        status:d.job.status,
+        total:d.job.total || entry.total,
+        completed:d.job.completed || 0,
+        failed:d.job.failed || 0,
+        cancelled:d.job.cancelled || 0,
+        items:d.job.items || [],
+        autoProductStatus:'waiting',
+        error:''
+      });
+      persistTrackedJobs();
+      renderJob(state.job);
+      startJobPolling();
+      if(!quiet){
+        setStatus(`Restarted ${d.retried||0} failed image${Number(d.retried||0)===1?'':'s'} for ${entry.productName}.`,'ok');
+        toast('Failed images restarted');
+      }
+      return Number(d.retried||0);
+    }
+    async function retryAllFailedJobs(){
+      const jobs=state.trackedJobs.filter(entry=>!entry.productId && Number(entry.failed||0)>0);
+      if(!jobs.length){ toast('No failed images to retry'); return; }
+      setBusy(true);
+      let restarted=0;
+      let failedJobs=0;
+      try{
+        for(const entry of jobs){
+          try{ restarted+=await retryFailedJob(entry.id,{quiet:true}); }
+          catch(error){ entry.error=error.message||'Failed images could not be restarted.'; failedJobs+=1; }
+        }
+        persistTrackedJobs();
+        renderJob(state.job);
+        startJobPolling();
+        setStatus(`Restarted ${restarted} failed image${restarted===1?'':'s'} across ${jobs.length-failedJobs} product${jobs.length-failedJobs===1?'':'s'}.` ,failedJobs?'':'ok');
+        toast(failedJobs ? `Restarted ${restarted}; ${failedJobs} job${failedJobs===1?'':'s'} failed` : `Restarted ${restarted} failed images`);
+      }finally{
+        setBusy(false);
+      }
+    }
+    async function createProductFromTrackedJob(id){
+      const entry=state.trackedJobs.find(job=>job.id===id);
+      if(!entry){ setStatus('Background product job was not found.','bad'); return; }
+      setBusy(true);
+      entry.autoProductStatus='creating';
+      entry.error='';
+      persistTrackedJobs();
+      renderJob(state.job);
+      try{
+        const r=await studioFetch(apiUrl('/api/jobs/retry-product'),{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({id:entry.id})});
+        const d=await r.json().catch(()=>({ok:false,error:'Product creation could not be retried.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||d.job?.autoProduct?.error||'Product creation could not be retried.');
+        entry.productId=d.job.autoProduct?.productId || '';
+        entry.autoProductStatus=d.job.autoProduct?.status || 'complete';
+        entry.shopifyUrl=d.job.autoProduct?.shopifyUrl || '';
+        entry.wixUrl=d.job.autoProduct?.wixUrl || '';
+        entry.productCreatedAt=d.job.autoProduct?.finishedAt || new Date().toISOString();
+        entry.status=d.job.status;
+        entry.completed=d.job.completed || entry.completed;
+        entry.total=d.job.total || entry.total;
+        entry.items=d.job.items || entry.items || [];
+        persistTrackedJobs();
+        renderJob(state.job);
+        await loadStoreProducts();
+        toast(`Created live product: ${entry.productName}`);
+        setStatus(`Created live product "${entry.productName}".`, 'ok');
+      }catch(e){
+        entry.autoProductStatus='failed';
+        entry.error=e.message || 'Product creation failed.';
+        persistTrackedJobs();
+        renderJob(state.job);
+        setStatus(entry.error,'bad');
+      }finally{
+        setBusy(false);
+      }
+    }
+    async function saveJobResultToMedia(result){
+      const r=await studioFetch(apiUrl('/api/save'),{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({images:[{id:result.id,originalName:result.originalName,filename:result.filename,contentType:result.contentType,key:result.key}]})});
+      const d=await r.json().catch(()=>({ok:false,error:'Save failed.'}));
+      if(!r.ok || !d.ok) throw new Error(d.error || 'Save failed');
+      const saved=d.saved?.[0];
+      if(!saved) throw new Error('Saved image was not returned.');
+      return saved;
+    }
+    function fileToDataUrl(file){
+      return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=()=>reject(reader.error || new Error('Could not read image.'));
+        reader.readAsDataURL(file);
+      });
+    }
+    async function saveOriginalSourceForProduct(source){
+      const raw=await rawFileForGeneration(source);
+      const clean=await sanitizeImageForOpenAi(raw,source.file?.name || `kept-product-${source.index+1}`);
+      const dataUrl=await fileToDataUrl(clean);
+      const r=await studioFetch(apiUrl('/api/save'),{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({images:[{id:source.id,originalName:source.file?.name || clean.name,filename:clean.name || `kept-product-${source.index+1}.jpg`,contentType:clean.type,dataUrl}]})});
+      const d=await r.json().catch(()=>({ok:false,error:'Save failed.'}));
+      if(!r.ok || !d.ok) throw new Error(d.error || 'Save failed');
+      const saved=d.saved?.[0];
+      if(!saved) throw new Error('Saved original image was not returned.');
+      return saved.publicUrl || apiUrl(saved.rawUrl);
+    }
+    async function saveKeptSourcesForProduct(targets){
+      const kept=targets.filter(source=>source.mode==='keep');
+      const urls=[];
+      for(let i=0;i<kept.length;i+=1){
+        setStatus(`Saving kept original image ${i+1} of ${kept.length}...`);
+        urls.push(await saveOriginalSourceForProduct(kept[i]));
+      }
+      return urls;
+    }
+    async function createEsntlsProductFromStudio({name,images,yupooUrl,priceGbp,supplierName='',supplierUrl='',categories=[],colors=[],sizes=[],delivery='7-12 Days',createCheckout=true,checkoutTitle=''}){
+      const selectedCategories=[...new Set((categories||[]).filter(Boolean))];
+      const categoryNames=selectedCategories.length ? selectedCategories : ['Yupoo Imports'];
+      const cleanColors=[...new Set((colors||[]).filter(Boolean))];
+      const colorText=cleanColors.length ? `\n\nColours: ${cleanColors.join(', ')}` : '';
+      const description=`${delivery} delivery.${colorText}\n\nImported from Yupoo${yupooUrl ? `: ${yupooUrl}` : ''}`;
+      const productText=`${name || ''} ${categoryNames.join(' ')}`.toLowerCase();
+      const isFootwear=/\b(shoes?|sneakers?|trainers?|footwear|slides?|sliders?|sandals?|asics|gel|kayano|saucony)\b/.test(productText);
+      const baseSizes=sizes.length ? sizes : isFootwear ? Array.from({length:8},(_,index)=>`UK ${index+5}`) : ['XS','S','M','L','XL'];
+      const sizeRows=cleanColors.length ? cleanColors.flatMap(color=>baseSizes.map(size=>`${color} ${size}`)) : baseSizes;
+      const product=await storeApi('/api/admin/products',{method:'POST',body:{
+        name,
+        brand:'ESNTLS Club',
+        description,
+        price_gbp:priceGbp || 0.99,
+        sale_price_gbp:null,
+        size_type:isFootwear ? 'shoe' : 'clothing',
+        active:true,
+        supplier_name:supplierName || sellerNameFromUrl(supplierUrl || yupooUrl),
+        supplier_url:supplierUrl || yupooUrl || '',
+        categories:categoryNames,
+        colours:cleanColors,
+        delivery,
+        sizes:sizeRows.map(size=>({size,stock:999999})),
+        images
+      }});
+      if(createCheckout){
+        try{
+          const blankTitle=checkoutTitle || blankTitleForProduct(product);
+          await storeApi(`/api/admin/products/${product.id}/shopify-blank`,{method:'POST',body:{blank_title:blankTitle}});
+        }catch(error){
+          await storeApi(`/api/admin/products/${product.id}`,{method:'PATCH',body:{...product,active:false,images:(product.images||[]).map(image=>image.url),colours:cleanColors}}).catch(()=>{});
+          throw new Error(`Product images finished, but checkout creation failed. The product was moved to draft: ${error.message}`);
+        }
+      }
+      return product;
+    }
+    async function createProductForGeneratedBatch(targets){
+      if(state.generated.length !== targets.length) return;
+      setStatus(`All requested images finished. Creating live product...`);
+      const urls=[];
+      for(const source of targets){
+        const result=state.generated.find(item=>item.sourceQueueId===source.id);
+        if(result) urls.push(await saveGeneratedForProduct(result));
+      }
+      const meta=studioProductMeta();
+      const product=await createEsntlsProductFromStudio({...meta,images:urls,yupooUrl:meta.yupooUrl,priceGbp:meta.price,colors:meta.colours});
+      resetQueueForNextYupoo();
+      setStatus(`Created live product "${meta.name}" with ${urls.length} image${urls.length===1?'':'s'}.`, 'ok');
+      toast(`Created live product ${product.id}`);
+    }
+    function applyJobResults(job){
+      const previousIds=new Set(state.generated.map(x=>x.id));
+      const previousSelection=new Set(state.selected);
+      const results=[];
+      let added=0;
+      let sourceHistoryChanged=false;
+      (job.items||[]).forEach(item=>{
+        const result=item.result;
+        if(item.status!=='complete' || !result?.id || !result.rawUrl || result.deleted) return;
+        const source=jobSourceForItem(item);
+        if(!state.knownJobResultIds.has(result.id)){
+          state.knownJobResultIds.add(result.id);
+          added+=1;
+          if(source?.signature){
+            sourceHistoryChanged=rememberGeneratedSignature(source.signature,source.name,1,result.id) || sourceHistoryChanged;
+          }
+        }
+        results.push({
+          ...result,
+          dataUrl: apiUrl(result.rawUrl),
+          sourceJobId: job.id,
+          sourceJobItemId: item.id,
+          sourceQueueId: source?.queueId,
+          sourceIndex: source?.index,
+          sourceName: source?.name,
+          sourcePreview: source?.preview,
+          originalName: result.originalName || item.originalName || result.filename,
+          saved: result.saved || false
+        });
+      });
+      if(!results.length && !state.generated.length){
+        renderResults();
+        return 0;
+      }
+      state.generated=results;
+      state.selected=new Set(results.filter(x=>previousSelection.has(x.id) || !previousIds.has(x.id)).map(x=>x.id));
+      if(sourceHistoryChanged) renderQueue();
+      renderResults();
+      return added;
+    }
+    function renderResults(){
+      if(!state.generated.length){ $('results').innerHTML='<div class="panel empty"><h3>No images yet</h3><p class="muted">Upload products and press Generate Images.</p></div>'; updateActionButtons(); return; }
+      $('results').innerHTML=state.generated.map(x=>{
+        const label=x.mode==='keep' ? 'Original kept unchanged' : x.mode==='auto' ? 'AI Auto image' : x.mode==='keep-crop' ? 'Close-up background swap' : x.sourceJobId ? 'Background job image' : 'Realistic flat-lay image';
+        return `<article class="card"><div class="shot"><img src="${x.dataUrl}" alt=""><label class="check"><input type="checkbox" ${state.selected.has(x.id)?'checked':''} onchange="toggleSel('${x.id}',this.checked)">Select</label></div><div class="body"><strong>${esc(x.originalName)}</strong><p class="tiny">${label}</p><div class="card-actions"><a class="link-btn" download="${esc(x.filename)}" href="${x.dataUrl}">Download</a><button class="mini-btn" onclick="useGeneratedForProduct('${x.id}')">Use for Product</button><button class="mini-btn" onclick="regenerateGenerated('${x.id}')">Regenerate</button><button class="mini-btn danger" onclick="deleteGenerated('${x.id}')">Remove</button></div></div></article>`;
+      }).join('');
+      updateActionButtons();
+    }
+    function toggleSel(id,on){ on?state.selected.add(id):state.selected.delete(id); updateActionButtons(); }
+    function updateActionButtons(){
+      const hasGenerated=Boolean(state.generated.length);
+      const hasSelectedGenerated=Boolean(state.selected.size);
+      const hasSelectedQueue=Boolean(selectedQueueItems().length);
+      const onGeneratedView=state.activeView==='generated';
+      const onAdminView=state.activeView==='admin';
+      const hasBatch=Boolean(state.currentJobId || state.job || state.generated.length);
+      const hasRunningJob=Boolean(state.currentJobId && state.job && !jobIsDone(state.job));
+      const canCancel=Boolean(state.activeAbort || hasRunningJob);
+      $('generateBtn').disabled = state.busy || !hasSelectedQueue;
+      $('backgroundJobBtn').disabled = state.busy || !hasSelectedQueue;
+      $('refreshJobBtn').disabled = state.busy || !state.currentJobId;
+      $('cancelGenerationBtn').classList.toggle('hidden',!canCancel);
+      $('cancelGenerationBtn').disabled = !canCancel;
+      $('cancelGenerationBtn').textContent = hasRunningJob && !state.activeAbort ? 'Cancel Background Job' : state.activeOperation === 'background-start' ? 'Cancel Background Start' : 'Cancel Generation';
+      ['saveBtn','regenerateBtn','removeGeneratedBtn','useSelectedProductBtn'].forEach(id=>$(id).classList.toggle('hidden',!onGeneratedView || !hasGenerated));
+      $('newBatchBtn').classList.toggle('hidden',!onGeneratedView || !hasBatch);
+      $('refreshMediaBtn').classList.toggle('hidden',state.activeView!=='saved');
+      $('backgroundJobsPanel').classList.toggle('hidden',onAdminView || !state.trackedJobs.length);
+      $('newBatchBtn').disabled = state.busy || !hasBatch;
+      $('saveBtn').disabled = state.busy || !hasSelectedGenerated;
+      $('useSelectedProductBtn').disabled = state.busy || !hasSelectedGenerated;
+      $('regenerateBtn').disabled = state.busy || !hasSelectedGenerated;
+      $('removeGeneratedBtn').disabled = state.busy || !hasSelectedGenerated;
+      $('refreshMediaBtn').disabled = state.busy;
+    }
+    function startNewBatch(){
+      if(state.busy) return;
+      if(state.job && !jobIsDone(state.job) && state.currentJobId && !confirm('A background job is still running. Clear it from this page anyway?')) return;
+      stopJobPolling();
+      if(state.currentJobId) localStorage.removeItem(`esntls-v2-studio-job-sources-${state.currentJobId}`);
+      localStorage.removeItem('esntls-v2-studio-job-id');
+      localStorage.removeItem('esntls-v2-studio-job-sources-key');
+      state.currentJobId='';
+      state.job=null;
+      state.jobSources={};
+      state.generated=[];
+      state.selected=new Set();
+      state.knownJobResultIds=new Set();
+      renderJob(null);
+      renderResults();
+      setActiveView('generated');
+      setStatus('Cleared the current results. Select queued images and start the next generation.','ok');
+    }
+    async function cancelGeneration(){
+      if(state.activeAbort){
+        state.cancelRequested=true;
+        state.activeAbort.abort();
+        setStatus('Cancelling the current generation...');
+        updateActionButtons();
+        return;
+      }
+      if(state.currentJobId && state.job && !jobIsDone(state.job)){
+        await cancelBackgroundJob();
+      }
+    }
+    async function cancelBackgroundJob(){
+      const id=state.currentJobId;
+      if(!id) return;
+      stopJobPolling();
+      setStatus('Cancelling background job...');
+      try{
+        await studioFetch(apiUrl('/api/jobs/cancel'),{
+          method:'POST',
+          headers:{...auth(),'Content-Type':'application/json'},
+          body:JSON.stringify({id})
+        });
+      }catch{}
+      state.currentJobId='';
+      state.job=null;
+      state.jobSources={};
+      state.knownJobResultIds=new Set();
+      localStorage.removeItem(`esntls-v2-studio-job-sources-${id}`);
+      localStorage.removeItem('esntls-v2-studio-job-id');
+      localStorage.removeItem('esntls-v2-studio-job-sources-key');
+      renderJob(null);
+      renderResults();
+      updateActionButtons();
+      setStatus('Cancelled the background job on this page. Any finished images are still shown, and you can start a new batch now.','ok');
+      toast('Background job cancelled');
+    }
+    async function deleteGenerated(id){
+      const removed=state.generated.find(x=>x.id===id);
+      state.generated=state.generated.filter(x=>x.id!==id);
+      state.selected.delete(id);
+      renderResults();
+      if(!removed) return;
+      toast('Generated image removed');
+      if(removed.key) await deleteGeneratedRemote(removed);
+    }
+    async function removeSelectedGenerated(){
+      const count=state.selected.size;
+      if(!count){ setStatus('Select at least one generated image first.','bad'); return; }
+      const removed=state.generated.filter(x=>state.selected.has(x.id));
+      state.generated=state.generated.filter(x=>!state.selected.has(x.id));
+      state.selected=new Set();
+      renderResults();
+      setStatus(`Removed ${count} generated image${count===1?'':'s'} from the preview list.`,'ok');
+      await Promise.allSettled(removed.map(deleteGeneratedRemote));
+    }
+    async function deleteGeneratedRemote(result){
+      if(!result?.key) return;
+      try{
+        const r=await studioFetch(apiUrl('/api/media?key='+encodeURIComponent(result.key)),{method:'DELETE',headers:auth()});
+        const d=await r.json().catch(()=>({ok:false,error:'Delete failed.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Delete failed');
+      }catch(e){
+        setStatus(friendlyFetchError(e),'bad');
+      }
+    }
+    function sourceForGenerated(result){
+      const queueIndex=state.fileIds.indexOf(result.sourceQueueId);
+      if(queueIndex>=0){
+        return {file:state.files[queueIndex],index:queueIndex,id:state.fileIds[queueIndex],preview:state.previews[queueIndex]};
+      }
+      const resultName=comparableName(result.originalName || result.sourceName || result.filename);
+      const matchedIndex=state.files.findIndex(file=>comparableName(file.name)===resultName);
+      if(matchedIndex>=0){
+        return {file:state.files[matchedIndex],index:matchedIndex,id:state.fileIds[matchedIndex],preview:state.previews[matchedIndex]};
+      }
+      if(result.sourceFile){
+        return {file:result.sourceFile,index:result.sourceIndex ?? 0,id:result.sourceQueueId || createId('regen'),preview:result.sourcePreview};
+      }
+      return null;
+    }
+    async function regenerateGenerated(id){
+      const result=state.generated.find(x=>x.id===id);
+      if(!result){ setStatus('Generated image was not found.','bad'); return; }
+      const source=sourceForGenerated(result);
+      if(!source){ setStatus('Original queued product is no longer available for regeneration.','bad'); return; }
+      setBusy(true); setStatus(`Regenerating ${result.originalName || result.sourceName || 'selected image'}...`);
+      try{
+        const background=state.bgFile || await defaultBackgroundFile();
+        const replacements=await generateSource(source, background);
+        const index=state.generated.findIndex(x=>x.id===id);
+        state.selected.delete(id);
+        replacements.forEach(x=>state.selected.add(x.id));
+        if(index>=0) state.generated.splice(index,1,...replacements);
+        renderResults();
+        setStatus(`Regenerated ${replacements.length} image${replacements.length===1?'':'s'}.`,'ok');
+      }catch(e){
+        if(/worker url/i.test(e.message||'')) $('setupDetails').open=true;
+        setStatus(friendlyFetchError(e),'bad');
+      }finally{ setBusy(false); }
+    }
+    async function regenerateSelected(){
+      const ids=[...state.selected];
+      if(!ids.length){ setStatus('Select at least one generated image to regenerate.','bad'); return; }
+      for(const id of ids){
+        if(!state.generated.some(x=>x.id===id)) continue;
+        await regenerateGenerated(id);
+      }
+    }
+    async function saveSelected(){
+      saveSettings();
+      const imgs=state.generated.filter(x=>state.selected.has(x.id));
+      if(!imgs.length){ setStatus('Select at least one image first.','bad'); return; }
+      setBusy(true); setStatus('Saving approved images to R2...');
+      try{
+        const r=await studioFetch(apiUrl('/api/save'),{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({images:imgs.map(x=>({id:x.id,originalName:x.originalName,filename:x.filename,contentType:x.contentType,b64:x.b64,key:x.key}))})});
+        const d=await r.json();
+        if(!r.ok || !d.ok) throw new Error(d.error||'Save failed');
+        setStatus(`Saved ${d.saved.length} image${d.saved.length===1?'':'s'} to R2.`,'ok');
+        toast('Saved to media library');
+        await loadMedia({quiet:true});
+        setActiveView('saved');
+      }catch(e){ setStatus(friendlyFetchError(e),'bad'); }
+      finally{ setBusy(false); }
+    }
+    async function loadMedia({quiet=false}={}){
+      saveSettings();
+      const showMediaPanel=state.activeView==='saved' || (state.activeView==='admin' && state.adminSection==='media');
+      const setMediaHtml=html=>{
+        if($('media')) $('media').innerHTML=html;
+        if($('adminMedia')) $('adminMedia').innerHTML=html;
+      };
+      if(showMediaPanel){
+        setMediaHtml('<div class="panel empty"><p class="muted">Loading saved media library...</p></div>');
+      }
+      try{
+        const r=await studioFetch(apiUrl('/api/media?limit=100'),{headers:auth()});
+        const d=await r.json().catch(()=>({ok:false,error:'Media response was not JSON.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Media load failed');
+        state.media=(d.objects||[]).filter(o=>o && (o.publicUrl || o.rawUrl || o.key));
+        const mediaHtml=state.media.length ? state.media.map((o,index)=>{
+          const src=savedMediaUrl(o);
+          const name=(o.key||o.filename||`saved-image-${index+1}`).split('/').pop();
+          return `<article class="media-card"><a href="${esc(src)}" target="_blank" rel="noreferrer"><img src="${esc(src)}" alt="${esc(name)}" loading="lazy" onerror="this.closest('.media-card').classList.add('broken')"><span>${esc(name)}</span></a><div class="media-actions"><button class="mini-btn" onclick="useSavedForProduct(${index})">Use</button><button class="mini-btn danger" onclick="deleteSavedMedia(${index})">Delete</button></div></article>`;
+        }).join('') + (d.truncated ? '<div class="panel empty"><p class="muted">More saved images exist. Delete older ones or ask me to add pagination.</p></div>' : '') : '<div class="panel empty"><p class="muted">No saved studio images yet. Save generated images first, then press Refresh Saved.</p></div>';
+        setMediaHtml(mediaHtml);
+        renderAdminMediaPicker();
+        if(!quiet) setStatus(`Loaded ${state.media.length} saved image${state.media.length===1?'':'s'}.`,'ok');
+      }catch(e){
+        const msg=friendlyFetchError(e);
+        state.media=[];
+        setMediaHtml(`<div class="panel empty"><h3>Media library could not load</h3><p class="muted">${esc(msg)}</p><button class="btn y" type="button" onclick="loadMedia({quiet:false})">Try Again</button></div>`);
+        renderAdminMediaPicker();
+        if(!quiet || showMediaPanel) setStatus(msg,'bad');
+      }
+    }
+    function savedMediaUrl(item){
+      if(!item) return '';
+      return item.publicUrl || apiUrl(item.rawUrl || `/api/media/raw?key=${encodeURIComponent(item.key)}`);
+    }
+    function isTemporaryJobOutputKey(key){
+      const value='/'+String(key || '');
+      return value.includes('/jobs/') && value.includes('/outputs/');
+    }
+    function openProductFormWithImages(urls, meta={}){
+      const images=[...new Set((urls||[]).filter(Boolean))];
+      if(!images.length){ setStatus('No product image URL was available. Save the image first and try again.','bad'); return; }
+      addImagesToAdminProductForm(images);
+    }
+    async function saveGeneratedForProduct(result){
+      if((result.publicUrl || result.rawUrl || result.key) && !isTemporaryJobOutputKey(result.key)) return savedMediaUrl(result);
+      const r=await studioFetch(apiUrl('/api/save'),{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({images:[{id:result.id,originalName:result.originalName,filename:result.filename,contentType:result.contentType,b64:result.b64,key:result.key}]})});
+      const d=await r.json().catch(()=>({ok:false,error:'Save failed.'}));
+      if(!r.ok || !d.ok) throw new Error(d.error||'Save failed');
+      const saved=d.saved?.[0];
+      if(!saved) throw new Error('Saved image was not returned.');
+      Object.assign(result,saved,{saved:true});
+      renderResults();
+      await loadMedia({quiet:true});
+      return savedMediaUrl(result);
+    }
+    async function useGeneratedForProduct(id){
+      const result=state.generated.find(x=>x.id===id);
+      if(!result){ setStatus('Generated image was not found.','bad'); return; }
+      setBusy(true); setStatus('Preparing this image for the product form...');
+      try{
+        const url=await saveGeneratedForProduct(result);
+        openProductFormWithImages([url]);
+      }catch(e){
+        setStatus(friendlyFetchError(e),'bad');
+      }finally{ setBusy(false); }
+    }
+    async function useSelectedForProduct(){
+      const selected=state.generated.filter(x=>state.selected.has(x.id));
+      if(!selected.length){ setStatus('Select the generated product images first.','bad'); return; }
+      setBusy(true); setStatus(`Saving ${selected.length} selected image${selected.length===1?'':'s'} for the product form...`);
+      try{
+        const urls=[];
+        for(let i=0;i<selected.length;i+=1){
+          setStatus(`Preparing product image ${i+1} of ${selected.length}...`);
+          urls.push(await saveGeneratedForProduct(selected[i]));
+        }
+        openProductFormWithImages(urls,{
+          variationSet:true,
+          imageNames:selected.map(x=>x.originalName || x.filename).filter(Boolean)
+        });
+      }catch(e){
+        setStatus(friendlyFetchError(e),'bad');
+      }finally{ setBusy(false); }
+    }
+    function useSavedForProduct(index){
+      const item=state.media[index];
+      const url=savedMediaUrl(item);
+      if(!url){ setStatus('Saved image was not found.','bad'); return; }
+      openProductFormWithImages([url]);
+    }
+    async function deleteSavedMedia(index){
+      const item=state.media[index];
+      if(!item?.key){ setStatus('Saved image was not found.','bad'); return; }
+      if(!confirm(`Delete ${item.key.split('/').pop()} from the saved library?`)) return;
+      setBusy(true); setStatus('Deleting saved image from R2...');
+      try{
+        const r=await studioFetch(apiUrl('/api/media?key='+encodeURIComponent(item.key)),{method:'DELETE',headers:auth()});
+        const d=await r.json().catch(()=>({ok:false,error:'Delete failed.'}));
+        if(!r.ok || !d.ok) throw new Error(d.error||'Delete failed');
+        setStatus('Deleted saved image from the media library.','ok');
+        toast('Saved image deleted');
+        await loadMedia({quiet:true});
+      }catch(e){ setStatus(friendlyFetchError(e),'bad'); }
+      finally{ setBusy(false); }
+    }
+    function setBusy(on){ state.busy=on; updateActionButtons(); $('importYupooBtn').disabled=on; }
+    function beginOperation(name){
+      state.cancelRequested=false;
+      state.activeOperation=name;
+      state.activeAbort=new AbortController();
+      setBusy(true);
+      return state.activeAbort.signal;
+    }
+    function endOperation(){
+      state.activeAbort=null;
+      state.activeOperation='';
+      state.cancelRequested=false;
+      setBusy(false);
+    }
+    function isAbortError(error){
+      return error?.name === 'AbortError' || /abort|cancel/i.test(error?.message || '');
+    }
+    window.removeFile=removeFile; window.toggleSel=toggleSel; window.toggleQueue=toggleQueue; window.setQueueSelection=setQueueSelection; window.clearQueue=clearQueue; window.deleteGenerated=deleteGenerated; window.regenerateGenerated=regenerateGenerated; window.deleteSavedMedia=deleteSavedMedia; window.useGeneratedForProduct=useGeneratedForProduct; window.useSavedForProduct=useSavedForProduct; window.loadMedia=loadMedia; window.startNewBatch=startNewBatch; window.toggleProductCategory=toggleProductCategory; window.editStoreProduct=editStoreProduct; window.handleAdminProductAction=handleAdminProductAction; window.generateShopifyBlankProduct=generateShopifyBlankProduct; window.toggleStoreProduct=toggleStoreProduct; window.deleteStoreProduct=deleteStoreProduct; window.createProductFromTrackedJob=createProductFromTrackedJob; window.removeAdminProductImage=removeAdminProductImage; window.addSavedMediaToAdminProduct=addSavedMediaToAdminProduct; window.makeAdminProductMain=makeAdminProductMain;
+    init();
+  </script>
+</body>
+</html>

@@ -48,7 +48,7 @@ const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret, X-ESNTLS-Service-Token',
   'Access-Control-Max-Age': '86400'
 };
 
@@ -1606,11 +1606,14 @@ async function generateBlankImage(env, product) {
       background = null;
     }
   }
-  try {
-    return await requestOpenAIImageEdit(env, product, source, background, env.OPENAI_IMAGE_MODEL || 'gpt-image-2', env.OPENAI_IMAGE_SIZE || '1024x1024');
-  } catch {
-    return requestOpenAIImageEdit(env, product, source, background, 'gpt-image-1', '1024x1024');
-  }
+  return requestOpenAIImageEdit(
+    env,
+    product,
+    source,
+    background,
+    env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
+    env.OPENAI_IMAGE_SIZE || '1024x1024'
+  );
 }
 
 let cachedShopifyAccessToken = null;
@@ -2546,7 +2549,12 @@ export default {
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
-    if (req.headers.get('X-Admin-Secret') !== env.ADMIN_SECRET) {
+    const adminAuthorized = req.headers.get('X-Admin-Secret') === env.ADMIN_SECRET;
+    const serviceAuthorized = Boolean(
+      env.ESNTLS_STORE_SERVICE_TOKEN &&
+      req.headers.get('X-ESNTLS-Service-Token') === env.ESNTLS_STORE_SERVICE_TOKEN
+    );
+    if (!adminAuthorized && !serviceAuthorized) {
       return json({ error: 'Unauthorized' }, 401);
     }
 
