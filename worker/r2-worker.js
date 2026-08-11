@@ -1635,10 +1635,37 @@ function sourceImageFromRequestBody(value) {
   return { blob: base64ToBlob(base64, type), type, filename };
 }
 
+function studioMediaKeyFromUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return '';
+  }
+  if (!url.pathname.startsWith('/media/')) return '';
+  const key = url.pathname.slice('/media/'.length).split('/').map(part => decodeURIComponent(part)).join('/');
+  return key.startsWith('photo-studio-v2/generated/') ? key : '';
+}
+
+async function sourceImageFromStudioMedia(env, value) {
+  if (!env.ESNTLS_STUDIO_MEDIA) return null;
+  const key = studioMediaKeyFromUrl(value);
+  if (!key) return null;
+  const object = await env.ESNTLS_STUDIO_MEDIA.get(key);
+  if (!object) return null;
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  const filename = slugify(key.split('/').pop()) || 'source-image';
+  const type = normalizeOpenAIImageMime(headers.get('content-type'), filename);
+  return { blob: new Blob([await object.arrayBuffer()], { type }), type, filename };
+}
+
 async function generateBlankImage(env, product, sourceOverride = null) {
   if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var not set');
   if (!product.image) throw new Error('Product is missing an image');
-  const source = sourceOverride || await fetchImageBlob(product.image, 'Source image');
+  const source = sourceOverride || await sourceImageFromStudioMedia(env, product.image) || await fetchImageBlob(product.image, 'Source image');
   let background = null;
   const backgroundUrls = splitList(env.SHOPIFY_BLANK_BACKGROUND_URL);
   if (!backgroundUrls.length) backgroundUrls.push(DEFAULT_BACKGROUND_URL, FALLBACK_BACKGROUND_URL);

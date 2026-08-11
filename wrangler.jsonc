@@ -12,6 +12,10 @@
     {
       "binding": "BUCKET",
       "bucket_name": "esntls-images"
+    },
+    {
+      "binding": "ESNTLS_STUDIO_MEDIA",
+      "bucket_name": "esntls-photo-studio-v2-media"
     }
   ]
 }
