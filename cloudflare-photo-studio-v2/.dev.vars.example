@@ -1,0 +1,4 @@
+OPENAI_API_KEY=replace-locally-only
+ESNTLS_STUDIO_ADMIN_PASSWORD=replace-locally-only
+ESNTLS_STUDIO_SESSION_SECRET=replace-with-a-long-random-value
+ESNTLS_STORE_SERVICE_TOKEN=replace-with-the-same-secret-on-esntls-r2
