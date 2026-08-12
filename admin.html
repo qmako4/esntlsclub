@@ -879,8 +879,18 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 <div class="add-bg-body">
 <div class="add-bg-preview" id="addBgPreview"><div class="add-bg-grid" id="addBgGrid"></div></div>
+<label class="field" style="margin:10px 0 8px"><span>Extra image instruction (optional)</span>
+<textarea id="aBgExtraPrompt" rows="2" placeholder="e.g. keep the exact crop, keep the hand, do not zoom out" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">This is added to the default ESNTLS grass prompt.</span>
+</label>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px">
+<label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="aBgQuality" value="medium" checked> Standard</label>
+<label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="aBgQuality" value="high"> High</label>
+</div>
 <div class="add-bg-actions" id="addBgActions">
-<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate Backgrounds</button>
+<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate Now</button>
+<button type="button" class="btn btn-outline" id="addBgBackgroundBtn" onclick="startAddBackgroundJob()">Run in Background</button>
+<button type="button" class="btn btn-danger" id="addBgCancelBtn" onclick="cancelAddBackgroundGeneration()" style="display:none">Stop</button>
 <button type="button" class="btn btn-outline" id="addBgSaveBtn" onclick="approveAddGeneratedImages()">Approve Images</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
 </div>
@@ -890,6 +900,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div><strong id="addApprovedTitle">Images approved</strong><br><span id="addApprovedText">Generated images will be used for this product.</span></div>
 <button type="button" class="btn btn-outline" onclick="clearAddImageApproval()" style="width:auto;min-height:38px;padding:8px 12px;font-size:12px;margin:0">Change</button>
 </div>
+<div id="addJobPanel" class="studio-job-panel"></div>
 <div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
 <button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">Pick from Library</button>
 <div id="addLibPreview"></div>
@@ -1233,6 +1244,10 @@ let mediaSelected=new Set();
 let pickerSelected=new Set();
 let pickerCallback=null;
 let addLibraryUrls=[];
+let addBgController=null;
+let addBgJobPollTimer=null;
+let addBgJobWorkInFlight=false;
+let addBgJob=null;
 
 // R2 S3-COMPATIBLE API (AWS SIG V4 BROWSER SIGNER)
 async function _sha256Hex(data){
@@ -1668,6 +1683,8 @@ preview:document.getElementById('addBgPreview'),
 grid:document.getElementById('addBgGrid'),
 actions:document.getElementById('addBgActions'),
 generateBtn:document.getElementById('addBgGenerateBtn'),
+backgroundBtn:document.getElementById('addBgBackgroundBtn'),
+cancelBtn:document.getElementById('addBgCancelBtn'),
 saveBtn:document.getElementById('addBgSaveBtn'),
 useBtn:document.getElementById('addBgUseBtn')
 }}
@@ -1710,8 +1727,20 @@ const isGenerating=addBgState.status==='generating';
 const needsSetup=addBgState.status==='needsSetup';
 el.generateBtn.disabled=isGenerating;
 el.generateBtn.style.opacity=isGenerating?'.65':'1';
-el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate Backgrounds':(pendingFiles.length>1?'Generate Backgrounds':'Generate Background');
+el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate Now':'Generate Now';
 el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
+}
+if(el.backgroundBtn){
+const canRun=!!(pendingFiles.length&&psCanUseBackgroundJobs());
+el.backgroundBtn.style.display='block';
+el.backgroundBtn.disabled=addBgState.status==='generating'||!canRun;
+el.backgroundBtn.style.opacity=el.backgroundBtn.disabled?'.55':'1';
+el.backgroundBtn.textContent=addBgJob&&!psJobIsDone(addBgJob)?'Check Background Job':'Run in Background';
+}
+if(el.cancelBtn){
+const isGenerating=addBgState.status==='generating';
+el.cancelBtn.style.display=isGenerating?'block':'none';
+el.cancelBtn.disabled=!isGenerating;
 }
 const total=addBgState.total||pendingFiles.length;
 const doneText=generatedCount+'/'+pendingFiles.length;
@@ -1757,6 +1786,10 @@ return;
 generateAddBackground(true);
 }
 
+function addBackgroundQuality(){
+return document.querySelector('input[name="aBgQuality"]:checked')?.value||'medium';
+}
+
 function filesMatch(a,b){
 return a.length===b.length&&a.every((file,i)=>file===b[i]);
 }
@@ -1797,10 +1830,12 @@ function addBackgroundPrompt(productName){
 const s=psGetSettings();
 const preset=s.stylePreset||'sneaker';
 const base=PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
+const extra=document.getElementById('aBgExtraPrompt')?.value.trim()||'';
 return [
 esntlsGrassReplacementPrompt(productName),
 psReferenceUrlsForGeneration().length?psReferenceInstruction():'',
-base
+base,
+extra
 ].filter(Boolean).join(' ');
 }
 
@@ -1935,9 +1970,9 @@ const fileName='esntls_bg_'+Date.now()+'_'+index+'.jpg';
 return {sourceFile:source,generatedFile:new File([normalized.blob],fileName,{type:'image/jpeg'}),dataUrl:normalized.dataUrl,model:result.model,size:result.size,fallbackReason:result.fallbackReason||''};
 }
 
-async function generateSingleAddBackground(source,index,bgBlob,s,referenceContext={}){
+async function generateSingleAddBackground(source,index,bgBlob,s,referenceContext={},signal){
 const prompt=addBackgroundPrompt(psProductNameFromFile(source));
-return generateGrassPreviewFile(source,index,bgBlob,s,prompt,'medium',undefined,referenceContext);
+return generateGrassPreviewFile(source,index,bgBlob,s,prompt,addBackgroundQuality(),signal,referenceContext);
 }
 
 async function generateAddBackground(force=false){
@@ -1961,6 +1996,10 @@ return;
 }
 if(!force&&addGeneratedFilesReady())return;
 const token=++addBgState.token;
+if(addBgController){
+try{addBgController.abort()}catch(e){}
+}
+addBgController=new AbortController();
 const sources=[...pendingFiles];
 addBgState.status='generating';
 addBgState.sourceFiles=sources;
@@ -1974,15 +2013,19 @@ addBgState.errorCount=0;
 addBgState.lastError='';
 renderAddBackgroundPreview();
 try{
-const bgBlob=await psFetchAsBlob(s.brandBg);
-const referenceContext=await psBuildReferenceContext(s);
+const bgBlob=await psFetchAsBlob(s.brandBg,addBgController.signal);
+const referenceContext=await psBuildReferenceContext(s,addBgController.signal);
 for(let i=0;i<sources.length;i++){
 if(token!==addBgState.token)return;
 try{
-const item=await generateSingleAddBackground(sources[i],i,bgBlob,s,referenceContext);
+const item=await generateSingleAddBackground(sources[i],i,bgBlob,s,referenceContext,addBgController.signal);
 if(token!==addBgState.token)return;
 addBgState.generatedItems.push(item);
 }catch(e){
+if(e&&e.name==='AbortError'){
+addBgState.lastError='Generation stopped';
+break;
+}
 console.error('Add background generation failed:',sources[i]?.name,e);
 addBgState.errorCount++;
 addBgState.lastError=(e&&e.message)||'image generation failed';
@@ -1996,11 +2039,25 @@ renderAddBackgroundPreview();
 }catch(e){
 if(token!==addBgState.token)return;
 console.error('Add background setup failed:',e);
-addBgState.status='error';
+addBgState.status=e&&e.name==='AbortError'?'idle':'error';
 addBgState.errorCount=sources.length;
-addBgState.lastError=(e&&e.message)||'background setup failed';
+addBgState.lastError=e&&e.name==='AbortError'?'Generation stopped':((e&&e.message)||'background setup failed');
 renderAddBackgroundPreview();
+}finally{
+if(token===addBgState.token)addBgController=null;
 }}
+
+function cancelAddBackgroundGeneration(){
+if(addBgController){
+try{addBgController.abort()}catch(e){}
+}
+addBgState.token++;
+addBgState.status=addBgState.generatedItems.length?'done':'idle';
+addBgState.lastError='Generation stopped';
+renderAddBackgroundPreview();
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='#ff8f00';msg.textContent='Image generation stopped.'}
+}
 
 function prepareAddBackgroundPreview(){
 if(!pendingFiles.length){
@@ -2048,6 +2105,177 @@ addBgState.approvedAt='';
 renderAddBackgroundPreview();
 }
 
+function renderAddBackgroundJob(){
+const panel=document.getElementById('addJobPanel');
+if(!panel)return;
+const job=addBgJob;
+if(!job){
+panel.style.display='none';
+panel.innerHTML='';
+return;
+}
+const total=Number(job.total||0);
+const completed=Number(job.completed||0);
+const failed=Number(job.failed||0);
+const cancelled=Number(job.cancelled||0);
+const done=completed+failed+cancelled;
+const progress=psJobProgress(job);
+const terminal=psJobIsDone(job);
+const failedButton=failed?`<button type="button" onclick="retryAddBackgroundJob()">Retry failed</button>`:'';
+const cancelButton=!terminal?`<button type="button" class="danger" onclick="cancelAddBackgroundJob()">Cancel</button>`:'';
+const resumeButton=!terminal?`<button type="button" onclick="resumeAddBackgroundJob()">Resume</button>`:'';
+const loadButton=completed?`<button type="button" class="primary" onclick="applyAddBackgroundJobResults(addBgJob,true)">Load results</button>`:'';
+panel.style.display='block';
+panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Background job</div><div class="studio-job-meta">${done}/${total} finished${failed?` - ${failed} failed`:''}${cancelled?` - ${cancelled} cancelled`:''}</div></div><div class="studio-job-badge">${psJobStatusLabel(job)}</div></div><div class="studio-job-bar"><span style="width:${progress}%"></span></div><div class="studio-job-actions"><button type="button" onclick="loadAddBackgroundJob()">Refresh</button>${loadButton}${resumeButton}${failedButton}${cancelButton}<button type="button" onclick="clearAddBackgroundJob()">Hide</button></div>`;
+renderAddBackgroundPreview();
+}
+
+function applyAddBackgroundJobResults(job,notify){
+const token=Date.now();
+const items=(job&&job.items||[]).map((item,index)=>{
+if(item&&item.result&&item.result.url){
+const url=item.result.url;
+return {
+sourceFile:addBgState.sourceFiles[index]||pendingFiles[index]||{name:item.originalName||'background-job.jpg'},
+generatedFile:null,
+dataUrl:url,
+displayUrl:psCacheBustedImageUrl(url,token),
+resultKey:item.result.key,
+model:item.result.model,
+size:item.result.imageSize,
+fallbackReason:''
+}
+}
+if(item&&item.status==='failed')return{sourceFile:{name:item.originalName||'image'},error:item.error||'Generation failed'};
+if(item&&item.status==='cancelled')return{sourceFile:{name:item.originalName||'image'},error:'Cancelled'};
+return null
+}).filter(Boolean);
+const ready=items.filter(item=>item&&item.dataUrl);
+if(ready.length){
+addBgState.status='done';
+addBgState.sourceFiles=[...pendingFiles];
+addBgState.generatedItems=ready;
+addBgState.useGenerated=true;
+addBgState.approved=false;
+addBgState.approvedAt='';
+addBgState.total=job.total||pendingFiles.length;
+addBgState.done=ready.length;
+addBgState.errorCount=Number(job.failed||0)+Number(job.cancelled||0);
+addBgState.lastError='';
+renderAddBackgroundPreview();
+if(notify&&typeof toast==='function')toast('Loaded background job results','success');
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='var(--g)';msg.textContent='Background job results loaded. Approve images when ready.'}
+}
+}
+
+function startAddJobPolling(){
+if(addBgJobPollTimer)clearInterval(addBgJobPollTimer);
+if(!addBgJob||!addBgJob.id)return;
+addBgJobPollTimer=setInterval(()=>{
+if(!addBgJob||!addBgJob.id){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null;return}
+if(addBgJobWorkInFlight)return;
+addBgJobWorkInFlight=true;
+loadAddBackgroundJob({quiet:true,work:true}).then(job=>{
+if(job&&psJobIsDone(job)){
+clearInterval(addBgJobPollTimer);
+addBgJobPollTimer=null;
+}
+}).catch(()=>{}).finally(()=>{addBgJobWorkInFlight=false});
+},4500);
+}
+
+async function startAddBackgroundJob(){
+const msg=document.getElementById('addMsg');
+if(!pendingFiles.length){if(msg){msg.style.color='#e53935';msg.textContent='Upload product photos first.'}return}
+if(!psCanUseBackgroundJobs()){if(msg){msg.style.color='#e53935';msg.textContent='Background jobs need the ESNTLS Worker.'}return}
+if(addBgJob&&!psJobIsDone(addBgJob)){await loadAddBackgroundJob();return}
+const s=psGetSettings();
+const sources=[...pendingFiles];
+addBgState.sourceFiles=sources;
+addBgState.generatedItems=[];
+addBgState.approved=false;
+addBgState.approvedAt='';
+addBgState.status='generating';
+addBgState.total=sources.length;
+addBgState.done=0;
+addBgState.errorCount=0;
+addBgState.lastError='';
+renderAddBackgroundPreview();
+const form=new FormData();
+try{
+for(let i=0;i<sources.length;i++){
+const file=await normalizedOpenAIImageFile(sources[i],sources[i].name||('product-'+(i+1)+'.jpg'));
+form.append('image[]',file,file.name||sources[i].name||('product-'+(i+1)+'.jpg'));
+form.append('prompt[]',addBackgroundPrompt(psProductNameFromFile(sources[i])));
+}
+form.append('quality',addBackgroundQuality());
+form.append('backgroundUrl',s.brandBg||psDefaultBrandBg());
+psReferenceUrlsForGeneration().forEach(url=>form.append('referenceUrl[]',url));
+if(msg){msg.style.color='var(--sub)';msg.textContent='Starting background job. You can leave this page after it starts.'}
+const data=await psWorkerJson('/grass-jobs',{method:'POST',body:form});
+addBgJob=data.job;
+addBgState.status='idle';
+renderAddBackgroundJob();
+startAddJobPolling();
+if(msg){msg.style.color='var(--g)';msg.textContent='Background job started. Results will appear here when loaded.'}
+if(typeof toast==='function')toast('Background job started','success');
+}catch(e){
+addBgState.status='error';
+addBgState.lastError=e.message;
+renderAddBackgroundPreview();
+if(msg){msg.style.color='#e53935';msg.textContent='Background job failed: '+e.message}
+}}
+
+async function loadAddBackgroundJob(options={}){
+if(!addBgJob||!addBgJob.id)return null;
+const data=options.work&&!psJobIsDone(addBgJob)
+?await psWorkerJson('/grass-jobs/work',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addBgJob.id})})
+:await psWorkerJson('/grass-jobs?id='+encodeURIComponent(addBgJob.id),{method:'GET'});
+addBgJob=data.job;
+renderAddBackgroundJob();
+if(psJobIsDone(addBgJob)){
+applyAddBackgroundJobResults(addBgJob,false);
+if(addBgJobPollTimer){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null}
+}
+if(!options.quiet){
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='var(--sub)';msg.textContent='Checked background job.'}
+}
+return addBgJob;
+}
+
+async function resumeAddBackgroundJob(){
+if(!addBgJob||!addBgJob.id)return;
+const data=await psWorkerJson('/grass-jobs/resume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addBgJob.id})});
+addBgJob=data.job;
+renderAddBackgroundJob();
+startAddJobPolling();
+}
+
+async function retryAddBackgroundJob(){
+if(!addBgJob||!addBgJob.id)return;
+const data=await psWorkerJson('/grass-jobs/retry-failed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addBgJob.id})});
+addBgJob=data.job;
+renderAddBackgroundJob();
+startAddJobPolling();
+}
+
+async function cancelAddBackgroundJob(){
+if(!addBgJob||!addBgJob.id||!confirm('Cancel this background generation job?'))return;
+const data=await psWorkerJson('/grass-jobs/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:addBgJob.id})});
+addBgJob=data.job;
+if(addBgJobPollTimer){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null}
+renderAddBackgroundJob();
+}
+
+function clearAddBackgroundJob(){
+if(addBgJob&&!psJobIsDone(addBgJob)&&!confirm('A background job is still running. Hide it from this page anyway?'))return;
+addBgJob=null;
+if(addBgJobPollTimer){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null}
+renderAddBackgroundJob();
+}
+
 async function saveAddGeneratedToMedia(){
 if(!addBgState.generatedItems.length)return;
 const el=addBgEls();
@@ -2090,6 +2318,35 @@ if(addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approve
 return addBgState.generatedItems.map(item=>item.generatedFile);
 }
 return [...pendingFiles];
+}
+
+async function uploadAddProductImages(){
+if(addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&filesMatch(addBgState.sourceFiles,pendingFiles)){
+const urls=[];
+const prog=document.getElementById('uploadProgress');
+const bar=document.getElementById('uploadBar');
+if(prog)prog.style.display='block';
+for(let i=0;i<addBgState.generatedItems.length;i++){
+if(bar)bar.style.width=Math.round((i/addBgState.generatedItems.length)*100)+'%';
+const item=addBgState.generatedItems[i];
+try{
+const fname=Date.now()+'_approved_'+i+'.jpg';
+if(item.resultKey){
+urls.push(await r2CopyViaWorker(item.resultKey,fname));
+}else if(item.generatedFile){
+urls.push(await r2Upload(await compressImage(item.generatedFile),fname));
+}else if(item.dataUrl){
+const res=await fetch(item.dataUrl);
+const blob=await res.blob();
+urls.push(await r2Upload(new File([blob],fname,{type:blob.type||'image/jpeg'}),fname));
+}
+}catch(e){console.error('Approved image upload failed:',e)}
+}
+if(bar)bar.style.width='100%';
+setTimeout(()=>{if(prog)prog.style.display='none';if(bar)bar.style.width='0%'},2000);
+return urls;
+}
+return uploadImages([...pendingFiles]);
 }
 
 function addApprovedGeneratedCount(){
@@ -2166,7 +2423,7 @@ let imageUrls=[];
 const generatedUploadCount=addApprovedGeneratedCount();
 if(publishBtn){publishBtn.disabled=true;publishBtn.style.opacity='.65';publishBtn.textContent='Publishing...'}
 if(pendingFiles.length){
-const newUrls=await uploadImages(addUploadFiles());
+const newUrls=await uploadAddProductImages();
 imageUrls=[...imageUrls,...newUrls];
 }
 imageUrls=[...imageUrls,...addLibraryUrls];
@@ -2224,6 +2481,9 @@ document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Upload product photos';
 pendingFiles=[];
 resetAddBackgroundPreview();
+addBgJob=null;
+if(addBgJobPollTimer){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null}
+renderAddBackgroundJob();
 addLibraryUrls=[];
 renderAddLibPreview();
 selectedCats=[];
