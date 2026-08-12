@@ -251,6 +251,26 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .bundle-field select{appearance:none;background:#f6f6f6;border:1px solid #e2e2e2;border-radius:999px;color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;min-height:42px;padding:0 34px 0 14px;width:100%}
 .bundle-field-wrap{position:relative}.bundle-field-wrap:after{content:'\25BE';font-size:11px;pointer-events:none;position:absolute;right:14px;top:13px}
 @media(max-width:700px){.bundle-grid{grid-template-columns:1fr}.bundle-pick{grid-template-columns:92px 1fr}.bundle-pick img{width:92px}}
+
+/* Daily deals */
+.daily-deals{background:#111;color:#fff;padding:28px 8px 34px}
+.daily-deals-inner{max-width:1600px;margin:0 auto}
+.daily-deals-head{align-items:flex-end;display:flex;gap:16px;justify-content:space-between;margin-bottom:16px;padding:0 12px}
+.daily-deals-kicker{color:#00C853;font-size:11px;font-weight:900;letter-spacing:3px;margin-bottom:6px;text-transform:uppercase}
+.daily-deals-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,7vw,50px);font-weight:400;letter-spacing:2px;line-height:.95;margin:0}
+.daily-deals-note{color:rgba(255,255,255,.58);font-size:12px;font-weight:700;line-height:1.5;max-width:330px;text-align:right}
+.daily-deals-grid{display:grid;gap:10px;grid-template-columns:repeat(4,1fr)}
+.daily-deal-card{background:#fff;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#111;display:flex;flex-direction:column;min-height:184px;overflow:hidden;padding:16px;position:relative}
+.daily-deal-card.lead{background:#00C853;color:#fff}
+.daily-deal-card.lead .daily-deal-tag,.daily-deal-card.lead .daily-deal-copy{color:rgba(255,255,255,.82)}
+.daily-deal-tag{color:#00A944;font-size:10px;font-weight:900;letter-spacing:1.6px;margin-bottom:10px;text-transform:uppercase}
+.daily-deal-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,4vw,34px);font-weight:400;letter-spacing:1px;line-height:.95;margin:0 0 8px}
+.daily-deal-price{font-size:22px;font-weight:900;line-height:1;margin:0 0 10px}
+.daily-deal-copy{color:#666;font-size:12px;font-weight:700;line-height:1.45;margin:0 0 16px}
+.daily-deal-action{align-items:center;background:#111;border-radius:999px;color:#fff;display:inline-flex;font-size:12px;font-weight:900;justify-content:center;margin-top:auto;min-height:42px;padding:0 16px;text-decoration:none;width:max-content}
+.daily-deal-card.lead .daily-deal-action{background:#fff;color:#111}
+@media(max-width:920px){.daily-deals-grid{grid-template-columns:repeat(2,1fr)}.daily-deals-head{align-items:flex-start;flex-direction:column}.daily-deals-note{text-align:left}}
+@media(max-width:560px){.daily-deals{padding-top:22px}.daily-deals-grid{display:flex;gap:10px;overflow-x:auto;padding:0 12px 4px;scroll-snap-type:x mandatory;scrollbar-width:none}.daily-deals-grid::-webkit-scrollbar{display:none}.daily-deal-card{flex:0 0 78vw;min-height:178px;scroll-snap-align:start}.daily-deals-head{padding:0 12px}.daily-deal-action{width:100%}}
 </style>
 </head>
 <body>
@@ -288,6 +308,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div class="desktop-menu-panel">
 <a href="#" onclick="showCat('New Items')" class="desktop-menu-item">New Items</a>
 <a href="#" onclick="showCat('Best Sellers')" class="desktop-menu-item">🔥 Best Sellers</a>
+<a href="#" onclick="showDailyDeals()" class="desktop-menu-item">Daily Deals</a>
 <a href="#" onclick="showB30Bundle()" class="desktop-menu-item">B30 Bundle - Save £19.99</a>
 <a href="#" onclick="showB22Bundle()" class="desktop-menu-item">B22 Bundle - Save £29.99</a>
 <a href="#" onclick="showCat('Essentials')" class="desktop-menu-item">⭐ Essentials</a>
@@ -352,6 +373,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
         <div class="mob-section-head">⭐ Featured</div>
         <a href="#" class="mob-item" data-keywords="new items latest recent arrivals newest drops uploaded" onclick="showCat('New Items');toggleMenu()">New Items</a>
         <a href="#" class="mob-item" data-keywords="best sellers popular hot top trending bestsellers" onclick="showCat('Best Sellers');toggleMenu()">🔥 Best Sellers</a>
+        <a href="#" class="mob-item" data-keywords="daily deals offers air pro addon rotating" onclick="showDailyDeals();toggleMenu()">Daily Deals</a>
         <a href="#" class="mob-item" data-keywords="bundle deal offer b30 two pair save" onclick="showB30Bundle();toggleMenu()">B30 Bundle - Save £19.99</a>
         <a href="#" class="mob-item" data-keywords="bundle deal offer b22 two pair save" onclick="showB22Bundle();toggleMenu()">B22 Bundle - Save £29.99</a>
         <a href="#" class="mob-item" data-keywords="essentials featured curated" onclick="showCat('Essentials');toggleMenu()">⭐ Essentials</a>
@@ -667,6 +689,55 @@ return `<section style="padding:16px 0 28px;max-width:100vw">
 /*╔═══════════════════════════╗
   ║  CUSTOMER REVIEWS         ║
   ╚═══════════════════════════╝*/
+const DAILY_DEALS=[
+  {tag:'Add-on deal',name:'Add Air Pro',price:'£24.99',copy:'Add Air Pro with any item. Discount applies at checkout.',action:'Shop Air Pro',productId:'54',lead:true},
+  {tag:'Trainer bundle',name:'Any 2 B30s',price:'£179.99',copy:'Mix any two B30 colourways and save automatically.',action:'Build Bundle',handler:'showB30Bundle'},
+  {tag:'Runner bundle',name:'Any 2 B22s',price:'£229.99',copy:'Pick any two B22s while sizes are available.',action:'Build Bundle',handler:'showB22Bundle'},
+  {tag:'Quick fit',name:'Shirt + Shorts',price:'From £59.98',copy:'A low-friction summer fit from the essentials range.',action:'Shop Summer',cat:'Summer'},
+  {tag:'Accessories',name:'Bag + Air Pro',price:'From £114.98',copy:'Add Air Pro to any accessory order for the add-on price.',action:'Shop Accessories',cat:'Accessories'}
+];
+
+function dealHref(deal){
+  if(deal.productId){
+    const product=allProducts().find(p=>String(productSourceId(p))===String(deal.productId));
+    if(product)return productPageHref(product);
+  }
+  return '#';
+}
+
+function dealAction(deal){
+  if(deal.handler)return `${deal.handler}();return false`;
+  if(deal.cat)return `showCat('${deal.cat}');return false`;
+  return '';
+}
+
+function dailyDealsHTML(){
+  const rotating=DAILY_DEALS.filter(deal=>!deal.lead);
+  const today=Math.floor(Date.now()/86400000);
+  const picked=rotating.map((_,index)=>rotating[(today+index)%rotating.length]).slice(0,3);
+  const deals=[DAILY_DEALS.find(deal=>deal.lead),...picked].filter(Boolean);
+  return `<section id="daily-deals" class="daily-deals">
+    <div class="daily-deals-inner">
+      <div class="daily-deals-head reveal">
+        <div>
+          <div class="daily-deals-kicker">Daily Deals</div>
+          <h2 class="daily-deals-title">Today&apos;s Offers</h2>
+        </div>
+        <div class="daily-deals-note">Rotates daily. Add Air Pro with any item for £24.99.</div>
+      </div>
+      <div class="daily-deals-grid">
+        ${deals.map(deal=>`<article class="daily-deal-card${deal.lead?' lead':''}">
+          <div class="daily-deal-tag">${escapeHTML(deal.tag)}</div>
+          <h3 class="daily-deal-name">${escapeHTML(deal.name)}</h3>
+          <div class="daily-deal-price">${escapeHTML(deal.price)}</div>
+          <p class="daily-deal-copy">${escapeHTML(deal.copy)}</p>
+          <a class="daily-deal-action" href="${dealHref(deal)}" ${dealAction(deal)?`onclick="${dealAction(deal)}"`:''}>${escapeHTML(deal.action)}</a>
+        </article>`).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
 function b30BundleSizes(product){
   const source=product&&(product.shopifyVariants||product.variantIds||product.variantsMap)||{};
   const sizes=Object.keys(source).map(key=>key.split('|')[0].trim()).filter(Boolean);
@@ -905,6 +976,8 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 <!-- Auto-scrolling Categories (directly under How To Order) -->
 ${catScrollHTML()}
 
+${dailyDealsHTML()}
+
 <!-- Best Sellers -->
 <section style="padding:8px 8px 36px;max-width:1600px;margin:0 auto">
 <div class="reveal" style="margin-bottom:14px;padding:0 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -1124,6 +1197,12 @@ wrap.addEventListener('click',e=>{
 },true);
 }
 function goHome(){currentView='home';render();return false}
+function showDailyDeals(){
+  currentView='home';
+  render();
+  setTimeout(()=>document.getElementById('daily-deals')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  return false;
+}
 function showB30Bundle(){
   currentView='home';
   render();
