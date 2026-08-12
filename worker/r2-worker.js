@@ -2530,6 +2530,142 @@ async function syncLinkedPriceFromR2(env, requestBody) {
   return result;
 }
 
+async function readProductsPayload(env) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const list = Array.isArray(payload) ? payload : payload.products;
+  if (!Array.isArray(list)) throw new Error('products.json is not an array');
+  return { payload, list };
+}
+
+async function writeProductsPayload(env, payload) {
+  await env.BUCKET.put('products.json', JSON.stringify(payload, null, 2) + '\n', {
+    httpMetadata: { contentType: 'application/json' }
+  });
+}
+
+async function syncProductLinkedPrice(env, rawProduct, price, updatedAt = new Date().toISOString()) {
+  const product = normalizeStoredProduct({ ...rawProduct, price });
+  const result = {
+    ok: true,
+    productId: product.id,
+    price,
+    shopify: { status: 'skipped', reason: 'Not attempted' },
+    wix: { status: 'skipped', reason: 'Not attempted', products: [] },
+    updatedAt
+  };
+
+  try {
+    result.shopify = await updateShopifyLinkedPrice(env, rawProduct, product, price);
+  } catch (error) {
+    result.shopify = { status: 'error', error: error.message };
+  }
+
+  try {
+    result.wix = await updateWixLinkedPrices(env, rawProduct, price);
+  } catch (error) {
+    result.wix = { status: 'error', error: error.message, products: [] };
+  }
+
+  rawProduct.price = price;
+  rawProduct.linkedPriceSync = result;
+  return result;
+}
+
+function saleEndDate(requestBody, startsAt) {
+  const explicit = Date.parse(requestBody.endsAt || requestBody.endAt || '');
+  if (Number.isFinite(explicit) && explicit > startsAt.getTime()) return new Date(explicit);
+  const hours = Number(requestBody.durationHours || requestBody.hours || 24);
+  const safeHours = Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24 * 14) : 24;
+  return new Date(startsAt.getTime() + safeHours * 60 * 60 * 1000);
+}
+
+async function startTimedSaleFromR2(env, requestBody) {
+  const productId = requestBody.productId;
+  if (productId === undefined || productId === null || productId === '') throw new Error('Missing productId');
+  const salePrice = priceAmount(requestBody.salePrice ?? requestBody.price);
+  const regularPrice = priceAmount(requestBody.regularPrice ?? requestBody.afterPrice ?? requestBody.originalPrice);
+  if (!salePrice) throw new Error('Missing or invalid salePrice');
+  if (!regularPrice) throw new Error('Missing or invalid regularPrice');
+
+  const { payload, list } = await readProductsPayload(env);
+  const rawProduct = list.find(item => String(item.id) === String(productId));
+  if (!rawProduct) throw new Error(`Product ${productId} was not found`);
+
+  const now = new Date();
+  const endsAt = saleEndDate(requestBody, now);
+  const result = await syncProductLinkedPrice(env, rawProduct, salePrice, now.toISOString());
+
+  rawProduct.originalPrice = regularPrice;
+  rawProduct.timedSale = {
+    active: true,
+    label: String(requestBody.label || '24 hour deal').trim() || '24 hour deal',
+    salePrice,
+    regularPrice,
+    startsAt: now.toISOString(),
+    endsAt: endsAt.toISOString(),
+    createdAt: now.toISOString(),
+    lastSync: result
+  };
+
+  await writeProductsPayload(env, payload);
+  return {
+    ok: true,
+    productId: rawProduct.id,
+    name: rawProduct.name || rawProduct.title || '',
+    salePrice,
+    regularPrice,
+    startsAt: rawProduct.timedSale.startsAt,
+    endsAt: rawProduct.timedSale.endsAt,
+    sync: result
+  };
+}
+
+async function processExpiredTimedSales(env) {
+  const { payload, list } = await readProductsPayload(env);
+  const now = Date.now();
+  const updatedAt = new Date(now).toISOString();
+  const expired = [];
+  const skipped = [];
+
+  for (const rawProduct of list) {
+    const sale = rawProduct && rawProduct.timedSale;
+    if (!sale || sale.active === false) continue;
+    const endMs = Date.parse(sale.endsAt || sale.endAt || '');
+    if (!Number.isFinite(endMs)) {
+      skipped.push({ id: rawProduct.id, reason: 'Timed sale has no valid endsAt' });
+      continue;
+    }
+    if (endMs > now) continue;
+
+    const regularPrice = priceAmount(sale.regularPrice || rawProduct.originalPrice);
+    if (!regularPrice) {
+      skipped.push({ id: rawProduct.id, reason: 'Timed sale has no valid regularPrice' });
+      continue;
+    }
+
+    const result = await syncProductLinkedPrice(env, rawProduct, regularPrice, updatedAt);
+    rawProduct.originalPrice = '';
+    rawProduct.timedSale = {
+      ...sale,
+      active: false,
+      expiredAt: updatedAt,
+      lastSync: result
+    };
+    expired.push({
+      id: rawProduct.id,
+      name: rawProduct.name || rawProduct.title || '',
+      price: regularPrice,
+      sync: result
+    });
+  }
+
+  if (expired.length) await writeProductsPayload(env, payload);
+  return { ok: true, checked: list.length, expired: expired.length, products: expired, skipped, updatedAt };
+}
+
 async function ensureWixBackupForProduct(env, rawProduct, product, visibleTitle) {
   let wixBackup = rawProduct.wixBackupPlaceholder || null;
   if (hasUsableWixBackup(wixBackup)) return wixBackup;
@@ -2712,6 +2848,10 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 }
 
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(processExpiredTimedSales(env));
+  },
+
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
@@ -2782,6 +2922,24 @@ export default {
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await syncLinkedPriceFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'timed-sale') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await startTimedSaleFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'process-expired-sales') {
+      try {
+        return json(await processExpiredTimedSales(env));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
