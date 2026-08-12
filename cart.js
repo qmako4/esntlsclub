@@ -9,6 +9,9 @@
   const B22_BUNDLE_CODE = 'B22PAIR';
   const B22_BUNDLE_DISCOUNT = 29.99;
   const B22_PRODUCT_IDS = new Set(['1','2','3','4','5','6']);
+  const AIR_PRO_ADDON_CODE = 'AIRPROADDON';
+  const AIR_PRO_ADDON_DISCOUNT = 10.00;
+  const AIR_PRO_PRODUCT_IDS = new Set(['54']);
   let cataloguePromise = null;
   let repairPromise = null;
 
@@ -147,8 +150,8 @@
     const valid = items.filter(item => item.variantId);
     if(!valid.length) return '';
     const lines = valid.map(item => cleanId(item.variantId) + ':' + Math.max(1, Number(item.qty || 1) || 1)).join(',');
-    const offer = activeBundleOffer(valid);
-    const discount = offer ? '?discount=' + encodeURIComponent(offer.code) : '';
+    const codes = activeDiscountCodes(valid);
+    const discount = codes.length ? '?discount=' + codes.map(encodeURIComponent).join(',') : '';
     return 'https://' + SHOPIFY_HOST + '/cart/' + lines + discount;
   }
 
@@ -395,6 +398,18 @@
     }, 0);
   }
 
+  function isAirPro(item){
+    return AIR_PRO_PRODUCT_IDS.has(String(item.productId)) || /\bair\s*pro\b/i.test(String(item.name || ''));
+  }
+
+  function airProQuantity(items){
+    return items.reduce((sum,item) => sum + (isAirPro(item) ? Math.max(1, Number(item.qty) || 1) : 0), 0);
+  }
+
+  function hasNonAirProItem(items){
+    return items.some(item => !isAirPro(item) && Math.max(1, Number(item.qty) || 1) > 0);
+  }
+
   function activeBundleOffer(items){
     if(b22Quantity(items) >= 2){
       return {code:B22_BUNDLE_CODE, discount:B22_BUNDLE_DISCOUNT, label:'B22 pair saving', note:'Any 2 B22s for £229.99 applied at Shopify checkout'};
@@ -405,11 +420,30 @@
     return null;
   }
 
+  function activeAirProOffer(items){
+    const qty = airProQuantity(items);
+    if(qty < 1 || !hasNonAirProItem(items)) return null;
+    return {
+      code:AIR_PRO_ADDON_CODE,
+      discount:AIR_PRO_ADDON_DISCOUNT,
+      label:'Air Pro add-on saving',
+      note:'Air Pro for £24.99 with any item applied at Shopify checkout'
+    };
+  }
+
+  function activeOffers(items){
+    return [activeBundleOffer(items), activeAirProOffer(items)].filter(Boolean);
+  }
+
+  function activeDiscountCodes(items){
+    return activeOffers(items).map(offer => offer.code);
+  }
+
   function cartPricing(items){
     const subtotal = items.reduce((sum,item) => sum + moneyToNumber(item.price) * (Number(item.qty) || 1), 0);
-    const offer = activeBundleOffer(items);
-    const discount = offer ? offer.discount : 0;
-    return {subtotal, discount, offer, total:Math.max(0, subtotal-discount)};
+    const offers = activeOffers(items);
+    const discount = offers.reduce((sum,offer) => sum + offer.discount, 0);
+    return {subtotal, discount, offers, total:Math.max(0, subtotal-discount)};
   }
 
   function renderCart(){
@@ -445,9 +479,9 @@
         '</div>';
     }).join('');
     const pricing = cartPricing(items);
-    footer.innerHTML = (pricing.offer ? '<div class="esntls-cart-saving"><span>' + escapeHTML(pricing.offer.label) + '</span><strong>-£' + pricing.discount.toFixed(2) + '</strong></div>' : '') +
+    footer.innerHTML = pricing.offers.map(offer => '<div class="esntls-cart-saving"><span>' + escapeHTML(offer.label) + '</span><strong>-£' + offer.discount.toFixed(2) + '</strong></div>').join('') +
       '<div class="esntls-cart-total"><span>Total</span><strong>£' + pricing.total.toFixed(2) + '</strong></div>' +
-      (pricing.offer ? '<div class="esntls-cart-promo-note">' + escapeHTML(pricing.offer.note) + '</div>' : '') +
+      (pricing.offers.length ? '<div class="esntls-cart-promo-note">' + escapeHTML(pricing.offers.map(offer => offer.note).join(' · ')) + '</div>' : '') +
       '<button class="esntls-cart-checkout" type="button" onclick="EsntlsCart.checkout()">Checkout</button>' +
       '<button class="esntls-cart-continue" type="button" onclick="EsntlsCart.closeCart()">Keep shopping</button>';
   }

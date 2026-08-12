@@ -197,6 +197,42 @@ mutation UpdateB30BundleDiscount($id: ID!, $input: DiscountCodeBasicInput!) {
   }
 }`;
 
+const BXGY_DISCOUNT_CREATE_MUTATION = `
+mutation CreateBxgyDiscount($input: DiscountCodeBxgyInput!) {
+  discountCodeBxgyCreate(bxgyCodeDiscount: $input) {
+    codeDiscountNode {
+      id
+      codeDiscount {
+        ... on DiscountCodeBxgy {
+          title
+          status
+          summary
+          codes(first: 1) { nodes { code } }
+        }
+      }
+    }
+    userErrors { field code message }
+  }
+}`;
+
+const BXGY_DISCOUNT_UPDATE_MUTATION = `
+mutation UpdateBxgyDiscount($id: ID!, $input: DiscountCodeBxgyInput!) {
+  discountCodeBxgyUpdate(id: $id, bxgyCodeDiscount: $input) {
+    codeDiscountNode {
+      id
+      codeDiscount {
+        ... on DiscountCodeBxgy {
+          title
+          status
+          summary
+          codes(first: 1) { nodes { code } }
+        }
+      }
+    }
+    userErrors { field code message }
+  }
+}`;
+
 const COLOR_PATTERNS = [
   [/black\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*black/i, 'Black & White'],
   [/black\s*(?:and|&|\+|\/)\s*grey|grey\s*(?:and|&|\+|\/)\s*black|black\s*(?:and|&|\+|\/)\s*gray|gray\s*(?:and|&|\+|\/)\s*black/i, 'Black & Grey'],
@@ -1808,6 +1844,62 @@ async function launchB22BundleDiscount(env) {
   });
 }
 
+async function launchAirProAddonDiscount(env) {
+  const code = 'AIRPROADDON';
+  const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
+  const existing = existingData.codeDiscountNodeByCode;
+
+  const object = await env.BUCKET.get('products.json');
+  if (!object) throw new Error('products.json was not found in R2');
+  const payload = JSON.parse(await object.text());
+  const products = Array.isArray(payload) ? payload : (Array.isArray(payload.products) ? payload.products : []);
+  const airProProduct = products.find(product => (
+    String(product.id) === '54' ||
+    /\bair\s*pro\b/i.test(String(product.name || product.title || ''))
+  ));
+  const shopifyProductId = airProProduct?.shopifyPlaceholder?.shopifyProductId || airProProduct?.shopifyProductId;
+  if (!shopifyProductId) throw new Error('Linked Air Pro Shopify product was not found');
+  const otherProductIds = [...new Set(products
+    .filter(product => product !== airProProduct)
+    .map(product => product.shopifyPlaceholder?.shopifyProductId || product.shopifyProductId)
+    .filter(Boolean)
+    .filter(productId => productId !== shopifyProductId))];
+  if (!otherProductIds.length) throw new Error('No linked Shopify products were found for the Air Pro add-on requirement');
+
+  const input = {
+    title: 'Air Pro add-on - GBP 10 off',
+    code,
+    startsAt: new Date(Date.now() - 60000).toISOString(),
+    usesPerOrderLimit: 1,
+    customerBuys: {
+      value: { quantity: '1' },
+      items: { products: { productsToAdd: otherProductIds } }
+    },
+    customerGets: {
+      value: { discountOnQuantity: { quantity: '1', effect: { amount: '10.00' } } },
+      items: { products: { productsToAdd: [shopifyProductId] } }
+    },
+    customerSelection: { all: true },
+    combinesWith: { orderDiscounts: false, productDiscounts: true, shippingDiscounts: true }
+  };
+  const updateInput = { ...input };
+  delete updateInput.code;
+  const data = existing
+    ? await shopifyGraphql(env, BXGY_DISCOUNT_UPDATE_MUTATION, { id: existing.id, input: updateInput })
+    : await shopifyGraphql(env, BXGY_DISCOUNT_CREATE_MUTATION, { input });
+  const result = existing ? data.discountCodeBxgyUpdate : data.discountCodeBxgyCreate;
+  if (result.userErrors.length) throw new Error(`Shopify Air Pro discount failed: ${JSON.stringify(result.userErrors)}`);
+  return {
+    ok: true,
+    status: existing ? 'updated' : 'created',
+    code,
+    shopifyProductId,
+    eligibleProductCount: otherProductIds.length,
+    id: result.codeDiscountNode.id,
+    discount: result.codeDiscountNode.codeDiscount
+  };
+}
+
 async function launchTelegramDiscount(env) {
   const code = 'TELEGRAM5';
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
@@ -2656,6 +2748,14 @@ export default {
     if (req.method === 'POST' && parts[0] === 'launch-b22-bundle') {
       try {
         return json(await launchB22BundleDiscount(env));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'launch-air-pro-addon') {
+      try {
+        return json(await launchAirProAddonDiscount(env));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
