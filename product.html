@@ -50,6 +50,8 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .prices{align-items:baseline;display:flex;gap:10px;margin-bottom:14px}
 .price{font-size:21px;font-weight:700}
 .was{color:#929292;font-size:14px;text-decoration:line-through}
+.sale-timer{align-items:center;background:#101010;border-radius:14px;color:#fff;display:flex;font-size:12px;font-weight:800;gap:8px;justify-content:space-between;margin:-4px 0 14px;padding:10px 12px;text-transform:uppercase}
+.sale-timer span{color:#00c853;font-variant-numeric:tabular-nums}
 .stock{background:#effaf2;border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:14px;padding:7px 11px;text-transform:uppercase}
 .stock.sold{background:#f4f4f4;color:#777}
 .purchase-panel{margin:0 0 17px}
@@ -182,6 +184,7 @@ function normaliseProduct(item){
     shopifyPlaceholder:item.shopifyPlaceholder||null,
     shopifyLink:item.shopifyLink||'',
     wixLink:item.wixLink||'',
+    timedSale:item.timedSale||null,
     active:item.active!==false&&item.archived!==true&&item.hidden!==true
   };
 }
@@ -207,7 +210,7 @@ async function loadProducts(){
       const list=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:[]);
       if(list.length){
         list.map(normaliseProduct).filter(function(item){return item.active;}).forEach(function(item){
-          if(!catalogue.has(item.id))catalogue.set(item.id,item);
+          if(!catalogue.has(item.id))catalogue.set(item.id,effectiveProductPrice(item));
         });
       }
     }catch(error){
@@ -234,6 +237,37 @@ function displayPrice(value){
   return '£'+price;
 }
 
+function timedSaleState(item,now=Date.now()){
+  const sale=item&&item.timedSale;
+  if(!sale||sale.active===false)return null;
+  const endsAt=Date.parse(sale.endsAt||sale.endAt||'');
+  if(!Number.isFinite(endsAt)||endsAt<=now)return null;
+  return {
+    label:sale.label||'24 hour deal',
+    endsAt,
+    salePrice:sale.salePrice||item.price,
+    regularPrice:sale.regularPrice||item.originalPrice||''
+  };
+}
+
+function effectiveProductPrice(item){
+  const rawSale=item&&item.timedSale;
+  const sale=timedSaleState(item);
+  if(!sale){
+    const expiredRegular=rawSale&&rawSale.active!==false&&(rawSale.regularPrice||item.originalPrice);
+    return expiredRegular?{...item,price:expiredRegular,originalPrice:'',timedSale:{...rawSale,active:false}}:item;
+  }
+  return {...item,price:sale.salePrice,originalPrice:sale.regularPrice,timedSale:{...item.timedSale,...sale}};
+}
+
+function countdownText(ms){
+  const remaining=Math.max(0,ms);
+  const hours=String(Math.floor(remaining/3600000)).padStart(2,'0');
+  const minutes=String(Math.floor((remaining%3600000)/60000)).padStart(2,'0');
+  const seconds=String(Math.floor((remaining%60000)/1000)).padStart(2,'0');
+  return hours+':'+minutes+':'+seconds;
+}
+
 function productCopy(item){
   const type=String(item.category||'').split(',')[0]||'premium streetwear';
   return 'A curated '+type.toLowerCase()+' piece from the ESNTLS CLUB collection. Review the gallery, then continue securely to checkout.';
@@ -250,6 +284,7 @@ function renderProduct(){
   const gallery=product.images;
   const sold=String(product.price).toLowerCase()==='out of stock';
   const category=categoryLabel(product);
+  const sale=timedSaleState(product);
   const related=products.filter(function(item){
     return item.id!==product.id&&(item.brand===product.brand||String(item.category).split(',')[0]===String(product.category).split(',')[0]);
   }).slice(0,4);
@@ -276,6 +311,7 @@ function renderProduct(){
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
     +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
+    +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
     +'<div class="purchase-panel">'
     +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
@@ -295,6 +331,7 @@ function renderProduct(){
     }).join('')+'</div></section>':'');
   if(!sold)app.insertAdjacentHTML('beforeend','<button class="mobile-buy" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button>');
   bindGalleryScroll();
+  bindSaleCountdowns();
 }
 
 function updateGalleryActive(index){
@@ -316,6 +353,28 @@ function bindGalleryScroll(){
       updateGalleryActive(Math.round(track.scrollLeft/width));
     });
   },{passive:true});
+}
+
+let saleCountdownTimerId=null;
+function bindSaleCountdowns(){
+  if(saleCountdownTimerId)clearInterval(saleCountdownTimerId);
+  const nodes=[...document.querySelectorAll('[data-sale-countdown]')];
+  if(!nodes.length)return;
+  const tick=function(){
+    let expired=false;
+    nodes.forEach(function(node){
+      const endsAt=Number(node.getAttribute('data-sale-countdown'));
+      const remaining=endsAt-Date.now();
+      node.textContent=countdownText(remaining);
+      if(remaining<=0)expired=true;
+    });
+    if(expired)setTimeout(function(){
+      if(product)product=effectiveProductPrice(product);
+      renderProduct();
+    },900);
+  };
+  tick();
+  saleCountdownTimerId=setInterval(tick,1000);
 }
 
 function selectImage(index){

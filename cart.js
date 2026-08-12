@@ -51,6 +51,32 @@
     return '£' + price;
   }
 
+  function timedSaleState(product, now){
+    const sale = product && product.timedSale;
+    if(!sale || sale.active === false) return null;
+    const endsAt = Date.parse(sale.endsAt || sale.endAt || '');
+    if(!Number.isFinite(endsAt) || endsAt <= (now || Date.now())) return null;
+    return {
+      salePrice: sale.salePrice || product.price,
+      regularPrice: sale.regularPrice || product.originalPrice || '',
+      endsAt
+    };
+  }
+
+  function effectiveProductPrice(product){
+    const rawSale = product && product.timedSale;
+    const sale = timedSaleState(product);
+    if(!sale){
+      const expiredRegular = rawSale && rawSale.active !== false && (rawSale.regularPrice || product.originalPrice);
+      return expiredRegular ? Object.assign({}, product, {price: expiredRegular, originalPrice: '', timedSale: Object.assign({}, rawSale, {active:false})}) : product;
+    }
+    return Object.assign({}, product, {
+      price: sale.salePrice,
+      originalPrice: sale.regularPrice,
+      timedSale: Object.assign({}, product.timedSale, sale)
+    });
+  }
+
   function splitList(value){
     if(Array.isArray(value)) return value.map(String).map(v => v.trim()).filter(Boolean);
     return String(value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -211,7 +237,9 @@
       shopifyVariantId: product && (product.shopifyVariantId || product.variantId || product.defaultVariantId) || '',
       shopifyLink,
       wixLink,
-      link: shopifyLink || wixLink || product && product.link || ''
+      link: shopifyLink || wixLink || product && product.link || '',
+      timedSale: product && product.timedSale || null,
+      originalPrice: product && product.originalPrice || ''
     });
   }
 
@@ -223,7 +251,7 @@
         const list = Array.isArray(data) ? data : (Array.isArray(data.products) ? data.products : []);
         return list
           .filter(product => product && product.active !== false && product.archived !== true && product.hidden !== true)
-          .map(normaliseProduct);
+          .map(product => effectiveProductPrice(normaliseProduct(product)));
       })
       .catch(() => []);
     return cataloguePromise;
@@ -278,6 +306,7 @@
   }
 
   function buildLine(product, selections, qty){
+    product = effectiveProductPrice(product);
     const options = selections || {};
     const sourceLink = product && (product.shopifyLink || product.link || product.wixLink || '');
     return {
