@@ -173,6 +173,33 @@ label.field input:focus{border-color:var(--g)}
 .studio-recent-row-title{font-size:11px;font-weight:900;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .studio-recent-row-meta{font-size:10px;color:var(--sub);margin-top:2px}
 
+.builder-hero{background:linear-gradient(135deg,#07110b 0%,#102318 100%);color:#fff;border:none;overflow:hidden;position:relative}
+.builder-hero::after{content:'';position:absolute;right:-70px;top:-80px;width:180px;height:180px;border-radius:50%;background:rgba(0,200,83,.18);pointer-events:none}
+.builder-hero h2{font-size:22px;line-height:1.05;margin-bottom:7px;letter-spacing:0}
+.builder-hero p{font-size:13px;color:#c8ded0;line-height:1.45;max-width:420px}
+.builder-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:16px;position:relative;z-index:1}
+.builder-step{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);border-radius:14px;padding:10px 8px;font-size:11px;font-weight:800;color:#e9fff0;text-align:center}
+.builder-step span{display:block;color:var(--g2);font-size:15px;margin-bottom:3px}
+.builder-section{border:1px solid var(--border);border-radius:22px;background:#fff;box-shadow:var(--shadow-sm);padding:16px;margin-bottom:14px}
+.builder-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.builder-section-title{font-size:15px;font-weight:900;color:var(--ink);letter-spacing:-.01em}
+.builder-section-note{font-size:11px;color:var(--sub);line-height:1.4;margin-top:3px}
+.builder-pill{border:1px solid var(--border);background:#fbfdfc;color:#355243;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900;text-transform:uppercase;white-space:nowrap}
+.builder-mini-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.builder-mini-actions .btn{margin:0;min-height:43px;font-size:12px}
+.builder-yupoo{border:1px solid var(--border);border-radius:16px;background:#fbfdfc;padding:12px;margin-top:10px}
+.builder-approved-bar{display:none;align-items:center;justify-content:space-between;gap:10px;background:#edfff4;border:1px solid rgba(0,200,83,.22);border-radius:16px;padding:12px;margin-top:12px}
+.builder-approved-bar strong{font-size:13px;color:#063f1f}
+.builder-approved-bar span{font-size:11px;color:#537262}
+.builder-final{position:sticky;bottom:0;z-index:35;background:linear-gradient(180deg,rgba(244,247,245,0),var(--bg) 32%);padding:16px 0 4px}
+.builder-final .btn{min-height:54px;font-size:15px;box-shadow:0 12px 28px rgba(0,200,83,.24)}
+@media(max-width:600px){
+  .builder-steps{grid-template-columns:1fr;gap:6px}
+  .builder-step{text-align:left;display:flex;align-items:center;gap:9px}
+  .builder-step span{margin:0}
+  .builder-mini-actions{grid-template-columns:1fr}
+}
+
 .btn{display:block;width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
 .btn:active{transform:scale(.97)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -741,11 +768,10 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <div class="tabs">
-<div class="tab active" data-tab="add" onclick="showTab('add',this)">Add</div>
+<div class="tab active" data-tab="add" onclick="showTab('add',this)">Create</div>
 <div class="tab" data-tab="products" onclick="showTab('products',this)">Products</div>
 <div class="tab" data-tab="orders" onclick="showTab('orders',this)">Orders</div>
 <div class="tab" data-tab="media" onclick="showTab('media',this)">Media</div>
-<div class="tab" data-tab="studio" onclick="window.location.href='https://esntls-photo-studio-v2.qmako41212.workers.dev'">Studio</div>
 <div class="tab" data-tab="stock" onclick="showTab('stock',this)">Stock</div>
 <div class="tab" data-tab="tools" onclick="showTab('tools',this)">Tools</div>
 </div>
@@ -763,23 +789,35 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 
 <!-- ADD PRODUCT -->
 <div class="page active" id="pageAdd">
-<div class="card">
-<h3>Add Product</h3>
+<div class="card builder-hero">
+<h2>Create Product</h2>
+<p>Add details, prepare the product images, approve them, then publish once. Shopify checkout is created automatically at the end.</p>
+<div class="builder-steps">
+<div class="builder-step"><span>1</span>Details</div>
+<div class="builder-step"><span>2</span>Images</div>
+<div class="builder-step"><span>3</span>Publish</div>
+</div>
+</div>
+
+<div class="builder-section">
+<div class="builder-section-head">
+<div>
+<div class="builder-section-title">Product Details</div>
+<div class="builder-section-note">Only the fields needed to sell the item.</div>
+</div>
+<div class="builder-pill">Step 1</div>
+</div>
 <label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
-<label class="field"><span>Variation (optional)</span>
+<label class="field"><span>Options (optional)</span>
 <div style="display:grid;grid-template-columns:1fr;gap:6px">
 <input id="aVariationName" placeholder="Option name, e.g. Colour or Type">
 <input id="aVariationValues" placeholder="Values, e.g. Black, White, Tracksuit, Hoodie">
 </div>
 <span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Separate values with commas. These become Shopify product options when generated.</span>
 </label>
-<label class="field"><span>Buy Link</span>
-<div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
-<input id="aLink" placeholder="Paste checkout link or generate Shopify after saving" style="flex:1 1 100%;min-width:0">
-</div>
-<div id="aLinkMsg" style="font-size:11px;margin-top:4px"></div>
-</label>
+<input id="aLink" type="hidden" value="">
+<div id="aLinkMsg" style="font-size:11px;margin-top:4px;display:none"></div>
 <label class="field"><span>Add Category</span>
 <div style="display:flex;gap:6px;align-items:stretch">
 <input id="aNewCategory" placeholder="e.g. Ralph Lauren" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomCategory()}">
@@ -795,35 +833,84 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery (tap one or both)</span>
 <div class="cats" id="addDelivery"></div>
 </div>
+</div>
+
+<div class="builder-section">
+<div class="builder-section-head">
+<div>
+<div class="builder-section-title">Product Images</div>
+<div class="builder-section-note">Upload, paste, import from Yupoo, or pick from the library. Generate only when you choose to.</div>
+</div>
+<div class="builder-pill">Step 2</div>
+</div>
 <label class="upload-zone" id="uploadZone">
 <input type="file" accept="image/*" multiple style="display:none" id="aFiles" onchange="previewFiles(this.files)">
 <div class="icon">+</div>
-<div class="label">Tap to upload photos</div>
-<div class="hint">Select multiple images from camera roll</div>
+<div class="label">Upload product photos</div>
+<div class="hint">Multiple images supported</div>
 </label>
+<div class="paste-zone" id="addPasteZone" tabindex="0" role="button" aria-label="Paste product photos into product builder">
+<div class="icon">Paste</div>
+<div class="label">Paste product photos</div>
+<div class="hint">Copy photos, tap here, then paste. Or use the button below.</div>
+</div>
+<div class="paste-actions">
+<button type="button" class="btn btn-outline" onclick="pasteToAddProduct()">Paste from clipboard</button>
+</div>
+<div class="builder-yupoo">
+<label class="field" style="margin-bottom:8px"><span>Import from Yupoo link</span>
+<input id="aYupooUrl" type="url" placeholder="https://...yupoo.com/..." onkeydown="if(event.key==='Enter'){event.preventDefault();addImportYupoo(false)}">
+<span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Imported images appear here first. Choose backgrounds after import.</span>
+</label>
+<div class="builder-mini-actions">
+<button type="button" data-add-yupoo-btn class="btn btn-outline" onclick="addImportYupoo(false)">Import Photos</button>
+<button type="button" data-add-yupoo-btn class="btn" onclick="addImportYupoo(true)">Import + Generate</button>
+</div>
+<div class="msg" id="aYupooMsg"></div>
+</div>
 <div class="img-preview" id="imgPreview"></div>
 <div class="add-bg-card" id="addBgCard">
 <div class="add-bg-head">
 <div>
-<div class="add-bg-title">ESNTLS background preview</div>
-<div class="add-bg-status" id="addBgStatus">Select a photo to generate the branded background preview.</div>
+<div class="add-bg-title">Background Generator</div>
+<div class="add-bg-status" id="addBgStatus">Upload images, then generate when ready.</div>
 </div>
-<div class="add-bg-badge" id="addBgBadge">Auto</div>
+<div class="add-bg-badge" id="addBgBadge">Manual</div>
 </div>
 <div class="add-bg-body">
 <div class="add-bg-preview" id="addBgPreview"><div class="add-bg-grid" id="addBgGrid"></div></div>
 <div class="add-bg-actions" id="addBgActions">
-<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate preview</button>
-<button type="button" class="btn btn-outline" id="addBgSaveBtn" onclick="saveAddGeneratedToMedia()">Save to Library</button>
+<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate Backgrounds</button>
+<button type="button" class="btn btn-outline" id="addBgSaveBtn" onclick="approveAddGeneratedImages()">Approve Images</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
 </div>
 </div>
 </div>
+<div class="builder-approved-bar" id="addApprovedBar">
+<div><strong id="addApprovedTitle">Images approved</strong><br><span id="addApprovedText">Generated images will be used for this product.</span></div>
+<button type="button" class="btn btn-outline" onclick="clearAddImageApproval()" style="width:auto;min-height:38px;padding:8px 12px;font-size:12px;margin:0">Change</button>
+</div>
 <div class="progress" id="uploadProgress"><div class="progress-bar" id="uploadBar"></div></div>
 <button class="btn btn-outline" onclick="openPickerForAdd()" style="margin-top:10px">Pick from Library</button>
 <div id="addLibPreview"></div>
-<div style="height:14px"></div>
-<button class="btn" onclick="addProduct()">Add Product</button>
+</div>
+
+<div class="builder-section">
+<div class="builder-section-head">
+<div>
+<div class="builder-section-title">Publish</div>
+<div class="builder-section-note">This saves the ESNTLS product, creates the Shopify checkout item, and links it back automatically.</div>
+</div>
+<div class="builder-pill">Step 3</div>
+</div>
+<label class="field"><span>Shopify product name (optional)</span><input id="aShopifyTitle" placeholder="e.g. The Gel Runners - Pink"></label>
+<label style="display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--sub);line-height:1.4;margin-bottom:12px">
+<input type="checkbox" id="aCreateShopify" checked onchange="updateAddPublishButton()" style="margin-top:2px;accent-color:var(--g)">
+<span>Create Shopify checkout product after saving</span>
+</label>
+<div class="builder-final">
+<button class="btn" id="addPublishBtn" onclick="addProduct()">Publish Product + Shopify</button>
+</div>
 <div class="msg" id="addMsg"></div>
 </div>
 </div>
@@ -1140,7 +1227,7 @@ let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
-let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:0,total:0,done:0,errorCount:0,lastError:''};
+let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:0,total:0,done:0,errorCount:0,lastError:''};
 let mediaImages=[];
 let mediaSelected=new Set();
 let pickerSelected=new Set();
@@ -1384,12 +1471,30 @@ if(msg){msg.style.color='#e53935';msg.textContent=e.message}
 const el=document.getElementById('psPasteZone');if(el)el.focus()
 }}
 
+async function pasteToAddProduct(){
+const msg=document.getElementById('addMsg');
+try{
+const files=await readClipboardImages();
+flashPasteZone('addPasteZone');
+appendPendingFiles(files);
+if(msg){msg.style.color='var(--g)';msg.textContent='Pasted '+files.length+' photo'+(files.length===1?'':'s')}
+}catch(e){
+if(msg){msg.style.color='#e53935';msg.textContent=e.message}
+const el=document.getElementById('addPasteZone');if(el)el.focus()
+}}
+
 function initDropZones(){
 setupDropZone(document.getElementById('uploadZone'),files=>{
 const dt=new DataTransfer();
 files.forEach(f=>dt.items.add(f));
 document.getElementById('aFiles').files=dt.files;
 previewFiles(dt.files)});
+const addPaste=document.getElementById('addPasteZone');
+if(addPaste&&!addPaste._pasteBound){
+addPaste._pasteBound=true;
+addPaste.addEventListener('click',()=>{addPaste.focus();const msg=document.getElementById('addMsg');if(msg){msg.style.color='var(--sub)';msg.textContent='Paste copied product photos now.'}});
+addPaste.addEventListener('paste',e=>handlePasteImages(e,'addPasteZone',files=>appendPendingFiles(files),'addMsg'))
+}
 setupDropZone(document.getElementById('mediaZone'),files=>uploadToMedia(files));
 const mediaPaste=document.getElementById('mediaPasteZone');
 if(mediaPaste&&!mediaPaste._pasteBound){
@@ -1504,7 +1609,18 @@ document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelive
 
 // FILE PREVIEW
 function previewFiles(files){
-pendingFiles=[...files];
+pendingFiles=[...files].filter(f=>f&&f.type&&f.type.startsWith('image/'));
+renderPendingPreview();
+prepareAddBackgroundPreview();
+}
+
+function appendPendingFiles(files){
+const selected=[...files].filter(f=>f&&f.type&&f.type.startsWith('image/'));
+if(!selected.length)return;
+const existing=new Set(pendingFiles.map(f=>[f.name,f.size,f.lastModified,f.type].join('|')));
+const additions=selected.filter(f=>!existing.has([f.name,f.size,f.lastModified,f.type].join('|')));
+if(!additions.length)return;
+pendingFiles=[...pendingFiles,...additions];
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1532,7 +1648,7 @@ wrap.appendChild(star);
 prev.appendChild(wrap);
 });
 const lbl=pendingFiles.length+' photo'+(pendingFiles.length===1?'':'s')+' selected'+(pendingFiles.length>1?' · ★ to set main':'');
-document.querySelector('#uploadZone .label').textContent=pendingFiles.length?lbl:'Tap to upload photos';
+document.querySelector('#uploadZone .label').textContent=pendingFiles.length?lbl:'Upload product photos';
 }
 
 function setPendingMain(idx){
@@ -1558,7 +1674,7 @@ useBtn:document.getElementById('addBgUseBtn')
 
 function resetAddBackgroundPreview(){
 addBgState.token++;
-addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,token:addBgState.token,total:0,done:0,errorCount:0,lastError:''};
+addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:addBgState.token,total:0,done:0,errorCount:0,lastError:''};
 renderAddBackgroundPreview();
 }
 
@@ -1567,9 +1683,13 @@ const el=addBgEls();
 if(!el.card)return;
 if(!pendingFiles.length){
 el.card.style.display='none';
+const approvedBar=document.getElementById('addApprovedBar');
+if(approvedBar)approvedBar.style.display='none';
+updateAddPublishButton();
 return;
 }
 const generatedCount=addBgState.generatedItems.length;
+const generatedReady=!!addGeneratedFilesReady();
 el.card.style.display='block';
 el.preview.style.display=generatedCount?'block':'none';
 el.actions.style.display='flex';
@@ -1578,19 +1698,19 @@ el.grid.innerHTML=addBgState.generatedItems.map((item,i)=>`<img src="${item.data
 }
 if(el.useBtn){
 el.useBtn.style.display=generatedCount?'block':'none';
-el.useBtn.textContent=addBgState.useGenerated?'Use originals':'Use generated';
+el.useBtn.textContent=addBgState.useGenerated?'Use Originals':'Use Generated';
 }
 if(el.saveBtn){
 el.saveBtn.style.display=generatedCount?'block':'none';
 el.saveBtn.disabled=addBgState.status==='generating';
-el.saveBtn.textContent=generatedCount>1?'Save previews to Library':'Save preview to Library';
+el.saveBtn.textContent=(addBgState.approved&&generatedReady)?'Images Approved':(generatedCount>1?'Approve Images':'Approve Image');
 }
 if(el.generateBtn){
 const isGenerating=addBgState.status==='generating';
 const needsSetup=addBgState.status==='needsSetup';
 el.generateBtn.disabled=isGenerating;
 el.generateBtn.style.opacity=isGenerating?'.65':'1';
-el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate previews':(pendingFiles.length>1?'Generate previews':'Generate preview');
+el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate Backgrounds':(pendingFiles.length>1?'Generate Backgrounds':'Generate Background');
 el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
 }
 const total=addBgState.total||pendingFiles.length;
@@ -1599,21 +1719,32 @@ const copy={
 idle:['Manual',pendingFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
 needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
 generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
-done:['Ready',addBgState.useGenerated?`Generated ${doneText} previews. Generated images will upload first.`:`Original images will upload first.`],
+done:['Ready',addBgState.useGenerated?(addBgState.approved&&generatedReady?`Approved ${doneText} images. They will attach to this product.`:`Generated ${doneText} previews. Approve them to attach to this product.`):`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
 }[addBgState.status]||['Manual','Ready'];
 el.badge.textContent=copy[0];
 el.status.textContent=copy[1];
+const approvedBar=document.getElementById('addApprovedBar');
+const approvedTitle=document.getElementById('addApprovedTitle');
+const approvedText=document.getElementById('addApprovedText');
+if(approvedBar){
+const show=!!(generatedCount&&generatedReady&&addBgState.approved&&addBgState.useGenerated);
+approvedBar.style.display=show?'flex':'none';
+if(approvedTitle)approvedTitle.textContent=generatedCount+' approved image'+(generatedCount===1?'':'s');
+if(approvedText)approvedText.textContent='These images will be saved onto the product and used for Shopify.';
+}
+updateAddPublishButton();
 }
 
 function openPhotoStudioSetup(){
-const tab=document.querySelector('.tab[data-tab="studio"]');
-showTab('studio',tab);
 const box=document.getElementById('psSettingsBox');
 if(box){
 box.open=true;
 setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),80);
+return;
 }
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='#e53935';msg.textContent='Image generation is not configured on the Worker.'}
 }
 
 function handleAddBackgroundGenerate(){
@@ -1819,6 +1950,8 @@ if(!psHasGenerationBackend()){
 addBgState.status='needsSetup';
 addBgState.sourceFiles=[...pendingFiles];
 addBgState.generatedItems=[];
+addBgState.approved=false;
+addBgState.approvedAt='';
 addBgState.total=pendingFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
@@ -1833,6 +1966,8 @@ addBgState.status='generating';
 addBgState.sourceFiles=sources;
 addBgState.generatedItems=[];
 addBgState.useGenerated=true;
+addBgState.approved=false;
+addBgState.approvedAt='';
 addBgState.total=sources.length;
 addBgState.done=0;
 addBgState.errorCount=0;
@@ -1877,6 +2012,8 @@ addBgState.status='idle';
 addBgState.sourceFiles=[...pendingFiles];
 addBgState.generatedItems=[];
 addBgState.useGenerated=true;
+addBgState.approved=false;
+addBgState.approvedAt='';
 addBgState.total=pendingFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
@@ -1887,7 +2024,27 @@ renderAddBackgroundPreview();
 function toggleAddGeneratedUsage(){
 if(!addBgState.generatedItems.length)return;
 addBgState.useGenerated=!addBgState.useGenerated;
+addBgState.approved=false;
+addBgState.approvedAt='';
 addBgState.status='done';
+renderAddBackgroundPreview();
+}
+
+function approveAddGeneratedImages(){
+if(!addBgState.generatedItems.length)return;
+addBgState.useGenerated=true;
+addBgState.approved=true;
+addBgState.approvedAt=new Date().toISOString();
+addBgState.status='done';
+renderAddBackgroundPreview();
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='var(--g)';msg.textContent='Images approved. Publish when ready.'}
+if(typeof toast==='function')toast('Images approved','success');
+}
+
+function clearAddImageApproval(){
+addBgState.approved=false;
+addBgState.approvedAt='';
 renderAddBackgroundPreview();
 }
 
@@ -1929,10 +2086,21 @@ if(msg)setTimeout(()=>{msg.textContent=''},5000);
 }
 
 function addUploadFiles(){
-if(addBgState.generatedItems.length&&addBgState.useGenerated&&filesMatch(addBgState.sourceFiles,pendingFiles)){
-return [...addBgState.generatedItems.map(item=>item.generatedFile),...pendingFiles];
+if(addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&filesMatch(addBgState.sourceFiles,pendingFiles)){
+return addBgState.generatedItems.map(item=>item.generatedFile);
 }
 return [...pendingFiles];
+}
+
+function addApprovedGeneratedCount(){
+return (pendingFiles.length&&addBgState.useGenerated&&addBgState.approved&&addGeneratedFilesReady())?addBgState.generatedItems.length:0;
+}
+
+function updateAddPublishButton(){
+const btn=document.getElementById('addPublishBtn');
+if(!btn)return;
+const createShopify=document.getElementById('aCreateShopify')?.checked!==false;
+btn.textContent=createShopify?'Publish Product + Shopify':'Publish Product';
 }
 
 // IMAGE COMPRESSION (resize to 1600px wide, re-encode JPEG ~82% quality)
@@ -1979,9 +2147,12 @@ async function addProduct(){
 const n=document.getElementById('aName').value.trim();
 const price=document.getElementById('aPrice').value.trim();
 const link=document.getElementById('aLink').value.trim();
+const shopifyTitleOverride=document.getElementById('aShopifyTitle')?.value.trim()||'';
+const shouldCreateShopify=document.getElementById('aCreateShopify')?.checked!==false;
 const variationName=document.getElementById('aVariationName').value.trim();
 const variationValues=parseAdminList(document.getElementById('aVariationValues').value);
 const msg=document.getElementById('addMsg');
+const publishBtn=document.getElementById('addPublishBtn');
 const cat=selectedCats.join(',')||'Footwear';
 const brand=inferBrand(selectedCats);
 
@@ -1989,23 +2160,28 @@ if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
 if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
 if(!pendingFiles.length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
 if(addBgState.status==='generating'){msg.style.color='#e53935';msg.textContent='Wait for the ESNTLS background preview to finish first.';return}
+if(addBgState.generatedItems.length&&addBgState.useGenerated&&!addBgState.approved){msg.style.color='#e53935';msg.textContent='Approve the generated images first, or tap Use Originals.';return}
 
 let imageUrls=[];
-const generatedUploadCount=(pendingFiles.length&&addBgState.useGenerated&&addGeneratedFilesReady())?addBgState.generatedItems.length:0;
+const generatedUploadCount=addApprovedGeneratedCount();
+if(publishBtn){publishBtn.disabled=true;publishBtn.style.opacity='.65';publishBtn.textContent='Publishing...'}
 if(pendingFiles.length){
 const newUrls=await uploadImages(addUploadFiles());
 imageUrls=[...imageUrls,...newUrls];
 }
 imageUrls=[...imageUrls,...addLibraryUrls];
-if(!imageUrls.length){msg.style.color='#e53935';msg.textContent='Image upload failed';return}
+if(!imageUrls.length){
+msg.style.color='#e53935';msg.textContent='Image upload failed';
+if(publishBtn){publishBtn.disabled=false;publishBtn.style.opacity='1';updateAddPublishButton()}
+return;
+}
 
 const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
 const createdAt=new Date().toISOString();
 const usedGenerated=!!(generatedUploadCount&&imageUrls.length>=generatedUploadCount);
 const generatedUrls=usedGenerated?imageUrls.slice(0,generatedUploadCount):[];
-const sourceUrls=usedGenerated?imageUrls.slice(generatedUploadCount,generatedUploadCount+pendingFiles.length):[];
 const grassMeta=usedGenerated
-?{status:'done',sourceImage:sourceUrls[0]||generatedUrls[0],sourceImages:sourceUrls,images:generatedUrls,image:generatedUrls[0],generatedCount:generatedUrls.length,requestedAt:createdAt,processedAt:createdAt,promptVersion:'admin-preview-v2-3x4'}
+?{status:'done',sourceImage:generatedUrls[0],sourceImages:[],images:generatedUrls,image:generatedUrls[0],generatedCount:generatedUrls.length,requestedAt:createdAt,processedAt:createdAt,promptVersion:'admin-preview-v2-3x4'}
 :{status:'pending',sourceImage:imageUrls[0],requestedAt:createdAt};
 const newProduct={
 id:newId,
@@ -2024,16 +2200,28 @@ grassBackground:grassMeta
 };
 products.unshift(newProduct);
 
+let savedProduct=false;
 try{
-msg.style.color='var(--sub)';msg.textContent='Saving...';
+msg.style.color='var(--sub)';msg.textContent=shouldCreateShopify?'Saving product...':'Saving product...';
 await saveProducts();
-msg.style.color='var(--g)';msg.textContent='Product added!';
-if(typeof toast==='function')toast(`Added "${newProduct.name}"`,'success');
+savedProduct=true;
+if(shouldCreateShopify){
+msg.style.color='var(--sub)';
+msg.textContent='Creating Shopify checkout product...';
+const data=await createShopifyForProduct(newProduct.id,shopifyTitleOverride,false);
+const shopifyUrl=data.shopifyUrl||(data.shopify&&data.shopify.shopifyUrl)||newProduct.link||'';
+msg.style.color='var(--g)';
+msg.innerHTML='Product published. Shopify checkout created'+(shopifyUrl?`: <a href="${escapeAdminHTML(shopifyUrl)}" target="_blank" style="color:#00C853;font-weight:800">open</a>`:'');
+if(typeof toast==='function')toast(`Published "${newProduct.name}" with Shopify checkout`,'success');
+}else{
+msg.style.color='var(--g)';msg.textContent='Product published.';
+if(typeof toast==='function')toast(`Published "${newProduct.name}"`,'success');
+}
 if(typeof syncDashboard==='function')syncDashboard();
-['aName','aPrice','aLink','aVariationName','aVariationValues','aNewCategory'].forEach(id=>document.getElementById(id).value='');
+['aName','aPrice','aLink','aShopifyTitle','aVariationName','aVariationValues','aNewCategory','aYupooUrl'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
-document.querySelector('#uploadZone .label').textContent='Tap to upload photos';
+document.querySelector('#uploadZone .label').textContent='Upload product photos';
 pendingFiles=[];
 resetAddBackgroundPreview();
 addLibraryUrls=[];
@@ -2042,9 +2230,18 @@ selectedCats=[];
 selectedDelivery=[];
 document.querySelectorAll('#addCats .cat-pill').forEach(p=>p.classList.remove('on'));
 document.querySelectorAll('#addDelivery .cat-pill').forEach(p=>p.classList.remove('on'));
+renderProductList();
 }catch(e){
+if(savedProduct){
+msg.style.color='#e53935';
+msg.textContent='Product saved, but Shopify creation failed: '+e.message;
+renderProductList();
+return;
+}
 products.shift();
-msg.style.color='#e53935';msg.textContent='Save failed: '+e.message;
+msg.style.color='#e53935';msg.textContent='Publish failed: '+e.message;
+}finally{
+if(publishBtn){publishBtn.disabled=false;publishBtn.style.opacity='1';updateAddPublishButton()}
 }
 setTimeout(()=>{msg.textContent=''},4000)}
 
@@ -2550,23 +2747,9 @@ msg.style.color='var(--sub)';
 msg.textContent='Saving product, generating blank image, then creating Shopify product...';
 await saveProducts();
 didSave=true;
-const r=await fetch(WORKER_URL+'/shopify-create-product',{
-method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
-body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink:!!values.link,shopifyTitleOverride:values.shopifyTitleOverride})
-});
-const data=await r.json().catch(()=>({}));
-if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
+const data=await createShopifyForProduct(id,values.shopifyTitleOverride,!!values.link);
 const shopifyUrl=data.shopifyUrl||(data.shopify&&data.shopify.shopifyUrl)||'';
 if(!shopifyUrl)throw new Error('No Shopify link returned');
-p.link=shopifyUrl;
-if(data.shopify)p.shopifyPlaceholder=data.shopify;
-if(data.wixBackup)p.wixBackupPlaceholder=data.wixBackup;
-if(data.checkoutLinks)p.checkoutLinks=data.checkoutLinks;
-if(data.shopify&&data.shopify.variants){
-  p.shopifyVariants=data.shopify.variants;
-  p.shopifyVariantId=Object.values(data.shopify.variants)[0]||'';
-}
 const linkInput=document.getElementById('el_'+id);
 if(linkInput)linkInput.value=shopifyUrl;
 const titleInput=document.getElementById('st_'+id);
@@ -2587,6 +2770,29 @@ if(typeof toast==='function')toast('Shopify generation failed','error');
 }finally{
 btn.disabled=false;btn.textContent='Generate Shopify Product';
 }
+}
+
+async function createShopifyForProduct(id,shopifyTitleOverride='',forceReplaceLink=false){
+const p=products.find(x=>String(x.id)===String(id));
+if(!p)throw new Error('Product not found');
+const r=await fetch(WORKER_URL+'/shopify-create-product',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink,shopifyTitleOverride,useExistingImage:p.grassBackground&&p.grassBackground.status==='done'})
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||data.detail||('HTTP '+r.status));
+const shopifyUrl=data.shopifyUrl||(data.shopify&&data.shopify.shopifyUrl)||'';
+if(shopifyUrl)p.link=shopifyUrl;
+if(data.shopify)p.shopifyPlaceholder=data.shopify;
+if(data.wixBackup)p.wixBackupPlaceholder=data.wixBackup;
+if(data.checkoutLinks)p.checkoutLinks=data.checkoutLinks;
+if(data.shopify&&data.shopify.variants){
+p.shopifyVariants=data.shopify.variants;
+p.shopifyVariantId=Object.values(data.shopify.variants)[0]||'';
+}
+await saveProducts();
+return data;
 }
 
 // TOGGLE IMAGE EDITOR
@@ -3531,6 +3737,54 @@ async function psImportYupoo(generateAfter){
     psSetYupooLoading(false);
   }
 }
+function addSetYupooMsg(text,color){
+const msg=document.getElementById('aYupooMsg');
+if(!msg)return;
+msg.style.color=color||'var(--sub)';
+msg.textContent=text||'';
+}
+
+function addSetYupooLoading(loading){
+document.querySelectorAll('[data-add-yupoo-btn]').forEach(btn=>{
+btn.disabled=!!loading;
+btn.style.opacity=loading?'.55':'1';
+});
+}
+
+async function addImportYupoo(generateAfter){
+const input=document.getElementById('aYupooUrl');
+const raw=input?input.value.trim():'';
+if(!raw){addSetYupooMsg('Paste a Yupoo link first.','#e53935');return}
+if(!WORKER_URL||!ADMIN_SECRET){addSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
+try{new URL(raw)}catch(e){addSetYupooMsg('That does not look like a valid link.','#e53935');return}
+addSetYupooLoading(true);
+addSetYupooMsg('Reading Yupoo page...','var(--sub)');
+try{
+const r=await fetch(WORKER_URL+'/yupoo-images',{
+method:'POST',
+headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+body:JSON.stringify({url:raw,limit:30})
+});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error||('Yupoo scan failed: HTTP '+r.status));
+const images=(data.images||[]).filter(item=>(typeof item==='string'?item:item&&item.url));
+if(!images.length)throw new Error('No Yupoo product images found on that link.');
+const files=[];
+let failed=0,lastError='';
+for(let i=0;i<images.length;i++){
+try{files.push(await psFetchYupooFile(images[i],i,images.length))}
+catch(e){failed++;lastError=e.message}
+}
+if(!files.length)throw new Error(lastError||'Could not download Yupoo images.');
+appendPendingFiles(files);
+addSetYupooMsg('Imported '+files.length+' photo'+(files.length===1?'':'s')+(failed?' - '+failed+' skipped':''),'var(--g)');
+if(generateAfter)await generateAddBackground(true);
+}catch(e){
+addSetYupooMsg('Yupoo import failed: '+e.message,'#e53935');
+}finally{
+addSetYupooLoading(false);
+}}
+
 function psClearFiles(){
   if(psState.isGenerating)psCancelGeneration();
   psState.files=[];

@@ -27,6 +27,8 @@
 //                                Body: { productId: string|number, price: string|number }
 //   POST   /restore-standard-stock → makes selected R2 products buyable on 7-12 day delivery and restores linked Wix stock.
 //                                Body: { products: [{ id, price }], delivery?: string, inventoryQuantity?: number }
+//   POST   /restore-b30-shopify-stock → makes B30 Shopify variants sellable and refreshes variant IDs.
+//                                Body: { sizes?: string[], inventoryPolicy?: 'CONTINUE'|'DENY', createMissing?: boolean, dryRun?: boolean }
 //   POST   /checkout-link-mode → switches products between saved Shopify and Wix checkout links.
 //                                Body: { mode: 'shopify'|'wix', productId?: string|number }
 //   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
@@ -83,6 +85,67 @@ mutation ProductVariantsBulkUpdateForPriceSync($productId: ID!, $variants: [Prod
   productVariantsBulkUpdate(productId: $productId, variants: $variants) {
     product { id title handle }
     productVariants { id price }
+    userErrors { field message }
+  }
+}`;
+
+const PRODUCT_VARIANTS_STOCK_QUERY = `
+query ProductVariantsForStock($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    handle
+    options {
+      id
+      name
+      values
+      optionValues { id name }
+    }
+    variants(first: 100) {
+      nodes {
+        id
+        title
+        sku
+        price
+        inventoryPolicy
+        availableForSale
+        inventoryQuantity
+        sellableOnlineQuantity
+        selectedOptions { name value }
+      }
+    }
+  }
+}`;
+
+const PRODUCT_VARIANTS_BULK_CREATE_STOCK_MUTATION = `
+mutation ProductVariantsBulkCreateForStock($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkCreate(productId: $productId, variants: $variants) {
+    product { id title handle }
+    productVariants {
+      id
+      title
+      sku
+      price
+      inventoryPolicy
+      availableForSale
+      selectedOptions { name value }
+    }
+    userErrors { field message }
+  }
+}`;
+
+const PRODUCT_VARIANTS_POLICY_UPDATE_MUTATION = `
+mutation ProductVariantsPolicyUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkUpdate(productId: $productId, variants: $variants, allowPartialUpdates: true) {
+    product { id title handle }
+    productVariants {
+      id
+      title
+      sku
+      inventoryPolicy
+      availableForSale
+      selectedOptions { name value }
+    }
     userErrors { field message }
   }
 }`;
@@ -484,6 +547,148 @@ async function shopifyVariantMapForProduct(env, productId, sourceProduct) {
   const variantPlan = buildProductVariantPlan(sourceProduct, env);
   const data = await shopifyGraphql(env, PRODUCT_VARIANTS_QUERY, { id: productId });
   return buildShopifyVariantMap(data.product?.variants?.nodes || [], variantPlan);
+}
+
+function shopifyVariantSize(node) {
+  const selected = (node?.selectedOptions || []).find(option => /^size$/i.test(String(option?.name || '')));
+  return String(selected?.value || node?.title || '').replace(/\s+/g, ' ').trim();
+}
+
+function buildShopifyVariantMapFromNodes(nodes) {
+  const map = {};
+  for (const node of nodes || []) {
+    const id = numericShopifyVariantId(node?.id);
+    const size = shopifyVariantSize(node);
+    if (id && size && size.toLowerCase() !== 'default title') map[size] = id;
+  }
+  return map;
+}
+
+function productIsB30(rawProduct) {
+  const text = `${rawProduct?.name || rawProduct?.title || ''} ${rawProduct?.brand || ''} ${rawProduct?.category || rawProduct?.categories || ''}`.toLowerCase();
+  return /\bb30\b/.test(text);
+}
+
+function shopifyProductIdForRawProduct(rawProduct) {
+  return rawProduct?.shopifyPlaceholder?.shopifyProductId || rawProduct?.shopifyProductId || '';
+}
+
+async function restoreB30ShopifyStockFromR2(env, requestBody = {}) {
+  const { payload, list } = await readProductsPayload(env);
+  const requestedSizes = uniqueList(splitList(requestBody.sizes || env.DEFAULT_FOOTWEAR_SIZES || 'UK 5,UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12'));
+  const sizes = requestedSizes.length ? requestedSizes : ['UK 5', 'UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11', 'UK 12'];
+  const inventoryPolicy = String(requestBody.inventoryPolicy || 'CONTINUE').toUpperCase() === 'DENY' ? 'DENY' : 'CONTINUE';
+  const createMissing = requestBody.createMissing !== false;
+  const dryRun = requestBody.dryRun === true;
+  const updatedAt = new Date().toISOString();
+  const products = [];
+  const skipped = [];
+
+  for (const rawProduct of list) {
+    if (!productIsB30(rawProduct)) continue;
+    const shopifyProductId = shopifyProductIdForRawProduct(rawProduct);
+    if (!shopifyProductId) {
+      skipped.push({ id: rawProduct.id, name: rawProduct.name || rawProduct.title || '', reason: 'Missing linked Shopify product ID' });
+      continue;
+    }
+
+    const product = normalizeStoredProduct({ ...rawProduct, sizes });
+    const data = await shopifyGraphql(env, PRODUCT_VARIANTS_STOCK_QUERY, { id: shopifyProductId });
+    const shopifyProduct = data.product;
+    if (!shopifyProduct) {
+      skipped.push({ id: rawProduct.id, name: product.title, reason: 'Shopify product was not found' });
+      continue;
+    }
+
+    const variants = shopifyProduct.variants?.nodes || [];
+    const bySize = new Map();
+    for (const variant of variants) {
+      const size = shopifyVariantSize(variant);
+      if (size) bySize.set(size.toLowerCase(), variant);
+    }
+
+    const missingSizes = sizes.filter(size => !bySize.has(size.toLowerCase()));
+    const created = [];
+    if (createMissing && missingSizes.length && !dryRun) {
+      const createData = await shopifyGraphql(env, PRODUCT_VARIANTS_BULK_CREATE_STOCK_MUTATION, {
+        productId: shopifyProduct.id,
+        variants: missingSizes.map(size => ({
+          optionValues: [{ optionName: 'Size', name: size }],
+          price: product.price,
+          inventoryItem: { sku: `ESNTLS-${slugify(product.id)}-${slugify(size).toUpperCase()}` },
+          inventoryPolicy
+        }))
+      });
+      const result = createData.productVariantsBulkCreate;
+      if (result.userErrors.length) throw new Error(`Shopify B30 variant create failed for ${product.title}: ${JSON.stringify(result.userErrors)}`);
+      created.push(...(result.productVariants || []));
+      for (const variant of created) {
+        const size = shopifyVariantSize(variant);
+        if (size) bySize.set(size.toLowerCase(), variant);
+      }
+    }
+
+    const targets = sizes.map(size => bySize.get(size.toLowerCase())).filter(Boolean);
+    const needsPolicyUpdate = targets.filter(variant => variant.inventoryPolicy !== inventoryPolicy);
+    const policyUpdated = [];
+    if (needsPolicyUpdate.length && !dryRun) {
+      const updateData = await shopifyGraphql(env, PRODUCT_VARIANTS_POLICY_UPDATE_MUTATION, {
+        productId: shopifyProduct.id,
+        variants: needsPolicyUpdate.map(variant => ({ id: variant.id, inventoryPolicy }))
+      });
+      const result = updateData.productVariantsBulkUpdate;
+      if (result.userErrors.length) throw new Error(`Shopify B30 stock policy update failed for ${product.title}: ${JSON.stringify(result.userErrors)}`);
+      policyUpdated.push(...(result.productVariants || []));
+      for (const variant of policyUpdated) {
+        const size = shopifyVariantSize(variant);
+        if (size) bySize.set(size.toLowerCase(), variant);
+      }
+    }
+
+    const refreshedData = dryRun
+      ? { product: shopifyProduct }
+      : await shopifyGraphql(env, PRODUCT_VARIANTS_STOCK_QUERY, { id: shopifyProduct.id });
+    const refreshedProduct = refreshedData.product || shopifyProduct;
+    const refreshedVariants = refreshedProduct.variants?.nodes || [];
+    const variantMap = buildShopifyVariantMapFromNodes(refreshedVariants);
+
+    if (!dryRun) {
+      rawProduct.sizes = sizes;
+      rawProduct.shopifyVariants = variantMap;
+      rawProduct.shopifyVariantId = Object.values(variantMap)[0] || rawProduct.shopifyVariantId || '';
+      rawProduct.delivery = rawProduct.delivery || '7-12 Days';
+      rawProduct.active = rawProduct.active !== false;
+      rawProduct.archived = false;
+      rawProduct.hidden = false;
+      if (rawProduct.shopifyPlaceholder) {
+        rawProduct.shopifyPlaceholder.sizes = sizes;
+        rawProduct.shopifyPlaceholder.variants = variantMap;
+        rawProduct.shopifyPlaceholder.variantCount = Object.keys(variantMap).length;
+        rawProduct.shopifyPlaceholder.stockRestoredAt = updatedAt;
+      }
+      rawProduct.b30ShopifyStockRestore = {
+        inventoryPolicy,
+        sizes,
+        created: created.map(variant => ({ id: numericShopifyVariantId(variant.id), title: variant.title || shopifyVariantSize(variant) })),
+        policyUpdated: policyUpdated.map(variant => ({ id: numericShopifyVariantId(variant.id), title: variant.title || shopifyVariantSize(variant) })),
+        updatedAt
+      };
+    }
+
+    products.push({
+      id: rawProduct.id,
+      name: product.title,
+      shopifyTitle: refreshedProduct.title,
+      shopifyUrl: storefrontUrl(env, refreshedProduct.handle),
+      missingBefore: missingSizes,
+      created: created.map(variant => ({ id: numericShopifyVariantId(variant.id), title: variant.title || shopifyVariantSize(variant) })),
+      policyUpdated: policyUpdated.map(variant => ({ id: numericShopifyVariantId(variant.id), title: variant.title || shopifyVariantSize(variant) })),
+      variants: variantMap
+    });
+  }
+
+  if (!dryRun) await writeProductsPayload(env, payload);
+  return { ok: true, dryRun, inventoryPolicy, sizes, updated: products.length, skipped: skipped.length, products, skippedProducts: skipped, updatedAt };
 }
 
 function sourceTags(product) {
@@ -1982,19 +2187,29 @@ async function findExistingShopifyProduct(env, product) {
 }
 
 async function uploadProductImageToShopify(env, product, imageBlob) {
-  const filename = `${slugify(product.id)}-${slugify(product.title)}-blank.png`;
+  const mimeType = normalizeOpenAIImageMime(imageBlob && imageBlob.type, 'blank.jpg');
+  const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+  const filename = `${slugify(product.id)}-${slugify(product.title)}-blank.${extension}`;
   const staged = await shopifyGraphql(env, STAGED_UPLOAD_MUTATION, {
-    input: [{ filename, mimeType: 'image/png', httpMethod: 'POST', resource: 'PRODUCT_IMAGE' }]
+    input: [{ filename, mimeType, httpMethod: 'POST', resource: 'PRODUCT_IMAGE' }]
   });
   const errors = staged.stagedUploadsCreate.userErrors;
   if (errors.length) throw new Error(`Shopify staged upload failed: ${JSON.stringify(errors)}`);
   const target = staged.stagedUploadsCreate.stagedTargets[0];
   const form = new FormData();
   for (const parameter of target.parameters) form.append(parameter.name, parameter.value);
-  form.append('file', imageBlob, filename);
+  const currentType = String(imageBlob && imageBlob.type || '').split(';')[0].trim().toLowerCase();
+  const uploadBlob = currentType === mimeType ? imageBlob : new Blob([await imageBlob.arrayBuffer()], { type: mimeType });
+  form.append('file', uploadBlob, filename);
   const uploadResponse = await fetch(target.url, { method: 'POST', body: form });
   if (!uploadResponse.ok) throw new Error(`Shopify staged file POST failed: ${uploadResponse.status} ${await uploadResponse.text()}`);
   return { resourceUrl: target.resourceUrl, filename };
+}
+
+async function uploadExistingProductImageToShopify(env, product) {
+  if (!product.image) throw new Error('Product is missing an image');
+  const source = await sourceImageFromStudioMedia(env, product.image) || await fetchImageBlob(product.image, 'Source image');
+  return uploadProductImageToShopify(env, product, source.blob);
 }
 
 async function publishProductToOnlineStore(env, productId) {
@@ -2797,8 +3012,10 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
       published: activeProduct.published
     };
   } else {
-    const generatedImage = await generateBlankImage(env, product, sourceImageFromRequestBody(requestBody.sourceImage));
-    const upload = await uploadProductImageToShopify(env, product, generatedImage);
+    const useExistingImage = requestBody.useExistingImage === true || rawProduct.grassBackground?.status === 'done';
+    const upload = useExistingImage
+      ? await uploadExistingProductImageToShopify(env, product)
+      : await uploadProductImageToShopify(env, product, await generateBlankImage(env, product, sourceImageFromRequestBody(requestBody.sourceImage)));
     uploadedFilename = upload.filename;
     shopifyProduct = await createShopifyProduct(env, product, upload.resourceUrl, visibleTitle);
   }
@@ -2950,6 +3167,16 @@ export default {
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await restoreStandardStockFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'restore-b30-shopify-stock') {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        return json(await restoreB30ShopifyStockFromR2(env, body));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
