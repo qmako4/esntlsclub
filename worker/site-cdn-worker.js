@@ -51,7 +51,11 @@ function publicFileFor(pathname) {
 
   if (normalized === 'product') return 'product.html';
   if (normalized === 'admin') return 'admin.html';
-  if (normalized === 'stockroom') return 'stockroom.html';
+
+  // Stockroom is a single page with real URLs (/stockroom/product/12,
+  // /stockroom/cart, ...), so every path under it serves the same document and
+  // the page routes on load. Deep links and refreshes therefore work.
+  if (normalized === 'stockroom' || normalized.startsWith('stockroom/')) return 'stockroom.html';
   if (PUBLIC_ROOT_FILES.has(normalized)) return normalized;
 
   if (/^img\/[A-Za-z0-9._-]+\.(?:gif|jpe?g|png|svg|webp)$/i.test(normalized)) {

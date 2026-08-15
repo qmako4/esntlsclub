@@ -23,6 +23,19 @@
 //
 // Suspend or restore access:
 //   node scripts/stockroom-admin.mjs member --email sam@example.com --status revoked
+//
+// Product detail the storefront feed does not carry (SKU, RRP, demand):
+//   node scripts/stockroom-admin.mjs meta --id 12 --sku B30-BLK --rrp 249 --sold30d 412 \
+//        --ships-from Hackney --deadstock --verified --bulk-from 6
+//
+// The size run, with real unit counts per size:
+//   node scripts/stockroom-admin.mjs sizes --id 12 --sizes "UK 6:4,UK 7:6,UK 8:7,UK 9:5"
+//   node scripts/stockroom-admin.mjs sizes --id 12 --footwear 5     # every UK size, 5 each
+//   node scripts/stockroom-admin.mjs sizes --id 12 --clothing 8     # S,M,L,XL at 8 each
+//
+// Put a drop on the home page (omit --ends to run it open-ended):
+//   node scripts/stockroom-admin.mjs drop --headline "Designer runners, under half retail" \
+//        --eyebrow "THURSDAY DROP" --ends 2026-08-21T20:00:00Z
 
 import { readFileSync } from 'node:fs';
 
@@ -141,13 +154,83 @@ async function priceCommand(args) {
   console.log(`Priced ${result.updated} product(s).`);
 }
 
+const FOOTWEAR = ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'];
+const CLOTHING = ['S', 'M', 'L', 'XL'];
+
+async function metaCommand(args) {
+  if (!args.id) {
+    console.error('--id is required');
+    process.exit(1);
+  }
+  await post('meta', {
+    productId: Number(args.id),
+    sku: args.sku || null,
+    rrpPence: args.rrp ? poundsToPence(args.rrp) : null,
+    sold30d: args.sold30d != null && args.sold30d !== true ? Number(args.sold30d) : null,
+    shipsFrom: args['ships-from'] || null,
+    deadstock: Boolean(args.deadstock),
+    verified: Boolean(args.verified),
+    moq: Number(args.moq) || 1,
+    bulkFrom: args['bulk-from'] ? Number(args['bulk-from']) : null,
+  });
+  console.log(`Updated details for product ${args.id}.`);
+}
+
+async function sizesCommand(args) {
+  if (!args.id) {
+    console.error('--id is required');
+    process.exit(1);
+  }
+
+  let sizes;
+  if (args.sizes) {
+    // "UK 6:4,UK 7:6" -> [{label:'UK 6', units:4}, ...]
+    sizes = String(args.sizes).split(',').map((pair) => {
+      const index = pair.lastIndexOf(':');
+      if (index === -1) throw new Error(`Expected "size:units", got "${pair}"`);
+      return { label: pair.slice(0, index).trim(), units: Number(pair.slice(index + 1)) };
+    });
+  } else if (args.footwear) {
+    sizes = FOOTWEAR.map((label) => ({ label, units: Number(args.footwear) }));
+  } else if (args.clothing) {
+    sizes = CLOTHING.map((label) => ({ label, units: Number(args.clothing) }));
+  } else {
+    console.error('Pass --sizes "UK 6:4,UK 7:6", or --footwear N, or --clothing N');
+    process.exit(1);
+  }
+
+  const result = await post('sizes', { productId: Number(args.id), sizes });
+  const total = sizes.reduce((sum, size) => sum + size.units, 0);
+  console.log(`Set ${result.sizes} sizes on product ${args.id} (${total} units in total).`);
+}
+
+async function dropCommand(args) {
+  if (!args.headline) {
+    console.error('--headline is required');
+    process.exit(1);
+  }
+  await post('drop', {
+    headline: args.headline,
+    eyebrow: args.eyebrow || null,
+    ctaLabel: args.cta || 'Shop the drop',
+    imageUrl: args.image || null,
+    category: args.category || null,
+    startsAt: args.starts || null,
+    endsAt: args.ends || null,
+  });
+  console.log('Drop is live on the Stockroom home page.');
+}
+
 const [command, ...rest] = process.argv.slice(2);
 const args = parseArgs(rest);
 
 if (command === 'member') await memberCommand(args);
 else if (command === 'price') await priceCommand(args);
+else if (command === 'meta') await metaCommand(args);
+else if (command === 'sizes') await sizesCommand(args);
+else if (command === 'drop') await dropCommand(args);
 else {
-  console.error('Usage: stockroom-admin.mjs <member|price> [options]');
+  console.error('Usage: stockroom-admin.mjs <member|price|meta|sizes|drop> [options]');
   console.error('See the comments at the top of this file for examples.');
   process.exit(1);
 }

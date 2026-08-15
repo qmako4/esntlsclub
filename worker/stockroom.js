@@ -13,19 +13,29 @@ const MAX_FAILED_LOGINS = 8;
 const FAILED_LOGIN_WINDOW_MINUTES = 15;
 
 // How well each category sells on each platform, 0-1. Used only to break ties
-// between platforms whose profit is close. Tune from your own sell-through —
+// between platforms whose net is close. Tune from your own sell-through —
 // these are starting values, not measurements.
 const AUDIENCE_FIT = {
   Footwear:    { ebay: 1.00, depop: 0.90, vinted: 0.55 },
   B22:         { ebay: 1.00, depop: 0.90, vinted: 0.55 },
   B30:         { ebay: 1.00, depop: 0.90, vinted: 0.55 },
+  Sneakers:    { ebay: 1.00, depop: 0.90, vinted: 0.55 },
   Sandals:     { vinted: 0.85, depop: 0.80, ebay: 0.70 },
   Jackets:     { depop: 0.95, vinted: 0.85, ebay: 0.80 },
+  Outerwear:   { depop: 0.95, vinted: 0.85, ebay: 0.80 },
   Tracksuits:  { depop: 1.00, vinted: 0.85, ebay: 0.70 },
   Shirts:      { depop: 1.00, vinted: 0.90, ebay: 0.60 },
+  Bags:        { ebay: 0.95, depop: 0.90, vinted: 0.60 },
   Accessories: { depop: 0.90, ebay: 0.80, vinted: 0.70 },
 };
 const DEFAULT_FIT = { depop: 0.85, ebay: 0.85, vinted: 0.75 };
+
+const DEFAULT_SETTINGS = {
+  postage_pence: 420,
+  hold_minutes: 10,
+  trade_discount_tier_1: 0,
+  trade_discount_tier_2: 3,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,6 +143,16 @@ export function priceToPence(value) {
   return Math.round(Number.parseFloat(match[1]) * 100);
 }
 
+async function loadSettings(env) {
+  const rows = await env.STOCKROOM_DB.prepare('SELECT key, value FROM settings').all();
+  const settings = { ...DEFAULT_SETTINGS };
+  for (const row of rows.results || []) {
+    const numeric = Number(row.value);
+    settings[row.key] = Number.isFinite(numeric) ? numeric : row.value;
+  }
+  return settings;
+}
+
 // ---------------------------------------------------------------------------
 // Sessions
 // ---------------------------------------------------------------------------
@@ -223,91 +243,202 @@ function fitFor(categories, slug) {
   return matched ? best : (DEFAULT_FIT[slug] ?? 0.75);
 }
 
-// profit = proven resale price - platform fees - postage - what the member paid.
-// The resale price is the price this product has actually sold at in the ESNTLS
-// store, not a scraped market estimate, so it is a floor worth trusting rather
-// than a projection.
-export function profitFor(platform, memberPence, resalePence) {
+// net = resale − wholesale cost − postage − platform fee.
+//
+// Postage is included because the reseller pays it whether or not the platform
+// charges a fee, and leaving it out makes every net look better than it is.
+export function netFor(platform, costPence, resalePence, postagePence) {
   const sellingFee = Math.round((resalePence * platform.fee_percent) / 100) + platform.fee_fixed_pence;
   const paymentFee = Math.round((resalePence * platform.pay_percent) / 100) + platform.pay_fixed_pence;
-  const postage = platform.ship_pence;
-  const netPence = resalePence - sellingFee - paymentFee - postage;
-  const profitPence = netPence - memberPence;
+  const postage = postagePence + (platform.ship_pence || 0);
+  const netPence = resalePence - costPence - postage - sellingFee - paymentFee;
 
   return {
     slug: platform.slug,
     name: platform.name,
-    sellingFeePence: sellingFee,
-    paymentFeePence: paymentFee,
+    feePence: sellingFee + paymentFee,
     postagePence: postage,
     netPence,
-    profitPence,
-    marginPercent: resalePence > 0 ? (profitPence / resalePence) * 100 : 0,
-    roiPercent: memberPence > 0 ? (profitPence / memberPence) * 100 : 0,
+    marginPercent: resalePence > 0 ? Math.round((netPence / resalePence) * 100) : 0,
+    roiPercent: costPence > 0 ? Math.round((netPence / costPence) * 100) : 0,
     note: platform.note || '',
   };
 }
 
-export function buildProduct(product, pricing, platforms) {
-  const memberPence = pricing ? pricing.member_price_pence : null;
-  const feedPence = priceToPence(product.price);
-  const resalePence = (pricing && pricing.resale_price_pence) || feedPence;
+// Ranked by net, then by whether that platform actually shifts this category.
+// With UK seller fees at or near zero on all three, platforms frequently tie on
+// net exactly — the fee table alone cannot pick a winner.
+export function rankPlatforms(platforms, categories, costPence, resalePence, postagePence) {
+  return platforms
+    .map((platform) => {
+      const result = netFor(platform, costPence, resalePence, postagePence);
+      result.fit = fitFor(categories, platform.slug);
+      result.score = result.netPence * result.fit;
+      return result;
+    })
+    .sort((a, b) => b.score - a.score);
+}
 
+function categoriesOf(product) {
   const categories = String(product.category || '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
   if (product.brand) categories.push(String(product.brand).trim());
+  return categories;
+}
 
-  const base = {
+export function buildProduct(product, context) {
+  const { pricing, meta, sizes = [], platforms = [], postagePence = 0 } = context || {};
+
+  const costPence = pricing ? pricing.member_price_pence : null;
+  const feedPence = priceToPence(product.price);
+  const resalePence = (pricing && pricing.resale_price_pence) || feedPence;
+  const rrpPence = (meta && meta.rrp_pence) || feedPence;
+  const categories = categoriesOf(product);
+
+  const unitsInStock = sizes.reduce((total, size) => total + Math.max(0, size.units), 0);
+
+  const item = {
     id: product.id,
     name: product.name,
     brand: product.brand || '',
     categories,
-    images: Array.isArray(product.images) ? product.images.slice(0, 6) : [],
+    images: Array.isArray(product.images) ? product.images.slice(0, 8) : [],
     delivery: product.delivery || '',
     lane: (pricing && pricing.lane) || null,
     stockState: pricing ? pricing.stock_state : 'unknown',
     note: (pricing && pricing.note) || '',
-    memberPricePence: memberPence,
-    resalePricePence: resalePence,
-    priced: Number.isFinite(memberPence) && Number.isFinite(resalePence),
+    sku: (meta && meta.sku) || null,
+    shipsFrom: (meta && meta.ships_from) || null,
+    deadstock: Boolean(meta && meta.deadstock),
+    verified: Boolean(meta && meta.verified),
+    moq: (meta && meta.moq) || 1,
+    bulkFrom: (meta && meta.bulk_from) || null,
+    sold30d: meta && meta.sold_30d != null ? meta.sold_30d : null,
+    costPence,
+    resalePence,
+    rrpPence,
+    // "38% BELOW" on the price card. Only meaningful when an RRP is above cost.
+    belowRrpPercent:
+      rrpPence && costPence && rrpPence > costPence
+        ? Math.round(((rrpPence - costPence) / rrpPence) * 100)
+        : null,
+    sizes: sizes.map((size) => ({ label: size.size_label, units: size.units })),
+    unitsInStock,
+    priced: Number.isFinite(costPence) && Number.isFinite(resalePence),
     platforms: [],
     best: null,
   };
 
-  if (!base.priced) return base;
+  if (!item.priced) return item;
 
-  base.platforms = platforms
-    .map((platform) => {
-      const result = profitFor(platform, memberPence, resalePence);
-      result.fit = fitFor(categories, platform.slug);
-      result.score = result.profitPence * result.fit;
-      return result;
-    })
-    .sort((a, b) => b.score - a.score);
-
-  const [winner, runnerUp] = base.platforms;
+  item.platforms = rankPlatforms(platforms, categories, costPence, resalePence, postagePence);
+  const [winner, runnerUp] = item.platforms;
   if (winner) {
-    const closeOnProfit =
-      runnerUp && Math.abs(winner.profitPence - runnerUp.profitPence) <= 100;
-    base.best = {
+    const tied = runnerUp && Math.abs(winner.netPence - runnerUp.netPence) <= 100;
+    item.best = {
       slug: winner.slug,
       name: winner.name,
-      profitPence: winner.profitPence,
-      // Say which of the two things decided it, so the number is explainable
-      // rather than an oracle.
-      reason: closeOnProfit
-        ? `Similar profit to ${runnerUp.name}; ${winner.name} sells this category faster`
-        : `Highest profit after fees (${winner.name})`,
+      netPence: winner.netPence,
+      reason: tied
+        ? `Similar net to ${runnerUp.name}; ${winner.name} sells this category faster`
+        : `Highest net after fees on ${winner.name}`,
     };
   }
-
-  return base;
+  return item;
 }
 
 // ---------------------------------------------------------------------------
-// Route handlers
+// Catalogue assembly
+// ---------------------------------------------------------------------------
+
+async function loadFeed(env) {
+  const object = await env.MEDIA_BUCKET.get('products.json');
+  if (!object) return [];
+  let feed;
+  try {
+    feed = JSON.parse(await object.text());
+  } catch {
+    return [];
+  }
+  const products = Array.isArray(feed) ? feed : feed.products || [];
+  return products.filter(
+    (product) =>
+      product && product.active !== false && product.archived !== true && product.hidden !== true,
+  );
+}
+
+// Units still free after live holds are subtracted.
+async function heldUnits(env) {
+  const rows = await env.STOCKROOM_DB
+    .prepare(
+      `SELECT product_id, size_label, SUM(qty) AS held
+         FROM stock_holds
+        WHERE released_at IS NULL AND expires_at > datetime('now')
+        GROUP BY product_id, size_label`,
+    )
+    .all();
+  const map = new Map();
+  for (const row of rows.results || []) {
+    map.set(`${row.product_id}|${row.size_label || ''}`, row.held);
+  }
+  return map;
+}
+
+async function loadCatalogue(env) {
+  const [feed, settings, pricingRows, platformRows, metaRows, sizeRows, holds] = await Promise.all([
+    loadFeed(env),
+    loadSettings(env),
+    env.STOCKROOM_DB.prepare('SELECT * FROM product_pricing').all(),
+    env.STOCKROOM_DB.prepare('SELECT * FROM platforms WHERE active = 1').all(),
+    env.STOCKROOM_DB.prepare('SELECT * FROM product_meta').all(),
+    env.STOCKROOM_DB.prepare('SELECT * FROM product_sizes ORDER BY position, size_label').all(),
+    heldUnits(env),
+  ]);
+
+  const pricingById = new Map((pricingRows.results || []).map((row) => [Number(row.product_id), row]));
+  const metaById = new Map((metaRows.results || []).map((row) => [Number(row.product_id), row]));
+  const sizesById = new Map();
+  for (const row of sizeRows.results || []) {
+    const held = holds.get(`${row.product_id}|${row.size_label}`) || 0;
+    const list = sizesById.get(Number(row.product_id)) || [];
+    list.push({ ...row, units: Math.max(0, row.units - held) });
+    sizesById.set(Number(row.product_id), list);
+  }
+
+  const platforms = platformRows.results || [];
+  const items = feed
+    .map((product) =>
+      buildProduct(product, {
+        pricing: pricingById.get(Number(product.id)),
+        meta: metaById.get(Number(product.id)),
+        sizes: sizesById.get(Number(product.id)) || [],
+        platforms,
+        postagePence: settings.postage_pence,
+      }),
+    )
+    .filter((item) => item.priced);
+
+  return { items, platforms, settings, unpricedCount: feed.length - items.length };
+}
+
+function sortItems(items, mode) {
+  const ranked = items.slice();
+  ranked.sort((a, b) => {
+    // Sold out always sinks: the top of a margin-ranked grid must be buyable.
+    const aOut = a.stockState === 'out' || a.unitsInStock === 0 ? 1 : 0;
+    const bOut = b.stockState === 'out' || b.unitsInStock === 0 ? 1 : 0;
+    if (aOut !== bOut) return aOut - bOut;
+    if (mode === 'cost') return a.costPence - b.costPence;
+    if (mode === 'roi') return (b.platforms[0]?.roiPercent || 0) - (a.platforms[0]?.roiPercent || 0);
+    return (b.platforms[0]?.netPence || 0) - (a.platforms[0]?.netPence || 0);
+  });
+  return ranked;
+}
+
+// ---------------------------------------------------------------------------
+// Login
 // ---------------------------------------------------------------------------
 
 async function recentFailedLogins(env, email, ip) {
@@ -387,13 +518,7 @@ async function handleLogin(request, env) {
   await recordLogin(env, { memberId: member.id, email, outcome: 'ok', request });
 
   return json(
-    {
-      member: {
-        email: member.email,
-        displayName: member.display_name,
-        tier: member.tier,
-      },
-    },
+    { member: { email: member.email, displayName: member.display_name, tier: member.tier } },
     200,
     { 'Set-Cookie': sessionCookie(token, maxAge) },
   );
@@ -410,66 +535,337 @@ async function handleLogout(request, env) {
   return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0) });
 }
 
-async function handleMe(request, env) {
-  const session = await resolveSession(env, request);
-  if (!session) return json({ error: 'Not signed in' }, 401);
+async function handleMe(request, env, session) {
   return json({
     member: { email: session.email, displayName: session.displayName, tier: session.tier },
   });
 }
 
-async function handleCatalogue(request, env) {
-  const session = await resolveSession(env, request);
-  if (!session) return json({ error: 'Not signed in' }, 401);
+// ---------------------------------------------------------------------------
+// Screens
+// ---------------------------------------------------------------------------
 
-  await env.STOCKROOM_DB
-    .prepare("UPDATE sessions SET last_seen_at = datetime('now') WHERE token_hash = ?")
-    .bind(session.tokenHash)
-    .run();
+// Home account figures come from real orders. Before any order exists these are
+// zero, which is correct — the design's £4,180 / +£1,264 are placeholders.
+async function accountStats(env, memberId) {
+  const row = await env.STOCKROOM_DB
+    .prepare(
+      `SELECT
+         COALESCE(SUM(CASE WHEN created_at > datetime('now','-30 days') THEN total_pence END), 0) AS spend30d,
+         COALESCE(SUM(CASE WHEN status = 'delivered' THEN projected_net_pence END), 0) AS realised
+       FROM orders WHERE member_id = ?`,
+    )
+    .bind(memberId)
+    .first();
+  return { spend30dPence: row?.spend30d || 0, realisedPence: row?.realised || 0 };
+}
 
-  const feedObject = await env.MEDIA_BUCKET.get('products.json');
-  if (!feedObject) return json({ error: 'Catalogue unavailable' }, 503);
+async function handleHome(request, env, session) {
+  const { items, settings, platforms } = await loadCatalogue(env);
 
-  let feed;
-  try {
-    feed = JSON.parse(await feedObject.text());
-  } catch {
-    return json({ error: 'Catalogue unavailable' }, 503);
-  }
-
-  const products = (Array.isArray(feed) ? feed : feed.products || []).filter(
-    (product) => product && product.active !== false && product.archived !== true && product.hidden !== true,
-  );
-
-  const [pricingRows, platformRows] = await Promise.all([
-    env.STOCKROOM_DB.prepare('SELECT * FROM product_pricing').all(),
-    env.STOCKROOM_DB.prepare('SELECT * FROM platforms WHERE active = 1').all(),
+  const [drop, lots, alerts, stats] = await Promise.all([
+    env.STOCKROOM_DB
+      .prepare(
+        `SELECT * FROM drops
+          WHERE active = 1
+            AND (starts_at IS NULL OR starts_at <= datetime('now'))
+            AND (ends_at   IS NULL OR ends_at   >  datetime('now'))
+          ORDER BY id DESC LIMIT 1`,
+      )
+      .first(),
+    env.STOCKROOM_DB.prepare('SELECT * FROM bulk_lots WHERE active = 1 ORDER BY id LIMIT 4').all(),
+    env.STOCKROOM_DB
+      .prepare('SELECT product_id FROM restock_alerts WHERE member_id = ? AND notified_at IS NULL')
+      .bind(session.id)
+      .all(),
+    accountStats(env, session.id),
   ]);
 
-  const pricingById = new Map((pricingRows.results || []).map((row) => [Number(row.product_id), row]));
-  const platforms = platformRows.results || [];
-
-  const items = products
-    .map((product) => buildProduct(product, pricingById.get(Number(product.id)), platforms))
-    .filter((item) => item.priced)
-    .sort((a, b) => (b.best?.profitPence || 0) - (a.best?.profitPence || 0));
+  const alertIds = new Set((alerts.results || []).map((row) => Number(row.product_id)));
+  const byMargin = sortItems(items, 'net');
 
   return json({
     member: { email: session.email, displayName: session.displayName, tier: session.tier },
+    stats: { ...stats, tier: session.tier },
+    skuCount: items.reduce((total, item) => total + Math.max(1, item.unitsInStock), 0),
+    drop: drop
+      ? {
+          eyebrow: drop.eyebrow,
+          headline: drop.headline,
+          ctaLabel: drop.cta_label,
+          imageUrl: drop.image_url,
+          category: drop.category,
+          endsAt: drop.ends_at,
+          // "avg +£164 net" is measured across what is actually in the drop.
+          avgNetPence: byMargin.length
+            ? Math.round(
+                byMargin.reduce((total, item) => total + (item.platforms[0]?.netPence || 0), 0) /
+                  byMargin.length,
+              )
+            : null,
+        }
+      : null,
+    categories: [...new Set(items.flatMap((item) => item.categories))].sort(),
+    highestMargin: byMargin.slice(0, 8),
+    restocks: byMargin.filter((item) => alertIds.has(item.id)).slice(0, 4),
+    bulkLots: (lots.results || []).map((lot) => ({
+      id: lot.id,
+      eyebrow: lot.eyebrow,
+      title: lot.title,
+      units: lot.units,
+      pricePence: lot.price_pence,
+      unitPricePence: lot.units > 0 ? Math.round(lot.price_pence / lot.units) : null,
+      imageUrl: lot.image_url,
+    })),
+    platforms: platforms.map((platform) => ({ slug: platform.slug, name: platform.name })),
+    settings: { postagePence: settings.postage_pence, holdMinutes: settings.hold_minutes },
+  });
+}
+
+async function handleBrowse(request, env, session) {
+  const url = new URL(request.url);
+  const query = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const category = url.searchParams.get('category') || '';
+  const min = Number(url.searchParams.get('min')) || 0;
+  const max = Number(url.searchParams.get('max')) || Infinity;
+  const inStockOnly = url.searchParams.get('inStock') === '1';
+  const sort = url.searchParams.get('sort') || 'net';
+
+  const { items, settings, unpricedCount } = await loadCatalogue(env);
+
+  const filtered = items.filter((item) => {
+    if (query && !`${item.name} ${item.brand} ${item.sku || ''}`.toLowerCase().includes(query)) return false;
+    if (category && !item.categories.includes(category)) return false;
+    if (item.costPence < min * 100 || item.costPence > max * 100) return false;
+    if (inStockOnly && (item.stockState === 'out' || item.unitsInStock === 0)) return false;
+    return true;
+  });
+
+  return json({
+    member: { email: session.email, displayName: session.displayName, tier: session.tier },
+    categories: [...new Set(items.flatMap((item) => item.categories))].sort(),
+    items: sortItems(filtered, sort),
+    resultCount: filtered.length,
+    unpricedCount,
+    settings: { postagePence: settings.postage_pence },
+  });
+}
+
+async function handleProduct(request, env, session, productId) {
+  const { items, platforms, settings } = await loadCatalogue(env);
+  const item = items.find((entry) => entry.id === Number(productId));
+  if (!item) return json({ error: 'Not found' }, 404);
+
+  const related = sortItems(
+    items.filter(
+      (entry) => entry.id !== item.id && entry.categories.some((c) => item.categories.includes(c)),
+    ),
+    'net',
+  ).slice(0, 6);
+
+  return json({
+    member: { email: session.email, displayName: session.displayName, tier: session.tier },
+    item,
+    related,
+    // The calculator runs client-side against these, so it stays live on the
+    // slider without a round trip. Fees are data, never hardcoded in the page.
     platforms: platforms.map((platform) => ({
       slug: platform.slug,
       name: platform.name,
-      note: platform.note || '',
+      feePercent: platform.fee_percent,
+      feeFixedPence: platform.fee_fixed_pence,
+      payPercent: platform.pay_percent,
+      payFixedPence: platform.pay_fixed_pence,
+      shipPence: platform.ship_pence,
+      note: platform.note,
+      fit: fitFor(item.categories, platform.slug),
     })),
-    items,
-    // Products with no member price set yet are hidden rather than shown at £0.
-    unpricedCount: products.length - items.length,
+    settings: { postagePence: settings.postage_pence, holdMinutes: settings.hold_minutes },
   });
 }
 
-// Admin write path, guarded by a secret set with
-// `wrangler secret put STOCKROOM_ADMIN_TOKEN --config wrangler.site-cdn.jsonc`.
-// Kept separate from the member session entirely.
+// Adding to cart reserves units for `hold_minutes`, so two members cannot both
+// buy the last pair while one of them is still typing an address.
+async function handleHold(request, env, session) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json({ error: 'Invalid request' }, 400);
+  }
+
+  const productId = Number(payload.productId);
+  const sizeLabel = payload.sizeLabel || null;
+  const qty = Math.max(1, Math.round(Number(payload.qty) || 1));
+  if (!Number.isFinite(productId)) return json({ error: 'Unknown product' }, 400);
+
+  const settings = await loadSettings(env);
+
+  const sizeRow = await env.STOCKROOM_DB
+    .prepare('SELECT units FROM product_sizes WHERE product_id = ? AND size_label = ?')
+    .bind(productId, sizeLabel || '')
+    .first();
+
+  const held = await env.STOCKROOM_DB
+    .prepare(
+      `SELECT COALESCE(SUM(qty), 0) AS held FROM stock_holds
+        WHERE product_id = ? AND (size_label IS ? OR size_label = ?)
+          AND released_at IS NULL AND expires_at > datetime('now')
+          AND member_id != ?`,
+    )
+    .bind(productId, sizeLabel, sizeLabel || '', session.id)
+    .first();
+
+  const available = (sizeRow?.units ?? Infinity) - (held?.held || 0);
+  if (Number.isFinite(available) && qty > available) {
+    return json({ error: `Only ${Math.max(0, available)} left in that size`, available: Math.max(0, available) }, 409);
+  }
+
+  const expiresAt = new Date(Date.now() + settings.hold_minutes * 60000).toISOString();
+  await env.STOCKROOM_DB
+    .prepare(
+      `INSERT INTO stock_holds (member_id, product_id, size_label, qty, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .bind(session.id, productId, sizeLabel, qty, expiresAt)
+    .run();
+
+  return json({ ok: true, expiresAt, holdMinutes: settings.hold_minutes });
+}
+
+async function handleAlert(request, env, session) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json({ error: 'Invalid request' }, 400);
+  }
+  const productId = Number(payload.productId);
+  if (!Number.isFinite(productId)) return json({ error: 'Unknown product' }, 400);
+
+  await env.STOCKROOM_DB
+    .prepare('INSERT OR IGNORE INTO restock_alerts (member_id, product_id) VALUES (?, ?)')
+    .bind(session.id, productId)
+    .run();
+  return json({ ok: true });
+}
+
+async function handleSaveSearch(request, env, session) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json({ error: 'Invalid request' }, 400);
+  }
+  const query = String(payload.query || '').trim();
+  if (!query) return json({ error: 'Nothing to save' }, 400);
+
+  await env.STOCKROOM_DB
+    .prepare('INSERT INTO saved_searches (member_id, query) VALUES (?, ?)')
+    .bind(session.id, query)
+    .run();
+  return json({ ok: true });
+}
+
+function orderReference() {
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  const code = [...bytes].map((b) => b.toString(36).toUpperCase().padStart(2, '0')).join('');
+  return `ESN-${code.slice(0, 6)}`;
+}
+
+// Records the order. Deliberately does NOT take payment: no provider is wired
+// up, so payment_state stays 'unpaid' and settlement happens out of band.
+async function handleOrder(request, env, session) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json({ error: 'Invalid request' }, 400);
+  }
+
+  const lines = Array.isArray(payload.lines) ? payload.lines : [];
+  if (!lines.length) return json({ error: 'Cart is empty' }, 400);
+
+  const { items, settings } = await loadCatalogue(env);
+  const byId = new Map(items.map((item) => [item.id, item]));
+
+  let subtotal = 0;
+  let projectedNet = 0;
+  const resolved = [];
+
+  for (const line of lines) {
+    const item = byId.get(Number(line.productId));
+    if (!item) return json({ error: `Product ${line.productId} is no longer available` }, 409);
+    const qty = Math.max(1, Math.round(Number(line.qty) || 1));
+    // Price is taken from the catalogue, never from the client, so a tampered
+    // cart cannot set its own wholesale price.
+    subtotal += item.costPence * qty;
+    const net = (item.platforms[0]?.netPence || 0) * qty;
+    projectedNet += net;
+    resolved.push({
+      productId: item.id,
+      name: item.name,
+      sizeLabel: line.sizeLabel || null,
+      qty,
+      unitPricePence: item.costPence,
+      projectedNetPence: net,
+    });
+  }
+
+  const tierKey = `trade_discount_tier_${String(session.tier || '').replace(/\D/g, '') || '1'}`;
+  const discountPercent = Number(settings[tierKey]) || 0;
+  const discount = Math.round((subtotal * discountPercent) / 100);
+  const shipping = Math.max(0, Math.round(Number(payload.shippingPence) || 0));
+  const total = subtotal - discount + shipping;
+  const reference = orderReference();
+
+  const insert = await env.STOCKROOM_DB
+    .prepare(
+      `INSERT INTO orders
+         (member_id, reference, subtotal_pence, discount_pence, shipping_pence, total_pence,
+          projected_net_pence, shipping_option, ship_to, payment_method, payment_state, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', 'placed')`,
+    )
+    .bind(
+      session.id,
+      reference,
+      subtotal,
+      discount,
+      shipping,
+      total,
+      projectedNet,
+      payload.shippingOption || null,
+      JSON.stringify(payload.shipTo || {}),
+      payload.paymentMethod || null,
+    )
+    .run();
+
+  const orderId = insert.meta.last_row_id;
+  await env.STOCKROOM_DB.batch(
+    resolved.map((line) =>
+      env.STOCKROOM_DB
+        .prepare(
+          `INSERT INTO order_lines
+             (order_id, product_id, name, size_label, qty, unit_price_pence, projected_net_pence)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(orderId, line.productId, line.name, line.sizeLabel, line.qty, line.unitPricePence, line.projectedNetPence),
+    ),
+  );
+
+  return json({
+    ok: true,
+    reference,
+    totals: { subtotal, discount, discountPercent, shipping, total, projectedNet },
+    // The page shows this so nobody believes a card was charged.
+    paymentState: 'unpaid',
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
 async function handleAdmin(request, env, action) {
   const expected = env.STOCKROOM_ADMIN_TOKEN;
   const supplied = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
@@ -514,33 +910,97 @@ async function handleAdmin(request, env, action) {
   if (action === 'pricing') {
     const rows = Array.isArray(payload.pricing) ? payload.pricing : [];
     if (!rows.length) return json({ error: 'No pricing rows supplied' }, 400);
-
-    const statements = rows.map((row) =>
-      env.STOCKROOM_DB
-        .prepare(
-          `INSERT INTO product_pricing
-             (product_id, member_price_pence, resale_price_pence, lane, stock_state, note, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-           ON CONFLICT (product_id) DO UPDATE SET
-             member_price_pence = excluded.member_price_pence,
-             resale_price_pence = excluded.resale_price_pence,
-             lane               = excluded.lane,
-             stock_state        = excluded.stock_state,
-             note               = excluded.note,
-             updated_at         = datetime('now')`,
-        )
-        .bind(
-          Number(row.productId),
-          Math.round(Number(row.memberPricePence)),
-          row.resalePricePence == null ? null : Math.round(Number(row.resalePricePence)),
-          row.lane || null,
-          row.stockState || 'in_stock',
-          row.note || null,
-        ),
+    await env.STOCKROOM_DB.batch(
+      rows.map((row) =>
+        env.STOCKROOM_DB
+          .prepare(
+            `INSERT INTO product_pricing
+               (product_id, member_price_pence, resale_price_pence, lane, stock_state, note, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+             ON CONFLICT (product_id) DO UPDATE SET
+               member_price_pence = excluded.member_price_pence,
+               resale_price_pence = excluded.resale_price_pence,
+               lane               = excluded.lane,
+               stock_state        = excluded.stock_state,
+               note               = excluded.note,
+               updated_at         = datetime('now')`,
+          )
+          .bind(
+            Number(row.productId),
+            Math.round(Number(row.memberPricePence)),
+            row.resalePricePence == null ? null : Math.round(Number(row.resalePricePence)),
+            row.lane || null,
+            row.stockState || 'in_stock',
+            row.note || null,
+          ),
+      ),
     );
+    return json({ ok: true, updated: rows.length });
+  }
 
-    await env.STOCKROOM_DB.batch(statements);
-    return json({ ok: true, updated: statements.length });
+  if (action === 'meta') {
+    await env.STOCKROOM_DB
+      .prepare(
+        `INSERT INTO product_meta
+           (product_id, sku, rrp_pence, sold_30d, ships_from, deadstock, verified, moq, bulk_from, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+         ON CONFLICT (product_id) DO UPDATE SET
+           sku = excluded.sku, rrp_pence = excluded.rrp_pence, sold_30d = excluded.sold_30d,
+           ships_from = excluded.ships_from, deadstock = excluded.deadstock,
+           verified = excluded.verified, moq = excluded.moq, bulk_from = excluded.bulk_from,
+           updated_at = datetime('now')`,
+      )
+      .bind(
+        Number(payload.productId),
+        payload.sku || null,
+        payload.rrpPence == null ? null : Math.round(Number(payload.rrpPence)),
+        payload.sold30d == null ? null : Math.round(Number(payload.sold30d)),
+        payload.shipsFrom || null,
+        payload.deadstock ? 1 : 0,
+        payload.verified ? 1 : 0,
+        Math.max(1, Number(payload.moq) || 1),
+        payload.bulkFrom == null ? null : Number(payload.bulkFrom),
+      )
+      .run();
+    return json({ ok: true });
+  }
+
+  if (action === 'sizes') {
+    const productId = Number(payload.productId);
+    const sizes = Array.isArray(payload.sizes) ? payload.sizes : [];
+    if (!Number.isFinite(productId) || !sizes.length) {
+      return json({ error: 'productId and sizes are required' }, 400);
+    }
+    await env.STOCKROOM_DB.batch([
+      env.STOCKROOM_DB.prepare('DELETE FROM product_sizes WHERE product_id = ?').bind(productId),
+      ...sizes.map((size, index) =>
+        env.STOCKROOM_DB
+          .prepare(
+            'INSERT INTO product_sizes (product_id, size_label, units, position) VALUES (?, ?, ?, ?)',
+          )
+          .bind(productId, String(size.label), Math.max(0, Number(size.units) || 0), index),
+      ),
+    ]);
+    return json({ ok: true, sizes: sizes.length });
+  }
+
+  if (action === 'drop') {
+    await env.STOCKROOM_DB
+      .prepare(
+        `INSERT INTO drops (eyebrow, headline, cta_label, image_url, category, starts_at, ends_at, active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+      )
+      .bind(
+        payload.eyebrow || null,
+        String(payload.headline || 'New drop'),
+        payload.ctaLabel || 'Shop the drop',
+        payload.imageUrl || null,
+        payload.category || null,
+        payload.startsAt || null,
+        payload.endsAt || null,
+      )
+      .run();
+    return json({ ok: true });
   }
 
   return json({ error: 'Unknown admin action' }, 404);
@@ -565,10 +1025,26 @@ export async function handleStockroom(request, env) {
 
   if (method === 'POST' && route === 'login') return handleLogin(request, env);
   if (method === 'POST' && route === 'logout') return handleLogout(request, env);
-  if (method === 'GET' && route === 'me') return handleMe(request, env);
-  if (method === 'GET' && route === 'catalogue') return handleCatalogue(request, env);
-  if (method === 'POST' && route === 'admin/member') return handleAdmin(request, env, 'member');
-  if (method === 'POST' && route === 'admin/pricing') return handleAdmin(request, env, 'pricing');
+  if (method === 'POST' && route.startsWith('admin/')) {
+    return handleAdmin(request, env, route.slice('admin/'.length));
+  }
+
+  // Everything past this point requires a live session.
+  const session = await resolveSession(env, request);
+  if (!session) return json({ error: 'Not signed in' }, 401);
+
+  if (method === 'GET' && route === 'me') return handleMe(request, env, session);
+  if (method === 'GET' && route === 'home') return handleHome(request, env, session);
+  if (method === 'GET' && (route === 'browse' || route === 'catalogue')) {
+    return handleBrowse(request, env, session);
+  }
+  if (method === 'GET' && route.startsWith('product/')) {
+    return handleProduct(request, env, session, route.slice('product/'.length));
+  }
+  if (method === 'POST' && route === 'hold') return handleHold(request, env, session);
+  if (method === 'POST' && route === 'alert') return handleAlert(request, env, session);
+  if (method === 'POST' && route === 'saved-search') return handleSaveSearch(request, env, session);
+  if (method === 'POST' && route === 'order') return handleOrder(request, env, session);
 
   return json({ error: 'Not found' }, 404);
 }
