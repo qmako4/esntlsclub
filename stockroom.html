@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ESNTLS STOCKROOM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f4f4f4;color:#111;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.bebas{font-family:'Bebas Neue',sans-serif;letter-spacing:2px}
+.hide{display:none!important}
+
+/* Login ------------------------------------------------------------------ */
+#gate{align-items:center;background:#111;display:flex;justify-content:center;min-height:100vh;padding:24px}
+.gate-card{background:#fff;border-radius:18px;max-width:400px;padding:36px 30px;width:100%}
+.gate-card h1{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:3px;line-height:1}
+.gate-card .sub{color:#666;font-size:14px;margin:6px 0 26px}
+.field{display:block;margin-bottom:14px}
+.field span{color:#555;display:block;font-size:12px;font-weight:700;letter-spacing:.6px;margin-bottom:6px;text-transform:uppercase}
+.field input{background:#f7f7f7;border:1px solid #e2e2e2;border-radius:10px;font-family:inherit;font-size:16px;padding:14px;width:100%}
+.field input:focus{background:#fff;border-color:#111;outline:none}
+.btn{background:#111;border:0;border-radius:999px;color:#fff;cursor:pointer;font-family:inherit;font-size:15px;font-weight:900;letter-spacing:.5px;min-height:52px;width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.err{background:#ffeaea;border-radius:10px;color:#c00;font-size:13px;margin-bottom:14px;padding:11px 13px}
+.gate-note{border-top:1px solid #eee;color:#888;font-size:12px;line-height:1.6;margin-top:24px;padding-top:16px}
+
+/* Shell ------------------------------------------------------------------ */
+header{background:#111;color:#fff;padding:16px 20px;position:sticky;top:0;z-index:20}
+.head-row{align-items:center;display:flex;gap:14px;margin:0 auto;max-width:1240px}
+.head-row h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;line-height:1}
+.head-row .who{color:#9a9a9a;font-size:12px;margin-left:auto;text-align:right}
+.linkbtn{background:none;border:1px solid #444;border-radius:999px;color:#ddd;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px}
+main{margin:0 auto;max-width:1240px;padding:20px}
+
+.bar{align-items:center;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{background:#fff;border:1px solid #e0e0e0;border-radius:999px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;padding:8px 15px}
+.chip.on{background:#111;border-color:#111;color:#fff}
+.bar select{background:#fff;border:1px solid #e0e0e0;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;margin-left:auto;padding:9px 14px}
+
+/* Cards ------------------------------------------------------------------ */
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.card{background:#fff;border-radius:14px;cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.card:hover{box-shadow:0 8px 24px rgba(0,0,0,.09);transform:translateY(-2px)}
+.card .shot{aspect-ratio:1;background:#eee center/cover no-repeat;position:relative}
+.card.out{opacity:.55}
+.card.out .amt{color:#888!important}
+.tag{border-radius:999px;font-size:10px;font-weight:900;left:10px;letter-spacing:.8px;padding:5px 9px;position:absolute;text-transform:uppercase;top:10px}
+.tag-next{background:#00C853;color:#fff}
+.tag-china{background:#fff;color:#666}
+.tag-out{background:#c00;color:#fff;left:auto;right:10px}
+.card .body{padding:14px}
+.card h3{font-size:14px;font-weight:700;line-height:1.3;margin-bottom:10px;min-height:36px}
+.row{display:flex;font-size:12px;justify-content:space-between;margin-bottom:4px}
+.row span:first-child{color:#888}
+.row span:last-child{font-weight:700}
+.profit{align-items:baseline;border-top:1px solid #eee;display:flex;justify-content:space-between;margin-top:10px;padding-top:10px}
+.profit .amt{color:#0a8f3c;font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;line-height:1}
+.profit .amt.neg{color:#c00}
+.profit .roi{color:#888;font-size:11px;font-weight:700}
+.where{background:#f4f4f4;border-radius:8px;font-size:11px;font-weight:700;margin-top:10px;padding:8px 10px}
+.where b{color:#111}
+
+/* Detail ----------------------------------------------------------------- */
+#sheet{background:rgba(0,0,0,.55);bottom:0;left:0;overflow-y:auto;padding:24px;position:fixed;right:0;top:0;z-index:40}
+.sheet-card{background:#fff;border-radius:18px;margin:0 auto;max-width:600px;overflow:hidden}
+.sheet-head{display:flex;gap:16px;padding:20px}
+.sheet-head .shot{background:#eee center/cover no-repeat;border-radius:10px;flex:0 0 96px;height:96px}
+.sheet-head h2{font-size:18px;font-weight:700;line-height:1.3}
+.sheet-head p{color:#888;font-size:12px;margin-top:4px}
+table{border-collapse:collapse;width:100%}
+th,td{border-top:1px solid #eee;font-size:13px;padding:11px 20px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{background:#fafafa;color:#888;font-size:10px;letter-spacing:.8px;text-transform:uppercase}
+tbody tr.win{background:#f2fbf5}
+tbody tr.win td:first-child::after{background:#00C853;border-radius:999px;color:#fff;content:'BEST';font-size:9px;font-weight:900;margin-left:7px;padding:3px 6px;vertical-align:middle}
+.pos{color:#0a8f3c;font-weight:700}
+.neg{color:#c00;font-weight:700}
+.sheet-foot{border-top:1px solid #eee;color:#777;font-size:11px;line-height:1.6;padding:16px 20px}
+.empty{background:#fff;border-radius:14px;color:#777;font-size:14px;line-height:1.7;padding:40px 24px;text-align:center}
+@media(max-width:560px){
+  header{padding:12px 14px}
+  .head-row{gap:10px}
+  .head-row h1{font-size:19px;letter-spacing:2px;white-space:nowrap}
+  .head-row .who{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .linkbtn{flex:0 0 auto;padding:7px 11px;white-space:nowrap}
+  main{padding:14px}
+  .grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .card h3{font-size:13px;min-height:0}
+  .profit .amt{font-size:26px}
+  #sheet{padding:12px}
+  th,td{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- Login ------------------------------------------------------------------->
+<div id="gate">
+  <div class="gate-card">
+    <h1>ESNTLS<br>STOCKROOM</h1>
+    <p class="sub">Members only. Sign in with the details sent to you.</p>
+    <div id="gateErr" class="err hide"></div>
+    <form id="loginForm">
+      <label class="field"><span>Email</span>
+        <input id="email" type="email" autocomplete="username" required></label>
+      <label class="field"><span>Password</span>
+        <input id="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn" id="loginBtn" type="submit">Sign in</button>
+    </form>
+    <p class="gate-note">One person per account. Signing in anywhere else ends this
+      session, so a shared login means you both keep getting signed out.</p>
+  </div>
+</div>
+
+<!-- App --------------------------------------------------------------------->
+<div id="app" class="hide">
+  <header>
+    <div class="head-row">
+      <h1>ESNTLS STOCKROOM</h1>
+      <div class="who"><span id="who"></span></div>
+      <button class="linkbtn" id="logoutBtn" type="button">Sign out</button>
+    </div>
+  </header>
+  <main>
+    <div class="bar" id="filters"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty hide" id="empty"></div>
+  </main>
+</div>
+
+<div id="sheet" class="hide"></div>
+
+<script>
+'use strict';
+
+var STATE = { items: [], platforms: [], category: 'All', sort: 'profit' };
+
+function money(pence){
+  if(pence === null || pence === undefined || !isFinite(pence)) return '—';
+  var neg = pence < 0;
+  return (neg ? '−£' : '£') + (Math.abs(pence)/100).toFixed(2);
+}
+function esc(value){
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+async function api(path, options){
+  var res = await fetch('/api/stockroom/' + path, Object.assign({
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }
+  }, options || {}));
+  var data = null;
+  try { data = await res.json(); } catch (e) { data = {}; }
+  return { ok: res.ok, status: res.status, data: data };
+}
+
+/* Login -------------------------------------------------------------------- */
+
+document.getElementById('loginForm').addEventListener('submit', async function(event){
+  event.preventDefault();
+  var btn = document.getElementById('loginBtn');
+  var err = document.getElementById('gateErr');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  err.classList.add('hide');
+
+  var res = await api('login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    })
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Sign in';
+
+  if(!res.ok){
+    err.textContent = res.data.error || 'Could not sign in';
+    err.classList.remove('hide');
+    return;
+  }
+  document.getElementById('password').value = '';
+  await enterApp();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async function(){
+  await api('logout', { method: 'POST' });
+  location.reload();
+});
+
+/* Catalogue ---------------------------------------------------------------- */
+
+async function enterApp(){
+  var res = await api('catalogue');
+  if(!res.ok){
+    // Session died — most often because this account signed in somewhere else.
+    document.getElementById('app').classList.add('hide');
+    document.getElementById('gate').classList.remove('hide');
+    if(res.status === 401){
+      var err = document.getElementById('gateErr');
+      err.textContent = 'Signed out. This account was used somewhere else.';
+      err.classList.remove('hide');
+    }
+    return;
+  }
+
+  STATE.items = res.data.items || [];
+  STATE.platforms = res.data.platforms || [];
+  STATE.unpriced = res.data.unpricedCount || 0;
+
+  document.getElementById('who').textContent =
+    (res.data.member.displayName || res.data.member.email);
+  document.getElementById('gate').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+
+  renderFilters();
+  render();
+}
+
+function categories(){
+  var seen = {};
+  STATE.items.forEach(function(item){
+    (item.categories || []).forEach(function(category){ seen[category] = true; });
+  });
+  return ['All'].concat(Object.keys(seen).sort());
+}
+
+function renderFilters(){
+  var bar = document.getElementById('filters');
+  bar.innerHTML =
+    categories().map(function(category){
+      return '<button class="chip' + (category === STATE.category ? ' on' : '') +
+        '" data-cat="' + esc(category) + '">' + esc(category) + '</button>';
+    }).join('') +
+    '<select id="sort">' +
+      '<option value="profit">Highest profit</option>' +
+      '<option value="roi">Best return on cost</option>' +
+      '<option value="cost">Lowest buy price</option>' +
+    '</select>';
+
+  bar.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      STATE.category = chip.dataset.cat;
+      renderFilters();
+      render();
+    });
+  });
+  var sort = document.getElementById('sort');
+  sort.value = STATE.sort;
+  sort.addEventListener('change', function(){ STATE.sort = sort.value; render(); });
+}
+
+function visibleItems(){
+  var items = STATE.items.filter(function(item){
+    return STATE.category === 'All' || (item.categories || []).indexOf(STATE.category) !== -1;
+  });
+  items.sort(function(a, b){
+    // Out of stock always sinks, whatever the sort. A member should never open
+    // Stockroom and find the top of the page is something they cannot buy.
+    var aOut = a.stockState === 'out' ? 1 : 0, bOut = b.stockState === 'out' ? 1 : 0;
+    if(aOut !== bOut) return aOut - bOut;
+
+    if(STATE.sort === 'cost') return a.memberPricePence - b.memberPricePence;
+    var aBest = a.platforms[0] || {}, bBest = b.platforms[0] || {};
+    if(STATE.sort === 'roi') return (bBest.roiPercent || 0) - (aBest.roiPercent || 0);
+    return (bBest.profitPence || 0) - (aBest.profitPence || 0);
+  });
+  return items;
+}
+
+function laneTag(item){
+  if(item.stockState === 'out') return '<span class="tag tag-out">Out</span>';
+  if(item.lane === 'next_day') return '<span class="tag tag-next">Next day</span>';
+  if(item.lane === 'china') return '<span class="tag tag-china">7–12 days</span>';
+  return '';
+}
+
+function render(){
+  var grid = document.getElementById('grid');
+  var empty = document.getElementById('empty');
+  var items = visibleItems();
+
+  if(!items.length){
+    grid.innerHTML = '';
+    empty.classList.remove('hide');
+    empty.innerHTML = STATE.items.length
+      ? 'Nothing in this category yet.'
+      : 'No products have a member price set yet.' +
+        (STATE.unpriced ? ' ' + STATE.unpriced + ' waiting to be priced.' : '');
+    return;
+  }
+  empty.classList.add('hide');
+
+  grid.innerHTML = items.map(function(item){
+    var best = item.platforms[0] || {};
+    var negative = best.profitPence < 0;
+    return '' +
+    '<article class="card' + (item.stockState === 'out' ? ' out' : '') + '" data-id="' + item.id + '">' +
+      '<div class="shot" style="background-image:url(' + esc(item.images[0] || '') + ')">' +
+        laneTag(item) +
+      '</div>' +
+      '<div class="body">' +
+        '<h3>' + esc(item.name) + '</h3>' +
+        '<div class="row"><span>You pay</span><span>' + money(item.memberPricePence) + '</span></div>' +
+        '<div class="row"><span>Sells for</span><span>' + money(item.resalePricePence) + '</span></div>' +
+        '<div class="profit">' +
+          '<span class="amt' + (negative ? ' neg' : '') + '">' + money(best.profitPence) + '</span>' +
+          '<span class="roi">' + Math.round(best.roiPercent || 0) + '% return</span>' +
+        '</div>' +
+        (best.name ? '<div class="where">Sell on <b>' + esc(best.name) + '</b></div>' : '') +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  grid.querySelectorAll('.card').forEach(function(card){
+    card.addEventListener('click', function(){ openSheet(Number(card.dataset.id)); });
+  });
+}
+
+/* Detail ------------------------------------------------------------------- */
+
+function openSheet(id){
+  var item = STATE.items.find(function(entry){ return entry.id === id; });
+  if(!item) return;
+  var sheet = document.getElementById('sheet');
+
+  sheet.innerHTML =
+  '<div class="sheet-card">' +
+    '<div class="sheet-head">' +
+      '<div class="shot" style="background-image:url(' + esc(item.images[0] || '') + ')"></div>' +
+      '<div>' +
+        '<h2>' + esc(item.name) + '</h2>' +
+        '<p>You pay ' + money(item.memberPricePence) +
+          ' · proven resale ' + money(item.resalePricePence) +
+          (item.delivery ? ' · ' + esc(item.delivery) : '') + '</p>' +
+        (item.stockState === 'out'
+          ? '<p style="color:#c00;font-weight:700;font-size:12px;margin-top:4px">Out of stock</p>' : '') +
+      '</div>' +
+    '</div>' +
+    '<table>' +
+      '<thead><tr><th>Platform</th><th>Fees</th><th>You keep</th><th>Profit</th></tr></thead>' +
+      '<tbody>' +
+        item.platforms.map(function(platform, index){
+          var fees = platform.sellingFeePence + platform.paymentFeePence + platform.postagePence;
+          return '<tr class="' + (index === 0 ? 'win' : '') + '">' +
+            '<td>' + esc(platform.name) + '</td>' +
+            '<td>' + money(fees) + '</td>' +
+            '<td>' + money(platform.netPence) + '</td>' +
+            '<td class="' + (platform.profitPence < 0 ? 'neg' : 'pos') + '">' +
+              money(platform.profitPence) + '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody>' +
+    '</table>' +
+    '<div class="sheet-foot">' +
+      (item.best ? esc(item.best.reason) + '.<br>' : '') +
+      'Resale price is what this product has actually sold for in the ESNTLS store, ' +
+      'not a market estimate. Fees are current UK seller fees and can change — ' +
+      'profit is before your own postage and packaging unless shown.' +
+      (item.note ? '<br>' + esc(item.note) : '') +
+    '</div>' +
+    '<div style="padding:16px 20px"><button class="btn" id="closeSheet" type="button">Close</button></div>' +
+  '</div>';
+
+  sheet.classList.remove('hide');
+  document.getElementById('closeSheet').addEventListener('click', closeSheet);
+  sheet.addEventListener('click', function(event){ if(event.target === sheet) closeSheet(); });
+}
+
+function closeSheet(){
+  var sheet = document.getElementById('sheet');
+  sheet.classList.add('hide');
+  sheet.innerHTML = '';
+}
+
+document.addEventListener('keydown', function(event){
+  if(event.key === 'Escape') closeSheet();
+});
+
+/* Resume an existing session on load --------------------------------------- */
+
+(async function(){
+  var res = await api('me');
+  if(res.ok) await enterApp();
+})();
+</script>
+</body>
+</html>

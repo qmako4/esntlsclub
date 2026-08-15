@@ -1,3 +1,5 @@
+import { handleStockroom, isStockroomPath } from './stockroom.js';
+
 const GITHUB_ORIGIN = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
 const MEDIA_CACHE_VERSION = '3';
@@ -11,6 +13,7 @@ const PUBLIC_ROOT_FILES = new Set([
   'product.html',
   'products.json',
   'stock-story-generator.html',
+  'stockroom.html',
   'sync.html',
 ]);
 
@@ -48,6 +51,7 @@ function publicFileFor(pathname) {
 
   if (normalized === 'product') return 'product.html';
   if (normalized === 'admin') return 'admin.html';
+  if (normalized === 'stockroom') return 'stockroom.html';
   if (PUBLIC_ROOT_FILES.has(normalized)) return normalized;
 
   if (/^img\/[A-Za-z0-9._-]+\.(?:gif|jpe?g|png|svg|webp)$/i.test(normalized)) {
@@ -77,7 +81,7 @@ function mediaKeyFor(pathname) {
 function cacheSettings(file) {
   const extension = extensionFor(file);
 
-  if (file === 'admin.html') {
+  if (file === 'admin.html' || file === 'stockroom.html') {
     return { browserTtl: 0, edgeTtl: 0 };
   }
 
@@ -99,7 +103,7 @@ function responseHeaders(originHeaders, file, browserTtl, colo) {
   headers.delete('expires');
   headers.delete('x-frame-options');
 
-  if (file === 'admin.html') {
+  if (file === 'admin.html' || file === 'stockroom.html') {
     headers.set('Cache-Control', 'no-store, max-age=0');
   } else {
     headers.set('Cache-Control', `public, max-age=${browserTtl}, stale-while-revalidate=86400`);
@@ -192,6 +196,12 @@ export default {
       url.hostname = 'esntlsclub.com';
       url.protocol = 'https:';
       return Response.redirect(url.toString(), 308);
+    }
+
+    // Stockroom is the only dynamic path on the site, and the only one allowed
+    // to accept POST. It is routed before the static method check below.
+    if (isStockroomPath(url.pathname)) {
+      return handleStockroom(request, env);
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {

@@ -10,6 +10,16 @@
       "bucket_name": "esntls-images"
     }
   ],
+  // Member accounts and member pricing for ESNTLS STOCKROOM. These must not
+  // live in the repo: the site is served from a public GitHub origin.
+  // Create with `wrangler d1 create esntls-stockroom`, then paste the id here.
+  "d1_databases": [
+    {
+      "binding": "STOCKROOM_DB",
+      "database_name": "esntls-stockroom",
+      "database_id": "PASTE_DATABASE_ID_FROM_WRANGLER_D1_CREATE"
+    }
+  ],
   "routes": [
     {
       "pattern": "esntlsclub.com/*",
