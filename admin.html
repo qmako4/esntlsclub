@@ -112,6 +112,23 @@ label.field input:focus{border-color:var(--g)}
 
 .img-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .img-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
+.builder-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+.builder-source-card{border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 8px 22px rgba(7,17,11,.05)}
+.builder-source-card.is-skip{opacity:.7;border-style:dashed}
+.builder-source-card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#eef3ef}
+.builder-source-meta{padding:10px}
+.builder-source-name{font-size:11px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.builder-source-state{font-size:10px;color:var(--sub);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.builder-source-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.builder-source-controls button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:7px 8px;font-size:10px;font-weight:800;font-family:inherit;cursor:pointer;color:#44524b}
+.builder-source-controls button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.builder-source-controls button.keep{color:#06763a}
+.builder-source-controls button.skip{color:#b55600}
+.builder-source-footer{display:flex;gap:6px;margin-top:8px}
+.builder-source-footer button{flex:1;border:1px solid var(--border);background:#fbfdfc;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:800;font-family:inherit;cursor:pointer;color:#526059}
+.builder-source-footer button.delete{color:#d32f2f;background:#fff5f5;border-color:#ffd6d6}
+.builder-source-summary{font-size:11px;color:var(--sub);margin-top:10px;line-height:1.45}
+.builder-source-empty{font-size:11px;color:var(--sub);padding:10px 2px}
 
 .add-bg-card{display:none;margin-top:14px;border:1px solid var(--border);border-radius:18px;background:#fbfdfc;overflow:hidden}
 .add-bg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 14px 10px}
@@ -1238,6 +1255,7 @@ let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
+let addSourceModes={};
 let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:0,total:0,done:0,errorCount:0,lastError:''};
 let mediaImages=[];
 let mediaSelected=new Set();
@@ -1622,9 +1640,80 @@ selectedDelivery=[];
 document.querySelectorAll('#addDelivery .cat-pill.on').forEach(p=>selectedDelivery.push(p.dataset.cat));
 }
 
+function addSourceFileKey(file){
+if(!file)return '';
+return [file.name||'',file.size||0,file.lastModified||0,file.type||''].join('|');
+}
+
+function addDefaultSourceMode(){
+return 'full';
+}
+
+function getAddSourceMode(file){
+const key=addSourceFileKey(file);
+return addSourceModes[key]||addDefaultSourceMode();
+}
+
+function setAddSourceMode(index,mode){
+const file=pendingFiles[index];
+if(!file)return;
+addSourceModes[addSourceFileKey(file)]=mode;
+if(mode==='skip'&&addBgState.approved&&addGeneratedFilesReady())addBgState.approved=false;
+renderPendingPreview();
+prepareAddBackgroundPreview();
+}
+
+function removePendingFile(index){
+if(index<0||index>=pendingFiles.length)return;
+const file=pendingFiles[index];
+delete addSourceModes[addSourceFileKey(file)];
+pendingFiles.splice(index,1);
+renderPendingPreview();
+prepareAddBackgroundPreview();
+}
+
+function movePendingFile(index,direction){
+const next=index+direction;
+if(index<0||next<0||index>=pendingFiles.length||next>=pendingFiles.length)return;
+const [moved]=pendingFiles.splice(index,1);
+pendingFiles.splice(next,0,moved);
+renderPendingPreview();
+prepareAddBackgroundPreview();
+}
+
+function activeAddFiles(){
+return pendingFiles.filter(file=>getAddSourceMode(file)!=='skip');
+}
+
+function addGenerationFiles(){
+return pendingFiles.filter(file=>{
+const mode=getAddSourceMode(file);
+return mode==='close' || mode==='full';
+});
+}
+
+function addKeepFiles(){
+return pendingFiles.filter(file=>getAddSourceMode(file)==='keep');
+}
+
+function addSourceStateLabel(mode){
+return ({
+close:'Close up background swap',
+full:'Full grass flat-lay',
+keep:'Keep original photo',
+skip:'Skipped from product'
+})[mode]||'Full grass flat-lay';
+}
+
+function addModeButtonClass(current,target){
+return current===target?' on':'';
+}
+
 // FILE PREVIEW
 function previewFiles(files){
 pendingFiles=[...files].filter(f=>f&&f.type&&f.type.startsWith('image/'));
+addSourceModes={};
+pendingFiles.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1636,6 +1725,7 @@ const existing=new Set(pendingFiles.map(f=>[f.name,f.size,f.lastModified,f.type]
 const additions=selected.filter(f=>!existing.has([f.name,f.size,f.lastModified,f.type].join('|')));
 if(!additions.length)return;
 pendingFiles=[...pendingFiles,...additions];
+additions.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1643,26 +1733,37 @@ prepareAddBackgroundPreview();
 function renderPendingPreview(){
 const prev=document.getElementById('imgPreview');
 prev.innerHTML='';
+if(!pendingFiles.length){
+prev.innerHTML='<div class="builder-source-empty">Imported photos will appear here for review.</div>';
+document.querySelector('#uploadZone .label').textContent='Upload product photos';
+return;
+}
+const grid=document.createElement('div');
+grid.className='builder-review-grid';
 pendingFiles.forEach((file,i)=>{
-const wrap=document.createElement('div');
-wrap.className='img-thumb'+(i===0?' main':'');
+const mode=getAddSourceMode(file);
+const card=document.createElement('div');
+card.className='builder-source-card'+(mode==='skip'?' is-skip':'');
 const img=document.createElement('img');
 const reader=new FileReader();
 reader.onload=e=>{img.src=e.target.result};
 reader.readAsDataURL(file);
-wrap.appendChild(img);
-if(i===0){
-const lbl=document.createElement('div');lbl.className='main-label';lbl.textContent='MAIN';
-wrap.appendChild(lbl);
-}else{
-const star=document.createElement('div');
-star.className='star';star.title='Set as main image';star.textContent='★';
-star.onclick=()=>setPendingMain(i);
-wrap.appendChild(star);
-}
-prev.appendChild(wrap);
+card.appendChild(img);
+const meta=document.createElement('div');
+meta.className='builder-source-meta';
+meta.innerHTML=`<div class="builder-source-name">${escapeAdminHTML(file.name||('Photo '+(i+1)))}</div><div class="builder-source-state">${i===0?'Main image · ':''}${escapeAdminHTML(addSourceStateLabel(mode))}</div><div class="builder-source-controls"><button type="button" class="${addModeButtonClass(mode,'close')}" onclick="setAddSourceMode(${i},'close')">Close up</button><button type="button" class="${addModeButtonClass(mode,'full')}" onclick="setAddSourceMode(${i},'full')">Full photo</button><button type="button" class="keep${addModeButtonClass(mode,'keep')}" onclick="setAddSourceMode(${i},'keep')">Keep</button><button type="button" class="skip${addModeButtonClass(mode,'skip')}" onclick="setAddSourceMode(${i},'skip')">Skip</button></div><div class="builder-source-footer"><button type="button" onclick="movePendingFile(${i},-1)" ${i===0?'disabled':''}>Up</button><button type="button" onclick="movePendingFile(${i},1)" ${i===pendingFiles.length-1?'disabled':''}>Down</button><button type="button" class="delete" onclick="removePendingFile(${i})">Delete</button></div>`;
+card.appendChild(meta);
+grid.appendChild(card);
 });
-const lbl=pendingFiles.length+' photo'+(pendingFiles.length===1?'':'s')+' selected'+(pendingFiles.length>1?' · ★ to set main':'');
+prev.appendChild(grid);
+const generationCount=addGenerationFiles().length;
+const keepCount=addKeepFiles().length;
+const skipCount=pendingFiles.length-activeAddFiles().length;
+const summary=document.createElement('div');
+summary.className='builder-source-summary';
+summary.textContent=`${activeAddFiles().length} of ${pendingFiles.length} photos will publish. ${generationCount} set to generate, ${keepCount} kept original, ${skipCount} skipped.`;
+prev.appendChild(summary);
+const lbl=activeAddFiles().length+' photo'+(activeAddFiles().length===1?'':'s')+' ready'+(pendingFiles.length>1?' · reorder below':'');
 document.querySelector('#uploadZone .label').textContent=pendingFiles.length?lbl:'Upload product photos';
 }
 
@@ -1698,6 +1799,8 @@ renderAddBackgroundPreview();
 function renderAddBackgroundPreview(){
 const el=addBgEls();
 if(!el.card)return;
+const generationFiles=addGenerationFiles();
+const activeFiles=activeAddFiles();
 if(!pendingFiles.length){
 el.card.style.display='none';
 const approvedBar=document.getElementById('addApprovedBar');
@@ -1725,13 +1828,13 @@ el.saveBtn.textContent=(addBgState.approved&&generatedReady)?'Images Approved':(
 if(el.generateBtn){
 const isGenerating=addBgState.status==='generating';
 const needsSetup=addBgState.status==='needsSetup';
-el.generateBtn.disabled=isGenerating;
+el.generateBtn.disabled=isGenerating||!generationFiles.length;
 el.generateBtn.style.opacity=isGenerating?'.65':'1';
-el.generateBtn.textContent=needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||pendingFiles.length}`:generatedCount?'Regenerate Now':'Generate Now';
+el.generateBtn.textContent=!generationFiles.length?'No photos set to generate':needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||generationFiles.length}`:generatedCount?'Regenerate Now':'Generate Now';
 el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
 }
 if(el.backgroundBtn){
-const canRun=!!(pendingFiles.length&&psCanUseBackgroundJobs());
+const canRun=!!(generationFiles.length&&psCanUseBackgroundJobs());
 el.backgroundBtn.style.display='block';
 el.backgroundBtn.disabled=addBgState.status==='generating'||!canRun;
 el.backgroundBtn.style.opacity=el.backgroundBtn.disabled?'.55':'1';
@@ -1742,10 +1845,10 @@ const isGenerating=addBgState.status==='generating';
 el.cancelBtn.style.display=isGenerating?'block':'none';
 el.cancelBtn.disabled=!isGenerating;
 }
-const total=addBgState.total||pendingFiles.length;
-const doneText=generatedCount+'/'+pendingFiles.length;
+const total=addBgState.total||generationFiles.length;
+const doneText=generatedCount+'/'+generationFiles.length;
 const copy={
-idle:['Manual',pendingFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
+idle:['Manual',!generationFiles.length?(activeFiles.length?'These photos are set to Keep or Skip. Publish when ready.':'Upload images, then choose how each photo should be used.'):generationFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
 needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
 generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
 done:['Ready',addBgState.useGenerated?(addBgState.approved&&generatedReady?`Approved ${doneText} images. They will attach to this product.`:`Generated ${doneText} previews. Approve them to attach to this product.`):`Original images will upload first.`],
@@ -1783,6 +1886,11 @@ renderAddBackgroundPreview();
 openPhotoStudioSetup();
 return;
 }
+if(!addGenerationFiles().length){
+const msg=document.getElementById('addMsg');
+if(msg){msg.style.color='#e53935';msg.textContent='Set at least one photo to Close up or Full photo first.'}
+return;
+}
 generateAddBackground(true);
 }
 
@@ -1795,7 +1903,7 @@ return a.length===b.length&&a.every((file,i)=>file===b[i]);
 }
 
 function addGeneratedFilesReady(){
-return addBgState.generatedItems.length&&filesMatch(addBgState.sourceFiles,pendingFiles);
+return addBgState.generatedItems.length&&filesMatch(addBgState.sourceFiles,addGenerationFiles());
 }
 
 function psProductNameFromFile(file){
@@ -1826,13 +1934,28 @@ return [
 ].join(' ');
 }
 
-function addBackgroundPrompt(productName){
+function esntlsGrassCloseupPrompt(productName){
+const safeName=String(productName||'uploaded product').trim()||'uploaded product';
+return [
+'Use case: realistic ecommerce close-up background replacement for ESNTLSCLUB.',
+`Input image 1 is the product photo named "${safeName}".`,
+'Input image 2 is the original ESNTLSCLUB green grass background. Replace only the visible background.',
+'Preserve the exact crop, framing, camera distance, scale, angle, position, and perspective of the original image.',
+'Do not zoom out, zoom in, expand the scene, recreate hidden product areas, or turn this into a flat-lay if it is not already one.',
+'Keep the product exactly as uploaded, including logos, text, stitching, texture, shape, wear, folds, hands, packaging, boxes, walls, bags, and any other real foreground details already in the image.',
+'Only swap the background to the supplied green grass while keeping the result realistic and simple.',
+'Use subtle natural contact shadows only where needed. No dramatic shadows, no invented props, no redesign, and no cleanup.',
+'If anything is uncertain, preserve the uploaded image composition exactly and only change the background surface.'
+].join(' ');
+}
+
+function addBackgroundPrompt(productName,mode='full'){
 const s=psGetSettings();
 const preset=s.stylePreset||'sneaker';
 const base=PS_STYLE_PROMPTS[preset]||PS_STYLE_PROMPTS.sneaker;
 const extra=document.getElementById('aBgExtraPrompt')?.value.trim()||'';
 return [
-esntlsGrassReplacementPrompt(productName),
+mode==='close'?esntlsGrassCloseupPrompt(productName):esntlsGrassReplacementPrompt(productName),
 psReferenceUrlsForGeneration().length?psReferenceInstruction():'',
 base,
 extra
@@ -1971,23 +2094,37 @@ return {sourceFile:source,generatedFile:new File([normalized.blob],fileName,{typ
 }
 
 async function generateSingleAddBackground(source,index,bgBlob,s,referenceContext={},signal){
-const prompt=addBackgroundPrompt(psProductNameFromFile(source));
+const prompt=addBackgroundPrompt(psProductNameFromFile(source),getAddSourceMode(source));
 return generateGrassPreviewFile(source,index,bgBlob,s,prompt,addBackgroundQuality(),signal,referenceContext);
 }
 
 async function generateAddBackground(force=false){
+const generationFiles=addGenerationFiles();
 if(!pendingFiles.length){
 resetAddBackgroundPreview();
 return;
 }
 const s=psGetSettings();
-if(!psHasGenerationBackend()){
-addBgState.status='needsSetup';
-addBgState.sourceFiles=[...pendingFiles];
+if(!generationFiles.length){
+addBgState.status='idle';
+addBgState.sourceFiles=[];
 addBgState.generatedItems=[];
 addBgState.approved=false;
 addBgState.approvedAt='';
-addBgState.total=pendingFiles.length;
+addBgState.total=0;
+addBgState.done=0;
+addBgState.errorCount=0;
+addBgState.lastError='';
+renderAddBackgroundPreview();
+return;
+}
+if(!psHasGenerationBackend()){
+addBgState.status='needsSetup';
+addBgState.sourceFiles=[...generationFiles];
+addBgState.generatedItems=[];
+addBgState.approved=false;
+addBgState.approvedAt='';
+addBgState.total=generationFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
@@ -2000,7 +2137,7 @@ if(addBgController){
 try{addBgController.abort()}catch(e){}
 }
 addBgController=new AbortController();
-const sources=[...pendingFiles];
+const sources=[...generationFiles];
 addBgState.status='generating';
 addBgState.sourceFiles=sources;
 addBgState.generatedItems=[];
@@ -2060,18 +2197,19 @@ if(msg){msg.style.color='#ff8f00';msg.textContent='Image generation stopped.'}
 }
 
 function prepareAddBackgroundPreview(){
+const generationFiles=addGenerationFiles();
 if(!pendingFiles.length){
 resetAddBackgroundPreview();
 return;
 }
 addBgState.token++;
 addBgState.status='idle';
-addBgState.sourceFiles=[...pendingFiles];
+addBgState.sourceFiles=[...generationFiles];
 addBgState.generatedItems=[];
 addBgState.useGenerated=true;
 addBgState.approved=false;
 addBgState.approvedAt='';
-addBgState.total=pendingFiles.length;
+addBgState.total=generationFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
@@ -2187,11 +2325,13 @@ addBgJobPollTimer=null;
 
 async function startAddBackgroundJob(){
 const msg=document.getElementById('addMsg');
+const generationFiles=addGenerationFiles();
 if(!pendingFiles.length){if(msg){msg.style.color='#e53935';msg.textContent='Upload product photos first.'}return}
+if(!generationFiles.length){if(msg){msg.style.color='#e53935';msg.textContent='Set at least one photo to Close up or Full photo first.'}return}
 if(!psCanUseBackgroundJobs()){if(msg){msg.style.color='#e53935';msg.textContent='Background jobs need the ESNTLS Worker.'}return}
 if(addBgJob&&!psJobIsDone(addBgJob)){await loadAddBackgroundJob();return}
 const s=psGetSettings();
-const sources=[...pendingFiles];
+const sources=[...generationFiles];
 addBgState.sourceFiles=sources;
 addBgState.generatedItems=[];
 addBgState.approved=false;
@@ -2207,7 +2347,7 @@ try{
 for(let i=0;i<sources.length;i++){
 const file=await normalizedOpenAIImageFile(sources[i],sources[i].name||('product-'+(i+1)+'.jpg'));
 form.append('image[]',file,file.name||sources[i].name||('product-'+(i+1)+'.jpg'));
-form.append('prompt[]',addBackgroundPrompt(psProductNameFromFile(sources[i])));
+form.append('prompt[]',addBackgroundPrompt(psProductNameFromFile(sources[i]),getAddSourceMode(sources[i])));
 }
 form.append('quality',addBackgroundQuality());
 form.append('backgroundUrl',s.brandBg||psDefaultBrandBg());
@@ -2314,31 +2454,59 @@ if(msg)setTimeout(()=>{msg.textContent=''},5000);
 }
 
 function addUploadFiles(){
-if(addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&filesMatch(addBgState.sourceFiles,pendingFiles)){
-return addBgState.generatedItems.map(item=>item.generatedFile);
+const useGenerated=addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&addGeneratedFilesReady();
+const generatedByKey=new Map();
+if(useGenerated){
+addBgState.sourceFiles.forEach((file,index)=>{
+generatedByKey.set(addSourceFileKey(file),addBgState.generatedItems[index]||null);
+});
 }
-return [...pendingFiles];
+return pendingFiles.flatMap(file=>{
+const mode=getAddSourceMode(file);
+if(mode==='skip')return [];
+if(mode==='keep')return [file];
+const generated=generatedByKey.get(addSourceFileKey(file));
+return [generated&&generated.generatedFile?generated.generatedFile:file];
+});
 }
 
 async function uploadAddProductImages(){
-if(addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&filesMatch(addBgState.sourceFiles,pendingFiles)){
+const useGenerated=addBgState.generatedItems.length&&addBgState.useGenerated&&addBgState.approved&&addGeneratedFilesReady();
+const uploadPlan=pendingFiles.flatMap(file=>{
+const mode=getAddSourceMode(file);
+if(mode==='skip')return [];
+if(mode==='keep')return [{kind:'original',file,mode}];
+return [{kind:useGenerated?'generated':'original',file,mode}];
+});
+if(useGenerated){
+const generatedByKey=new Map();
+addBgState.sourceFiles.forEach((file,index)=>{
+generatedByKey.set(addSourceFileKey(file),addBgState.generatedItems[index]||null);
+});
 const urls=[];
 const prog=document.getElementById('uploadProgress');
 const bar=document.getElementById('uploadBar');
 if(prog)prog.style.display='block';
-for(let i=0;i<addBgState.generatedItems.length;i++){
-if(bar)bar.style.width=Math.round((i/addBgState.generatedItems.length)*100)+'%';
-const item=addBgState.generatedItems[i];
+for(let i=0;i<uploadPlan.length;i++){
+if(bar)bar.style.width=Math.round((i/uploadPlan.length)*100)+'%';
+const entry=uploadPlan[i];
 try{
 const fname=Date.now()+'_approved_'+i+'.jpg';
-if(item.resultKey){
+if(entry.kind==='original'){
+urls.push(await r2Upload(await compressImage(entry.file),fname));
+continue;
+}
+const item=generatedByKey.get(addSourceFileKey(entry.file));
+if(item&&item.resultKey){
 urls.push(await r2CopyViaWorker(item.resultKey,fname));
-}else if(item.generatedFile){
+}else if(item&&item.generatedFile){
 urls.push(await r2Upload(await compressImage(item.generatedFile),fname));
-}else if(item.dataUrl){
+}else if(item&&item.dataUrl){
 const res=await fetch(item.dataUrl);
 const blob=await res.blob();
 urls.push(await r2Upload(new File([blob],fname,{type:blob.type||'image/jpeg'}),fname));
+}else{
+urls.push(await r2Upload(await compressImage(entry.file),fname));
 }
 }catch(e){console.error('Approved image upload failed:',e)}
 }
@@ -2346,11 +2514,11 @@ if(bar)bar.style.width='100%';
 setTimeout(()=>{if(prog)prog.style.display='none';if(bar)bar.style.width='0%'},2000);
 return urls;
 }
-return uploadImages([...pendingFiles]);
+return uploadImages(uploadPlan.map(entry=>entry.file));
 }
 
 function addApprovedGeneratedCount(){
-return (pendingFiles.length&&addBgState.useGenerated&&addBgState.approved&&addGeneratedFilesReady())?addBgState.generatedItems.length:0;
+return (addGenerationFiles().length&&addBgState.useGenerated&&addBgState.approved&&addGeneratedFilesReady())?addBgState.generatedItems.length:0;
 }
 
 function updateAddPublishButton(){
@@ -2415,7 +2583,7 @@ const brand=inferBrand(selectedCats);
 
 if(!n){msg.style.color='#e53935';msg.textContent='Enter a product name';return}
 if(!price){msg.style.color='#e53935';msg.textContent='Enter a price';return}
-if(!pendingFiles.length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.textContent='Select at least one photo';return}
+if(!activeAddFiles().length&&!addLibraryUrls.length){msg.style.color='#e53935';msg.textContent='Select at least one photo to publish';return}
 if(addBgState.status==='generating'){msg.style.color='#e53935';msg.textContent='Wait for the ESNTLS background preview to finish first.';return}
 if(addBgState.generatedItems.length&&addBgState.useGenerated&&!addBgState.approved){msg.style.color='#e53935';msg.textContent='Approve the generated images first, or tap Use Originals.';return}
 
@@ -2480,6 +2648,7 @@ document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Upload product photos';
 pendingFiles=[];
+addSourceModes={};
 resetAddBackgroundPreview();
 addBgJob=null;
 if(addBgJobPollTimer){clearInterval(addBgJobPollTimer);addBgJobPollTimer=null}
