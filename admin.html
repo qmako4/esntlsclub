@@ -114,11 +114,22 @@ label.field input:focus{border-color:var(--g)}
 .img-preview img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
 .builder-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}
 .builder-source-card{border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 8px 22px rgba(7,17,11,.05)}
+.builder-source-card.is-active{border-color:var(--g);box-shadow:0 0 0 2px rgba(0,200,83,.14),0 8px 22px rgba(7,17,11,.05)}
 .builder-source-card.is-skip{opacity:.7;border-style:dashed}
-.builder-source-card img{display:block;width:100%;height:320px;object-fit:contain;background:#eef3ef;padding:10px}
+.builder-source-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;background:#f7faf8}
+.builder-source-pane{min-width:0}
+.builder-source-pane-label{font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px 2px}
+.builder-source-card img,.builder-source-result{display:block;width:100%;height:220px;border-radius:14px;border:1px solid var(--border);background:#eef3ef}
+.builder-source-card img{object-fit:contain;padding:10px}
+.builder-source-result{display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-size:11px;font-weight:800;color:#5b675f;line-height:1.4}
+.builder-source-result.is-generating{background:linear-gradient(180deg,#f4fff7 0%,#ecf9f0 100%);color:#06763a;border-color:#bfe5cd}
+.builder-source-result.is-failed{background:#fff5f5;color:#d32f2f;border-color:#ffd6d6}
+.builder-source-result.is-ready{padding:0;overflow:hidden}
+.builder-source-result.is-ready img{height:100%;border:none;border-radius:0;padding:10px}
 .builder-source-meta{padding:12px}
 .builder-source-name{font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .builder-source-state{font-size:10px;color:var(--sub);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.builder-source-status{margin-top:6px;font-size:11px;font-weight:700;color:#3f4b44;line-height:1.4}
 .builder-source-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
 .builder-source-controls button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:9px 10px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;color:#44524b}
 .builder-source-controls button.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -131,7 +142,8 @@ label.field input:focus{border-color:var(--g)}
 .builder-source-empty{font-size:11px;color:var(--sub);padding:10px 2px}
 @media(max-width:640px){
   .builder-review-grid{grid-template-columns:1fr;gap:14px}
-  .builder-source-card img{height:260px}
+  .builder-source-card img,.builder-source-result{height:180px}
+  .builder-source-compare{gap:6px;padding:8px}
 }
 
 .add-bg-card{display:none;margin-top:14px;border:1px solid var(--border);border-radius:18px;background:#fbfdfc;overflow:hidden}
@@ -1260,7 +1272,7 @@ let selectedCats=[];
 let selectedDelivery=[];
 let pendingFiles=[];
 let addSourceModes={};
-let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:0,total:0,done:0,errorCount:0,lastError:''};
+let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:0,total:0,done:0,errorCount:0,lastError:'',items:{},currentKey:''};
 let mediaImages=[];
 let mediaSelected=new Set();
 let pickerSelected=new Set();
@@ -1670,8 +1682,10 @@ prepareAddBackgroundPreview();
 function removePendingFile(index){
 if(index<0||index>=pendingFiles.length)return;
 const file=pendingFiles[index];
+revokeAddPreviewUrl(file);
 delete addSourceModes[addSourceFileKey(file)];
 pendingFiles.splice(index,1);
+syncAddBgItems(true);
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1713,11 +1727,84 @@ function addModeButtonClass(current,target){
 return current===target?' on':'';
 }
 
+function getAddPreviewUrl(file){
+if(!file)return '';
+if(file._esntlsPreviewUrl)return file._esntlsPreviewUrl;
+const url=URL.createObjectURL(file);
+Object.defineProperty(file,'_esntlsPreviewUrl',{value:url,configurable:true});
+return url;
+}
+
+function revokeAddPreviewUrl(file){
+if(file&&file._esntlsPreviewUrl){
+try{URL.revokeObjectURL(file._esntlsPreviewUrl)}catch(e){}
+try{delete file._esntlsPreviewUrl}catch(e){}
+}
+}
+
+function addBgItemFor(file){
+const key=addSourceFileKey(file);
+return key?(addBgState.items[key]||null):null;
+}
+
+function syncAddBgItems(resetGenerated=false){
+const next={};
+pendingFiles.forEach(file=>{
+const key=addSourceFileKey(file);
+const mode=getAddSourceMode(file);
+const existing=!resetGenerated&&addBgState.items&&addBgState.items[key]?addBgState.items[key]:null;
+if(mode==='skip'){
+next[key]={fileName:file.name||'Photo',status:'skipped',generated:null,error:''};
+return;
+}
+if(mode==='keep'){
+next[key]={fileName:file.name||'Photo',status:'keep',generated:null,error:''};
+return;
+}
+next[key]=existing?{...existing,fileName:file.name||existing.fileName||'Photo'}:{fileName:file.name||'Photo',status:'idle',generated:null,error:''};
+});
+addBgState.items=next;
+if(addBgState.currentKey&&!next[addBgState.currentKey])addBgState.currentKey='';
+}
+
+function addBgStatusText(file,mode){
+const item=addBgItemFor(file);
+if(mode==='skip')return 'Skipped from publishing';
+if(mode==='keep')return 'Original image will be used';
+if(!item)return mode==='close'?'Close up ready to generate':'Full photo ready to generate';
+if(item.status==='generating')return 'Generating now';
+if(item.status==='queued')return 'Queued for generation';
+if(item.status==='done')return 'Generated and ready';
+if(item.status==='failed')return 'Failed: '+(item.error||'generation error');
+return mode==='close'?'Close up ready to generate':'Full photo ready to generate';
+}
+
+function addBgResultMarkup(file,mode){
+const item=addBgItemFor(file);
+if(mode==='skip')return '<div class="builder-source-result">Skipped</div>';
+if(mode==='keep')return '<div class="builder-source-result">Using original</div>';
+if(item&&item.generated&&item.generated.dataUrl){
+  return `<div class="builder-source-result is-ready"><img src="${item.generated.displayUrl||item.generated.dataUrl}" alt="Generated preview"></div>`;
+}
+if(item&&item.status==='generating'){
+  return '<div class="builder-source-result is-generating">Generating this image now</div>';
+}
+if(item&&item.status==='queued'){
+  return '<div class="builder-source-result">Waiting in queue</div>';
+}
+if(item&&item.status==='failed'){
+  return `<div class="builder-source-result is-failed">${escapeAdminHTML(item.error||'Generation failed')}</div>`;
+}
+return '<div class="builder-source-result">Generated preview will appear here</div>';
+}
+
 // FILE PREVIEW
 function previewFiles(files){
+pendingFiles.forEach(revokeAddPreviewUrl);
 pendingFiles=[...files].filter(f=>f&&f.type&&f.type.startsWith('image/'));
 addSourceModes={};
 pendingFiles.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
+syncAddBgItems(true);
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1730,6 +1817,7 @@ const additions=selected.filter(f=>!existing.has([f.name,f.size,f.lastModified,f
 if(!additions.length)return;
 pendingFiles=[...pendingFiles,...additions];
 additions.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
+syncAddBgItems(true);
 renderPendingPreview();
 prepareAddBackgroundPreview();
 }
@@ -1747,15 +1835,16 @@ grid.className='builder-review-grid';
 pendingFiles.forEach((file,i)=>{
 const mode=getAddSourceMode(file);
 const card=document.createElement('div');
-card.className='builder-source-card'+(mode==='skip'?' is-skip':'');
-const img=document.createElement('img');
-const reader=new FileReader();
-reader.onload=e=>{img.src=e.target.result};
-reader.readAsDataURL(file);
-card.appendChild(img);
+const item=addBgItemFor(file);
+const cardClasses=['builder-source-card'];
+if(mode==='skip')cardClasses.push('is-skip');
+if(item&&item.status==='generating')cardClasses.push('is-active');
+card.className=cardClasses.join(' ');
 const meta=document.createElement('div');
 meta.className='builder-source-meta';
-meta.innerHTML=`<div class="builder-source-name">${escapeAdminHTML(file.name||('Photo '+(i+1)))}</div><div class="builder-source-state">${i===0?'Main image · ':''}${escapeAdminHTML(addSourceStateLabel(mode))}</div><div class="builder-source-controls"><button type="button" class="${addModeButtonClass(mode,'close')}" onclick="setAddSourceMode(${i},'close')">Close up</button><button type="button" class="${addModeButtonClass(mode,'full')}" onclick="setAddSourceMode(${i},'full')">Full photo</button><button type="button" class="keep${addModeButtonClass(mode,'keep')}" onclick="setAddSourceMode(${i},'keep')">Keep</button><button type="button" class="skip${addModeButtonClass(mode,'skip')}" onclick="setAddSourceMode(${i},'skip')">Skip</button></div><div class="builder-source-footer"><button type="button" onclick="movePendingFile(${i},-1)" ${i===0?'disabled':''}>Up</button><button type="button" onclick="movePendingFile(${i},1)" ${i===pendingFiles.length-1?'disabled':''}>Down</button><button type="button" class="delete" onclick="removePendingFile(${i})">Delete</button></div>`;
+const originalUrl=getAddPreviewUrl(file);
+card.innerHTML=`<div class="builder-source-compare"><div class="builder-source-pane"><div class="builder-source-pane-label">Original</div><img src="${originalUrl}" alt="Original source image"></div><div class="builder-source-pane"><div class="builder-source-pane-label">Generated</div>${addBgResultMarkup(file,mode)}</div></div>`;
+meta.innerHTML=`<div class="builder-source-name">${escapeAdminHTML(file.name||('Photo '+(i+1)))}</div><div class="builder-source-state">${i===0?'Main image · ':''}${escapeAdminHTML(addSourceStateLabel(mode))}</div><div class="builder-source-status">${escapeAdminHTML(addBgStatusText(file,mode))}</div><div class="builder-source-controls"><button type="button" class="${addModeButtonClass(mode,'close')}" onclick="setAddSourceMode(${i},'close')">Close up</button><button type="button" class="${addModeButtonClass(mode,'full')}" onclick="setAddSourceMode(${i},'full')">Full photo</button><button type="button" class="keep${addModeButtonClass(mode,'keep')}" onclick="setAddSourceMode(${i},'keep')">Keep</button><button type="button" class="skip${addModeButtonClass(mode,'skip')}" onclick="setAddSourceMode(${i},'skip')">Skip</button></div><div class="builder-source-footer"><button type="button" onclick="movePendingFile(${i},-1)" ${i===0?'disabled':''}>Up</button><button type="button" onclick="movePendingFile(${i},1)" ${i===pendingFiles.length-1?'disabled':''}>Down</button><button type="button" class="delete" onclick="removePendingFile(${i})">Delete</button></div>`;
 card.appendChild(meta);
 grid.appendChild(card);
 });
@@ -1796,7 +1885,9 @@ useBtn:document.getElementById('addBgUseBtn')
 
 function resetAddBackgroundPreview(){
 addBgState.token++;
-addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:addBgState.token,total:0,done:0,errorCount:0,lastError:''};
+addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:addBgState.token,total:0,done:0,errorCount:0,lastError:'',items:{},currentKey:''};
+syncAddBgItems(true);
+renderPendingPreview();
 renderAddBackgroundPreview();
 }
 
@@ -1851,10 +1942,11 @@ el.cancelBtn.disabled=!isGenerating;
 }
 const total=addBgState.total||generationFiles.length;
 const doneText=generatedCount+'/'+generationFiles.length;
+const currentLabel=addBgState.currentKey&&addBgState.items[addBgState.currentKey]?addBgState.items[addBgState.currentKey].fileName:'';
 const copy={
 idle:['Manual',!generationFiles.length?(activeFiles.length?'These photos are set to Keep or Skip. Publish when ready.':'Upload images, then choose how each photo should be used.'):generationFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
 needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
-generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}. Keep this page open.`],
+generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}${currentLabel?` · current: ${currentLabel}`:''}. Keep this page open.`],
 done:['Ready',addBgState.useGenerated?(addBgState.approved&&generatedReady?`Approved ${doneText} images. They will attach to this product.`:`Generated ${doneText} previews. Approve them to attach to this product.`):`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
 }[addBgState.status]||['Manual','Ready'];
@@ -2120,6 +2212,9 @@ addBgState.total=0;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
+addBgState.currentKey='';
+syncAddBgItems(true);
+renderPendingPreview();
 renderAddBackgroundPreview();
 return;
 }
@@ -2133,6 +2228,9 @@ addBgState.total=generationFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
+addBgState.currentKey='';
+syncAddBgItems(true);
+renderPendingPreview();
 renderAddBackgroundPreview();
 return;
 }
@@ -2153,30 +2251,48 @@ addBgState.total=sources.length;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
+addBgState.currentKey='';
+syncAddBgItems(true);
+sources.forEach(file=>{
+const key=addSourceFileKey(file);
+addBgState.items[key]={fileName:file.name||'Photo',status:'queued',generated:null,error:''};
+});
+renderPendingPreview();
 renderAddBackgroundPreview();
 try{
 const bgBlob=await psFetchAsBlob(s.brandBg,addBgController.signal);
 const referenceContext=await psBuildReferenceContext(s,addBgController.signal);
 for(let i=0;i<sources.length;i++){
 if(token!==addBgState.token)return;
+const source=sources[i];
+const key=addSourceFileKey(source);
+addBgState.currentKey=key;
+if(addBgState.items[key])addBgState.items[key].status='generating';
+renderPendingPreview();
+renderAddBackgroundPreview();
 try{
-const item=await generateSingleAddBackground(sources[i],i,bgBlob,s,referenceContext,addBgController.signal);
+const item=await generateSingleAddBackground(source,i,bgBlob,s,referenceContext,addBgController.signal);
 if(token!==addBgState.token)return;
 addBgState.generatedItems.push(item);
+if(addBgState.items[key])addBgState.items[key]={...addBgState.items[key],status:'done',generated:{...item,displayUrl:item.dataUrl},error:''};
 }catch(e){
 if(e&&e.name==='AbortError'){
 addBgState.lastError='Generation stopped';
 break;
 }
-console.error('Add background generation failed:',sources[i]?.name,e);
+console.error('Add background generation failed:',source?.name,e);
 addBgState.errorCount++;
 addBgState.lastError=(e&&e.message)||'image generation failed';
+if(addBgState.items[key])addBgState.items[key]={...addBgState.items[key],status:'failed',generated:null,error:(e&&e.message)||'image generation failed'};
 }
 addBgState.done=i+1;
+renderPendingPreview();
 renderAddBackgroundPreview();
 }
 if(token!==addBgState.token)return;
+addBgState.currentKey='';
 addBgState.status=addBgState.generatedItems.length?'done':'error';
+renderPendingPreview();
 renderAddBackgroundPreview();
 }catch(e){
 if(token!==addBgState.token)return;
@@ -2184,6 +2300,8 @@ console.error('Add background setup failed:',e);
 addBgState.status=e&&e.name==='AbortError'?'idle':'error';
 addBgState.errorCount=sources.length;
 addBgState.lastError=e&&e.name==='AbortError'?'Generation stopped':((e&&e.message)||'background setup failed');
+addBgState.currentKey='';
+renderPendingPreview();
 renderAddBackgroundPreview();
 }finally{
 if(token===addBgState.token)addBgController=null;
@@ -2196,6 +2314,12 @@ try{addBgController.abort()}catch(e){}
 addBgState.token++;
 addBgState.status=addBgState.generatedItems.length?'done':'idle';
 addBgState.lastError='Generation stopped';
+addBgState.currentKey='';
+Object.keys(addBgState.items||{}).forEach(key=>{
+if(addBgState.items[key]&&addBgState.items[key].status==='generating')addBgState.items[key].status='idle';
+if(addBgState.items[key]&&addBgState.items[key].status==='queued')addBgState.items[key].status='idle';
+});
+renderPendingPreview();
 renderAddBackgroundPreview();
 const msg=document.getElementById('addMsg');
 if(msg){msg.style.color='#ff8f00';msg.textContent='Image generation stopped.'}
@@ -2218,6 +2342,9 @@ addBgState.total=generationFiles.length;
 addBgState.done=0;
 addBgState.errorCount=0;
 addBgState.lastError='';
+addBgState.currentKey='';
+syncAddBgItems(true);
+renderPendingPreview();
 renderAddBackgroundPreview();
 }
 
@@ -2305,6 +2432,13 @@ addBgState.total=job.total||pendingFiles.length;
 addBgState.done=ready.length;
 addBgState.errorCount=Number(job.failed||0)+Number(job.cancelled||0);
 addBgState.lastError='';
+addBgState.currentKey='';
+syncAddBgItems(true);
+ready.forEach(item=>{
+  const key=addSourceFileKey(item.sourceFile);
+  if(key&&addBgState.items[key])addBgState.items[key]={...addBgState.items[key],status:'done',generated:item,error:''};
+});
+renderPendingPreview();
 renderAddBackgroundPreview();
 if(notify&&typeof toast==='function')toast('Loaded background job results','success');
 const msg=document.getElementById('addMsg');
@@ -2652,6 +2786,7 @@ if(typeof syncDashboard==='function')syncDashboard();
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Upload product photos';
+pendingFiles.forEach(revokeAddPreviewUrl);
 pendingFiles=[];
 addSourceModes={};
 resetAddBackgroundPreview();
