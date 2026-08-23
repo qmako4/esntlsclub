@@ -321,6 +321,21 @@ function productText(product) {
   return `${product.title || ''} ${product.categories.join(' ')}`;
 }
 
+function stableNameIndex(value, count) {
+  if (!count) return 0;
+  const text = String(value || '');
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+  }
+  return hash % count;
+}
+
+function chooseNameVariant(product, variants) {
+  const key = `${product?.id || ''}|${productText(product)}`;
+  return variants[stableNameIndex(key, variants.length)];
+}
+
 function inferPlaceholderColor(product) {
   const text = productText(product);
   const hit = COLOR_PATTERNS.find(([pattern]) => pattern.test(text));
@@ -331,8 +346,8 @@ function inferPlaceholderBase(product) {
   const text = productText(product).toLowerCase();
   if (/\b(sandals?|slides?|sliders?)\b/.test(text)) return /\b(slides?|sliders?)\b/.test(text) ? 'Classic Slides' : 'Classic Sandals';
   if (/\b(gel|kayano|asics)\b/.test(text)) return 'Gel Runners';
-  if (/\b(b30|technical)\b/.test(text)) return 'Technical Sneakers';
-  if (/\b(b22|runner|sneakers?|trainers?|shoes?|footwear)\b/.test(text)) return /\b(b22|runner)\b/.test(text) ? 'Runner Sneakers' : 'Daily Trainers';
+  if (/\b(b30|gats?|technical)\b/.test(text)) return chooseNameVariant(product, ['Panelled Runners', 'Retro Trainers', 'Court Runners', 'Low Trainers']);
+  if (/\b(b22|runner|sneakers?|trainers?|shoes?|footwear)\b/.test(text)) return chooseNameVariant(product, ['Runner Sneakers', 'Court Trainers', 'Everyday Runners', 'Clean Trainers', 'Panelled Sneakers']);
   if (/\b(t-?shirt|tee|shirt)\b/.test(text)) return 'Simple T-Shirt';
   if (/\b(shorts?)\b/.test(text)) return 'Summer Shorts';
   if (/\b(tracksuit)\b/.test(text)) return 'Core Tracksuit';
@@ -887,6 +902,7 @@ function normalizeOpenAIImageMime(type, filename = '') {
   if (raw === 'image/jpeg' || raw === 'image/jpg' || raw === 'image/pjpeg') return 'image/jpeg';
   if (raw === 'image/png') return 'image/png';
   if (raw === 'image/webp') return 'image/webp';
+  if (raw.startsWith('image/')) return raw;
 
   const name = String(filename || '').toLowerCase();
   if (/\.(jpe?g)$/.test(name)) return 'image/jpeg';
@@ -896,11 +912,23 @@ function normalizeOpenAIImageMime(type, filename = '') {
   return raw || 'image/jpeg';
 }
 
+function isOpenAIImageMime(type) {
+  return ['image/jpeg', 'image/png', 'image/webp'].includes(String(type || '').toLowerCase());
+}
+
+function requireOpenAIImageMime(type, label = 'Image') {
+  if (!isOpenAIImageMime(type)) {
+    throw new Error(`${label} must be JPEG, PNG, or WebP. The source returned ${type || 'an unknown format'}.`);
+  }
+  return type;
+}
+
 async function openAIImagePart(part, fallbackFilename = 'image.jpg') {
   const blob = part instanceof Blob ? part : part && part.blob;
   if (!(blob instanceof Blob)) throw new Error('Missing image blob');
   const filename = (part && (part.filename || part.name)) || fallbackFilename;
   const type = normalizeOpenAIImageMime((part && part.type) || blob.type, filename);
+  requireOpenAIImageMime(type, filename);
   const currentType = String(blob.type || '').split(';')[0].trim().toLowerCase();
   if (currentType === type) return { blob, filename };
   return { blob: new Blob([await blob.arrayBuffer()], { type }), filename };
@@ -1146,13 +1174,14 @@ async function proxyYupooImage(rawUrl) {
   const response = await fetch(imageUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; ESNTLSPhotoStudio/1.0)',
-      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      'Accept': 'image/jpeg,image/png,image/webp,image/*;q=0.8,*/*;q=0.2',
       'Referer': parsed.origin + '/'
     }
   });
   if (!response.ok) throw new Error(`Yupoo image download failed: HTTP ${response.status}`);
-  const type = response.headers.get('content-type') || 'image/jpeg';
+  const type = normalizeOpenAIImageMime(response.headers.get('content-type'), imageUrl);
   if (!type.startsWith('image/')) throw new Error('Yupoo URL did not return an image');
+  requireOpenAIImageMime(type, 'Yupoo image');
   return new Response(response.body, {
     status: 200,
     headers: {
@@ -1370,7 +1399,7 @@ async function createGrassJob(req, env, formData, ctx) {
   const backgroundUrl = String(formData.get('backgroundUrl') || '').trim();
   if (backgroundFile instanceof Blob) {
     const filename = safeJobFilename(backgroundFile.name || 'esntls-background.jpg');
-    const contentType = normalizeOpenAIImageMime(backgroundFile.type, filename);
+    const contentType = requireOpenAIImageMime(normalizeOpenAIImageMime(backgroundFile.type, filename), 'Background image');
     const key = `${prefix}background/${crypto.randomUUID()}-${filename}`;
     await env.BUCKET.put(key, backgroundFile, {
       httpMetadata: { contentType, cacheControl: 'private, max-age=604800' },
@@ -1385,7 +1414,7 @@ async function createGrassJob(req, env, formData, ctx) {
   for (let i = 0; i < selectedImages.length; i++) {
     const image = selectedImages[i];
     const filename = safeJobFilename(image.name || `product-${i + 1}.jpg`);
-    const contentType = normalizeOpenAIImageMime(image.type, filename);
+    const contentType = requireOpenAIImageMime(normalizeOpenAIImageMime(image.type, filename), `Product image ${i + 1}`);
     const key = `${prefix}sources/${String(i + 1).padStart(2, '0')}-${crypto.randomUUID()}-${filename}`;
     await env.BUCKET.put(key, image, {
       httpMetadata: { contentType, cacheControl: 'private, max-age=604800' },
@@ -1421,7 +1450,7 @@ async function createGrassJob(req, env, formData, ctx) {
   };
 
   await writeGrassJob(env, job);
-  const queue = enqueueGrassJob(env, job.id, ctx, 'created');
+  const queue = await enqueueGrassJob(env, job.id, ctx, 'created');
   return json({ ok: true, job: publicGrassJob(job), queue }, 202);
 }
 
@@ -1489,7 +1518,7 @@ async function retryFailedGrassJob(req, env, ctx) {
   job.completed = (job.items || []).filter(item => item.status === 'complete').length;
   job.cancelled = (job.items || []).filter(item => item.status === 'cancelled').length;
   await writeGrassJob(env, job);
-  const queue = enqueueGrassJob(env, job.id, ctx, 'retry-failed');
+  const queue = await enqueueGrassJob(env, job.id, ctx, 'retry-failed');
   const queuedJob = await readGrassJob(env, job.id);
   return json({ ok: true, retried, job: publicGrassJob(queuedJob || job), queue }, 202);
 }
@@ -1520,10 +1549,34 @@ async function cancelGrassJob(req, env) {
   return json({ ok: true, job: publicGrassJob(job) });
 }
 
-function enqueueGrassJob(env, jobId, ctx, reason) {
-  if (!ctx || typeof ctx.waitUntil !== 'function') throw new Error('Background execution context is unavailable');
-  ctx.waitUntil(processGrassJob(env, jobId));
-  return { method: 'waitUntil', reason, enqueuedAt: new Date().toISOString() };
+async function enqueueGrassJob(env, jobId, ctx, reason) {
+  const job = await readGrassJob(env, jobId);
+  if (!job || isGrassJobTerminal(job.status)) return { method: 'none', count: 0 };
+
+  const pending = (job.items || [])
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item && item.status === 'queued');
+  if (!pending.length) return { method: 'none', count: 0 };
+
+  if (!env.GRASS_JOB_QUEUE || typeof env.GRASS_JOB_QUEUE.sendBatch !== 'function') {
+    throw new Error('The ESNTLS background queue is not configured');
+  }
+
+  job.queue = {
+    method: 'queue',
+    reason,
+    count: pending.length,
+    enqueuedAt: new Date().toISOString()
+  };
+  await writeGrassJob(env, job);
+
+  const messages = pending.map(({ item, index }) => ({
+    body: { type: 'esntls-grass-job-item', jobId, itemId: item.id, index }
+  }));
+  for (let index = 0; index < messages.length; index += 100) {
+    await env.GRASS_JOB_QUEUE.sendBatch(messages.slice(index, index + 100));
+  }
+  return { method: 'queue', reason, count: messages.length, enqueuedAt: new Date().toISOString() };
 }
 
 async function resumeGrassJob(env, job, ctx, reason) {
@@ -1537,7 +1590,7 @@ async function resumeGrassJob(env, job, ctx, reason) {
   job.status = 'queued';
   job.finishedAt = null;
   await writeGrassJob(env, job);
-  enqueueGrassJob(env, job.id, ctx, reason);
+  await enqueueGrassJob(env, job.id, ctx, reason);
   return (await readGrassJob(env, job.id)) || job;
 }
 
@@ -1563,6 +1616,10 @@ async function processGrassJobItem(env, jobId, itemId, fallbackIndex, options = 
   if (!item || ['complete', 'failed', 'cancelled'].includes(item.status)) {
     await finalizeGrassJob(env, jobId);
     return;
+  }
+  if (item.status === 'running' && !options.force) {
+    const attemptedAt = grassItemAttemptTime(item);
+    if (Number.isFinite(attemptedAt) && Date.now() - attemptedAt <= GRASS_JOB_STALE_AFTER_MS) return;
   }
 
   item.status = 'running';
@@ -1749,6 +1806,7 @@ function isGrassJobTerminal(status) {
 
 function isStaleGrassJob(job) {
   if (!job || isGrassJobTerminal(job.status)) return false;
+  if (job.queue?.method === 'queue') return false;
   const updatedAt = Date.parse(job.updatedAt || job.startedAt || job.createdAt || '');
   if (!Number.isFinite(updatedAt)) return false;
   const incomplete = Number(job.completed || 0) + Number(job.failed || 0) + Number(job.cancelled || 0) < Number(job.total || job.items?.length || 0);
@@ -1787,7 +1845,7 @@ async function grassJobBlobPart(env, key, fallbackFilename) {
   if (!object) throw new Error('Stored job source image was not found');
   const headers = new Headers();
   object.writeHttpMetadata(headers);
-  const contentType = normalizeOpenAIImageMime(headers.get('content-type'), fallbackFilename || key);
+  const contentType = requireOpenAIImageMime(normalizeOpenAIImageMime(headers.get('content-type'), fallbackFilename || key), fallbackFilename || key);
   return {
     blob: new Blob([await object.arrayBuffer()], { type: contentType }),
     type: contentType,
@@ -3067,6 +3125,27 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(processExpiredTimedSales(env));
+  },
+
+  async queue(batch, env) {
+    for (const message of batch.messages || []) {
+      const body = typeof message.body === 'string'
+        ? (() => {
+            try { return JSON.parse(message.body); } catch { return {}; }
+          })()
+        : (message.body || {});
+      if (body.type !== 'esntls-grass-job-item' || !body.jobId || !body.itemId) {
+        message.ack();
+        continue;
+      }
+
+      try {
+        await processGrassJobItem(env, body.jobId, body.itemId, Number(body.index || 0));
+        message.ack();
+      } catch (error) {
+        message.retry({ delaySeconds: 30 });
+      }
+    }
   },
 
   async fetch(req, env, ctx) {

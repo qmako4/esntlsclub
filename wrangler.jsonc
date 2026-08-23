@@ -22,5 +22,23 @@
       "binding": "ESNTLS_STUDIO_MEDIA",
       "bucket_name": "esntls-photo-studio-v2-media"
     }
-  ]
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "GRASS_JOB_QUEUE",
+        "queue": "esntls-grass-background-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "esntls-grass-background-jobs",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 1,
+        "max_concurrency": 1,
+        "retry_delay": 30
+      }
+    ]
+  }
 }

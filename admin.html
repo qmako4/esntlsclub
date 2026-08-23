@@ -1432,11 +1432,16 @@ const raw=String(type||'').split(';')[0].trim().toLowerCase();
 if(raw==='image/jpeg'||raw==='image/jpg'||raw==='image/pjpeg')return'image/jpeg';
 if(raw==='image/png')return'image/png';
 if(raw==='image/webp')return'image/webp';
+if(raw.startsWith('image/'))return raw;
 const name=String(filename||'').toLowerCase();
 if(/\.(jpe?g)$/.test(name))return'image/jpeg';
 if(/\.png$/.test(name))return'image/png';
 if(/\.webp$/.test(name))return'image/webp';
 return raw||'image/jpeg'
+}
+
+function isOpenAIImageMime(type){
+return['image/jpeg','image/png','image/webp'].includes(String(type||'').toLowerCase())
 }
 
 function normalizedPastedImageFile(file,index){
@@ -1447,6 +1452,7 @@ return new File([file],name,{type:normalizeOpenAIImageMime(file.type,name),lastM
 async function normalizedOpenAIImageFile(file,fallbackName){
 const name=(file&&file.name)||fallbackName||'product.jpg';
 const type=normalizeOpenAIImageMime(file&&file.type,name);
+if(!isOpenAIImageMime(type))throw new Error(name+' is '+(type||'an unsupported format')+'. Use JPEG, PNG, or WebP.');
 if(file instanceof File&&file.type===type&&file.name)return file;
 return new File([file],name,{type,lastModified:(file&&file.lastModified)||Date.now()})
 }
@@ -4266,6 +4272,7 @@ async function psFetchYupooFile(image,index,total){
   }
   const blob=await r.blob();
   if(!blob.type||!blob.type.startsWith('image/'))throw new Error('Yupoo file was not an image');
+  if(!isOpenAIImageMime(normalizeOpenAIImageMime(blob.type,imageName||imageUrl)))throw new Error('Yupoo returned '+blob.type+'. This image needs JPEG, PNG, or WebP before generation.');
   return new File([blob],psYupooFileName(imageUrl,index,imageName),{type:blob.type,lastModified:Date.now()+index});
 }
 async function psImportYupoo(generateAfter){
