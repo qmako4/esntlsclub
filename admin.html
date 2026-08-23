@@ -1453,8 +1453,32 @@ async function normalizedOpenAIImageFile(file,fallbackName){
 const name=(file&&file.name)||fallbackName||'product.jpg';
 const type=normalizeOpenAIImageMime(file&&file.type,name);
 if(!isOpenAIImageMime(type))throw new Error(name+' is '+(type||'an unsupported format')+'. Use JPEG, PNG, or WebP.');
-if(file instanceof File&&file.type===type&&file.name)return file;
-return new File([file],name,{type,lastModified:(file&&file.lastModified)||Date.now()})
+if(!(file instanceof Blob))throw new Error(name+' is not a valid image file.');
+
+// Send OpenAI a normal JPEG with no hidden phone/Yupoo metadata and a sensible maximum size.
+// This preserves the photographed pixels while avoiding unsupported image-encoding edge cases.
+try{
+const bitmap=await createImageBitmap(file);
+const longest=Math.max(bitmap.width,bitmap.height);
+const scale=longest>1600?1600/longest:1;
+const width=Math.max(1,Math.round(bitmap.width*scale));
+const height=Math.max(1,Math.round(bitmap.height*scale));
+const canvas=document.createElement('canvas');
+canvas.width=width;
+canvas.height=height;
+const context=canvas.getContext('2d',{alpha:false});
+context.fillStyle='#fff';
+context.fillRect(0,0,width,height);
+context.imageSmoothingEnabled=true;
+context.imageSmoothingQuality='high';
+context.drawImage(bitmap,0,0,width,height);
+if(bitmap.close)bitmap.close();
+const output=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('The browser could not prepare this image.')),'image/jpeg',0.94));
+const outputName=name.replace(/\.[a-z0-9]+$/i,'')+'.jpg';
+return new File([output],outputName,{type:'image/jpeg',lastModified:(file&&file.lastModified)||Date.now()})
+}catch(error){
+throw new Error(name+' could not be prepared for generation: '+((error&&error.message)||'unsupported image data'));
+}
 }
 
 function clipboardImageFiles(data){
