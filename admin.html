@@ -5300,46 +5300,33 @@ function setOrderFilter(el,st){
   renderOrders();
 }
 
-// ─── Supplier message (English + brief Chinese) — copy-to-clipboard
+// ─── Supplier message — copy-to-clipboard
 function buildSupplierMessage(order){
   const lines=[];
-  lines.push(`Order #${order.number} — ${new Date(order.createdDate).toLocaleDateString('en-GB')}`);
-  lines.push(`订单 #${order.number}`);
-  lines.push('');
   const idx=_buildWixIndices();
-  (order.lineItems||[]).forEach((it,n)=>{
-    const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
-    const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
-    const wixName=it.productName||'';
-    lines.push(`Item ${n+1}: ${displayName}`);
-    lines.push(`商品 ${n+1}: ${displayName}`);
-    if(lookup.matchType==='b30-colour'||(lookup.esntls&&lookup.esntls.name!==wixName)){
-      lines.push(`(Wix listing: ${wixName})`);
-    }
-    const opts=it.options||{};
-    if(opts.Size){
-      const ukNum=String(opts.Size).replace(/[^0-9.]/g,'');
-      const eu=UK_TO_EU[ukNum];
-      lines.push(`Size: ${opts.Size}${eu?` (EU ${eu})`:''}`);
-      lines.push(`尺码: ${opts.Size}${eu?` / EU ${eu}`:''}`);
-    }else if(opts['Shoe Size']){
-      const ukNum=String(opts['Shoe Size']).replace(/[^0-9.]/g,'');
-      const eu=UK_TO_EU[ukNum];
-      lines.push(`Size: ${opts['Shoe Size']}${eu?` (EU ${eu})`:''}`);
-      lines.push(`尺码: ${opts['Shoe Size']}${eu?` / EU ${eu}`:''}`);
-    }
-    if(opts.Color||opts.Colour){lines.push(`Colour: ${opts.Color||opts.Colour}`);lines.push(`颜色: ${opts.Color||opts.Colour}`)}
-    lines.push(`Quantity / 数量: ${it.quantity||1}`);
-    lines.push('');
-  });
   const s=order.shipping||{};
   const b=order.buyer||{};
-  lines.push('Ship to / 寄送至:');
   lines.push(b.name||'');
   if(s.addressLine)lines.push(s.addressLine);
   if(s.city)lines.push(s.city);
   if(s.postalCode)lines.push(s.postalCode);
   lines.push(s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||''));
+  lines.push('');
+  (order.lineItems||[]).forEach((it)=>{
+    const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
+    const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
+    const opts=it.options||{};
+    let itemLine=displayName;
+    const colour=opts.Color||opts.Colour||'';
+    const size=opts.Size||opts['Shoe Size']||'';
+    const standardOptionKeys=new Set(['size','shoe size','color','colour','delivery']);
+    const extraOptions=Object.entries(opts)
+      .filter(([key,value])=>value&&!standardOptionKeys.has(String(key).toLowerCase()))
+      .map(([,value])=>String(value));
+    [colour,size,...extraOptions].filter(Boolean).forEach(value=>{itemLine+=` - ${value}`});
+    if((it.quantity||1)>1)itemLine+=` x${it.quantity}`;
+    lines.push(itemLine);
+  });
   return lines.filter(l=>l!==null&&l!==undefined).join('\n');
 }
 
@@ -5422,31 +5409,10 @@ function _bulkOrdersToSend(){
 function buildBulkMessage(){
   const list=_bulkOrdersToSend();
   if(!list.length)return '';
-  const idx=_buildWixIndices();
-  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  const lines=[`📦 ${list.length} orders to ship · 共 ${list.length} 个订单 (${today})`,''];
-  list.forEach((o,n)=>{
-    const date=new Date(o.createdDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-    lines.push(`${n+1}. #${o.number} · ${date}`);
-    (o.lineItems||[]).forEach(li=>{
-      const lk=findEsntlsForLineItem(li,idx.bySlug,idx.byId);
-      const name=lk.esntls?lk.esntls.name:(li.productName||'Unknown');
-      const opts=li.options||{};
-      const sizeRaw=opts.Size||opts['Shoe Size']||'';
-      const ukNum=String(sizeRaw).replace(/[^0-9.]/g,'');
-      const eu=UK_TO_EU[ukNum];
-      const sizeBit=sizeRaw?` ${sizeRaw}${eu?` / EU ${eu}`:''}`:'';
-      const colourBit=(opts.Color||opts.Colour)?` · ${opts.Color||opts.Colour}`:'';
-      const deliv=opts.Delivery?` · ${opts.Delivery}`:'';
-      const qty=(li.quantity||1)>1?` ×${li.quantity}`:'';
-      lines.push(`   ${name}${sizeBit}${colourBit}${deliv}${qty}`);
-    });
-    const b=o.buyer||{};
-    const s=o.shipping||{};
-    const country=s.countryFullname||(s.country==='GB'?'UK':s.country||'');
-    const addr=[b.name,s.addressLine,s.city,s.postalCode,country].filter(Boolean).join(' · ');
-    lines.push(`   📍 ${addr}`);
-    lines.push('');
+  const lines=[];
+  list.forEach((o,i)=>{
+    if(i)lines.push('');
+    lines.push(buildSupplierMessage(o));
   });
   return lines.join('\n');
 }
