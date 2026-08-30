@@ -5340,7 +5340,6 @@ function buildSupplierMessage(order){
   if(s.city)lines.push(s.city);
   if(s.postalCode)lines.push(s.postalCode);
   lines.push(s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||''));
-  if(b.phone)lines.push(`Phone / 电话: ${b.phone}`);
   return lines.filter(l=>l!==null&&l!==undefined).join('\n');
 }
 
@@ -5385,7 +5384,7 @@ function _orderHeroImageUrl(o){
   return '';
 }
 
-// ─── Per-order: Web Share with image + text. On WeChat this attaches the photo.
+// ─── Per-order: Web Share with image + text. On WhatsApp this attaches the photo.
 async function shareSupplierMessage(num,btn){
   const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
   if(!o)return;
@@ -5410,7 +5409,7 @@ async function shareSupplierMessage(num,btn){
   }else if(imgUrl){
     window.open(imgUrl,'_blank');
   }
-  if(typeof toast==='function')toast('Text copied · image opened in new tab — save & attach in WeChat','info',5000);
+  if(typeof toast==='function')toast('Text copied · image opened in new tab — save & attach in WhatsApp','info',5000);
 }
 
 // ─── Bulk: condensed message of all unsent unfulfilled orders, sorted oldest first
@@ -5447,7 +5446,6 @@ function buildBulkMessage(){
     const country=s.countryFullname||(s.country==='GB'?'UK':s.country||'');
     const addr=[b.name,s.addressLine,s.city,s.postalCode,country].filter(Boolean).join(' · ');
     lines.push(`   📍 ${addr}`);
-    if(b.phone)lines.push(`   📞 ${b.phone}`);
     lines.push('');
   });
   return lines.join('\n');
@@ -5458,7 +5456,7 @@ function bulkCopyUnfulfilled(){
   const text=buildBulkMessage();
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(()=>{
-      if(typeof toast==='function')toast(`Copied ${list.length} orders — paste in WeChat`,'success',4000);
+      if(typeof toast==='function')toast(`Copied ${list.length} orders — paste in WhatsApp`,'success',4000);
     }).catch(()=>fallbackCopy(text));
   }else{fallbackCopy(text)}
 }
@@ -5548,7 +5546,7 @@ function renderOrders(){
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:11px 14px;background:#111;color:#fff;border-radius:12px;margin-bottom:12px;flex-wrap:wrap">
       <div style="font-size:13px;font-weight:700">📤 Forward ${unsentCount} to supplier</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="bulkShareUnfulfilled()" style="background:var(--g);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Share to WeChat in one tap">📲 Share all</button>
+        <button onclick="bulkShareUnfulfilled()" style="background:var(--g);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Share to WhatsApp in one tap">📲 Share all</button>
         <button onclick="bulkCopyUnfulfilled()" style="background:#fff;color:#111;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copy all</button>
         <button onclick="bulkMarkAllSent()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="After you've sent them all">✓ Mark all sent</button>
       </div>
@@ -5613,7 +5611,7 @@ function renderOrders(){
         </div>
       </details>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn" onclick="shareSupplierMessage('${escHtml(o.number)}',this)" style="flex:1 1 auto;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none" title="Send to WeChat with image attached">📲 Send (with image)</button>
+        <button class="btn" onclick="shareSupplierMessage('${escHtml(o.number)}',this)" style="flex:1 1 auto;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none" title="Send to WhatsApp with image attached">📲 Send (with image)</button>
         <button class="btn btn-outline" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Copy text only">📋</button>
         <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 12px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'↶ Undo':'✓ Sent'}</button>
         <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">🔗</button>
