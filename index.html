@@ -1021,8 +1021,6 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 <!-- Auto-scrolling Categories (directly under How To Order) -->
 ${catScrollHTML()}
 
-${dailyDealsHTML()}
-
 <!-- Best Sellers -->
 <section style="padding:8px 8px 36px;max-width:1600px;margin:0 auto">
 <div class="reveal" style="margin-bottom:14px;padding:0 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -1151,6 +1149,8 @@ ${reviewsHTML()}
 </div>
 </section>
 
+${dailyDealsHTML()}
+
 <!-- Footer -->
 <footer style="border-top:1px solid #eee;padding:32px 16px 24px;max-width:1280px;margin:0 auto">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;margin-bottom:28px">
@@ -1243,7 +1243,19 @@ wrap.addEventListener('click',e=>{
   if(Date.now()<suppressClickUntil){e.preventDefault();e.stopPropagation()}
 },true);
 }
-function goHome(){currentView='home';render();return false}
+function storeCategoryUrl(cat){
+  const url=new URL(window.location.href);
+  url.hash='';
+  if(cat&&cat!=='All')url.searchParams.set('cat',cat);
+  else url.searchParams.delete('cat');
+  return url.pathname+url.search+url.hash;
+}
+function goHome(){
+  currentView='home';
+  history.pushState({view:'home'},'',storeCategoryUrl(''));
+  render();
+  return false
+}
 let dailyDealsTimerId=null;
 let saleCountdownTimerId=null;
 function bindDailyDealsTimer(){
@@ -1580,8 +1592,8 @@ function getCardWixContext(card){
   return { wixProduct, matchedColor };
 }
 
-const SHOE_SIZES = ["UK 5","UK 5.5","UK 6","UK 6.5","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12"];
-const CLOTHING_SIZES = ["XS","S","M","L","XL","XXL"];
+const SHOE_SIZES = ["UK 4","UK 5","UK 6","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12","UK 13"];
+const CLOTHING_SIZES = ["XS","S","M","L","XL"];
 let stockFilter = 'all';
 
 // Match a product to its LIVE_STOCK entry and return HTML
@@ -1757,7 +1769,12 @@ function fallbackCopy(text){
 function shareStockLink(){
   if(navigator.share){navigator.share({title:'ESNTLS CLUB — Stock Check',text:'Check what\'s in stock!',url:'https://esntlsclub.com/#stock'}).catch(()=>{});}
 }
-function showCat(c){currentView={type:'shop',cat:c};
+function showCat(c,opts){
+currentView={type:'shop',cat:c};
+const replace=opts&&opts.replace===true;
+const targetUrl=storeCategoryUrl(c);
+if(replace)history.replaceState({view:'shop',cat:c},'',targetUrl);
+else history.pushState({view:'shop',cat:c},'',targetUrl);
 const app=document.getElementById('app');
 app.style.animation='none';
 app.offsetHeight;
@@ -2094,8 +2111,14 @@ else{n.style.boxShadow='none'}},{passive:true})
 // ═══ INIT ═══
 render();
 
-// Auto-open product from URL hash (e.g. #b22-white-1) or stock page (#stock)
+// Auto-open category/product from URL. Categories use ?cat=..., products use #slug-id, stock uses #stock.
 setTimeout(()=>{
+const params=new URLSearchParams(window.location.search);
+const cat=params.get('cat');
+if(cat){
+  showCat(cat,{replace:true});
+  return;
+}
 const hash=window.location.hash.slice(1);
 if(hash==='stock'){showStock()}
 else if(hash){
@@ -2129,7 +2152,26 @@ document.querySelectorAll('.pc:not(.vis),.reveal:not(.vis),.reveal-left:not(.vis
 const origRender=render;
 render=function(){origRender();requestAnimationFrame(()=>setTimeout(observeElements,30))};
 const origShowCat=showCat;
-showCat=function(c){origShowCat(c);requestAnimationFrame(()=>setTimeout(observeElements,30));return false};
+showCat=function(c,opts){origShowCat(c,opts);requestAnimationFrame(()=>setTimeout(observeElements,30));return false};
+window.addEventListener('popstate',()=>{
+  const params=new URLSearchParams(window.location.search);
+  const cat=params.get('cat');
+  if(cat){showCat(cat,{replace:true});return}
+  const hash=window.location.hash.slice(1);
+  if(hash==='stock'){showStock();return}
+  if(hash){
+    const parts=hash.split('-');
+    const id=parts[parts.length-1];
+    if(id&&!isNaN(id)){openProduct(parseInt(id));return}
+    const all=allProducts();
+    const p=all.find(x=>{
+      const slug=x.n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+      return hash===slug+'-'+x.id||hash===slug});
+    if(p)openProduct(p.id);return
+  }
+  currentView='home';
+  render();
+});
 
 setTimeout(observeElements,80);
 
