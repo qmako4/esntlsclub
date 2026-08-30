@@ -5606,8 +5606,6 @@ function renderOrders(){
         <div style="font-size:12px;line-height:1.5;margin-top:6px;color:#444">
           ${escHtml(b.name||'')}<br>
           ${addrLines.map(escHtml).join('<br>')}
-          ${b.phone?`<br>📞 ${escHtml(b.phone)}`:''}
-          ${b.email?`<br>✉️ ${escHtml(b.email)}`:''}
         </div>
       </details>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
