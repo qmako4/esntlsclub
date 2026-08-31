@@ -5183,12 +5183,12 @@ function ordersToggleSent(num){
   ordersSaveSent();
 }
 
-// ─── Reverse-lookup: Wix order line item → ESNTLS product card
-// 1. If wix-products.json maps the catalogItemId to a slug that matches an
-//    esntls product.link → direct match.
-// 2. Special case for the OLD combined Daily Sneakers product (a627a...): use
-//    the Color option to find the matching B30 esntls product by name.
-// 3. Otherwise → no match (the supplier message falls back to the Wix product name).
+// ─── Reverse-lookup: checkout order line item → ESNTLS product card
+// 1. Match saved Shopify placeholder metadata first when an order came from ESNTLS Blanks.
+// 2. Match Wix catalog IDs/slugs when an order came from the Wix backup checkout.
+// 3. Special case for the OLD combined Daily Sneakers product (a627a...): use
+//    the Color option to find the matching B30 ESNTLS product by name.
+// 4. Otherwise → no match (the supplier message falls back to the checkout product name).
 const DAILY_SNEAKERS_OLD_ID='a627a529-8d8e-4918-8e93-acaa0f9e35ef';
 
 function normColour(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
@@ -5204,11 +5204,133 @@ function colourMatchesEsntls(orderColour,esntlsName){
   return ocToks.every(t=>enRaw.includes(t.replace(/[^a-z0-9]/g,'')));
 }
 
+function orderValueList(...values){
+  const out=[];
+  const add=value=>{
+    if(value===null||value===undefined||value==='')return;
+    if(Array.isArray(value)){value.forEach(add);return}
+    if(typeof value==='object'){
+      Object.values(value).forEach(add);
+      return;
+    }
+    out.push(String(value));
+  };
+  values.forEach(add);
+  return [...new Set(out.map(v=>v.trim()).filter(Boolean))];
+}
+function compactCheckoutId(value){
+  const raw=String(value||'').trim().toLowerCase();
+  if(!raw)return '';
+  const gid=raw.match(/^gid:\/\/shopify\/(?:product|productvariant)\/([^/?#]+)/);
+  if(gid)return gid[1];
+  const tail=raw.match(/\/([^\/?#]+)(?:[?#].*)?$/);
+  return (tail?tail[1]:raw).replace(/[^a-z0-9-]/g,'');
+}
+function sameCheckoutId(a,b){
+  const aa=compactCheckoutId(a),bb=compactCheckoutId(b);
+  return !!(aa&&bb&&(aa===bb||String(a).toLowerCase()===String(b).toLowerCase()));
+}
+function checkoutTitleKey(value){
+  return String(value||'').toLowerCase().replace(/&amp;/g,'and').replace(/[^a-z0-9]+/g,' ').trim();
+}
+function checkoutHandle(value){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
+  if(!/[/:?#]/.test(raw))return raw.toLowerCase();
+  try{
+    const u=new URL(raw,location.origin);
+    const parts=u.pathname.split('/').filter(Boolean);
+    const idx=parts.findIndex(p=>p.toLowerCase()==='products');
+    if(idx>=0&&parts[idx+1])return parts[idx+1].toLowerCase();
+  }catch(e){}
+  const match=raw.match(/\/products\/([^/?#]+)/i);
+  return match?match[1].toLowerCase():'';
+}
+function productShopifyProductIds(p){
+  return orderValueList(
+    p&&p.shopifyProductId,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.shopifyProductId,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.id
+  );
+}
+function productShopifyVariantIds(p){
+  return orderValueList(
+    p&&p.shopifyVariantId,
+    p&&p.shopifyVariants,
+    p&&p.variantIds,
+    p&&p.variantsMap,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.variants
+  );
+}
+function productShopifyHandles(p){
+  const links=orderValueList(
+    p&&p.link,
+    p&&p.shopifyUrl,
+    p&&p.checkoutLinks&&p.checkoutLinks.shopify,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.shopifyUrl
+  );
+  return [...new Set(links.map(checkoutHandle).filter(Boolean))];
+}
+function productShopifyTitleKeys(p){
+  return orderValueList(
+    p&&p.shopifyTitle,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.shopifyTitle,
+    p&&p.shopifyPlaceholder&&p.shopifyPlaceholder.requestedShopifyTitle
+  ).map(checkoutTitleKey).filter(Boolean);
+}
+function findEsntlsForShopifyLineItem(item){
+  const productIds=orderValueList(
+    item.productId,
+    item.shopifyProductId,
+    item.shopify_product_id,
+    item.product_id,
+    item.product&&item.product.id,
+    item.product&&item.product.admin_graphql_api_id
+  );
+  const variantIds=orderValueList(
+    item.variantId,
+    item.shopifyVariantId,
+    item.shopify_variant_id,
+    item.variant_id,
+    item.variant&&item.variant.id,
+    item.variant&&item.variant.admin_graphql_api_id
+  );
+  const handles=orderValueList(
+    item.productHandle,
+    item.shopifyHandle,
+    item.handle,
+    item.url,
+    item.productUrl,
+    item.product&&item.product.handle,
+    item.product&&item.product.onlineStoreUrl
+  ).map(checkoutHandle).filter(Boolean);
+  const title=checkoutTitleKey(item.productName||item.title||item.name||(item.product&&item.product.title)||'');
+
+  let hit=products.find(p=>productIds.some(id=>productShopifyProductIds(p).some(pid=>sameCheckoutId(id,pid))));
+  if(hit)return {esntls:hit, wixCat:null, matchType:'shopify-product'};
+
+  hit=products.find(p=>variantIds.some(id=>productShopifyVariantIds(p).some(pid=>sameCheckoutId(id,pid))));
+  if(hit)return {esntls:hit, wixCat:null, matchType:'shopify-variant'};
+
+  hit=products.find(p=>handles.some(handle=>productShopifyHandles(p).includes(handle)));
+  if(hit)return {esntls:hit, wixCat:null, matchType:'shopify-handle'};
+
+  if(title){
+    hit=products.find(p=>productShopifyTitleKeys(p).includes(title));
+    if(hit)return {esntls:hit, wixCat:null, matchType:'shopify-title'};
+  }
+
+  return null;
+}
+
 function findEsntlsForLineItem(item, wixProductsBySlug, wixProductsById){
   const wixId=item.productId;
   const wixCat=wixProductsById[wixId]||null;
   const wixSlug=wixCat?wixCat.slug:null;
   const colourOpt=(item.options&&(item.options.Color||item.options.color||item.options.Colour||item.options.colour))||null;
+
+  const shopifyHit=findEsntlsForShopifyLineItem(item);
+  if(shopifyHit)return {...shopifyHit, wixCat};
 
   // 1. Direct slug match against esntls products
   if(wixSlug){
@@ -5533,15 +5655,16 @@ function renderOrders(){
       if(opts.Size||opts['Shoe Size'])optBits.push(`<span>📏 ${escHtml(opts.Size||opts['Shoe Size'])}</span>`);
       if(opts.Color||opts.Colour)optBits.push(`<span>🎨 ${escHtml(opts.Color||opts.Colour)}</span>`);
       if(opts.Delivery)optBits.push(`<span>🚚 ${escHtml(opts.Delivery)}</span>`);
-      const matchBadge=lookup.matchType==='slug'?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ matched</span>'
+      const matchBadge=String(lookup.matchType||'').startsWith('shopify')?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ ESNTLS name</span>'
+                       :lookup.matchType==='slug'?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ matched</span>'
                        :lookup.matchType==='b30-colour'?'<span style="background:#e3f2fd;color:#1565c0;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">b30 colour</span>'
                        :'<span style="background:#fff3e0;color:#e65100;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">no match</span>';
-      const wixNote=(lookup.esntls&&lookup.esntls.name!==it.productName)?`<div style="font-size:10px;color:#aaa;margin-top:3px">Wix: ${escHtml(it.productName||'')}</div>`:'';
+      const checkoutNote=(lookup.esntls&&lookup.esntls.name!==it.productName)?`<div style="font-size:10px;color:#aaa;margin-top:3px">Checkout: ${escHtml(it.productName||'')}</div>`:'';
       return `<div style="display:flex;gap:10px;padding:8px 0;border-top:1px solid #f0f0f0">
         <img src="${escHtml(displayImg)}" loading="lazy" style="width:54px;height:54px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:#111;line-height:1.25">${escHtml(displayName)}${matchBadge}</div>
-          ${wixNote}
+          ${checkoutNote}
           <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:4px">${optBits.join('')}</div>
         </div>
         <div style="font-size:12px;font-weight:700;color:var(--g);flex-shrink:0;align-self:flex-start">×${it.quantity||1}</div>
