@@ -20,9 +20,13 @@
 //        WHATSAPP_TEMPLATE_NAME      Optional one-variable approved template for hands-free sends
 //        WHATSAPP_TEMPLATE_LANGUAGE  Optional template language code, defaults to en_GB
 //        SHOPIFY_WEBHOOK_SECRET      Optional Shopify webhook secret; falls back to SHOPIFY_CLIENT_SECRET
+//        GOOGLE_SUPPLIER_SHEET_ID    Google Sheet ID for supplier order rows
+//        GOOGLE_SERVICE_ACCOUNT_EMAIL Service account email shared on the supplier Sheet
+//        GOOGLE_PRIVATE_KEY          Service account private key with Sheets API write access
+//        SUPPLIER_SHEET_TAB          Optional tab name, defaults to Orders
 //
 // Public Shopify webhook endpoint:
-//   POST   /shopify-order-webhook → receives Shopify orders/create and sends supplier WhatsApp messages
+//   POST   /shopify-order-webhook → receives Shopify orders/create and records supplier rows
 //
 // Endpoints below require header  X-Admin-Secret: <ADMIN_SECRET>:
 //   GET    /list             → { objects: [{key, url, size, uploaded}, ...] }
@@ -44,6 +48,8 @@
 //   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
 //   POST   /whatsapp-test-order → dry-run or send a test supplier WhatsApp order.
 //   GET    /whatsapp-order-log → lists recent supplier WhatsApp webhook logs.
+//   POST   /supplier-sheet-test-order → dry-run or append a test supplier Sheet order.
+//   GET    /supplier-order-log → lists recent supplier webhook destination logs.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
@@ -58,8 +64,11 @@ const GRASS_JOB_OPENAI_TIMEOUT_MS = 85 * 1000;
 const GRASS_JOB_FOREGROUND_TIMEOUT_MS = 180 * 1000;
 const GRASS_JOB_TERMINAL_STATUSES = ['complete', 'partial', 'failed', 'cancelled'];
 const WHATSAPP_ORDER_ROOT = 'supplier-whatsapp/orders/';
+const SUPPLIER_ORDER_ROOT = 'supplier-orders/orders/';
 const WHATSAPP_DEFAULT_GRAPH_VERSION = 'v21.0';
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
+
+let googleSheetsTokenCache = { cacheKey: '', accessToken: '', expiresAt: 0 };
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -1066,6 +1075,133 @@ function shippingAddressLines(order) {
   ].map(safeMessageLine).filter(Boolean);
 }
 
+function shippingAddressFields(order) {
+  const shipping = order?.shipping_address || order?.shippingAddress || {};
+  return {
+    name: safeMessageLine(
+      shipping.name ||
+      [shipping.first_name || shipping.firstName, shipping.last_name || shipping.lastName].filter(Boolean).join(' ')
+    ),
+    address1: safeMessageLine(shipping.address1),
+    address2: safeMessageLine(shipping.address2),
+    city: safeMessageLine(shipping.city),
+    province: safeMessageLine(shipping.province || shipping.province_code || shipping.provinceCode),
+    postcode: safeMessageLine(shipping.zip || shipping.postal_code || shipping.postalCode),
+    country: safeMessageLine(shipping.country || shipping.country_name || shipping.countryName || shipping.countryFullName || shipping.country_code)
+  };
+}
+
+function publicProductImageUrl(value) {
+  const image = safeMessageLine(value);
+  if (!image) return '';
+  if (image.startsWith(PUBLIC_BASE)) return `https://esntlsclub.com/media/${image.slice(PUBLIC_BASE.length).replace(/^\/+/, '')}`;
+  if (/^https?:\/\//i.test(image)) return image;
+  if (image.startsWith('/')) return `https://esntlsclub.com${image}`;
+  return `https://esntlsclub.com/media/${image.replace(/^\/+/, '')}`;
+}
+
+function firstProductImageUrl(product, lineItem) {
+  const raw = product?.raw || {};
+  const candidates = [
+    product?.image,
+    raw.image,
+    raw.imageUrl,
+    raw.featuredImage,
+    raw.thumbnail,
+    raw.img,
+    Array.isArray(raw.images) ? raw.images[0] : '',
+    Array.isArray(raw.imgs) ? raw.imgs[0] : '',
+    Array.isArray(raw.media) ? (raw.media[0]?.url || raw.media[0]) : '',
+    lineItem?.image?.src,
+    lineItem?.image?.url,
+    lineItem?.variant?.image?.url
+  ];
+  for (const candidate of candidates) {
+    const image = publicProductImageUrl(candidate);
+    if (image) return image;
+  }
+  return '';
+}
+
+function esntlsProductPageUrl(product) {
+  const id = product?.raw?.id || product?.id;
+  return id ? `https://esntlsclub.com/product.html?id=${encodeURIComponent(id)}` : '';
+}
+
+function sheetString(value) {
+  return String(value ?? '').replace(/\r?\n/g, ' ').trim();
+}
+
+function googleSheetFormulaString(value) {
+  return String(value || '').replace(/"/g, '""');
+}
+
+function googleImageFormula(imageUrl) {
+  if (!imageUrl) return '';
+  const escaped = googleSheetFormulaString(imageUrl);
+  return `=IFERROR(IMAGE("${escaped}",4,96,96),HYPERLINK("${escaped}","View image"))`;
+}
+
+function supplierOrderLogKey(order, deliveryId = '') {
+  const stable = shopifyOrderId(order) || deliveryId || crypto.randomUUID();
+  return `${SUPPLIER_ORDER_ROOT}${slugify(stable)}.json`;
+}
+
+async function buildSupplierSheetRows(env, order) {
+  const { list } = await readProductsPayload(env);
+  const products = list.map(raw => {
+    const normalized = normalizeStoredProduct(raw);
+    return { ...normalized, raw };
+  });
+
+  const shipping = shippingAddressFields(order);
+  if (!shipping.name && !shipping.address1) throw new Error('Order is missing a shipping address');
+
+  const orderDate = sheetString(order?.created_at || order?.createdAt || new Date().toISOString());
+  const orderName = shopifyOrderDisplayName(order);
+  const rows = [];
+  const excludedLineItems = [];
+  const unresolvedLineItems = [];
+
+  for (const lineItem of shopifyLineItems(order)) {
+    const product = resolveEsntlsProductForShopifyLineItem(lineItem, products);
+    if (isSupplierWhatsappExcludedItem(lineItem, product)) {
+      excludedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
+      continue;
+    }
+
+    const optionParts = lineItemOptionParts(lineItem);
+    const quantity = Math.max(1, Number(lineItem?.quantity || lineItem?.current_quantity || 1));
+    const productTitle = safeMessageLine(product?.title || product?.raw?.name || fallbackShopifyLineItemTitle(lineItem));
+    const imageUrl = firstProductImageUrl(product, lineItem);
+    const productPage = esntlsProductPageUrl(product);
+    if (!product) unresolvedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
+
+    rows.push([
+      orderDate,
+      orderName,
+      shipping.name,
+      shipping.address1,
+      shipping.address2,
+      shipping.city || shipping.province,
+      shipping.postcode,
+      shipping.country,
+      googleImageFormula(imageUrl),
+      imageUrl ? `=HYPERLINK("${googleSheetFormulaString(imageUrl)}","${googleSheetFormulaString(imageUrl)}")` : '',
+      productTitle,
+      optionParts.join(' - '),
+      quantity,
+      'New',
+      '',
+      '',
+      product ? '' : 'Check item match',
+      'No'
+    ]);
+  }
+
+  return { rows, excludedLineItems, unresolvedLineItems };
+}
+
 async function buildSupplierWhatsappOrder(env, order) {
   const { list } = await readProductsPayload(env);
   const products = list.map(raw => {
@@ -1156,6 +1292,139 @@ function base64ToBytes(value) {
   }
 }
 
+function base64UrlEncodeBytes(bytes) {
+  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlEncodeJson(value) {
+  return base64UrlEncodeBytes(new TextEncoder().encode(JSON.stringify(value)));
+}
+
+function pemToArrayBuffer(pem) {
+  const normalized = String(pem || '')
+    .replace(/\\n/g, '\n')
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const bytes = base64ToBytes(normalized);
+  if (!bytes.length) throw new Error('GOOGLE_PRIVATE_KEY is not a valid private key');
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+
+async function signGoogleJwt(unsignedJwt, privateKeyPem) {
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(privateKeyPem),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsignedJwt)
+  );
+  return base64UrlEncodeBytes(new Uint8Array(signature));
+}
+
+async function getGoogleSheetsAccessToken(env) {
+  const email = safeMessageLine(env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
+  const privateKey = String(env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim();
+  if (!email) throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL env var not set');
+  if (!privateKey) throw new Error('GOOGLE_PRIVATE_KEY env var not set');
+
+  const now = Math.floor(Date.now() / 1000);
+  const cacheKey = `${email}:${privateKey.slice(-48)}`;
+  if (
+    googleSheetsTokenCache.cacheKey === cacheKey &&
+    googleSheetsTokenCache.accessToken &&
+    googleSheetsTokenCache.expiresAt > now + 60
+  ) {
+    return googleSheetsTokenCache.accessToken;
+  }
+
+  const unsignedJwt = [
+    base64UrlEncodeJson({ alg: 'RS256', typ: 'JWT' }),
+    base64UrlEncodeJson({
+      iss: email,
+      scope: 'https://www.googleapis.com/auth/spreadsheets',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now
+    })
+  ].join('.');
+  const assertion = `${unsignedJwt}.${await signGoogleJwt(unsignedJwt, privateKey)}`;
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok || data.error || !data.access_token) {
+    throw new Error(`Google Sheets authentication failed: ${data.error_description || data.error || response.status}`);
+  }
+
+  googleSheetsTokenCache = {
+    cacheKey,
+    accessToken: data.access_token,
+    expiresAt: now + Math.max(60, Number(data.expires_in || 3600))
+  };
+  return data.access_token;
+}
+
+function googleSheetsTabName(env) {
+  return sheetString(env.SUPPLIER_SHEET_TAB || 'Orders') || 'Orders';
+}
+
+function googleSheetsA1SheetName(tabName) {
+  const name = googleSheetFormulaString(tabName);
+  return /^[A-Za-z0-9_]+$/.test(name) ? name : `'${name.replace(/'/g, "''")}'`;
+}
+
+function supplierSheetConfigured(env) {
+  return Boolean(env.GOOGLE_SUPPLIER_SHEET_ID && env.GOOGLE_SERVICE_ACCOUNT_EMAIL && env.GOOGLE_PRIVATE_KEY);
+}
+
+function supplierWhatsappEnabled(env) {
+  return /^true$/i.test(String(env.SUPPLIER_WHATSAPP_ENABLED || '').trim());
+}
+
+async function appendRowsToSupplierGoogleSheet(env, rows) {
+  if (!rows.length) return { status: 'skipped', reason: 'No supplier rows to append' };
+  const sheetId = safeMessageLine(env.GOOGLE_SUPPLIER_SHEET_ID);
+  if (!sheetId) throw new Error('GOOGLE_SUPPLIER_SHEET_ID env var not set');
+
+  const accessToken = await getGoogleSheetsAccessToken(env);
+  const range = `${googleSheetsA1SheetName(googleSheetsTabName(env))}!A:R`;
+  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      majorDimension: 'ROWS',
+      values: rows
+    })
+  });
+  const data = await readJsonResponse(response);
+  if (!response.ok || data.error) {
+    throw new Error(`Google Sheets append failed: ${JSON.stringify(data.error || data)}`);
+  }
+  return {
+    status: 'appended',
+    spreadsheetId: sheetId,
+    tab: googleSheetsTabName(env),
+    rowCount: rows.length,
+    updatedRange: data.updates?.updatedRange || ''
+  };
+}
+
 function constantTimeEqualBytes(a, b) {
   if (!a.length || !b.length) return false;
   let diff = a.length ^ b.length;
@@ -1198,14 +1467,93 @@ async function handleShopifyOrderWebhook(req, env, ctx) {
 
   const deliveryId = req.headers.get('X-Shopify-Webhook-Id') || '';
   ctx.waitUntil(
-    sendShopifyOrderToWhatsApp(env, order, {
+    processSupplierOrderWebhook(env, order, {
       deliveryId,
       source: 'shopify-orders-create-webhook',
       force: false
-    }).catch(error => logWhatsappOrderError(env, order, error, { deliveryId, source: 'shopify-orders-create-webhook' }))
+    }).catch(error => logSupplierOrderError(env, order, error, { deliveryId, source: 'shopify-orders-create-webhook' }))
   );
 
   return json({ ok: true, accepted: true, orderName: shopifyOrderDisplayName(order) || null }, 202);
+}
+
+async function processSupplierOrderWebhook(env, order, options = {}) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+
+  const key = supplierOrderLogKey(order, options.deliveryId);
+  if (!options.force) {
+    const existing = await env.BUCKET.get(key);
+    if (existing) {
+      return { ok: true, status: 'skipped', reason: 'Order already processed', key };
+    }
+  }
+
+  const built = await buildSupplierSheetRows(env, order);
+  const baseRecord = {
+    orderId: shopifyOrderId(order),
+    orderName: shopifyOrderDisplayName(order),
+    source: options.source || 'manual',
+    deliveryId: options.deliveryId || '',
+    rowCount: built.rows.length,
+    excludedLineItems: built.excludedLineItems,
+    unresolvedLineItems: built.unresolvedLineItems,
+    createdAt: new Date().toISOString()
+  };
+
+  if (!built.rows.length) {
+    await writeSupplierOrderLog(env, key, { ...baseRecord, status: 'skipped', reason: 'No supplier line items after exclusions' });
+    return { ok: true, status: 'skipped', reason: 'No supplier line items after exclusions', key };
+  }
+
+  if (options.dryRun !== false) {
+    return {
+      ok: true,
+      status: 'dry-run',
+      key,
+      orderName: baseRecord.orderName,
+      rowCount: built.rows.length,
+      rows: built.rows,
+      excludedLineItems: built.excludedLineItems,
+      unresolvedLineItems: built.unresolvedLineItems
+    };
+  }
+
+  const sheet = supplierSheetConfigured(env)
+    ? await appendRowsToSupplierGoogleSheet(env, built.rows)
+    : {
+        status: 'not_configured',
+        reason: 'Set GOOGLE_SUPPLIER_SHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, and GOOGLE_PRIVATE_KEY'
+      };
+
+  const whatsapp = supplierWhatsappEnabled(env)
+    ? await sendShopifyOrderToWhatsApp(env, order, {
+        deliveryId: options.deliveryId,
+        source: options.source || 'supplier-order-webhook',
+        dryRun: false,
+        force: true
+      })
+    : { status: 'disabled' };
+
+  const status = sheet.status === 'appended' ? 'appended' : 'not_configured';
+  await writeSupplierOrderLog(env, key, {
+    ...baseRecord,
+    status,
+    sheet,
+    whatsapp,
+    appendedAt: sheet.status === 'appended' ? new Date().toISOString() : ''
+  });
+
+  return {
+    ok: sheet.status === 'appended',
+    status,
+    key,
+    orderName: baseRecord.orderName,
+    rowCount: built.rows.length,
+    sheet,
+    whatsapp,
+    excludedLineItems: built.excludedLineItems,
+    unresolvedLineItems: built.unresolvedLineItems
+  };
 }
 
 async function sendShopifyOrderToWhatsApp(env, order, options = {}) {
@@ -1331,6 +1679,12 @@ async function writeWhatsappOrderLog(env, key, record) {
   });
 }
 
+async function writeSupplierOrderLog(env, key, record) {
+  await env.BUCKET.put(key, JSON.stringify(record, null, 2), {
+    httpMetadata: { contentType: JSON_CONTENT_TYPE }
+  });
+}
+
 async function logWhatsappOrderError(env, order, error, meta = {}) {
   try {
     const key = supplierWhatsappOrderKey(order, meta.deliveryId);
@@ -1346,6 +1700,26 @@ async function logWhatsappOrderError(env, order, error, meta = {}) {
   } catch (logError) {
     console.error(JSON.stringify({
       event: 'supplier_whatsapp_log_failed',
+      error: logError?.message || String(logError)
+    }));
+  }
+}
+
+async function logSupplierOrderError(env, order, error, meta = {}) {
+  try {
+    const key = supplierOrderLogKey(order, meta.deliveryId);
+    await writeSupplierOrderLog(env, key, {
+      orderId: shopifyOrderId(order),
+      orderName: shopifyOrderDisplayName(order),
+      source: meta.source || 'shopify-orders-create-webhook',
+      deliveryId: meta.deliveryId || '',
+      status: 'error',
+      error: error?.message || String(error),
+      createdAt: new Date().toISOString()
+    });
+  } catch (logError) {
+    console.error(JSON.stringify({
+      event: 'supplier_order_log_failed',
       error: logError?.message || String(logError)
     }));
   }
@@ -1381,6 +1755,38 @@ async function listWhatsappOrderLogs(env, limit = 50) {
   return { ok: true, logs };
 }
 
+async function listSupplierOrderLogs(env, limit = 50) {
+  const safeLimit = Math.max(1, Math.min(100, Number(limit || 50)));
+  const listed = await env.BUCKET.list({ prefix: SUPPLIER_ORDER_ROOT, limit: safeLimit });
+  const logs = [];
+  for (const object of listed.objects || []) {
+    const stored = await env.BUCKET.get(object.key);
+    if (!stored) continue;
+    try {
+      const record = JSON.parse(await stored.text());
+      logs.push({
+        key: object.key,
+        uploaded: object.uploaded,
+        status: record.status,
+        orderName: record.orderName,
+        rowCount: record.rowCount || 0,
+        sheet: record.sheet || null,
+        whatsapp: record.whatsapp || null,
+        appendedAt: record.appendedAt || '',
+        createdAt: record.createdAt || '',
+        reason: record.reason || '',
+        error: record.error || '',
+        excludedLineItems: record.excludedLineItems || [],
+        unresolvedLineItems: record.unresolvedLineItems || []
+      });
+    } catch {
+      logs.push({ key: object.key, uploaded: object.uploaded, status: 'unreadable' });
+    }
+  }
+  logs.sort((a, b) => String(b.createdAt || b.uploaded || '').localeCompare(String(a.createdAt || a.uploaded || '')));
+  return { ok: true, logs };
+}
+
 function sampleShopifyOrderForWhatsappTest() {
   return {
     id: `test-${Date.now()}`,
@@ -1395,7 +1801,7 @@ function sampleShopifyOrderForWhatsappTest() {
     line_items: [{
       title: 'Test ESNTLS Item',
       variant_title: 'UK 8',
-      sku: '',
+      sku: 'ESNTLS-001-UK8',
       quantity: 1
     }]
   };
@@ -3775,6 +4181,29 @@ export default {
     if (req.method === 'GET' && parts[0] === 'whatsapp-order-log') {
       try {
         return json(await listWhatsappOrderLogs(env, url.searchParams.get('limit')));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'supplier-sheet-test-order') {
+      let body;
+      try { body = await req.json(); } catch (e) { body = {}; }
+      try {
+        const order = body.order || sampleShopifyOrderForWhatsappTest();
+        return json(await processSupplierOrderWebhook(env, order, {
+          dryRun: body.dryRun !== false,
+          force: true,
+          source: 'admin-sheet-test'
+        }));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'GET' && parts[0] === 'supplier-order-log') {
+      try {
+        return json(await listSupplierOrderLogs(env, url.searchParams.get('limit')));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
