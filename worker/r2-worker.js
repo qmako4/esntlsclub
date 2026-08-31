@@ -51,8 +51,10 @@
 //   POST   /supplier-sheet-test-order → dry-run or append a test supplier Sheet order.
 //   GET    /supplier-order-log → lists recent supplier webhook destination logs.
 //   POST   /supplier-sheet-sync-recent → fetches recent Shopify orders and appends supplier Sheet rows.
+//   GET    /supplier-image/<key> → public image response for Google Sheet thumbnails.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
+const DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE = 'https://esntls-r2.qmako41212.workers.dev/supplier-image/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
 const FALLBACK_BACKGROUND_URL = 'https://raw.githubusercontent.com/qmako4/esntlsclub/main/img/esntls-blank-concrete-background.jpg';
 const DEFAULT_GRASS_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-grass-background.jpg';
@@ -1140,6 +1142,58 @@ function r2PublicUrlForKey(key) {
   return cleanKey ? `${PUBLIC_BASE}${cleanKey}` : '';
 }
 
+function cleanSupplierImageKey(value) {
+  const key = safeMessageLine(value).replace(/^\/+/, '');
+  if (!key || key.includes('..') || key.includes('\\')) return '';
+  return key;
+}
+
+function encodeR2KeyPath(key) {
+  const cleanKey = cleanSupplierImageKey(key);
+  return cleanKey ? cleanKey.split('/').map(encodeURIComponent).join('/') : '';
+}
+
+function supplierImageRouteBase(env) {
+  const configured = safeMessageLine(env?.SUPPLIER_IMAGE_ROUTE_BASE || DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE).replace(/\/+$/, '');
+  return configured ? `${configured}/` : DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE;
+}
+
+function r2KeyFromImageUrl(value) {
+  const image = safeMessageLine(value);
+  if (!image) return '';
+
+  if (image.startsWith(PUBLIC_BASE)) {
+    return cleanSupplierImageKey(decodeURIComponent(image.slice(PUBLIC_BASE.length).split(/[?#]/)[0]));
+  }
+
+  try {
+    const parsed = new URL(image);
+    if (/^(www\.)?esntlsclub\.com$/i.test(parsed.hostname) && parsed.pathname.startsWith('/media/')) {
+      return cleanSupplierImageKey(decodeURIComponent(parsed.pathname.slice('/media/'.length)));
+    }
+    if (/^esntls-r2\.qmako41212\.workers\.dev$/i.test(parsed.hostname) && parsed.pathname.startsWith('/supplier-image/')) {
+      return cleanSupplierImageKey(decodeURIComponent(parsed.pathname.slice('/supplier-image/'.length)));
+    }
+  } catch {}
+
+  if (image.startsWith('/media/')) {
+    return cleanSupplierImageKey(decodeURIComponent(image.slice('/media/'.length).split(/[?#]/)[0]));
+  }
+
+  return '';
+}
+
+function supplierSheetImageUrlForR2Key(env, key) {
+  const encoded = encodeR2KeyPath(key);
+  return encoded ? `${supplierImageRouteBase(env)}${encoded}` : '';
+}
+
+function supplierSheetImageUrlFromSource(env, value) {
+  const image = safeMessageLine(value);
+  const key = r2KeyFromImageUrl(image);
+  return key ? supplierSheetImageUrlForR2Key(env, key) : image;
+}
+
 function supplierImageSourceUrl(value) {
   const image = safeMessageLine(value);
   if (!image) return '';
@@ -1221,7 +1275,7 @@ async function firstSupplierSheetImageUrl(env, product, lineItem) {
     const sourceUrl = supplierImageSourceUrl(candidate);
     if (!sourceUrl) continue;
     const image = await mirrorSupplierSheetImage(env, sourceUrl, product);
-    if (image) return image;
+    if (image) return supplierSheetImageUrlFromSource(env, image);
   }
   return '';
 }
@@ -3145,6 +3199,36 @@ function validateR2ImageKey(value, label) {
   return key;
 }
 
+function contentTypeFromImageKey(key) {
+  if (/\.jpe?g$/i.test(key)) return 'image/jpeg';
+  if (/\.png$/i.test(key)) return 'image/png';
+  if (/\.webp$/i.test(key)) return 'image/webp';
+  if (/\.gif$/i.test(key)) return 'image/gif';
+  if (/\.avif$/i.test(key)) return 'image/avif';
+  return 'application/octet-stream';
+}
+
+async function getSupplierSheetImage(req, env, parts) {
+  if (!env.BUCKET) return json({ error: 'BUCKET binding is not configured' }, 500);
+
+  let key;
+  try {
+    key = validateR2ImageKey(parts.slice(1).map(part => decodeURIComponent(part)).join('/'), 'image key');
+  } catch {
+    return json({ error: 'Invalid image key' }, 400);
+  }
+
+  const object = await env.BUCKET.get(key);
+  if (!object) return json({ error: 'Image not found' }, 404);
+
+  const headers = new Headers(cors);
+  object.writeHttpMetadata(headers);
+  if (!headers.get('Content-Type')) headers.set('Content-Type', contentTypeFromImageKey(key));
+  if (!headers.get('Cache-Control')) headers.set('Cache-Control', 'public, max-age=86400');
+  headers.set('X-Robots-Tag', 'noindex');
+  return new Response(req.method === 'HEAD' ? null : object.body, { headers });
+}
+
 async function copyR2Object(env, requestBody) {
   if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
   const sourceKey = validateR2ImageKey(requestBody.sourceKey, 'sourceKey');
@@ -4394,6 +4478,10 @@ export default {
 
     if (req.method === 'POST' && parts[0] === 'shopify-order-webhook') {
       return handleShopifyOrderWebhook(req, env, ctx);
+    }
+
+    if ((req.method === 'GET' || req.method === 'HEAD') && parts[0] === 'supplier-image') {
+      return getSupplierSheetImage(req, env, parts);
     }
 
     const adminAuthorized = req.headers.get('X-Admin-Secret') === env.ADMIN_SECRET;
