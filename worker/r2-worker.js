@@ -50,6 +50,7 @@
 //   GET    /whatsapp-order-log → lists recent supplier WhatsApp webhook logs.
 //   POST   /supplier-sheet-test-order → dry-run or append a test supplier Sheet order.
 //   GET    /supplier-order-log → lists recent supplier webhook destination logs.
+//   POST   /supplier-sheet-sync-recent → fetches recent Shopify orders and appends supplier Sheet rows.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
@@ -109,6 +110,49 @@ mutation ProductVariantsBulkUpdateForPriceSync($productId: ID!, $variants: [Prod
     product { id title handle }
     productVariants { id price }
     userErrors { field message }
+  }
+}`;
+
+const RECENT_SUPPLIER_ORDERS_QUERY = `
+query RecentSupplierOrders($first: Int!, $query: String) {
+  orders(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
+    nodes {
+      id
+      name
+      createdAt
+      displayFinancialStatus
+      displayFulfillmentStatus
+      shippingAddress {
+        name
+        address1
+        address2
+        city
+        province
+        country
+        zip
+      }
+      lineItems(first: 50) {
+        nodes {
+          id
+          name
+          title
+          sku
+          quantity
+          currentQuantity
+          variantTitle
+          image { url }
+          product { id title handle }
+          variant {
+            id
+            title
+            sku
+            selectedOptions { name value }
+            product { id title handle }
+          }
+          customAttributes { key value }
+        }
+      }
+    }
   }
 }`;
 
@@ -1501,6 +1545,18 @@ async function processSupplierOrderWebhook(env, order, options = {}) {
   };
 
   if (!built.rows.length) {
+    if (options.dryRun !== false) {
+      return {
+        ok: true,
+        status: 'skipped',
+        reason: 'No supplier line items after exclusions',
+        key,
+        orderName: baseRecord.orderName,
+        rowCount: 0,
+        excludedLineItems: built.excludedLineItems,
+        unresolvedLineItems: built.unresolvedLineItems
+      };
+    }
     await writeSupplierOrderLog(env, key, { ...baseRecord, status: 'skipped', reason: 'No supplier line items after exclusions' });
     return { ok: true, status: 'skipped', reason: 'No supplier line items after exclusions', key };
   }
@@ -1553,6 +1609,143 @@ async function processSupplierOrderWebhook(env, order, options = {}) {
     whatsapp,
     excludedLineItems: built.excludedLineItems,
     unresolvedLineItems: built.unresolvedLineItems
+  };
+}
+
+function clampInteger(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(number)));
+}
+
+function orderNameNumber(order) {
+  const match = String(order?.name || order?.order_number || order?.number || '').match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function graphOrderLineItemToWebhookLineItem(lineItem) {
+  const variant = lineItem?.variant || {};
+  const product = lineItem?.product || variant.product || {};
+  const imageUrl = safeMessageLine(lineItem?.image?.url);
+  return {
+    admin_graphql_api_id: lineItem?.id || '',
+    id: lineItem?.id || '',
+    title: lineItem?.title || lineItem?.name || '',
+    name: lineItem?.name || lineItem?.title || '',
+    sku: lineItem?.sku || variant.sku || '',
+    quantity: lineItem?.quantity,
+    current_quantity: lineItem?.currentQuantity,
+    variant_title: lineItem?.variantTitle || variant.title || '',
+    product_id: product.id || '',
+    variant_id: variant.id || '',
+    image: imageUrl ? { src: imageUrl, url: imageUrl } : undefined,
+    product,
+    variant,
+    selectedOptions: variant.selectedOptions || [],
+    properties: Array.isArray(lineItem?.customAttributes)
+      ? lineItem.customAttributes.map(attribute => ({
+          name: attribute?.key || '',
+          value: attribute?.value || ''
+        }))
+      : []
+  };
+}
+
+function graphOrderToWebhookOrder(order) {
+  const shipping = order?.shippingAddress || {};
+  return {
+    admin_graphql_api_id: order?.id || '',
+    id: order?.id || '',
+    name: order?.name || '',
+    created_at: order?.createdAt || '',
+    financial_status: order?.displayFinancialStatus || '',
+    fulfillment_status: order?.displayFulfillmentStatus || '',
+    shipping_address: {
+      name: shipping.name || '',
+      address1: shipping.address1 || '',
+      address2: shipping.address2 || '',
+      city: shipping.city || '',
+      province: shipping.province || '',
+      country: shipping.country || '',
+      zip: shipping.zip || ''
+    },
+    line_items: (order?.lineItems?.nodes || []).map(graphOrderLineItemToWebhookLineItem)
+  };
+}
+
+function supplierSyncSkipsOrder(order, options) {
+  const orderNumber = orderNameNumber(order);
+  if (options.afterOrderNumber && orderNumber && orderNumber <= options.afterOrderNumber) {
+    return `At or before #${options.afterOrderNumber}`;
+  }
+  if (!options.includeUnpaid && String(order?.displayFinancialStatus || '').toUpperCase() !== 'PAID') {
+    return `Financial status ${order?.displayFinancialStatus || 'unknown'}`;
+  }
+  if (!options.includeFulfilled && String(order?.displayFulfillmentStatus || '').toUpperCase() === 'FULFILLED') {
+    return 'Already fulfilled';
+  }
+  if (!order?.shippingAddress) return 'Missing shipping address';
+  return '';
+}
+
+async function syncRecentSupplierOrdersToSheet(env, requestBody = {}) {
+  const first = clampInteger(requestBody.first, 50, 1, 50);
+  const afterOrderNumber = clampInteger(requestBody.afterOrderNumber, 0, 0, 999999999);
+  const options = {
+    afterOrderNumber,
+    includeFulfilled: requestBody.includeFulfilled === true,
+    includeUnpaid: requestBody.includeUnpaid === true
+  };
+  const dryRun = requestBody.dryRun !== false;
+  const force = requestBody.force === true;
+  const query = safeMessageLine(requestBody.query || '');
+
+  const data = await shopifyGraphql(env, RECENT_SUPPLIER_ORDERS_QUERY, { first, query });
+  const nodes = data?.orders?.nodes || [];
+  const skippedOrders = [];
+  const candidates = [];
+
+  for (const order of nodes) {
+    const reason = supplierSyncSkipsOrder(order, options);
+    if (reason) {
+      skippedOrders.push({ orderName: order?.name || '', reason });
+      continue;
+    }
+    candidates.push(order);
+  }
+
+  candidates.sort((a, b) => orderNameNumber(a) - orderNameNumber(b));
+
+  const results = [];
+  for (const order of candidates) {
+    const supplierOrder = graphOrderToWebhookOrder(order);
+    const result = await processSupplierOrderWebhook(env, supplierOrder, {
+      dryRun,
+      force,
+      source: 'admin-supplier-sheet-sync'
+    });
+    results.push({
+      orderName: result.orderName || supplierOrder.name,
+      status: result.status,
+      rowCount: result.rowCount || 0,
+      key: result.key,
+      excludedLineItems: result.excludedLineItems || [],
+      unresolvedLineItems: result.unresolvedLineItems || []
+    });
+  }
+
+  return {
+    ok: true,
+    dryRun,
+    first,
+    query,
+    afterOrderNumber,
+    fetched: nodes.length,
+    considered: candidates.length,
+    appendedOrders: results.filter(result => result.status === 'appended').length,
+    appendedRows: results.reduce((total, result) => total + (result.status === 'appended' ? Number(result.rowCount || 0) : 0), 0),
+    skippedOrders,
+    results
   };
 }
 
@@ -4204,6 +4397,16 @@ export default {
     if (req.method === 'GET' && parts[0] === 'supplier-order-log') {
       try {
         return json(await listSupplierOrderLogs(env, url.searchParams.get('limit')));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'supplier-sheet-sync-recent') {
+      let body;
+      try { body = await req.json(); } catch (e) { body = {}; }
+      try {
+        return json(await syncRecentSupplierOrdersToSheet(env, body));
       } catch (error) {
         return json({ error: error.message }, 500);
       }

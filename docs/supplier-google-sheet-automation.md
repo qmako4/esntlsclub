@@ -83,6 +83,15 @@ curl -X POST "https://esntls-r2.qmako41212.workers.dev/supplier-sheet-test-order
   -d "{\"dryRun\":false}"
 ```
 
+Sync recent paid, unfulfilled Shopify orders after a cutoff order number:
+
+```bash
+curl -X POST "https://esntls-r2.qmako41212.workers.dev/supplier-sheet-sync-recent" \
+  -H "X-Admin-Secret: <ADMIN_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d "{\"afterOrderNumber\":1165,\"dryRun\":false}"
+```
+
 View recent supplier order logs:
 
 ```bash
