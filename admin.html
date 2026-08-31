@@ -5423,9 +5423,33 @@ function setOrderFilter(el,st){
 }
 
 // ─── Supplier message — copy-to-clipboard
+function isSupplierExcludedItem(item,lookup){
+  const esntls=lookup&&lookup.esntls;
+  const text=[
+    esntls&&esntls.name,
+    esntls&&esntls.id,
+    item&&item.productName,
+    item&&item.title,
+    item&&item.name,
+    item&&item.sku,
+    item&&item.variantTitle
+  ].filter(Boolean).join(' ').toLowerCase();
+  return String(esntls&&esntls.id)==='54'||/\bair\s*pro\b/.test(text)||/\bclassic\s+essentials\s+earphones\b/.test(text)||/\besntls-0?54\b/i.test(text);
+}
+
+function supplierLineItemsForOrder(order,idx){
+  const index=idx||_buildWixIndices();
+  return (order.lineItems||[]).map(item=>{
+    const lookup=findEsntlsForLineItem(item,index.bySlug,index.byId);
+    return {item,lookup};
+  }).filter(entry=>!isSupplierExcludedItem(entry.item,entry.lookup));
+}
+
 function buildSupplierMessage(order){
   const lines=[];
   const idx=_buildWixIndices();
+  const supplierItems=supplierLineItemsForOrder(order,idx);
+  if(!supplierItems.length)return '';
   const s=order.shipping||{};
   const b=order.buyer||{};
   lines.push(b.name||'');
@@ -5434,9 +5458,8 @@ function buildSupplierMessage(order){
   if(s.postalCode)lines.push(s.postalCode);
   lines.push(s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||''));
   lines.push('');
-  (order.lineItems||[]).forEach((it)=>{
-    const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
-    const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
+  supplierItems.forEach(({item:it,lookup})=>{
+    const displayName=lookup.esntls?lookup.esntls.name:(it.productName||it.title||it.name||'Unknown');
     const opts=it.options||{};
     let itemLine=displayName;
     const colour=opts.Color||opts.Colour||'';
@@ -5456,6 +5479,7 @@ function copySupplierMessage(num){
   const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
   if(!o)return;
   const txt=buildSupplierMessage(o);
+  if(!txt){if(typeof toast==='function')toast('Only Air Pro items found — not sent to supplier','info');return}
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>{
       if(typeof toast==='function')toast('Supplier message copied','success');
@@ -5485,8 +5509,7 @@ async function _fetchImageAsFile(url,filename){
 // ─── Pick the first ESNTLS-branded image for this order (falls back to Wix image)
 function _orderHeroImageUrl(o){
   const idx=_buildWixIndices();
-  for(const li of (o.lineItems||[])){
-    const lk=findEsntlsForLineItem(li,idx.bySlug,idx.byId);
+  for(const {item:li,lookup:lk} of supplierLineItemsForOrder(o,idx)){
     const u=(lk.esntls&&lk.esntls.images&&lk.esntls.images[0])||(lk.wixCat&&lk.wixCat.image)||li.image;
     if(u)return u;
   }
@@ -5498,6 +5521,7 @@ async function shareSupplierMessage(num,btn){
   const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
   if(!o)return;
   const text=buildSupplierMessage(o);
+  if(!text){if(typeof toast==='function')toast('Only Air Pro items found — not sent to supplier','info');return}
   const imgUrl=_orderHeroImageUrl(o);
   if(btn){btn.disabled=true;const orig=btn.innerHTML;btn.innerHTML='⏳ Preparing…';btn._orig=orig}
   let file=null;
@@ -5524,8 +5548,9 @@ async function shareSupplierMessage(num,btn){
 // ─── Bulk: condensed message of all unsent unfulfilled orders, sorted oldest first
 function _bulkOrdersToSend(){
   const sentSet=ordersLoadSent();
+  const idx=_buildWixIndices();
   return (wixOrders||[])
-    .filter(o=>o.fulfillmentStatus!=='FULFILLED'&&!sentSet.has(String(o.number)))
+    .filter(o=>o.fulfillmentStatus!=='FULFILLED'&&!sentSet.has(String(o.number))&&supplierLineItemsForOrder(o,idx).length)
     .sort((a,b)=>new Date(a.createdDate)-new Date(b.createdDate));
 }
 function buildBulkMessage(){
@@ -5648,7 +5673,7 @@ function renderOrders(){
     const dateStr=new Date(o.createdDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
     const itemsHtml=(o.lineItems||[]).map(it=>{
       const lookup=findEsntlsForLineItem(it,idx.bySlug,idx.byId);
-      const displayName=lookup.esntls?lookup.esntls.name:(it.productName||'Unknown');
+      const displayName=lookup.esntls?lookup.esntls.name:(it.productName||it.title||it.name||'Unknown');
       const displayImg=(lookup.esntls&&lookup.esntls.images&&lookup.esntls.images[0])||(lookup.wixCat&&lookup.wixCat.image)||it.image||'';
       const opts=it.options||{};
       const optBits=[];
