@@ -13,8 +13,18 @@
 //        SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET for an installed Shopify app
 //        WIX_API_TOKEN  Wix API key with WIX_STORES.PRODUCT_READ scope (for /wix-sync)
 //        WIX_SITE_ID    7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155 (for /wix-sync)
+//        WHATSAPP_ACCESS_TOKEN       Meta WhatsApp Cloud API token
+//        WHATSAPP_PHONE_NUMBER_ID    Meta WhatsApp sender phone number ID
+//        WHATSAPP_SUPPLIER_TO        Supplier WhatsApp number in international format, no +
+//        WHATSAPP_OWNER_TO           Optional owner WhatsApp number in international format, no +
+//        WHATSAPP_TEMPLATE_NAME      Optional one-variable approved template for hands-free sends
+//        WHATSAPP_TEMPLATE_LANGUAGE  Optional template language code, defaults to en_GB
+//        SHOPIFY_WEBHOOK_SECRET      Optional Shopify webhook secret; falls back to SHOPIFY_CLIENT_SECRET
 //
-// Endpoints (all require header  X-Admin-Secret: <ADMIN_SECRET>):
+// Public Shopify webhook endpoint:
+//   POST   /shopify-order-webhook → receives Shopify orders/create and sends supplier WhatsApp messages
+//
+// Endpoints below require header  X-Admin-Secret: <ADMIN_SECRET>:
 //   GET    /list             → { objects: [{key, url, size, uploaded}, ...] }
 //   PUT    /upload/<key>     → request body = file bytes, Content-Type = file mime
 //   DELETE /delete/<key>     → removes <key> from the bucket
@@ -32,6 +42,8 @@
 //   POST   /checkout-link-mode → switches products between saved Shopify and Wix checkout links.
 //                                Body: { mode: 'shopify'|'wix', productId?: string|number }
 //   POST   /grass-preview     → creates a simple ESNTLS grass background preview from multipart form data.
+//   POST   /whatsapp-test-order → dry-run or send a test supplier WhatsApp order.
+//   GET    /whatsapp-order-log → lists recent supplier WhatsApp webhook logs.
 
 const PUBLIC_BASE = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const DEFAULT_BACKGROUND_URL = 'https://esntlsclub.com/img/esntls-blank-concrete-background.jpg';
@@ -45,6 +57,8 @@ const GRASS_JOB_STALE_AFTER_MS = 2 * 60 * 1000;
 const GRASS_JOB_OPENAI_TIMEOUT_MS = 85 * 1000;
 const GRASS_JOB_FOREGROUND_TIMEOUT_MS = 180 * 1000;
 const GRASS_JOB_TERMINAL_STATUSES = ['complete', 'partial', 'failed', 'cancelled'];
+const WHATSAPP_ORDER_ROOT = 'supplier-whatsapp/orders/';
+const WHATSAPP_DEFAULT_GRAPH_VERSION = 'v21.0';
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
 const cors = {
@@ -819,6 +833,572 @@ function buildDescriptionHtml() {
     '<p><strong>Blank item = original item.</strong></p>',
     "<p><strong>Buy the blank item shown at checkout. You'll receive the original item you selected.</strong></p>"
   ].join('');
+}
+
+function shopifyOrderDisplayName(order) {
+  return String(order?.name || order?.order_number || order?.id || '').replace(/\s+/g, ' ').trim();
+}
+
+function shopifyOrderId(order) {
+  return String(order?.admin_graphql_api_id || order?.id || shopifyOrderDisplayName(order) || '').trim();
+}
+
+function supplierWhatsappOrderKey(order, deliveryId = '') {
+  const stable = shopifyOrderId(order) || deliveryId || crypto.randomUUID();
+  return `${WHATSAPP_ORDER_ROOT}${slugify(stable)}.json`;
+}
+
+function safeMessageLine(value) {
+  return String(value || '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeTitleKey(value) {
+  return safeMessageLine(value)
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeShopifyNumericId(value) {
+  return numericShopifyVariantId(value);
+}
+
+function shopifyLineItems(order) {
+  if (Array.isArray(order?.line_items)) return order.line_items;
+  if (Array.isArray(order?.lineItems)) return order.lineItems;
+  if (Array.isArray(order?.lineItems?.nodes)) return order.lineItems.nodes;
+  if (Array.isArray(order?.lineItems?.edges)) {
+    return order.lineItems.edges.map(edge => edge?.node).filter(Boolean);
+  }
+  return [];
+}
+
+function shopifyLineItemSku(lineItem) {
+  return safeMessageLine(lineItem?.sku || lineItem?.variant?.sku || lineItem?.node?.sku || '');
+}
+
+function shopifySourceIdFromSku(lineItem) {
+  const sku = shopifyLineItemSku(lineItem);
+  const match = sku.match(/^ESNTLS[-_]?0*([0-9]+)(?:[-_]|$)/i);
+  return match ? String(Number(match[1])) : '';
+}
+
+function linkedShopifyProductIds(rawProduct) {
+  const placeholder = rawProduct?.shopifyPlaceholder || {};
+  return uniqueList([
+    rawProduct?.shopifyProductId,
+    placeholder.shopifyProductId,
+    rawProduct?.shopify?.productId
+  ].map(normalizeShopifyNumericId).filter(Boolean));
+}
+
+function linkedShopifyVariantIds(rawProduct) {
+  const placeholder = rawProduct?.shopifyPlaceholder || {};
+  const maps = [
+    placeholder.variants,
+    rawProduct?.shopifyVariantMap,
+    rawProduct?.shopifyVariants,
+    rawProduct?.variants
+  ];
+  const ids = [];
+  for (const map of maps) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for (const value of Object.values(map)) {
+      const id = normalizeShopifyNumericId(value);
+      if (id) ids.push(id);
+    }
+  }
+  return uniqueList(ids);
+}
+
+function linkedShopifyTitleKeys(rawProduct) {
+  const placeholder = rawProduct?.shopifyPlaceholder || {};
+  return uniqueList([
+    rawProduct?.shopifyTitle,
+    placeholder.shopifyTitle,
+    placeholder.title,
+    rawProduct?.blankTitle
+  ].map(normalizeTitleKey).filter(Boolean));
+}
+
+function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
+  const skuSourceId = shopifySourceIdFromSku(lineItem);
+  if (skuSourceId) {
+    const match = products.find(product => String(product.raw?.id || product.id) === skuSourceId);
+    if (match) return match;
+  }
+
+  const productId = normalizeShopifyNumericId(lineItem?.product_id || lineItem?.productId || lineItem?.product?.id);
+  const variantId = normalizeShopifyNumericId(lineItem?.variant_id || lineItem?.variantId || lineItem?.variant?.id);
+  const titleKey = normalizeTitleKey(lineItem?.title || lineItem?.product_title || lineItem?.productTitle || '');
+
+  if (productId) {
+    const match = products.find(product => linkedShopifyProductIds(product.raw).includes(productId));
+    if (match) return match;
+  }
+
+  if (variantId) {
+    const match = products.find(product => linkedShopifyVariantIds(product.raw).includes(variantId));
+    if (match) return match;
+  }
+
+  if (titleKey) {
+    const match = products.find(product => linkedShopifyTitleKeys(product.raw).includes(titleKey));
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function isSupplierWhatsappExcludedItem(lineItem, product) {
+  const sku = shopifyLineItemSku(lineItem);
+  if (/^ESNTLS[-_]?0*54(?:[-_]|$)/i.test(sku)) return true;
+
+  const sourceId = String(product?.raw?.id || product?.id || '').trim();
+  if (sourceId === '54') return true;
+
+  const text = normalizeTitleKey([
+    product?.title,
+    product?.raw?.name,
+    lineItem?.title,
+    lineItem?.name,
+    lineItem?.product_title,
+    lineItem?.variant_title,
+    product?.raw?.shopifyPlaceholder?.shopifyTitle
+  ].filter(Boolean).join(' '));
+
+  return /\bair pro\b/.test(text) || /\bclassic essentials earphones\b/.test(text);
+}
+
+function optionLooksLikeSize(value) {
+  const text = safeMessageLine(value).toUpperCase();
+  return /^(UK\s*)?\d{1,2}(?:\.\d)?$/.test(text)
+    || /^UK\s*\d{1,2}(?:\.\d)?$/.test(text)
+    || /^(XXS|XS|S|M|L|XL|XXL|XXXL|ONE SIZE|OS|OSFA)$/.test(text);
+}
+
+function normalizeSupplierOption(value) {
+  const text = safeMessageLine(value);
+  if (!text || /^default title$/i.test(text)) return '';
+  const ukMatch = text.match(/^UK\s*([0-9]{1,2}(?:\.\d)?)$/i) || text.match(/^([0-9]{1,2}(?:\.\d)?)$/);
+  if (ukMatch) return `UK ${ukMatch[1]}`;
+  return text;
+}
+
+function lineItemOptionParts(lineItem) {
+  const parts = [];
+  const variantTitle = normalizeSupplierOption(lineItem?.variant_title || lineItem?.variantTitle || lineItem?.variant?.title);
+  if (variantTitle) {
+    parts.push(...variantTitle.split(/\s*\/\s*/).map(normalizeSupplierOption).filter(Boolean));
+  }
+
+  const selectedOptions = lineItem?.selectedOptions || lineItem?.variant?.selectedOptions || [];
+  if (Array.isArray(selectedOptions)) {
+    for (const option of selectedOptions) {
+      const name = safeMessageLine(option?.name);
+      const value = normalizeSupplierOption(option?.value);
+      if (!value || /^title$/i.test(name)) continue;
+      parts.push(value);
+    }
+  }
+
+  const properties = Array.isArray(lineItem?.properties) ? lineItem.properties : [];
+  for (const property of properties) {
+    const name = safeMessageLine(property?.name);
+    const value = normalizeSupplierOption(property?.value);
+    if (!value || name.startsWith('_')) continue;
+    if (/email|phone|mobile|contact/i.test(name)) continue;
+    parts.push(value);
+  }
+
+  const sizes = [];
+  const other = [];
+  for (const part of uniqueList(parts)) {
+    if (optionLooksLikeSize(part)) sizes.push(part);
+    else other.push(part);
+  }
+  return [...other, ...sizes];
+}
+
+function fallbackShopifyLineItemTitle(lineItem) {
+  const title = safeMessageLine(lineItem?.title || lineItem?.product_title || lineItem?.productTitle || lineItem?.name);
+  const variant = safeMessageLine(lineItem?.variant_title || lineItem?.variantTitle);
+  if (title && variant && title.toLowerCase().endsWith(` - ${variant}`.toLowerCase())) {
+    return title.slice(0, -variant.length - 3).trim();
+  }
+  return title || 'Unknown item';
+}
+
+function formatSupplierLineItem(lineItem, product) {
+  const title = safeMessageLine(product?.title || product?.raw?.name || fallbackShopifyLineItemTitle(lineItem));
+  const titleKey = normalizeTitleKey(title);
+  const optionParts = lineItemOptionParts(lineItem).filter(option => {
+    if (optionLooksLikeSize(option)) return true;
+    const optionKey = normalizeTitleKey(option);
+    return optionKey && !titleKey.includes(optionKey);
+  });
+  const quantity = Math.max(1, Number(lineItem?.quantity || lineItem?.current_quantity || 1));
+  const base = [title, ...optionParts].filter(Boolean).join(' - ');
+  return quantity > 1 ? `${base} x${quantity}` : base;
+}
+
+function shippingAddressLines(order) {
+  const shipping = order?.shipping_address || order?.shippingAddress || {};
+  const name = safeMessageLine(
+    shipping.name ||
+    [shipping.first_name || shipping.firstName, shipping.last_name || shipping.lastName].filter(Boolean).join(' ')
+  );
+  const province = safeMessageLine(shipping.province || shipping.province_code || shipping.provinceCode);
+  const country = safeMessageLine(shipping.country || shipping.country_name || shipping.countryName || shipping.countryFullName || shipping.country_code);
+  return [
+    name,
+    shipping.address1,
+    shipping.address2,
+    shipping.city,
+    province,
+    shipping.zip || shipping.postal_code || shipping.postalCode,
+    country
+  ].map(safeMessageLine).filter(Boolean);
+}
+
+async function buildSupplierWhatsappOrder(env, order) {
+  const { list } = await readProductsPayload(env);
+  const products = list.map(raw => {
+    const normalized = normalizeStoredProduct(raw);
+    return { ...normalized, raw };
+  });
+
+  const address = shippingAddressLines(order);
+  if (!address.length) throw new Error('Order is missing a shipping address');
+
+  const sentLineItems = [];
+  const excludedLineItems = [];
+  for (const lineItem of shopifyLineItems(order)) {
+    const product = resolveEsntlsProductForShopifyLineItem(lineItem, products);
+    if (isSupplierWhatsappExcludedItem(lineItem, product)) {
+      excludedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
+      continue;
+    }
+    sentLineItems.push(formatSupplierLineItem(lineItem, product));
+  }
+
+  if (!sentLineItems.length) {
+    return {
+      orderName: shopifyOrderDisplayName(order),
+      message: '',
+      sentLineItems,
+      excludedLineItems,
+      skipReason: 'No supplier line items after exclusions'
+    };
+  }
+
+  return {
+    orderName: shopifyOrderDisplayName(order),
+    message: [...address, '', ...sentLineItems].join('\n'),
+    sentLineItems,
+    excludedLineItems,
+    skipReason: ''
+  };
+}
+
+function normalizeWhatsappNumber(value) {
+  return String(value || '').replace(/[^\d]/g, '').replace(/^00/, '');
+}
+
+function whatsappRecipients(env) {
+  const recipients = [
+    ...splitList(env.WHATSAPP_SUPPLIER_TO),
+    ...splitList(env.WHATSAPP_OWNER_TO)
+  ].map(normalizeWhatsappNumber).filter(Boolean);
+  return uniqueList(recipients);
+}
+
+function maskWhatsappRecipient(value) {
+  const number = normalizeWhatsappNumber(value);
+  if (number.length <= 4) return '****';
+  return `${'*'.repeat(Math.max(0, number.length - 4))}${number.slice(-4)}`;
+}
+
+async function hmacSha256Base64(secret, data) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, data);
+  return bytesToBase64(new Uint8Array(signature));
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  try {
+    const binary = atob(String(value || '').trim());
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch {
+    return new Uint8Array();
+  }
+}
+
+function constantTimeEqualBytes(a, b) {
+  if (!a.length || !b.length) return false;
+  let diff = a.length ^ b.length;
+  const max = Math.max(a.length, b.length);
+  for (let i = 0; i < max; i++) {
+    const ai = i < a.length ? a[i] : 0;
+    const bi = i < b.length ? b[i] : 0;
+    diff |= ai ^ bi;
+  }
+  return diff === 0;
+}
+
+async function verifyShopifyWebhookRequest(req, rawBody, env) {
+  const secret = env.SHOPIFY_WEBHOOK_SECRET || env.SHOPIFY_CLIENT_SECRET || '';
+  if (!secret) {
+    return { ok: false, status: 500, error: 'SHOPIFY_WEBHOOK_SECRET or SHOPIFY_CLIENT_SECRET is not configured' };
+  }
+  const supplied = req.headers.get('X-Shopify-Hmac-Sha256') || '';
+  if (!supplied) return { ok: false, status: 401, error: 'Missing Shopify HMAC' };
+
+  const expected = base64ToBytes(await hmacSha256Base64(secret, rawBody));
+  const actual = base64ToBytes(supplied);
+  if (!constantTimeEqualBytes(expected, actual)) {
+    return { ok: false, status: 401, error: 'Invalid Shopify HMAC' };
+  }
+  return { ok: true };
+}
+
+async function handleShopifyOrderWebhook(req, env, ctx) {
+  const rawBody = await req.arrayBuffer();
+  const verification = await verifyShopifyWebhookRequest(req, rawBody, env);
+  if (!verification.ok) return json({ error: verification.error }, verification.status);
+
+  let order;
+  try {
+    order = JSON.parse(new TextDecoder().decode(rawBody));
+  } catch {
+    return json({ error: 'Invalid Shopify webhook JSON' }, 400);
+  }
+
+  const deliveryId = req.headers.get('X-Shopify-Webhook-Id') || '';
+  ctx.waitUntil(
+    sendShopifyOrderToWhatsApp(env, order, {
+      deliveryId,
+      source: 'shopify-orders-create-webhook',
+      force: false
+    }).catch(error => logWhatsappOrderError(env, order, error, { deliveryId, source: 'shopify-orders-create-webhook' }))
+  );
+
+  return json({ ok: true, accepted: true, orderName: shopifyOrderDisplayName(order) || null }, 202);
+}
+
+async function sendShopifyOrderToWhatsApp(env, order, options = {}) {
+  if (!env.BUCKET) throw new Error('BUCKET binding is not configured');
+
+  const key = supplierWhatsappOrderKey(order, options.deliveryId);
+  if (!options.force) {
+    const existing = await env.BUCKET.get(key);
+    if (existing) {
+      return { ok: true, status: 'skipped', reason: 'Order already processed', key };
+    }
+  }
+
+  const built = await buildSupplierWhatsappOrder(env, order);
+  const baseRecord = {
+    orderId: shopifyOrderId(order),
+    orderName: built.orderName,
+    source: options.source || 'manual',
+    deliveryId: options.deliveryId || '',
+    sentLineItems: built.sentLineItems,
+    excludedLineItems: built.excludedLineItems,
+    message: built.message,
+    createdAt: new Date().toISOString()
+  };
+
+  if (built.skipReason) {
+    await writeWhatsappOrderLog(env, key, { ...baseRecord, status: 'skipped', reason: built.skipReason });
+    return { ok: true, status: 'skipped', reason: built.skipReason, key, message: built.message };
+  }
+
+  if (options.dryRun !== false) {
+    return { ok: true, status: 'dry-run', key, orderName: built.orderName, message: built.message };
+  }
+
+  const recipients = whatsappRecipients(env);
+  if (!env.WHATSAPP_ACCESS_TOKEN) throw new Error('WHATSAPP_ACCESS_TOKEN env var not set');
+  if (!env.WHATSAPP_PHONE_NUMBER_ID) throw new Error('WHATSAPP_PHONE_NUMBER_ID env var not set');
+  if (!recipients.length) throw new Error('Set WHATSAPP_SUPPLIER_TO and optionally WHATSAPP_OWNER_TO');
+
+  const results = [];
+  for (const recipient of recipients) {
+    const response = await sendWhatsappOrderMessage(env, recipient, built.message);
+    results.push({ to: maskWhatsappRecipient(recipient), ...response });
+  }
+
+  await writeWhatsappOrderLog(env, key, {
+    ...baseRecord,
+    status: 'sent',
+    sentAt: new Date().toISOString(),
+    recipients: results
+  });
+
+  return { ok: true, status: 'sent', key, orderName: built.orderName, recipients: results, message: built.message };
+}
+
+async function sendWhatsappOrderMessage(env, to, message) {
+  if (env.WHATSAPP_TEMPLATE_NAME) {
+    return sendWhatsappTemplateMessage(env, to, message);
+  }
+  return sendWhatsappTextMessage(env, to, message);
+}
+
+function whatsappGraphMessagesUrl(env) {
+  const version = String(env.WHATSAPP_GRAPH_VERSION || WHATSAPP_DEFAULT_GRAPH_VERSION).replace(/^\/+/, '');
+  return `https://graph.facebook.com/${version}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+}
+
+async function sendWhatsappTextMessage(env, to, message) {
+  const response = await fetch(whatsappGraphMessagesUrl(env), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { preview_url: false, body: message }
+    })
+  });
+  return parseWhatsappSendResponse(response);
+}
+
+async function sendWhatsappTemplateMessage(env, to, message) {
+  const response = await fetch(whatsappGraphMessagesUrl(env), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: env.WHATSAPP_TEMPLATE_NAME,
+        language: { code: env.WHATSAPP_TEMPLATE_LANGUAGE || 'en_GB' },
+        components: [{
+          type: 'body',
+          parameters: [{ type: 'text', text: message }]
+        }]
+      }
+    })
+  });
+  return parseWhatsappSendResponse(response);
+}
+
+async function parseWhatsappSendResponse(response) {
+  const data = await readJsonResponse(response);
+  if (!response.ok || data.error) {
+    throw new Error(`WhatsApp API failed: ${JSON.stringify(data.error || data)}`);
+  }
+  return {
+    providerMessageId: data.messages?.[0]?.id || '',
+    providerStatus: data.messages?.[0]?.message_status || 'accepted'
+  };
+}
+
+async function writeWhatsappOrderLog(env, key, record) {
+  await env.BUCKET.put(key, JSON.stringify(record, null, 2), {
+    httpMetadata: { contentType: JSON_CONTENT_TYPE }
+  });
+}
+
+async function logWhatsappOrderError(env, order, error, meta = {}) {
+  try {
+    const key = supplierWhatsappOrderKey(order, meta.deliveryId);
+    await writeWhatsappOrderLog(env, key, {
+      orderId: shopifyOrderId(order),
+      orderName: shopifyOrderDisplayName(order),
+      source: meta.source || 'shopify-orders-create-webhook',
+      deliveryId: meta.deliveryId || '',
+      status: 'error',
+      error: error?.message || String(error),
+      createdAt: new Date().toISOString()
+    });
+  } catch (logError) {
+    console.error(JSON.stringify({
+      event: 'supplier_whatsapp_log_failed',
+      error: logError?.message || String(logError)
+    }));
+  }
+}
+
+async function listWhatsappOrderLogs(env, limit = 50) {
+  const safeLimit = Math.max(1, Math.min(100, Number(limit || 50)));
+  const listed = await env.BUCKET.list({ prefix: WHATSAPP_ORDER_ROOT, limit: safeLimit });
+  const logs = [];
+  for (const object of listed.objects || []) {
+    const stored = await env.BUCKET.get(object.key);
+    if (!stored) continue;
+    try {
+      const record = JSON.parse(await stored.text());
+      logs.push({
+        key: object.key,
+        uploaded: object.uploaded,
+        status: record.status,
+        orderName: record.orderName,
+        sentAt: record.sentAt || '',
+        createdAt: record.createdAt || '',
+        reason: record.reason || '',
+        error: record.error || '',
+        message: record.message || '',
+        recipients: record.recipients || [],
+        excludedLineItems: record.excludedLineItems || []
+      });
+    } catch {
+      logs.push({ key: object.key, uploaded: object.uploaded, status: 'unreadable' });
+    }
+  }
+  logs.sort((a, b) => String(b.createdAt || b.uploaded || '').localeCompare(String(a.createdAt || a.uploaded || '')));
+  return { ok: true, logs };
+}
+
+function sampleShopifyOrderForWhatsappTest() {
+  return {
+    id: `test-${Date.now()}`,
+    name: '#WHATSAPP-TEST',
+    shipping_address: {
+      name: 'Test Customer',
+      address1: '1 Test Street',
+      city: 'London',
+      zip: 'SW1A 1AA',
+      country: 'United Kingdom'
+    },
+    line_items: [{
+      title: 'Test ESNTLS Item',
+      variant_title: 'UK 8',
+      sku: '',
+      quantity: 1
+    }]
+  };
 }
 
 function buildShopifyImagePrompt(product, hasBackground) {
@@ -3151,6 +3731,13 @@ export default {
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/').filter(Boolean);
+
+    if (req.method === 'POST' && parts[0] === 'shopify-order-webhook') {
+      return handleShopifyOrderWebhook(req, env, ctx);
+    }
+
     const adminAuthorized = req.headers.get('X-Admin-Secret') === env.ADMIN_SECRET;
     const serviceAuthorized = Boolean(
       env.ESNTLS_STORE_SERVICE_TOKEN &&
@@ -3160,14 +3747,34 @@ export default {
       return json({ error: 'Unauthorized' }, 401);
     }
 
-    const url = new URL(req.url);
-    const parts = url.pathname.split('/').filter(Boolean);
-
     if (req.method === 'POST' && parts[0] === 'shopify-create-product') {
       let body;
       try { body = await req.json(); } catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
       try {
         return json(await createShopifyPlaceholderFromR2(env, body));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'POST' && parts[0] === 'whatsapp-test-order') {
+      let body;
+      try { body = await req.json(); } catch (e) { body = {}; }
+      try {
+        const order = body.order || sampleShopifyOrderForWhatsappTest();
+        return json(await sendShopifyOrderToWhatsApp(env, order, {
+          dryRun: body.dryRun !== false,
+          force: true,
+          source: 'admin-test'
+        }));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
+    }
+
+    if (req.method === 'GET' && parts[0] === 'whatsapp-order-log') {
+      try {
+        return json(await listWhatsappOrderLogs(env, url.searchParams.get('limit')));
       } catch (error) {
         return json({ error: error.message }, 500);
       }
