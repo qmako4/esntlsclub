@@ -1135,16 +1135,73 @@ function shippingAddressFields(order) {
   };
 }
 
-function publicProductImageUrl(value) {
-  const image = safeMessageLine(value);
-  if (!image) return '';
-  if (image.startsWith(PUBLIC_BASE)) return `https://esntlsclub.com/media/${image.slice(PUBLIC_BASE.length).replace(/^\/+/, '')}`;
-  if (/^https?:\/\//i.test(image)) return image;
-  if (image.startsWith('/')) return `https://esntlsclub.com${image}`;
-  return `https://esntlsclub.com/media/${image.replace(/^\/+/, '')}`;
+function r2PublicUrlForKey(key) {
+  const cleanKey = safeMessageLine(key).replace(/^\/+/, '');
+  return cleanKey ? `${PUBLIC_BASE}${cleanKey}` : '';
 }
 
-function firstProductImageUrl(product, lineItem) {
+function supplierImageSourceUrl(value) {
+  const image = safeMessageLine(value);
+  if (!image) return '';
+  if (image.startsWith(PUBLIC_BASE)) return image;
+  if (/^https?:\/\//i.test(image)) {
+    try {
+      const parsed = new URL(image);
+      if (/^(www\.)?esntlsclub\.com$/i.test(parsed.hostname) && parsed.pathname.startsWith('/media/')) {
+        return r2PublicUrlForKey(decodeURIComponent(parsed.pathname.slice('/media/'.length)));
+      }
+    } catch {
+      return image;
+    }
+    return image;
+  }
+  if (image.startsWith('/media/')) return r2PublicUrlForKey(image.slice('/media/'.length));
+  if (image.startsWith('/')) return `https://esntlsclub.com${image}`;
+  return r2PublicUrlForKey(image);
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function extensionFromUrlOrContentType(sourceUrl, contentType) {
+  try {
+    const pathname = new URL(sourceUrl).pathname;
+    const ext = pathname.match(/\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext)) return ext === 'jpeg' ? 'jpg' : ext;
+  } catch {}
+  return extensionForContentType(contentType);
+}
+
+async function mirrorSupplierSheetImage(env, sourceUrl, product) {
+  if (!sourceUrl || sourceUrl.startsWith(PUBLIC_BASE) || !/^https?:\/\//i.test(sourceUrl)) return sourceUrl || '';
+  if (!env.BUCKET) return '';
+
+  const hash = (await sha256Hex(sourceUrl)).slice(0, 24);
+  const productId = slugify(product?.raw?.id || product?.id || 'unmatched') || 'unmatched';
+  const initialKey = `supplier-sheet-images/${productId}-${hash}`;
+
+  const existing = await env.BUCKET.list({ prefix: initialKey, limit: 1 });
+  const existingKey = existing.objects?.[0]?.key;
+  if (existingKey) return r2PublicUrlForKey(existingKey);
+
+  const response = await fetch(sourceUrl, {
+    headers: { 'User-Agent': 'ESNTLS supplier sheet image sync' }
+  });
+  if (!response.ok) return '';
+
+  const contentType = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  if (!contentType.startsWith('image/')) return '';
+
+  const key = `${initialKey}.${extensionFromUrlOrContentType(sourceUrl, contentType)}`;
+  await env.BUCKET.put(key, await response.arrayBuffer(), {
+    httpMetadata: { contentType, cacheControl: 'public, max-age=31536000, immutable' }
+  });
+  return r2PublicUrlForKey(key);
+}
+
+async function firstSupplierSheetImageUrl(env, product, lineItem) {
   const raw = product?.raw || {};
   const candidates = [
     product?.image,
@@ -1161,7 +1218,9 @@ function firstProductImageUrl(product, lineItem) {
     lineItem?.variant?.image?.url
   ];
   for (const candidate of candidates) {
-    const image = publicProductImageUrl(candidate);
+    const sourceUrl = supplierImageSourceUrl(candidate);
+    if (!sourceUrl) continue;
+    const image = await mirrorSupplierSheetImage(env, sourceUrl, product);
     if (image) return image;
   }
   return '';
@@ -1183,7 +1242,7 @@ function googleSheetFormulaString(value) {
 function googleImageFormula(imageUrl) {
   if (!imageUrl) return '';
   const escaped = googleSheetFormulaString(imageUrl);
-  return `=IFERROR(IMAGE("${escaped}",4,96,96),HYPERLINK("${escaped}","View image"))`;
+  return `=IFERROR(IMAGE("${escaped}",4,96,96),"Image unavailable")`;
 }
 
 function supplierOrderLogKey(order, deliveryId = '') {
@@ -1217,7 +1276,7 @@ async function buildSupplierSheetRows(env, order) {
     const optionParts = lineItemOptionParts(lineItem);
     const quantity = Math.max(1, Number(lineItem?.quantity || lineItem?.current_quantity || 1));
     const productTitle = safeMessageLine(product?.title || product?.raw?.name || fallbackShopifyLineItemTitle(lineItem));
-    const imageUrl = firstProductImageUrl(product, lineItem);
+    const imageUrl = await firstSupplierSheetImageUrl(env, product, lineItem);
     const productPage = esntlsProductPageUrl(product);
     if (!product) unresolvedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
 
@@ -1231,7 +1290,7 @@ async function buildSupplierSheetRows(env, order) {
       shipping.postcode,
       shipping.country,
       googleImageFormula(imageUrl),
-      imageUrl ? `=HYPERLINK("${googleSheetFormulaString(imageUrl)}","${googleSheetFormulaString(imageUrl)}")` : '',
+      '',
       productTitle,
       optionParts.join(' - '),
       quantity,

@@ -12,8 +12,7 @@ Each row includes:
 
 - Customer name
 - Shipping address
-- ESNTLS Club product photo thumbnail
-- ESNTLS Club product image URL
+- ESNTLS Club product photo thumbnail shown directly in the cell
 - ESNTLS Club product name
 - Selected option/size
 - Quantity
@@ -54,7 +53,13 @@ WhatsApp stays disabled unless `SUPPLIER_WHATSAPP_ENABLED=true`.
 
 ## Product Photos
 
-The product photo column is built from the matching ESNTLS Club product image, not the blank Shopify product image. Matching uses, in order:
+The product photo column is built from the matching ESNTLS Club product image, not the blank Shopify product image.
+
+The Sheet displays the photo with an `IMAGE(...)` formula. It uses a direct R2 image URL, not an `esntlsclub.com` product/page URL. If a product image is still hosted outside R2, the Worker copies it into R2 first and then uses that copied R2 URL.
+
+The separate image URL column is intentionally left blank/hidden so suppliers just see the thumbnail.
+
+Matching uses, in order:
 
 - ESNTLS SKU source ID, for example `ESNTLS-001-UK8`
 - Linked Shopify product ID
