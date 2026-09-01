@@ -309,7 +309,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <!-- Desktop links -->
 <div class="dnav" style="gap:12px;align-items:center">
 <a href="#" onclick="goHome()" class="nl">Home</a>
-<a href="#" onclick="showCat('All')" class="nl">Shop</a>
+<a href="#" onclick="return showCat('All')" class="nl">Shop</a>
 <div class="desktop-menu">
 <button class="nl desktop-trigger" type="button">Featured <span class="desktop-chevron">▼</span></button>
 <div class="desktop-menu-panel">
@@ -373,7 +373,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
     <div class="mob-scroll" id="menuScroll">
       <div id="menuResults" style="display:none"></div>
       <a href="#" class="mob-quick" onclick="goHome();toggleMenu()">🏠 Home</a>
-      <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu()">🛍️ Shop All</a>
+      <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu();return false">🛍️ Shop All</a>
       <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">⚡ Next-Day Stock</a>
 
       <div class="mob-section">
@@ -517,7 +517,7 @@ function checkoutLinkForProduct(p){
 let customProducts=[];
 async function loadR2Products(){
 try{
-const res=await fetch(R2_BASE+'products.json?t='+Math.floor(Date.now()/60000));
+const res=await fetch(R2_BASE+'products.json?t='+Date.now(),{cache:'no-store'});
 if(!res.ok){if(res.status!==404)console.log('products.json HTTP',res.status);return}
 const data=await res.json();
 const arr=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:[]);
@@ -632,7 +632,7 @@ function parsePrice(s){if(!s||s==='Out of stock')return null;const m=String(s).m
 const PRICE_RANGES={'all':null,'under50':v=>v<50,'50-100':v=>v>=50&&v<100,'100-150':v=>v>=100&&v<150,'150plus':v=>v>=150};
 const PRICE_LABELS={'all':'All Prices','under50':'Under £50','50-100':'£50 – £100','100-150':'£100 – £150','150plus':'£150+'};
 let priceFilter='all';
-function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='shop')showCat(cv.cat||'All')}
+function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='shop')showCat(cv.cat||'All',{preservePrice:true})}
 // Total stock count for a product (returns null if not tracked)
 // LIVE_STOCK groups by parent product; links maps colour-name → pid for each variant
 function getProductStockCount(p){
@@ -1010,7 +1010,7 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,9vw,68px);color:#111;line-height:.92;margin:0 0 12px;letter-spacing:2px;animation:slideUp .6s ease .1s both">PREMIUM<br><span style="color:#00C853">STREETWEAR</span></h1>
 <p style="font-size:clamp(13px,1.8vw,15px);color:#666;max-width:420px;margin:0 auto 22px;line-height:1.55;animation:slideUp .6s ease .2s both">Curated essentials from Manchester. Sneakers, jackets and accessories — quality first.</p>
 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:slideUp .6s ease .3s both">
-<a href="#" onclick="showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:14px 30px;border-radius:50px;display:inline-flex;align-items:center;gap:6px;min-height:48px;letter-spacing:.5px">Shop All →</a>
+<a href="#" onclick="return showCat('All')" class="glow-btn" style="background:#00C853;color:#fff;font-weight:700;font-size:13px;padding:14px 30px;border-radius:50px;display:inline-flex;align-items:center;gap:6px;min-height:48px;letter-spacing:.5px">Shop All →</a>
 <a href="#" onclick="showCat('Footwear')" style="background:#fff;border:1.5px solid #e0e0e0;color:#111;font-weight:700;font-size:13px;padding:14px 26px;border-radius:50px;display:inline-flex;align-items:center;min-height:48px;letter-spacing:.5px">👟 Footwear</a>
 </div>
 <div style="font-size:11px;color:#aaa;margin-top:16px">${inStock.length} items in stock · DM @cluesntl for help</div>
@@ -1038,7 +1038,7 @@ ${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:
 </div>
 <div class="g2">${feat.map((p,i)=>card(p,i)).join('')}</div>
 <div style="text-align:center;margin-top:28px">
-<a href="#" onclick="showCat('All')" class="view-all-btn" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All ${allProducts().length} Items →</a>
+<a href="#" onclick="return showCat('All')" class="view-all-btn" style="font-size:13px;font-weight:700;color:#111;letter-spacing:.5px;text-transform:uppercase;padding:14px 40px;border:1.5px solid #e0e0e0;border-radius:50px;display:inline-flex;align-items:center;min-height:48px">View All ${allProducts().length} Items →</a>
 </div>
 </section>
 
@@ -1770,6 +1770,7 @@ function shareStockLink(){
   if(navigator.share){navigator.share({title:'ESNTLS CLUB — Stock Check',text:'Check what\'s in stock!',url:'https://esntlsclub.com/#stock'}).catch(()=>{});}
 }
 function showCat(c,opts){
+if(c==='All'&&!(opts&&opts.preservePrice))priceFilter='all';
 currentView={type:'shop',cat:c};
 const replace=opts&&opts.replace===true;
 const targetUrl=storeCategoryUrl(c);
