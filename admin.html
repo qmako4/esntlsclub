@@ -872,7 +872,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="builder-section-head">
 <div>
 <div class="builder-section-title">Product Images</div>
-<div class="builder-section-note">Upload, paste, import from Yupoo, or pick from the library. Generate only when you choose to.</div>
+<div class="builder-section-note">Upload, paste, import from Yupoo, or pick from the library. Background jobs only run when you choose.</div>
 </div>
 <div class="builder-pill">Step 2</div>
 </div>
@@ -897,7 +897,6 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </label>
 <div class="builder-mini-actions">
 <button type="button" data-add-yupoo-btn class="btn btn-outline" onclick="addImportYupoo(false)">Import Photos</button>
-<button type="button" data-add-yupoo-btn class="btn" onclick="addImportYupoo(true)">Import + Generate</button>
 </div>
 <div class="msg" id="aYupooMsg"></div>
 </div>
@@ -906,9 +905,9 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="add-bg-head">
 <div>
 <div class="add-bg-title">Background Generator</div>
-<div class="add-bg-status" id="addBgStatus">Upload images, then generate when ready.</div>
+<div class="add-bg-status" id="addBgStatus">Upload images, then run the background job when ready.</div>
 </div>
-<div class="add-bg-badge" id="addBgBadge">Manual</div>
+<div class="add-bg-badge" id="addBgBadge">Background</div>
 </div>
 <div class="add-bg-body">
 <div class="add-bg-preview" id="addBgPreview"><div class="add-bg-grid" id="addBgGrid"></div></div>
@@ -921,8 +920,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <label style="font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px"><input type="radio" name="aBgQuality" value="high"> High</label>
 </div>
 <div class="add-bg-actions" id="addBgActions">
-<button type="button" class="btn" id="addBgGenerateBtn" onclick="handleAddBackgroundGenerate()">Generate Now</button>
-<button type="button" class="btn btn-outline" id="addBgBackgroundBtn" onclick="startAddBackgroundJob()">Run in Background</button>
+<button type="button" class="btn" id="addBgBackgroundBtn" onclick="startAddBackgroundJob()">Run in Background</button>
 <button type="button" class="btn btn-danger" id="addBgCancelBtn" onclick="cancelAddBackgroundGeneration()" style="display:none">Stop</button>
 <button type="button" class="btn btn-outline" id="addBgSaveBtn" onclick="approveAddGeneratedImages()">Approve Images</button>
 <button type="button" class="btn" id="addBgUseBtn" onclick="toggleAddGeneratedUsage()">Use original</button>
@@ -1100,7 +1098,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 <div style="border:1px solid var(--border);border-radius:16px;background:#fbfdfc;padding:12px 12px 10px;margin:0 0 14px">
 <label class="field" style="margin-bottom:8px"><span>Import from Yupoo link</span>
-<input id="psYupooUrl" type="url" placeholder="https://...yupoo.com/..." onkeydown="if(event.key==='Enter'){event.preventDefault();psImportYupoo(true)}">
+<input id="psYupooUrl" type="url" placeholder="https://...yupoo.com/..." onkeydown="if(event.key==='Enter'){event.preventDefault();psImportYupoo(false)}">
 <span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Paste an album or photo link. Imported photos join the current Studio batch.</span>
 </label>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1148,8 +1146,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <div class="studio-actions">
-<button type="button" id="psGenerateBtn" class="btn" onclick="psGenerate()" disabled style="opacity:.5">Generate now</button>
-<button type="button" id="psBackgroundBtn" class="btn btn-outline" onclick="psStartBackgroundJob()" disabled style="opacity:.5">Background</button>
+<button type="button" id="psBackgroundBtn" class="btn" onclick="psStartBackgroundJob()" disabled style="opacity:.5">Run in Background</button>
 <button type="button" id="psCancelBtn" class="btn btn-danger" onclick="psCancelGeneration()" style="display:none;flex:0 0 112px">Stop</button>
 </div>
 <div class="progress" id="psStudioProgress"><div class="progress-bar" id="psStudioBar"></div></div>
@@ -1168,7 +1165,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div id="psResultGrid" class="studio-grid" style="margin-bottom:10px"></div>
 <div style="display:flex;gap:8px">
 <button type="button" class="btn" id="psSaveBtn" onclick="psSaveToLibrary()" style="background:var(--g);flex:1">Save to Library</button>
-<button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">Try again</button>
+<button type="button" class="btn" onclick="psRegenerate()" style="background:#fff;color:#111;border:1.5px solid var(--border);flex:0 0 auto;padding:0 14px">Run again</button>
 </div>
 <div class="msg" id="psSaveMsg"></div>
 </div>
@@ -1906,7 +1903,6 @@ badge:document.getElementById('addBgBadge'),
 preview:document.getElementById('addBgPreview'),
 grid:document.getElementById('addBgGrid'),
 actions:document.getElementById('addBgActions'),
-generateBtn:document.getElementById('addBgGenerateBtn'),
 backgroundBtn:document.getElementById('addBgBackgroundBtn'),
 cancelBtn:document.getElementById('addBgCancelBtn'),
 saveBtn:document.getElementById('addBgSaveBtn'),
@@ -1950,14 +1946,6 @@ el.saveBtn.style.display=generatedCount?'block':'none';
 el.saveBtn.disabled=addBgState.status==='generating';
 el.saveBtn.textContent=(addBgState.approved&&generatedReady)?'Images Approved':(generatedCount>1?'Approve Images':'Approve Image');
 }
-if(el.generateBtn){
-const isGenerating=addBgState.status==='generating';
-const needsSetup=addBgState.status==='needsSetup';
-el.generateBtn.disabled=isGenerating||!generationFiles.length;
-el.generateBtn.style.opacity=isGenerating?'.65':'1';
-el.generateBtn.textContent=!generationFiles.length?'No photos set to generate':needsSetup?'Open setup':isGenerating?`Generating ${addBgState.done}/${addBgState.total||generationFiles.length}`:generatedCount?'Regenerate Now':'Generate Now';
-el.generateBtn.classList.toggle('btn-outline',!!generatedCount);
-}
 if(el.backgroundBtn){
 const canRun=!!(generationFiles.length&&psCanUseBackgroundJobs());
 el.backgroundBtn.style.display='block';
@@ -1974,9 +1962,9 @@ const total=addBgState.total||generationFiles.length;
 const doneText=generatedCount+'/'+generationFiles.length;
 const currentLabel=addBgState.currentKey&&addBgState.items[addBgState.currentKey]?addBgState.items[addBgState.currentKey].fileName:'';
 const copy={
-idle:['Manual',!generationFiles.length?(activeFiles.length?'These photos are set to Keep or Skip. Publish when ready.':'Upload images, then choose how each photo should be used.'):generationFiles.length>1?'Tap Generate previews to change the backgrounds when you are ready.':'Tap Generate preview to change the background when you are ready.'],
+idle:['Background',!generationFiles.length?(activeFiles.length?'These photos are set to Keep or Skip. Publish when ready.':'Upload images, then choose how each photo should be used.'):generationFiles.length>1?'Tap Run in Background to change the selected backgrounds.':'Tap Run in Background to change the selected background.'],
 needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
-generating:['Generating',`Creating ESNTLS grass previews ${addBgState.done}/${total}${currentLabel?` · current: ${currentLabel}`:''}. Keep this page open.`],
+generating:['Starting',`Preparing ESNTLS background job ${addBgState.done}/${total}${currentLabel?` · current: ${currentLabel}`:''}. You can leave after it starts.`],
 done:['Ready',addBgState.useGenerated?(addBgState.approved&&generatedReady?`Approved ${doneText} images. They will attach to this product.`:`Generated ${doneText} previews. Approve them to attach to this product.`):`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
 }[addBgState.status]||['Manual','Ready'];
@@ -2006,18 +1994,7 @@ if(msg){msg.style.color='#e53935';msg.textContent='Image generation is not confi
 }
 
 function handleAddBackgroundGenerate(){
-if(!psHasGenerationBackend()){
-addBgState.status='needsSetup';
-renderAddBackgroundPreview();
-openPhotoStudioSetup();
-return;
-}
-if(!addGenerationFiles().length){
-const msg=document.getElementById('addMsg');
-if(msg){msg.style.color='#e53935';msg.textContent='Set at least one photo to Close up or Full photo first.'}
-return;
-}
-generateAddBackground(true);
+return startAddBackgroundJob();
 }
 
 function addBackgroundQuality(){
@@ -4328,8 +4305,7 @@ async function psImportYupoo(generateAfter){
     psSetYupooMsg('Imported '+files.length+' Yupoo photo'+(files.length===1?'':'s')+(failed?' - '+failed+' skipped':''),'var(--g)');
     if(generateAfter){
       psSetYupooMsg('Imported '+files.length+' - starting background job...','var(--g)');
-      if(psCanUseBackgroundJobs())await psStartBackgroundJob();
-      else await psGenerate();
+      await psStartBackgroundJob();
     }
   }catch(e){
     psSetYupooMsg('Yupoo import failed: '+e.message,'#e53935');
@@ -4378,7 +4354,7 @@ catch(e){failed++;lastError=e.message}
 if(!files.length)throw new Error(lastError||'Could not download Yupoo images.');
 appendPendingFiles(files);
 addSetYupooMsg('Imported '+files.length+' photo'+(files.length===1?'':'s')+(failed?' - '+failed+' skipped':''),'var(--g)');
-if(generateAfter)await generateAddBackground(true);
+if(generateAfter)await startAddBackgroundJob();
 }catch(e){
 addSetYupooMsg('Yupoo import failed: '+e.message,'#e53935');
 }finally{
@@ -4728,7 +4704,7 @@ async function psStartBackgroundJob(){
   }catch(e){
     if(msg){msg.style.color='#e53935';msg.textContent='Background job failed: '+e.message}
   }finally{
-    if(btn){btn.textContent='Background';btn.disabled=false;btn.style.opacity='1'}
+    if(btn){btn.textContent='Run in Background';btn.disabled=false;btn.style.opacity='1'}
     psUpdateGenerateState();
   }
 }
@@ -4862,7 +4838,7 @@ function psUpdateGenerateState(){
     const bgReady=!!(selectedCount&&psCanUseBackgroundJobs());
     bgBtn.disabled=generating||!bgReady;
     bgBtn.style.opacity=generating?'.55':(bgReady?'1':'.5');
-    bgBtn.textContent=psState.job&&!psJobIsDone(psState.job)?'Check Job':'Background';
+    bgBtn.textContent=psState.job&&!psJobIsDone(psState.job)?'Check Job':'Run in Background';
     bgBtn.title=bgReady?'Start a Worker job that keeps running after you leave the page':'Background jobs need selected photos and the ESNTLS Worker';
   }
   if(cancelBtn){
@@ -5084,7 +5060,7 @@ function psRegenerate(){
     return;
   }
   document.getElementById('psResultPreview').style.display='none';
-  psGenerate();
+  psStartBackgroundJob();
 }
 
 async function psSaveToLibrary(){
