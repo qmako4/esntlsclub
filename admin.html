@@ -140,10 +140,23 @@ label.field input:focus{border-color:var(--g)}
 .builder-source-footer button.delete{color:#d32f2f;background:#fff5f5;border-color:#ffd6d6}
 .builder-source-summary{font-size:11px;color:var(--sub);margin-top:10px;line-height:1.45}
 .builder-source-empty{font-size:11px;color:var(--sub);padding:10px 2px}
+.smart-setup{border:1px solid rgba(0,200,83,.2);border-radius:18px;background:#f4fff8;padding:12px;margin:0 0 14px}
+.smart-setup-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.smart-setup-title{font-size:12px;font-weight:900;color:var(--ink);text-transform:uppercase;letter-spacing:.06em}
+.smart-setup-note{font-size:11px;color:#537262;line-height:1.35;margin-top:2px}
+.smart-setup-badge{border-radius:999px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;padding:5px 9px;white-space:nowrap}
+.smart-size-grid{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 9px}
+.smart-size-chip{border:1px solid var(--border);background:#fff;color:#44524b;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer}
+.smart-size-chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.smart-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.smart-actions button{border:1px solid var(--border);background:#fff;color:#355243;border-radius:999px;padding:9px 10px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
+.smart-actions button.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.smart-msg{font-size:11px;color:#537262;line-height:1.4;margin-top:9px}
 @media(max-width:640px){
   .builder-review-grid{grid-template-columns:1fr;gap:14px}
   .builder-source-card img,.builder-source-result{height:180px}
   .builder-source-compare{gap:6px;padding:8px}
+  .smart-actions{grid-template-columns:1fr}
 }
 
 .add-bg-card{display:none;margin-top:14px;border:1px solid var(--border);border-radius:18px;background:#fbfdfc;overflow:hidden}
@@ -840,8 +853,43 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 <div class="builder-pill">Step 1</div>
 </div>
-<label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White"></label>
+<label class="field"><span>Product Name</span><input id="aName" placeholder="e.g. B22 White" oninput="maybeSmartProductSetup()"></label>
 <label class="field"><span>Price</span><input id="aPrice" placeholder="e.g. GBP 129.99"></label>
+<div class="smart-setup">
+<div class="smart-setup-head">
+<div>
+<div class="smart-setup-title">Smart product setup</div>
+<div class="smart-setup-note">Detects the item type, suggests a blank Shopify name, and sets the right sizes before checkout products are created.</div>
+</div>
+<div class="smart-setup-badge" id="aSmartBadge">Auto</div>
+</div>
+<label class="field"><span>Product type</span>
+<select id="aProductType" onchange="handleSmartProductTypeChange()">
+<option value="auto">Auto detect</option>
+<option value="sneaker">Sneaker / trainer</option>
+<option value="slides">Slides / sandals</option>
+<option value="clothing">Clothing</option>
+<option value="bag">Bag</option>
+<option value="watch">Watch</option>
+<option value="eyewear">Glasses</option>
+<option value="electronics">Electronics</option>
+<option value="accessory">Accessory / one size</option>
+</select>
+</label>
+<div>
+<span style="display:block;font-size:10px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em">Sizes sent to Shopify/Wix</span>
+<div class="smart-size-grid" id="aSizeChips"></div>
+<div class="smart-actions">
+<button type="button" class="primary" onclick="applySmartProductSetup(true)">Suggest from product</button>
+<button type="button" onclick="setSmartSizePreset('all')">Select all</button>
+<button type="button" onclick="setSmartSizePreset('footwear')">Sneaker sizes</button>
+<button type="button" onclick="setSmartSizePreset('clothing')">Clothing sizes</button>
+<button type="button" onclick="setSmartSizePreset('one')">One size</button>
+<button type="button" onclick="setSmartSizePreset('clear')">Clear sizes</button>
+</div>
+<div class="smart-msg" id="aSmartMsg">Type a product name, then tap Suggest from product.</div>
+</div>
+</div>
 <label class="field"><span>Options (optional)</span>
 <div style="display:grid;grid-template-columns:1fr;gap:6px">
 <input id="aVariationName" placeholder="Option name, e.g. Colour or Type">
@@ -1258,7 +1306,7 @@ const ADMIN_PASS='esntls2026';
 const ADMIN_SESSION_KEY='esntlsAdminRememberV1';
 const ADMIN_SESSION_VERSION='2026-06-30';
 const ADMIN_SESSION_MS=30*24*60*60*1000;
-const CORE_CATS=["Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
+const CORE_CATS=["Best Sellers","Essentials","Footwear","Sandals","Clothing","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
 const BRAND_CATS=["Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Essentials","Hermes","LV","Monc","Nike"];
 let CATS=[...CORE_CATS,...BRAND_CATS.filter(c=>!CORE_CATS.includes(c))];
 const DELIVERY=["Next Day","7-12 Days"];
@@ -1267,6 +1315,8 @@ const CUSTOM_CATS_KEY='esntlsCustomCategories';
 let products=[];
 let selectedCats=[];
 let selectedDelivery=[];
+let selectedSizes=[];
+let smartSetupTouched=false;
 let pendingFiles=[];
 let addSourceModes={};
 let addBgState={status:'idle',sourceFiles:[],generatedItems:[],useGenerated:true,approved:false,approvedAt:'',token:0,total:0,done:0,errorCount:0,lastError:'',items:{},currentKey:''};
@@ -1362,6 +1412,7 @@ loadCustomCategories();
 loadProducts();
 initCatPills();
 initDropZones();
+renderSmartSizeControls();
 }
 
 function saveAdminSession(){
@@ -1604,12 +1655,28 @@ if(tab==='media'){loadMedia().then(renderMedia)}
 // CATEGORY / DELIVERY PILLS
 function escapeAdminHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseAdminList(value){return String(value||'').split(',').map(v=>v.trim()).filter(Boolean)}
+const SMART_FOOTWEAR_SIZES=['UK 4','UK 5','UK 6','UK 7','UK 8','UK 9','UK 10','UK 11','UK 12','UK 13'];
+const SMART_CLOTHING_SIZES=['XS','S','M','L','XL'];
+const SMART_ONE_SIZE=['One Size'];
+const SMART_ALL_SIZES=[...SMART_FOOTWEAR_SIZES,...SMART_CLOTHING_SIZES,'One Size'];
+const SMART_KIND_LABELS={auto:'Auto',sneaker:'Sneaker',slides:'Slides',clothing:'Clothing',bag:'Bag',watch:'Watch',eyewear:'Glasses',electronics:'Electronics',accessory:'Accessory'};
+const SMART_COLOR_PATTERNS=[
+[/black\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*black/i,'Black & White'],
+[/grey\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*grey|gray\s*(?:and|&|\+|\/)\s*white|white\s*(?:and|&|\+|\/)\s*gray/i,'Grey & White'],
+[/black\s*(?:and|&|\+|\/)\s*grey|grey\s*(?:and|&|\+|\/)\s*black|black\s*(?:and|&|\+|\/)\s*gray|gray\s*(?:and|&|\+|\/)\s*black/i,'Black & Grey'],
+[/dark\s*blue/i,'Dark Blue'],[/light\s*blue/i,'Light Blue'],[/navy/i,'Navy'],[/pink/i,'Pink'],[/brown/i,'Brown'],[/beige|cream/i,'Cream'],[/red/i,'Red'],[/green/i,'Green'],[/white/i,'White'],[/black/i,'Black'],[/gr[ae]y/i,'Grey'],[/blue/i,'Blue']
+];
 function productVariationValues(p){
 const raw=p&&p.variationValues!==undefined?p.variationValues:(p&&p.variations!==undefined?p.variations:'');
 return Array.isArray(raw)?raw.map(String).map(v=>v.trim()).filter(Boolean):parseAdminList(raw)
 }
 function productVariationName(p){return (p&&(p.variationName||p.variantOptionName||p.optionName))||''}
 function productVariationText(p){return productVariationValues(p).join(', ')}
+function productSizeValues(p){
+const raw=p&&p.sizes!==undefined?p.sizes:(p&&p.size!==undefined?p.size:'');
+return Array.isArray(raw)?raw.map(String).map(v=>v.trim()).filter(Boolean):parseAdminList(raw)
+}
+function productSizeText(p){return productSizeValues(p).join(', ')}
 function productShopifyVariantText(p){
   const source=p&&(p.shopifyVariants||p.variantIds||p.variantsMap);
   if(!source)return '';
@@ -1632,6 +1699,150 @@ function parseShopifyVariantMap(value){
     });
     return Object.keys(map).length?map:null;
   }
+}
+function smartSourceText(){
+const name=document.getElementById('aName')?.value||'';
+const cats=selectedCats.join(' ');
+const files=pendingFiles.map(file=>file&&file.name||'').join(' ');
+return `${name} ${cats} ${files}`.toLowerCase();
+}
+function smartStableIndex(value,count){
+if(!count)return 0;
+let hash=0;
+const text=String(value||'');
+for(let i=0;i<text.length;i++)hash=(hash*31+text.charCodeAt(i))>>>0;
+return hash%count;
+}
+function smartDetectedKind(text=smartSourceText()){
+if(!String(text||'').trim())return'auto';
+if(/\b(slides?|sliders?|sandals?|izmir)\b/.test(text))return'slides';
+if(/\b(watches?|watch|timepiece|datejust|daytona|submariner|oyster|gmt|rolex|cartier|patek|audemars|royal\s*oak)\b/.test(text))return'watch';
+if(/\b(messenger|bags?|backpacks?|totes?|duffles?|crossbody|belvedere|goyard)\b/.test(text))return'bag';
+if(/\b(air\s*pro|earphones?|earbuds?|headphones?|airpods?)\b/.test(text))return'electronics';
+if(/\b(sunglasses?|glasses|shades)\b/.test(text))return'eyewear';
+if(/\b(t-?shirts?|tees?|shirts?|shorts?|jackets?|tracksuits?|hoodies?|clothing|tops?|parkas?|puffers?|coats?|gilets?|windrunner)\b/.test(text))return'clothing';
+if(/\b(trainers?|sneakers?|shoes?|footwear|runner|runners|gats?|b22|b30|af1|air\s*force|asics|gel|kayano|saucony)\b/.test(text))return'sneaker';
+if(/\b(wallets?|card\s*holders?|belts?|caps?|hats?|beanies?|bracelets?|necklaces?|rings?|chains?|jewell?ery|accessories?)\b/.test(text))return'accessory';
+return'accessory';
+}
+function smartCurrentKind(){
+const selected=document.getElementById('aProductType')?.value||'auto';
+return selected==='auto'?smartDetectedKind():selected;
+}
+function smartSizesForKind(kind){
+if(kind==='sneaker'||kind==='slides')return SMART_FOOTWEAR_SIZES.slice();
+if(kind==='clothing')return SMART_CLOTHING_SIZES.slice();
+if(kind==='auto')return [];
+return SMART_ONE_SIZE.slice();
+}
+function smartColor(text=smartSourceText()){
+const hit=SMART_COLOR_PATTERNS.find(([pattern])=>pattern.test(text));
+return hit?hit[1]:'';
+}
+function smartBaseName(kind,text=smartSourceText()){
+if(kind==='slides')return /\bslides?|sliders?\b/.test(text)?'Classic Slides':'Classic Sandals';
+if(kind==='watch')return'Classic Watch';
+if(kind==='bag')return /\bbelvedere\b/.test(text)?'Belvedere Bag':(/\btote\b/.test(text)?'Classic Tote':'Messenger Bag');
+if(kind==='electronics')return /\bair\s*pro\b/.test(text)?'Air Pro':'Essential Earphones';
+if(kind==='eyewear')return'Signature Glasses';
+if(kind==='clothing'){
+if(/\btracksuit\b/.test(text))return'Core Tracksuit';
+if(/\bhoodie\b/.test(text))return'Core Hoodie';
+if(/\bshorts?\b/.test(text))return'Summer Shorts';
+if(/\bparka\b/.test(text))return'Parka Jacket';
+if(/\bpuffer\b/.test(text))return'Puffer Jacket';
+if(/\bgilet\b/.test(text))return'Padded Gilet';
+if(/\bwindrunner\b/.test(text))return'Lightweight Windrunner';
+if(/\bt-?shirt|tee|shirt\b/.test(text))return'Simple T-Shirt';
+return'Essential Piece';
+}
+if(kind==='sneaker'){
+if(/\b(air\s*force|af1)\b/.test(text))return'Classic Low Trainers';
+if(/\b(gel|kayano|asics)\b/.test(text))return'Gel Runners';
+if(/\bgats?\b/.test(text))return'Retro Court Trainers';
+if(/\bb22\b/.test(text))return'Chunky Runners';
+if(/\bb30\b/.test(text))return['Panelled Runners','Retro Trainers','Court Runners','Low Trainers'][smartStableIndex(text,4)];
+return['Runner Sneakers','Court Trainers','Everyday Runners','Clean Trainers','Panelled Sneakers'][smartStableIndex(text,5)];
+}
+return'Essential Accessory';
+}
+function smartShopifyTitle(kind=smartCurrentKind(),text=smartSourceText()){
+const base=smartBaseName(kind,text);
+const color=smartColor(text);
+return color?`The ${base} - ${color}`:`The ${base}`;
+}
+function setSmartSizes(values,manual=true){
+selectedSizes=[...new Set((values||[]).map(String).map(v=>v.trim()).filter(Boolean))];
+if(manual)smartSetupTouched=true;
+renderSmartSizeControls();
+}
+function renderSmartSizeControls(){
+const grid=document.getElementById('aSizeChips');
+if(!grid)return;
+grid.innerHTML=SMART_ALL_SIZES.map(size=>`<button type="button" class="smart-size-chip${selectedSizes.includes(size)?' on':''}" onclick="toggleSmartSize('${size.replace(/'/g,"\\'")}')">${escapeAdminHTML(size)}</button>`).join('');
+const badge=document.getElementById('aSmartBadge');
+if(badge)badge.textContent=SMART_KIND_LABELS[smartCurrentKind()]||'Auto';
+}
+function toggleSmartSize(size){
+smartSetupTouched=true;
+selectedSizes=selectedSizes.includes(size)?selectedSizes.filter(v=>v!==size):[...selectedSizes,size];
+renderSmartSizeControls();
+const msg=document.getElementById('aSmartMsg');
+if(msg)msg.textContent=selectedSizes.length?'Custom sizes: '+selectedSizes.join(', '):'No sizes selected. Shopify will fall back to one default variant.';
+}
+function setSmartSizePreset(preset){
+const kind=smartCurrentKind();
+if(preset==='footwear')setSmartSizes(SMART_FOOTWEAR_SIZES);
+else if(preset==='clothing')setSmartSizes(SMART_CLOTHING_SIZES);
+else if(preset==='one')setSmartSizes(SMART_ONE_SIZE);
+else if(preset==='all')setSmartSizes(smartSizesForKind(kind));
+else setSmartSizes([]);
+const msg=document.getElementById('aSmartMsg');
+if(msg)msg.textContent=selectedSizes.length?'Selected sizes: '+selectedSizes.join(', '):'Sizes cleared.';
+}
+function ensureSmartCategory(category){
+if(!category)return;
+if(!CATS.includes(category))CATS.push(category);
+if(!selectedCats.includes(category))selectedCats.push(category);
+initCatPills();
+}
+function applySmartCategories(kind){
+if(kind==='sneaker'){ensureSmartCategory('Footwear');return}
+if(kind==='slides'){ensureSmartCategory('Footwear');ensureSmartCategory('Sandals');return}
+if(kind==='clothing'){ensureSmartCategory('Clothing');return}
+ensureSmartCategory('Accessories');
+}
+function applySmartProductSetup(userTriggered=false){
+const kind=smartCurrentKind();
+if(kind==='auto'){
+renderSmartSizeControls();
+const msg=document.getElementById('aSmartMsg');
+if(msg)msg.textContent='Type a product name or import photos first, then tap Suggest from product.';
+return;
+}
+const sizes=smartSizesForKind(kind);
+if(userTriggered||!smartSetupTouched||!selectedSizes.length)setSmartSizes(sizes,false);
+if(userTriggered){
+applySmartCategories(kind);
+const titleInput=document.getElementById('aShopifyTitle');
+const title=smartShopifyTitle(kind);
+if(titleInput&&!titleInput.value.trim())titleInput.value=title;
+}
+renderSmartSizeControls();
+const msg=document.getElementById('aSmartMsg');
+if(msg)msg.textContent=`Detected ${SMART_KIND_LABELS[kind]||kind}. Shopify name suggestion: ${smartShopifyTitle(kind)}. Sizes: ${(selectedSizes.length?selectedSizes:sizes).join(', ')}.`;
+}
+function handleSmartProductTypeChange(){
+smartSetupTouched=true;
+const kind=smartCurrentKind();
+setSmartSizes(smartSizesForKind(kind),false);
+renderSmartSizeControls();
+const msg=document.getElementById('aSmartMsg');
+if(msg)msg.textContent=`Using ${SMART_KIND_LABELS[kind]||kind}. Sizes: ${selectedSizes.join(', ')}.`;
+}
+function maybeSmartProductSetup(){
+if(!smartSetupTouched&&!selectedSizes.length)applySmartProductSetup(false);
+else renderSmartSizeControls();
 }
 function initCatPills(){
 const cats=document.getElementById('addCats');
@@ -1676,6 +1887,7 @@ function toggleAddCat(el){
 el.classList.toggle('on');
 selectedCats=[];
 document.querySelectorAll('#addCats .cat-pill.on').forEach(p=>selectedCats.push(p.dataset.cat));
+maybeSmartProductSetup();
 }
 function toggleAddDelivery(el){
 el.classList.toggle('on');
@@ -1833,6 +2045,7 @@ addSourceModes={};
 pendingFiles.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
 syncAddBgItems(true);
 renderPendingPreview();
+maybeSmartProductSetup();
 prepareAddBackgroundPreview();
 }
 
@@ -1846,6 +2059,7 @@ pendingFiles=[...pendingFiles,...additions];
 additions.forEach(file=>{addSourceModes[addSourceFileKey(file)]=addDefaultSourceMode()});
 syncAddBgItems(true);
 renderPendingPreview();
+maybeSmartProductSetup();
 prepareAddBackgroundPreview();
 }
 
@@ -2722,6 +2936,9 @@ const shopifyTitleOverride=document.getElementById('aShopifyTitle')?.value.trim(
 const shouldCreateShopify=document.getElementById('aCreateShopify')?.checked!==false;
 const variationName=document.getElementById('aVariationName').value.trim();
 const variationValues=parseAdminList(document.getElementById('aVariationValues').value);
+if(!selectedSizes.length)applySmartProductSetup(false);
+const productType=smartCurrentKind();
+const productSizes=selectedSizes.slice();
 const msg=document.getElementById('addMsg');
 const publishBtn=document.getElementById('addPublishBtn');
 const cat=selectedCats.join(',')||'Footwear';
@@ -2763,6 +2980,8 @@ price,
 link,
 variationName:variationValues.length?(variationName||'Style'):'',
 variationValues,
+productType,
+sizes:productSizes,
 delivery:selectedDelivery.join(','),
 images:imageUrls,
 created_at:createdAt,
@@ -2790,6 +3009,13 @@ if(typeof toast==='function')toast(`Published "${newProduct.name}"`,'success');
 }
 if(typeof syncDashboard==='function')syncDashboard();
 ['aName','aPrice','aLink','aShopifyTitle','aVariationName','aVariationValues','aNewCategory','aYupooUrl'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+const productTypeEl=document.getElementById('aProductType');
+if(productTypeEl)productTypeEl.value='auto';
+selectedSizes=[];
+smartSetupTouched=false;
+renderSmartSizeControls();
+const smartMsg=document.getElementById('aSmartMsg');
+if(smartMsg)smartMsg.textContent='Type a product name, then tap Suggest from product.';
 document.getElementById('aFiles').value='';
 document.getElementById('imgPreview').innerHTML='';
 document.querySelector('#uploadZone .label').textContent='Upload product photos';
@@ -3094,6 +3320,7 @@ list.innerHTML=filtered.map(p=>{
 <div class="meta-pills">
 ${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdminHTML(c)}</span>`).join('')}
 ${productVariationValues(p).length?`<span class="meta-pill">${productVariationValues(p).length} variants</span>`:''}
+${productSizeValues(p).length?`<span class="meta-pill">${productSizeValues(p).length} sizes</span>`:''}
 <span class="meta-pill">${photos} 📷</span>
 </div>
 </div>
@@ -3209,6 +3436,7 @@ el.innerHTML=`
 </div>
 <span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">These become Shopify product variations when you generate the blank product.</span>
 </label>
+<label class="field"><span>Sizes</span><input id="esz_${id}" value="${escapeAdminHTML(productSizeText(p))}" placeholder="e.g. UK 4, UK 5, UK 6, UK 7, UK 8, UK 9, UK 10, UK 11, UK 12, UK 13"></label>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
 <div class="cats" id="ec_${id}">
@@ -3248,6 +3476,7 @@ const price=document.getElementById('ep_'+id).value.trim();
 const link=document.getElementById('el_'+id).value.trim();
 const variationName=document.getElementById('evn_'+id)?.value.trim()||'';
 const variationValues=parseAdminList(document.getElementById('evv_'+id)?.value||'');
+const sizes=parseAdminList(document.getElementById('esz_'+id)?.value||'');
 const shopifyVariants=parseShopifyVariantMap(document.getElementById('sv_'+id)?.value||'');
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const cat=cats.join(',')||'Footwear';
@@ -3257,11 +3486,11 @@ const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
-const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,shopifyVariants:p.shopifyVariants,variantIds:p.variantIds,variantsMap:p.variantsMap,shopifyVariantId:p.shopifyVariantId};
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,sizes:p.sizes,shopifyVariants:p.shopifyVariants,variantIds:p.variantIds,variantsMap:p.variantsMap,shopifyVariantId:p.shopifyVariantId};
 const oldNumericPrice=numericPriceAmount(orig.price);
 const newNumericPrice=numericPriceAmount(price);
 const priceChanged=oldNumericPrice!==newNumericPrice;
-Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues,shopifyVariants:shopifyVariants||{}});
+Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues,sizes,shopifyVariants:shopifyVariants||{}});
 p.shopifyVariantId=shopifyVariants?Object.values(shopifyVariants)[0]||'':'';
 try{
 await saveProducts();
@@ -3295,9 +3524,10 @@ const link=document.getElementById('el_'+id)?.value.trim()||'';
 const shopifyTitleOverride=document.getElementById('st_'+id)?.value.trim()||'';
 const variationName=document.getElementById('evn_'+id)?.value.trim()||'';
 const variationValues=parseAdminList(document.getElementById('evv_'+id)?.value||'');
+const sizes=parseAdminList(document.getElementById('esz_'+id)?.value||'');
 const cats=[];document.querySelectorAll('#ec_'+id+' .on').forEach(c=>cats.push(c.dataset.cat));
 const dels=[];document.querySelectorAll('#ed_'+id+' .on').forEach(d=>dels.push(d.dataset.cat));
-return {name,price,link,shopifyTitleOverride,variationName:variationValues.length?(variationName||'Style'):'',variationValues,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
+return {name,price,link,shopifyTitleOverride,variationName:variationValues.length?(variationName||'Style'):'',variationValues,sizes,category:cats.join(',')||'Footwear',brand:inferBrand(cats),delivery:dels.join(',')};
 }
 
 async function generateShopifyPlaceholder(id){
@@ -3314,7 +3544,7 @@ const values=collectEditValues(id);
 if(!values.name){msg.style.color='#e53935';msg.textContent='Add a product name first.';return}
 if(!values.price){msg.style.color='#e53935';msg.textContent='Add a price first.';return}
 if(values.link&&!confirm('This product already has a Buy Link. Replace it with a Shopify link?'))return;
-const original={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues};
+const original={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,sizes:p.sizes};
 Object.assign(p,values);
 let didSave=false;
 try{
