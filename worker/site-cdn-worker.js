@@ -1,7 +1,7 @@
 const GITHUB_ORIGIN = 'https://github.com/qmako4/esntlsclub/raw/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
 const MEDIA_CACHE_VERSION = '3';
-const SOURCE_CACHE_VERSION = '21';
+const SOURCE_CACHE_VERSION = '22';
 
 const PUBLIC_ROOT_FILES = new Set([
   'admin.html',
@@ -12,6 +12,7 @@ const PUBLIC_ROOT_FILES = new Set([
   'products.json',
   'stock-story-generator.html',
   'sync.html',
+  'data/customer-reviews.json',
 ]);
 
 const CONTENT_TYPES = {
