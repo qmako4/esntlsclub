@@ -57,6 +57,8 @@ The product photo column is built from the matching ESNTLS Club product image, n
 
 The Sheet displays the photo with an `IMAGE(...)` formula. It uses a Worker-served R2 image URL, not an `esntlsclub.com` product/page URL. If a product image is still hosted outside R2, the Worker copies it into R2 first and then serves that copied R2 image through `/supplier-image/<key>`.
 
+The Sheet must have external URL access enabled for image functions. In the Sheets API this is the spreadsheet property `importFunctionsExternalUrlAccessAllowed=true`.
+
 The separate image URL column is intentionally left blank/hidden so suppliers just see the thumbnail.
 
 Matching uses, in order:
