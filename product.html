@@ -68,6 +68,20 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .fact{align-items:center;border-bottom:1px solid #ebebeb;display:flex;gap:12px;justify-content:space-between;padding:13px 0}
 .fact-label{color:#777;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
 .fact-value{color:#111;font-size:12px;font-weight:700;text-align:right}
+.product-reviews{border-top:1px solid #ebebeb;margin-top:34px;padding-top:26px}
+.product-reviews-head{align-items:end;display:flex;gap:14px;justify-content:space-between;margin-bottom:14px}
+.product-reviews h2{font-family:'Bebas Neue',sans-serif;font-size:30px;font-weight:400;letter-spacing:1px;line-height:1}
+.product-reviews-summary{color:#777;font-size:11px;font-weight:700;text-align:right;text-transform:uppercase}
+.product-review-track{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.product-review-track::-webkit-scrollbar{display:none}
+.product-review-card{background:#fff;border:1px solid #ececec;border-radius:16px;display:flex;flex:0 0 265px;flex-direction:column;min-height:190px;padding:17px;scroll-snap-align:start}
+.product-review-top{align-items:center;display:flex;gap:10px;margin-bottom:10px}
+.product-review-avatar{align-items:center;background:#00c853;border-radius:999px;color:#fff;display:flex;flex:0 0 34px;font-size:13px;font-weight:800;height:34px;justify-content:center;width:34px}
+.product-review-name{color:#111;font-size:12px;font-weight:800;line-height:1.25}
+.product-review-date{color:#999;font-size:10px;font-weight:700;margin-top:2px}
+.product-review-stars{color:#f5b400;font-size:12px;letter-spacing:1px;margin-bottom:9px}
+.product-review-text{color:#333;font-size:12px;line-height:1.55;margin-bottom:12px}
+.product-review-source{color:#888;font-size:10px;font-weight:700;margin-top:auto}
 .buy-button{align-items:center;background:#00c853;border:0;border-radius:999px;box-shadow:0 8px 18px rgba(0,200,83,.2);color:#fff;cursor:pointer;display:flex;font-size:14px;font-weight:800;justify-content:center;min-height:56px;padding:14px 20px;width:100%}
 .buy-button:hover{background:#00ad46}
 .buy-button:active{transform:scale(.99)}
@@ -142,6 +156,7 @@ const requestedId=new URLSearchParams(window.location.search).get('id');
 let product=null;
 let products=[];
 let activeImage=0;
+let productReviewData={reviews:[],aliases:{}};
 
 function escapeHTML(value){
   return String(value==null?'':value).replace(/[&<>"']/g,function(char){
@@ -273,6 +288,76 @@ function productCopy(item){
   return 'A curated '+type.toLowerCase()+' piece from the ESNTLS CLUB collection. Review the gallery, then continue securely to checkout.';
 }
 
+function normalizeReviewKey(value){
+  return String(value||'')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[\u2019']/g,'')
+    .replace(/&/g,' and ')
+    .replace(/\bx\b/g,' ')
+    .replace(/\b(all|ultra|quality|new|season|out|of|store|the)\b/g,' ')
+    .replace(/[^a-z0-9]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+async function loadProductReviewData(){
+  try{
+    const response=await fetch('data/product-reviews.json?t='+Date.now(),{cache:'no-store'});
+    if(!response.ok)return {reviews:[],aliases:{}};
+    const data=await response.json();
+    return {
+      reviews:Array.isArray(data.reviews)?data.reviews.filter(function(review){return review&&review.text&&Number(review.stars)>=4;}):[],
+      aliases:data.aliases&&typeof data.aliases==='object'?data.aliases:{}
+    };
+  }catch(error){
+    console.warn('Product reviews load error:',error);
+    return {reviews:[],aliases:{}};
+  }
+}
+
+function matchedProductReviews(item){
+  if(!item||!productReviewData.reviews.length)return [];
+  const keys=new Set();
+  const baseKey=normalizeReviewKey(item.name);
+  if(baseKey)keys.add(baseKey);
+  (productReviewData.aliases[baseKey]||[]).forEach(function(key){if(key)keys.add(key);});
+
+  const seen=new Set();
+  return productReviewData.reviews.filter(function(review){
+    const reviewKey=review.productKey||normalizeReviewKey(review.product);
+    if(!keys.has(reviewKey)||seen.has(review.id))return false;
+    seen.add(review.id);
+    return true;
+  });
+}
+
+function reviewInitial(name){
+  const clean=String(name||'Customer').trim();
+  return escapeHTML(clean.charAt(0)||'C');
+}
+
+function productReviewsHTML(reviews){
+  if(!reviews.length)return '';
+  const average=reviews.reduce(function(total,review){return total+(Number(review.stars)||5);},0)/reviews.length;
+  const shown=reviews.slice(0,8);
+  return '<section class="product-reviews" aria-label="Customer reviews for this item">'
+    +'<div class="product-reviews-head"><h2>Customer reviews</h2><div class="product-reviews-summary">'+average.toFixed(1)+' average<br>'+reviews.length+' matched review'+(reviews.length===1?'':'s')+'</div></div>'
+    +'<div class="product-review-track">'
+    +shown.map(function(review){
+      const stars='★'.repeat(Math.max(1,Math.min(5,Number(review.stars)||5)));
+      return '<article class="product-review-card">'
+        +'<div class="product-review-top"><div class="product-review-avatar">'+reviewInitial(review.name)+'</div><div><div class="product-review-name">'+escapeHTML(review.name||'Customer')+'</div><div class="product-review-date">'+escapeHTML(review.loc||'UK')+' · '+escapeHTML(review.date||'')+'</div></div></div>'
+        +'<div class="product-review-stars" aria-label="'+escapeHTML(String(review.stars||5))+' star review">'+stars+'</div>'
+        +'<p class="product-review-text">'+escapeHTML(review.text)+'</p>'
+        +'<div class="product-review-source">Verified Judge.me review for '+escapeHTML(review.product||product.name)+'</div>'
+        +'</article>';
+    }).join('')
+    +'</div>'
+    +'</section>';
+}
+
 function renderError(){
   document.title='Product unavailable | ESNTLS CLUB';
   document.getElementById('productApp').innerHTML='<div><h1>Product unavailable</h1><p>This item may no longer be live.</p><a href="./">Back to shop</a></div>';
@@ -288,6 +373,7 @@ function renderProduct(){
   const related=products.filter(function(item){
     return item.id!==product.id&&(item.brand===product.brand||String(item.category).split(',')[0]===String(product.category).split(',')[0]);
   }).slice(0,4);
+  const reviews=matchedProductReviews(product);
   const app=document.getElementById('productApp');
   app.className='product-shell';
   app.innerHTML=''
@@ -326,6 +412,7 @@ function renderProduct(){
     +'</div>'
     +'<a class="support" href="https://instagram.com/cluesntl" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Questions? DM us on Instagram</a>'
     +'</aside></div>'
+    +productReviewsHTML(reviews)
     +(related.length?'<section class="related"><div class="related-head"><h2>You may also like</h2><a href="./">Shop all</a></div><div class="related-grid">'+related.map(function(item){
       return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(displayPrice(item.price))+'</span></div></a>';
     }).join('')+'</div></section>':'');
@@ -445,7 +532,9 @@ document.addEventListener('keydown',function(event){
 
 (async function(){
   if(!requestedId){renderError();return;}
-  products=await loadProducts();
+  const loaded=await Promise.all([loadProducts(),loadProductReviewData()]);
+  products=loaded[0];
+  productReviewData=loaded[1];
   product=products.find(function(item){return String(item.id)===String(requestedId);})||null;
   renderProduct();
 })();
