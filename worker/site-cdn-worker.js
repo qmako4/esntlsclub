@@ -1,7 +1,7 @@
 const GITHUB_ORIGIN = 'https://github.com/qmako4/esntlsclub/raw/main';
 const R2_PUBLIC_ORIGIN = 'https://pub-43c9cf7fd2904289881c21839332521c.r2.dev';
 const MEDIA_CACHE_VERSION = '3';
-const SOURCE_CACHE_VERSION = '22';
+const SOURCE_CACHE_VERSION = '23';
 
 const PUBLIC_ROOT_FILES = new Set([
   'admin.html',

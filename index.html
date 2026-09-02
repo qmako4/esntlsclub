@@ -930,10 +930,13 @@ const FALLBACK_REVIEWS=[
 {name:"Marcus W.",loc:"Bristol",text:"Third time ordering, never disappointed. The checkout process is different but they explained it well. Always get exactly what I picked.",product:"B22 Black",stars:5,date:"Mar 2026"},
 ];
 let REVIEWS=FALLBACK_REVIEWS;
-let REVIEW_META={totalPublicReviews:0,trustScore:0,sourceUrl:''};
+let REVIEW_META={totalPublicReviews:0,trustScore:0,averageRating:0,sourceName:'customer'};
 function reviewSubline(){
 const total=Number(REVIEW_META.totalPublicReviews||0);
 const trustScore=Number(REVIEW_META.trustScore||0);
+const averageRating=Number(REVIEW_META.averageRating||0);
+const sourceName=REVIEW_META.sourceName||'customer';
+if(total&&averageRating)return `${averageRating.toFixed(1)} average · based on ${total} ${sourceName} reviews`;
 if(total&&trustScore)return `TrustScore ${trustScore.toFixed(1)} · based on ${total} Trustpilot reviews`;
 return 'Based on customer reviews';
 }
@@ -977,11 +980,10 @@ const data=await res.json();
 const loaded=Array.isArray(data.reviews)?data.reviews.filter(r=>r&&r.text&&Number(r.stars)>=4):[];
 if(!loaded.length)return;
 REVIEWS=loaded;
-REVIEW_META={totalPublicReviews:data.totalPublicReviews||loaded.length,trustScore:data.trustScore||0,sourceUrl:data.sourceUrl||''};
+REVIEW_META={totalPublicReviews:data.totalPublicReviews||loaded.length,trustScore:data.trustScore||0,averageRating:data.averageRating||0,sourceName:data.sourceName||'customer'};
 renderReviewsOnly();
 }catch(e){console.log('Reviews load error:',e)}
 }
-loadCustomerReviews();
 
 /*╔═══════════════════════════╗
   ║  SHOP PAGE                ║
@@ -2150,6 +2152,7 @@ else{n.style.boxShadow='none'}},{passive:true})
 
 // ═══ INIT ═══
 render();
+loadCustomerReviews();
 
 // Auto-open category/product from URL. Categories use ?cat=..., products use #slug-id, stock uses #stock.
 setTimeout(()=>{
