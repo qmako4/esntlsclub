@@ -50,6 +50,10 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .prices{align-items:baseline;display:flex;gap:10px;margin-bottom:14px}
 .price{font-size:21px;font-weight:700}
 .was{color:#929292;font-size:14px;text-decoration:line-through}
+.review-pill{align-items:center;background:#effaf2;border:1px solid rgba(0,200,83,.28);border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:900;gap:7px;letter-spacing:.35px;margin:-2px 0 14px;padding:8px 12px;text-transform:uppercase}
+.review-pill:hover{background:#00c853;border-color:#00c853;color:#fff}
+.review-pill-stars{color:#f5b400;font-size:12px;letter-spacing:.5px}
+.review-pill:hover .review-pill-stars{color:#fff}
 .sale-timer{align-items:center;background:#101010;border-radius:14px;color:#fff;display:flex;font-size:12px;font-weight:800;gap:8px;justify-content:space-between;margin:-4px 0 14px;padding:10px 12px;text-transform:uppercase}
 .sale-timer span{color:#00c853;font-variant-numeric:tabular-nums}
 .stock{background:#effaf2;border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:14px;padding:7px 11px;text-transform:uppercase}
@@ -68,7 +72,7 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .fact{align-items:center;border-bottom:1px solid #ebebeb;display:flex;gap:12px;justify-content:space-between;padding:13px 0}
 .fact-label{color:#777;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
 .fact-value{color:#111;font-size:12px;font-weight:700;text-align:right}
-.product-reviews{border-top:1px solid #ebebeb;margin-top:34px;padding-top:26px}
+.product-reviews{border-top:1px solid #ebebeb;margin-top:34px;padding-top:26px;scroll-margin-top:18px}
 .product-reviews-head{align-items:end;display:flex;gap:14px;justify-content:space-between;margin-bottom:14px}
 .product-reviews h2{font-family:'Bebas Neue',sans-serif;font-size:30px;font-weight:400;letter-spacing:1px;line-height:1}
 .product-reviews-summary{color:#777;font-size:11px;font-weight:700;text-align:right;text-transform:uppercase}
@@ -338,11 +342,16 @@ function reviewInitial(name){
   return escapeHTML(clean.charAt(0)||'C');
 }
 
+function productReviewPillHTML(reviews){
+  if(!reviews.length)return '';
+  return '<a class="review-pill" href="#productReviews" aria-label="View customer reviews for this product"><span class="review-pill-stars" aria-hidden="true">★★★★★</span> 5 star reviews for this product</a>';
+}
+
 function productReviewsHTML(reviews){
   if(!reviews.length)return '';
   const average=reviews.reduce(function(total,review){return total+(Number(review.stars)||5);},0)/reviews.length;
   const shown=reviews.slice(0,8);
-  return '<section class="product-reviews" aria-label="Customer reviews for this item">'
+  return '<section id="productReviews" class="product-reviews" aria-label="Customer reviews for this item">'
     +'<div class="product-reviews-head"><h2>Customer reviews</h2><div class="product-reviews-summary">'+average.toFixed(1)+' average<br>'+reviews.length+' matched review'+(reviews.length===1?'':'s')+'</div></div>'
     +'<div class="product-review-track">'
     +shown.map(function(review){
@@ -397,6 +406,7 @@ function renderProduct(){
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
     +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
+    +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
     +'<div class="purchase-panel">'
