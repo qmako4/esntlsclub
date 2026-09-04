@@ -219,7 +219,8 @@ export default {
     }
 
     const { browserTtl, edgeTtl } = cacheSettings(file);
-    const originUrl = `${GITHUB_ORIGIN}/${file}?edge=${SOURCE_CACHE_VERSION}`;
+    const adminNoCache = file === 'admin.html' ? `&t=${Date.now()}` : '';
+    const originUrl = `${GITHUB_ORIGIN}/${file}?edge=${SOURCE_CACHE_VERSION}${adminNoCache}`;
     const originResponse = await fetch(originUrl, {
       cf: {
         cacheEverything: true,
