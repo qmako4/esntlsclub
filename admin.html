@@ -2747,7 +2747,7 @@ if(publishBtn){publishBtn.disabled=false;publishBtn.style.opacity='1';updateAddP
 return;
 }
 
-const newId=Math.max(36,...products.map(p=>Number(p.id)||0))+1;
+const newId=Math.max(MIN_DYNAMIC_PRODUCT_ID,...products.map(p=>Number(p.id)||0))+1;
 const createdAt=new Date().toISOString();
 const usedGenerated=!!(generatedUploadCount&&imageUrls.length>=generatedUploadCount);
 const generatedUrls=usedGenerated?imageUrls.slice(0,generatedUploadCount):[];
@@ -2821,18 +2821,48 @@ if(publishBtn){publishBtn.disabled=false;publishBtn.style.opacity='1';updateAddP
 }
 setTimeout(()=>{msg.textContent=''},4000)}
 
+const MIN_SAFE_PRODUCT_SAVE_COUNT=80;
+const MIN_DYNAMIC_PRODUCT_ID=89;
+
+function productListFromPayload(data){
+return Array.isArray(data)?data:(data&&Array.isArray(data.products)?data.products:[])}
+
+function productIdKey(product){
+const id=product&&product.id;
+return id===undefined||id===null?'':String(id).trim()}
+
+function mergeProductLists(base,overlay){
+const out=[];
+function addList(list,replace){
+for(const item of productListFromPayload(list)){
+const key=productIdKey(item);
+if(!key)continue;
+const existingIndex=out.findIndex(product=>productIdKey(product)===key);
+if(existingIndex>=0){
+if(replace)out[existingIndex]=item;
+continue;
+}
+out.push(item);
+}}
+addList(base,false);
+addList(overlay,true);
+return out}
+
+async function fetchProductList(url){
+const res=await fetch(url);
+if(!res.ok)throw new Error('products fetch HTTP '+res.status);
+return productListFromPayload(await res.json())}
+
+async function baselineProductList(){
+const lists=[];
+try{lists.push(await fetchProductList('/products.json?t='+Date.now()))}catch(e){console.warn('Repo product baseline unavailable:',e)}
+try{lists.push(await fetchProductList(R2_PUBLIC+'products.json?t='+Date.now()))}catch(e){console.warn('R2 product baseline unavailable:',e)}
+return lists.reduce((merged,list)=>mergeProductLists(merged,list),[])}
+
 // LOAD PRODUCTS FROM R2 JSON
 async function loadProducts(){
 try{
-const res=await fetch(R2_PUBLIC+'products.json?t='+Date.now());
-if(res.ok){
-const data=await res.json();
-products=Array.isArray(data)?data:[];
-}else if(res.status===404){
-products=[];
-}else{
-console.error('loadProducts HTTP',res.status);
-}
+products=await baselineProductList();
 _lastSyncTime=Date.now();
 refreshCategoriesFromProducts();
 initCatPills();
@@ -2841,6 +2871,15 @@ if(typeof syncDashboard==='function')syncDashboard();
 
 // PERSIST FULL PRODUCT LIST TO R2
 async function saveProducts(){
+const baseline=await baselineProductList();
+const merged=mergeProductLists(baseline,products);
+if(products.length<MIN_SAFE_PRODUCT_SAVE_COUNT&&baseline.length<MIN_SAFE_PRODUCT_SAVE_COUNT){
+throw new Error('Safety stop: could not verify the existing product catalogue before saving. Refresh admin and try again.');
+}
+if(products.length<MIN_SAFE_PRODUCT_SAVE_COUNT&&baseline.length>=MIN_SAFE_PRODUCT_SAVE_COUNT&&merged.length<baseline.length){
+throw new Error('Safety stop: product list loaded only '+products.length+' products, but baseline has '+baseline.length+'. Refresh admin before saving.');
+}
+products=merged;
 const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
 await r2Upload(blob,'products.json')}
 
