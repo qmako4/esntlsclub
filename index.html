@@ -588,6 +588,15 @@ function sortForCollection(items,cat){
   if(cat==='New Items'){
     return [...items].sort((a,b)=>uploadedMs(b)-uploadedMs(a)||(parseInt(productSourceId(b),10)||0)-(parseInt(productSourceId(a),10)||0));
   }
+  if(cat==='All'){
+    // Shop All: lowest current price first, with unpriced/sold-out items last.
+    return [...items].sort((a,b)=>{
+      const aPrice=parsePrice(a.price),bPrice=parsePrice(b.price);
+      if(aPrice===null)return bPrice===null?0:1;
+      if(bPrice===null)return -1;
+      return aPrice-bPrice;
+    });
+  }
   return [...items].sort((a,b)=>(a.price==='Out of stock'?1:0)-(b.price==='Out of stock'?1:0));
 }
 function timedSaleState(p,now=Date.now()){
@@ -628,7 +637,7 @@ function getStockEntryForProduct(p){
   return null;
 }
 // Price parsing + filter state
-function parsePrice(s){if(!s||s==='Out of stock')return null;const m=String(s).match(/[\d.]+/);return m?parseFloat(m[0]):null}
+function parsePrice(s){if(s==null||/out of stock/i.test(String(s)))return null;const m=String(s).replace(/,/g,'').match(/[\d.]+/);const amount=m?Number(m[0]):NaN;return Number.isFinite(amount)?amount:null}
 const PRICE_RANGES={'all':null,'under50':v=>v<50,'50-100':v=>v>=50&&v<100,'100-150':v=>v>=100&&v<150,'150plus':v=>v>=150};
 const PRICE_LABELS={'all':'All Prices','under50':'Under £50','50-100':'£50 – £100','100-150':'£100 – £150','150plus':'£150+'};
 let priceFilter='all';
