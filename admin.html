@@ -780,6 +780,116 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
   .product-item .actions{width:100%;justify-content:flex-end}
   .media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* Calm, task-first admin. Keep the existing tools, with fewer everyday controls. */
+:root{--g:#16764b;--g2:#219761;--bg:#f6f7f8;--ink:#18221d;--text:#18221d;--sub:#626c66;--border:#e0e5e2;--line:#e0e5e2;--r:12px;--r-lg:14px;--shadow-sm:none;--shadow-md:none}
+body{background:var(--bg);padding-bottom:0}
+html,body{overflow-x:clip}
+body::before{display:none}
+button,input,select,textarea{font-family:inherit}
+button:disabled{cursor:wait;opacity:.55}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #70b994;outline-offset:3px}
+.topbar{min-height:68px;background:#fff;color:var(--ink);padding:14px max(22px,calc((100vw - 1080px)/2));border-bottom:1px solid var(--border);box-shadow:none;backdrop-filter:none}
+.topbar h1{color:var(--ink);font-size:17px;letter-spacing:2px;gap:12px}
+.topbar h1::before{display:none}
+.topbar h1 span{font-size:12px;font-weight:500;letter-spacing:0;border-left:1px solid var(--border);padding-left:12px;color:var(--sub)}
+.topbar-actions{display:flex;align-items:center;gap:18px}
+.topbar-actions a{font-size:12px;color:var(--sub);text-decoration:none}
+.topbar .logout{border:1px solid var(--border);color:var(--sub);background:#fff;border-radius:8px;padding:8px 12px;min-height:36px}
+.topbar .logout:hover{background:#f4f6f5;transform:none}
+.tabs{position:sticky;top:68px;left:auto;right:auto;bottom:auto;width:100%;max-width:none;margin:0;padding:0 max(18px,calc((100vw - 1080px)/2));display:flex;gap:24px;border:0;border-bottom:1px solid var(--border);border-radius:0;box-shadow:none;background:#fff;backdrop-filter:none;overflow-x:auto;z-index:90}
+.tab{flex:0 0 auto;min-height:50px;padding:14px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;font-size:13px;font-weight:500;color:var(--sub);white-space:nowrap;font-family:inherit}
+.tab:hover{background:transparent;color:var(--ink)}
+.tab.active{background:transparent;color:var(--g);border-bottom:2px solid var(--g);box-shadow:none;transform:none;font-weight:700}
+.dash-strip{max-width:1080px;margin:18px auto 0;padding:0 22px;display:flex;gap:24px;background:none;overflow-x:auto}
+.dash-pill{border:0;box-shadow:none;border-radius:0;background:none;padding:0;font-size:12px;backdrop-filter:none;justify-content:flex-start}
+.dash-pill strong{font-size:12px}
+.page{padding:28px 22px 60px}
+.page.active{animation:none}
+.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 24px}
+.page-heading h2{font-size:28px;font-weight:700;letter-spacing:-.7px;line-height:1.2}
+.page-heading p{font-size:13px;color:var(--sub);margin-top:7px}
+.page-heading .btn{width:auto;flex-shrink:0;margin:0;padding:11px 18px}
+.card{border:1px solid var(--border);border-radius:14px;box-shadow:none;padding:22px}
+.card:hover,.product-item:hover,.img-thumb:hover{transform:none;box-shadow:none}
+.btn{min-height:44px;border-radius:9px;box-shadow:none;font-size:13px;padding:11px 16px}
+.btn:hover,.btn-outline:hover{box-shadow:none;transform:none}
+.btn-outline{border:1px solid var(--border);background:#fff;color:var(--ink)}
+label.field span{font-size:12px;letter-spacing:0;text-transform:none;color:#515d55}
+label.field input,select,textarea{border-radius:9px!important;background:#fff}
+.cat-pill,.filter-chip{box-shadow:none;font-weight:500}
+.cat-pill:hover,.filter-chip:hover{box-shadow:none;transform:none}
+.filter-chip.on,.cat-pill.on{background:#e8f3ed;color:#145d3d;border-color:#b9d7c6;box-shadow:none}
+.filter-bar{position:static;top:auto;margin:0 0 18px;padding:18px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:none;backdrop-filter:none;max-height:none;overflow:visible;gap:14px}
+.filter-bar input.search{border-radius:8px;box-shadow:none}
+.filter-chips{gap:6px}
+.filter-chip{min-height:36px;font-size:12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.filter-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.filter-bottom select{padding:9px 10px;min-height:40px;border:1px solid var(--border);font-size:12px;color:var(--text);max-width:100%}
+.filter-bottom .count-sort{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--sub)}
+#productList{display:grid;grid-template-columns:1fr;gap:10px}
+.product-row{min-width:0;border:1px solid var(--border);border-radius:12px;background:#fff}
+.product-item{padding:16px;gap:16px;border:0;border-radius:12px;box-shadow:none;align-items:center;flex-wrap:nowrap}
+.product-item img{width:72px;height:80px;border-radius:8px;object-fit:cover;background:#f2f4f3}
+.product-item .name{font-size:14px;white-space:normal;line-height:1.4}
+.product-item .meta{margin-top:4px}
+.product-item .meta-pills{margin-top:6px}
+.product-item .meta-pill{background:transparent;padding:0;font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--sub);border-radius:0}
+.product-item .meta-pill+.meta-pill::before{content:'·';padding-right:5px}
+.product-item .actions{display:flex;gap:8px;flex-shrink:0;align-items:center;width:auto}
+.product-item .actions .action-btn{width:auto;min-width:0;height:40px;padding:0 14px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:12px;font-weight:600;white-space:nowrap;box-shadow:none}
+.product-item .actions .photos-btn{background:#edf6f0;color:#145d3d;border-color:#d2e5da}
+.product-menu{position:relative}
+.product-menu summary{list-style:none;cursor:pointer;display:flex;align-items:center}
+.product-menu summary::-webkit-details-marker{display:none}
+.product-menu[open]{z-index:60}
+.product-menu-content{position:absolute;right:0;top:46px;min-width:185px;background:#fff;padding:6px;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 25px #18221d18}
+.product-menu-content button,.product-menu-content a{display:block;width:100%;text-align:left;padding:11px;border:0;border-radius:6px;background:#fff;font-size:12px;color:var(--text);cursor:pointer;text-decoration:none}
+.product-menu-content button:hover,.product-menu-content a:hover{background:#f5f7f6}
+.product-menu-content button.danger{color:#b42318}
+.photo-draft-badge{display:none;font-size:10px;font-weight:600;color:#985d08;margin-left:7px}
+.edit-panel{margin:0;padding:22px;border:0;border-top:1px solid var(--border);border-radius:0 0 12px 12px;box-shadow:none;scroll-margin-top:140px}
+.editor-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.editor-heading h3{font-size:16px;margin:0 0 4px}
+.editor-heading p{font-size:12px;color:var(--sub)}
+.editor-close{background:#fff;border:1px solid var(--border);padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;margin-bottom:18px}
+.photo-tile{min-width:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
+.photo-tile.is-cover{border-color:#87b59b}
+.photo-tile img{display:block;width:100%;height:175px;object-fit:contain;background:#f5f6f5}
+.photo-tile-actions{padding:8px;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.photo-tile-actions button{border:0;background:transparent;padding:7px 3px;font-size:11px;color:var(--sub);cursor:pointer;min-height:34px}
+.photo-tile-actions .cover-label{font-size:11px;font-weight:600;color:var(--g);padding:7px 3px}
+.photo-tile-actions .remove-photo{font-size:19px;padding:3px 8px;color:#7a4545}
+.photo-add-actions{display:flex;gap:10px;flex-wrap:wrap}
+.photo-add-actions .btn{width:auto;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0}
+.photo-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.photo-add-actions label:focus-within{outline:3px solid #70b994;outline-offset:3px}
+.photo-save-bar,.details-save-bar{position:sticky;bottom:0;z-index:70;display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border-top:1px solid var(--border);margin:20px -22px -22px;padding:16px 22px;border-radius:0 0 12px 12px}
+.photo-save-status{font-size:12px;color:var(--sub);flex:1}
+.photo-save-status.is-dirty{color:#8b5d12}
+.photo-save-status.is-error{color:#b42318}
+.photo-save-status.is-saved{color:var(--g)}
+.photo-save-actions{display:flex;align-items:center;gap:10px}
+.photo-save-actions .btn,.details-save-bar .btn{width:auto;margin:0;white-space:nowrap}
+.photo-save-actions button:disabled{cursor:default}
+.photo-draft-notice{display:none;align-items:center;gap:12px;padding:12px 16px;background:#fff8e9;border:1px solid #eaddbb;border-radius:10px;margin-bottom:16px;font-size:12px;color:#765311}
+.photo-draft-notice button{margin-left:auto;flex-shrink:0;border:0;background:transparent;color:inherit;font-weight:700;cursor:pointer;padding:8px}
+.advanced-settings{border:1px solid var(--border);border-radius:10px;padding:14px;margin:16px 0;background:#fafbfa}
+.advanced-settings summary{font-size:12px;font-weight:600;cursor:pointer;color:var(--sub)}
+.advanced-settings[open]>summary{margin-bottom:18px}
+.upload-zone{border-radius:12px;background:#fafcfb;box-shadow:none}
+.upload-zone:hover{box-shadow:none;transform:none}
+@media(max-width:640px){
+  .topbar{min-height:60px;padding:12px 16px}.topbar h1{font-size:15px}.topbar h1 span{display:none}.topbar-actions{gap:12px}
+  .tabs{position:sticky;top:60px;bottom:auto;left:auto;right:auto;display:flex;gap:22px;padding:0 16px;border-radius:0}.tab{font-size:12px;min-height:46px;padding:13px 0;white-space:nowrap}
+  .dash-strip{margin-top:16px;padding:0 16px;gap:18px;display:flex}.dash-pill{padding:0;font-size:11px;justify-content:flex-start}.dash-pill strong{font-size:11px}
+  .page{padding:24px 14px 40px}.page-heading{gap:10px;margin-bottom:18px}.page-heading h2{font-size:24px}.page-heading p{font-size:12px;max-width:220px}.page-heading .btn{padding:10px 13px;min-height:42px}
+  .filter-bar{position:static;padding:12px;border-radius:12px;gap:12px}.filter-chip{min-height:36px;padding:8px 10px;font-size:11px}.filter-bottom{gap:10px}.filter-bottom .count-sort{width:100%;justify-content:space-between}.filter-bottom select{min-height:40px;font-size:13px!important}.filter-bottom>select{width:100%}
+  .product-item{padding:14px;gap:12px;flex-wrap:wrap;align-items:center}.product-item img{width:64px;height:72px}.product-item .info{flex:1 1 calc(100% - 80px)}.product-item .actions{width:100%;justify-content:stretch;gap:8px}.product-item .actions>.action-btn{flex:1;padding:0 10px}.product-item .actions .action-btn{height:42px}.product-menu .action-btn{padding:0 12px!important}
+  .edit-panel{padding:16px;scroll-margin-top:120px}.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.photo-tile img{height:145px}.photo-add-actions .btn{flex:1;min-height:44px;font-size:12px;padding:10px}
+  .photo-save-bar,.details-save-bar{margin:18px -16px -16px;padding:12px 16px max(12px,env(safe-area-inset-bottom));flex-wrap:wrap;gap:10px}.photo-save-status{flex-basis:100%}.photo-save-actions{width:100%}.photo-save-actions .btn:last-child{flex:1}
+  .card{padding:18px;border-radius:12px}.media-bulk-bar{bottom:12px}.toast-host{top:112px}.builder-steps{gap:5px}
+}
 </style>
 </head><body>
 
@@ -796,24 +906,26 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <!-- ADMIN APP -->
 <div id="app">
 <div class="topbar">
-<h1>ESNTLS ADMIN</h1>
+<h1>ESNTLS <span>Store admin</span></h1>
+<div class="topbar-actions"><a href="/" target="_blank" rel="noopener">View store ↗</a>
 <button class="logout" onclick="logout()">Log out</button>
 </div>
-
-<div class="tabs">
-<div class="tab active" data-tab="add" onclick="showTab('add',this)">Create</div>
-<div class="tab" data-tab="products" onclick="showTab('products',this)">Products</div>
-<div class="tab" data-tab="orders" onclick="showTab('orders',this)">Orders</div>
-<div class="tab" data-tab="media" onclick="showTab('media',this)">Media</div>
-<div class="tab" data-tab="stock" onclick="showTab('stock',this)">Stock</div>
-<div class="tab" data-tab="tools" onclick="showTab('tools',this)">Tools</div>
 </div>
+
+<nav class="tabs" aria-label="Admin sections">
+<button class="tab active" data-tab="products" onclick="showTab('products',this)" aria-current="page">Products</button>
+<button class="tab" data-tab="add" onclick="showTab('add',this)">Add product</button>
+<button class="tab" data-tab="orders" onclick="showTab('orders',this)">Orders</button>
+<button class="tab" data-tab="media" onclick="showTab('media',this)">Photo library</button>
+<button class="tab" data-tab="stock" onclick="showTab('stock',this)">Stock</button>
+<button class="tab" data-tab="tools" onclick="showTab('tools',this)">Tools & settings</button>
+</nav>
 
 <!-- Live status strip: shown across every tab so it's always 1 glance away -->
 <div class="dash-strip" id="dashStrip">
 <div class="dash-pill"><span class="dot"></span><strong id="dashCount">-</strong> products</div>
-<div class="dash-pill"><strong id="dashImgCount">-</strong> images</div>
-<div class="dash-pill"><strong id="dashOosCount">-</strong> OOS</div>
+<div hidden><strong id="dashImgCount">-</strong></div>
+<div class="dash-pill"><strong id="dashOosCount">-</strong> out of stock</div>
 <div class="dash-pill">Synced <strong id="dashSyncTime">just now</strong></div>
 </div>
 
@@ -821,7 +933,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 <div class="toast-host" id="toastHost"></div>
 
 <!-- ADD PRODUCT -->
-<div class="page active" id="pageAdd">
+<div class="page" id="pageAdd">
 <div class="card builder-hero">
 <h2>Create Product</h2>
 <p>Add details, prepare the product images, approve them, then publish once. Shopify checkout is created automatically at the end.</p>
@@ -958,30 +1070,29 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 </div>
 
 <!-- PRODUCTS LIST -->
-<div class="page" id="pageProducts">
+<div class="page active" id="pageProducts">
+<div class="page-heading"><div><h2>Products</h2><p>Manage your catalogue, photos and details.</p></div><button class="btn" onclick="showTab('add')">+ Add product</button></div>
+<div class="photo-draft-notice" id="photoDraftNotice" role="status"><span id="photoDraftNoticeText"></span><button onclick="openNextPhotoDraft()">Review photos →</button></div>
 <div class="filter-bar" id="productFilterBar">
-<input type="search" class="search" id="productSearch" placeholder="Search products by name or category" oninput="renderProductList()">
+<input type="search" class="search" id="productSearch" aria-label="Search products" placeholder="Search by name, category or item number" oninput="renderProductList()">
 <div class="filter-chips" id="productStatusChips">
-<div class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">-</span></div>
-<div class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">-</span></div>
-<div class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">-</span></div>
-<div class="filter-chip" data-status="archived" onclick="setProductFilter('status','archived')">Archived <span id="ctArchived">-</span></div>
+<button class="filter-chip on" data-status="all" onclick="setProductFilter('status','all')">All <span id="ctAll">-</span></button>
+<button class="filter-chip" data-status="instock" onclick="setProductFilter('status','instock')">In stock <span id="ctIn">-</span></button>
+<button class="filter-chip" data-status="oos" onclick="setProductFilter('status','oos')">Out of stock <span id="ctOos">-</span></button>
+<button class="filter-chip" data-status="archived" onclick="setProductFilter('status','archived')">Archived <span id="ctArchived">-</span></button>
 </div>
-<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('shopify')" style="min-height:42px;font-size:12px">Use Shopify links</button>
-<button type="button" class="btn btn-outline" onclick="setCheckoutLinkMode('wix')" style="min-height:42px;font-size:12px">Use Wix backups</button>
-</div>
-<div class="msg" id="checkoutModeMsg" style="margin-top:0"></div>
-<div class="filter-chips" id="productCategoryChips"></div>
-<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);padding:0 2px">
+<div class="filter-bottom">
+<select id="productCategoryChips" aria-label="Filter by category" onchange="setProductFilter('category',this.value)"></select>
+<div class="count-sort">
 <span id="productCountSummary">-</span>
-<select id="productSort" onchange="renderProductList()" style="border:none;background:transparent;font-size:11px;color:var(--sub);font-weight:600;cursor:pointer">
+<select id="productSort" aria-label="Sort products" onchange="renderProductList()">
 <option value="recent">Newest first</option>
 <option value="oldest">Oldest first</option>
 <option value="name">A to Z</option>
 <option value="price-low">Price low to high</option>
 <option value="price-high">Price high to low</option>
 </select>
+</div>
 </div>
 </div>
 <div id="productList"></div>
@@ -1184,6 +1295,7 @@ box-shadow:0 -20px 60px rgba(0,0,0,.18)
 
 <!-- TOOLS -->
 <div class="page" id="pageTools">
+<div class="card"><h3>Checkout settings</h3><p style="font-size:12px;color:var(--sub);margin-bottom:16px">Switch the checkout links for your catalogue. Existing product details and photos are kept.</p><button class="btn btn-outline" onclick="setCheckoutLinkMode('shopify')">Use Shopify links</button><button class="btn btn-outline" onclick="setCheckoutLinkMode('wix')">Use Wix backups</button><div class="msg" id="checkoutModeMsg"></div></div>
 <div class="card">
 <h3>Restore Hardcoded Products</h3>
 <p style="font-size:12px;color:var(--sub);margin-bottom:10px">One-time: imports the 36 hardcoded products into R2 so you can edit, reorder, or delete them like new ones.</p>
@@ -1359,7 +1471,7 @@ function openAdminApp(){
 document.getElementById('loginScreen').style.display='none';
 document.getElementById('app').style.display='block';
 loadCustomCategories();
-loadProducts();
+loadProducts().then(()=>{if(document.getElementById('pageProducts').classList.contains('active'))renderProductList()}).catch(()=>toast('Could not load products. Please refresh and try again.','error'));
 initCatPills();
 initDropZones();
 }
@@ -1592,11 +1704,11 @@ function logout(){clearAdminSession();document.getElementById('app').style.displ
 // TABS
 function showTab(tab,tabEl){
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(t=>{t.classList.remove('active');t.removeAttribute('aria-current')});
 const page=document.getElementById('page'+tab.charAt(0).toUpperCase()+tab.slice(1));
 if(page)page.classList.add('active');
 const activeTab=tabEl||document.querySelector(`.tab[data-tab="${tab}"]`);
-if(activeTab)activeTab.classList.add('active');
+if(activeTab){activeTab.classList.add('active');activeTab.setAttribute('aria-current','page')}
 if(tab==='products')renderProductList();
 if(tab==='media'){loadMedia().then(renderMedia)}
 }
@@ -2871,6 +2983,9 @@ if(typeof syncDashboard==='function')syncDashboard();
 
 // PERSIST FULL PRODUCT LIST TO R2
 async function saveProducts(){
+if(catalogueSaveInProgress)throw new Error('Another save is still finishing. Please try again in a moment.');
+catalogueSaveInProgress=true;
+try{
 const baseline=await baselineProductList();
 const merged=mergeProductLists(baseline,products);
 if(products.length<MIN_SAFE_PRODUCT_SAVE_COUNT&&baseline.length<MIN_SAFE_PRODUCT_SAVE_COUNT){
@@ -2881,7 +2996,8 @@ throw new Error('Safety stop: product list loaded only '+products.length+' produ
 }
 products=merged;
 const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
-await r2Upload(blob,'products.json')}
+await r2Upload(blob,'products.json');
+}finally{catalogueSaveInProgress=false}}
 
 function numericPriceAmount(value){
 const cleaned=String(value||'').replace(/[£$,\s]/g,'');
@@ -3074,8 +3190,8 @@ if(categoryChipsEl){
   const sig=productFilters.status+'::'+usedCategories.join('|')+'::'+productFilters.category;
   if(categoryChipsEl._sig!==sig){
     categoryChipsEl._sig=sig;
-    categoryChipsEl.innerHTML=`<div class="filter-chip${productFilters.category==='all'?' on-g':''}" onclick="setProductFilter('category','all')">All categories</div>`+
-      usedCategories.map(c=>{const safe=escapeAdminHTML(c);const js=c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");return `<div class="filter-chip${productFilters.category===c?' on-g':''}" onclick="setProductFilter('category','${js}')">${safe}</div>`}).join('');
+    categoryChipsEl.innerHTML='<option value="all">All categories</option>'+usedCategories.map(c=>`<option value="${escapeAdminHTML(c)}">${escapeAdminHTML(c)}</option>`).join('');
+    categoryChipsEl.value=productFilters.category;
   }
 }
 // Sync status chip active state
@@ -3096,7 +3212,7 @@ let filtered=products.filter(p=>{
   if(productFilters.status==='oos'&&!isOos)return false;
   if(productFilters.category!=='all'&&!effectiveCategories(p).includes(productFilters.category))return false;
   if(q){
-    const hay=`${p.name||''} ${p.brand||''} ${p.category||''}`.toLowerCase();
+    const hay=`${p.name||''} ${p.brand||''} ${p.category||''} #${p.id}`.toLowerCase();
     if(!hay.includes(q))return false;
   }
   return true;
@@ -3124,30 +3240,39 @@ list.innerHTML=filtered.map(p=>{
   const isOos=String(p.price).toLowerCase().includes('out of stock');
   const archived=isArchivedProduct(p);
   const photos=p.images?p.images.length:0;
-  return `<div style="margin-bottom:10px">
+  return `<div class="product-row" id="productRow_${p.id}">
 <div class="product-item${archived?' archived':''}">
-<img src="${p.images&&p.images[0]||''}" onerror="this.style.background='#eee'">
+<img id="productCover_${p.id}" src="${escapeAdminHTML(p.images&&p.images[0]||'')}" alt="${escapeAdminHTML(p.name)}" loading="lazy" onerror="this.style.background='#eee'">
 <div class="info">
-<div class="name">${p.name||'(no name)'}${archived?'<span class="archived-flag">Archived</span>':(isOos?'<span class="oos-flag">OOS</span>':'')}</div>
-<div class="meta" style="color:var(--g);font-weight:700">${p.price}</div>
+<div class="name">${escapeAdminHTML(p.name||'(no name)')}${archived?'<span class="archived-flag">Archived</span>':(isOos?'<span class="oos-flag">Out of stock</span>':'')}<span class="photo-draft-badge" id="photoBadge_${p.id}">Unsaved photos</span></div>
+<div class="meta" style="font-weight:600">${escapeAdminHTML(p.price)}</div>
 <div class="meta-pills">
 ${effectiveCategories(p).slice(0,3).map(c=>`<span class="meta-pill">${escapeAdminHTML(c)}</span>`).join('')}
 ${productVariationValues(p).length?`<span class="meta-pill">${productVariationValues(p).length} variants</span>`:''}
-<span class="meta-pill">${photos} 📷</span>
+<span class="meta-pill" id="photoCount_${p.id}">${photos} photo${photos===1?'':'s'}</span>
+<span class="meta-pill">#${p.id}</span>
 </div>
 </div>
 <div class="actions">
-<button class="action-btn" style="background:#f0f4ff" onclick="toggleEdit(${p.id})" title="Edit">⚙️</button>
-<button class="action-btn" style="background:#f0fdf4" onclick="toggleImgEdit(${p.id})" title="Images">✏️</button>
-<button class="action-btn" style="background:#fff3e0" onclick="quickToggleOOS(${p.id})" title="${isOos?'Mark in stock':'Mark out of stock'}">${isOos?'✅':'🚫'}</button>
-<button class="action-btn" style="background:${archived?'#e8f5e9':'#eef0f2'};color:${archived?'#2e7d32':'#555'};width:auto;min-width:44px;padding:0 8px;font-size:10px" onclick="toggleArchiveProduct(${p.id})" title="${archived?'Restore product':'Archive / hide product'}">${archived?'Show':'Hide'}</button>
-<button class="action-btn" style="background:#fef2f2" onclick="deleteProduct(${p.id})" title="Delete">🗑️</button>
+<button class="action-btn photos-btn" onclick="toggleImgEdit(${p.id})" aria-controls="imgs_${p.id}">Photos</button>
+<button class="action-btn" onclick="toggleEdit(${p.id})" aria-controls="edit_${p.id}">Edit details</button>
+<details class="product-menu"><summary class="action-btn" aria-label="More options for ${escapeAdminHTML(p.name)}">More ···</summary><div class="product-menu-content">
+<a href="product.html?id=${p.id}" target="_blank" rel="noopener">View on store ↗</a>
+<button onclick="quickToggleOOS(${p.id})">${isOos?'Mark in stock':'Mark out of stock'}</button>
+<button onclick="toggleArchiveProduct(${p.id})">${archived?'Restore product':'Archive product'}</button>
+<button class="danger" onclick="deleteProduct(${p.id})">Delete product</button>
+</div></details>
 </div>
 </div>
 <div class="edit-panel" id="edit_${p.id}"></div>
 <div class="edit-panel" id="imgs_${p.id}"></div>
 </div>`;
 }).join('');
+if(activePhotoEditor!==null&&document.getElementById('imgs_'+activePhotoEditor)){
+  document.getElementById('imgs_'+activePhotoEditor).style.display='block';
+  renderImgEditor(activePhotoEditor);
+}
+updatePhotoDraftNotice();
 syncDashboard();
 }
 
@@ -3226,6 +3351,7 @@ setInterval(syncDashboard,30000);
 
 // TOGGLE EDIT DETAILS
 function toggleEdit(id){
+activePhotoEditor=null;
 const el=document.getElementById('edit_'+id);
 if(el.style.display==='block'){el.style.display='none';return}
 document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
@@ -3239,8 +3365,9 @@ const pVariationText=productVariationText(p);
 const checkoutLinks=productCheckoutLinks(p);
 const checkoutMode=productCheckoutModeLabel(p);
 el.innerHTML=`
-<label class="field"><span>Name</span><input id="en_${id}" value="${p.name}"></label>
-<label class="field"><span>Price</span><input id="ep_${id}" value="${p.price}"></label>
+<div class="editor-heading"><div><h3>Edit details</h3><p>${escapeAdminHTML(p.name)}</p></div><button class="editor-close" onclick="toggleEdit(${id})">Close</button></div>
+<label class="field"><span>Name</span><input id="en_${id}" value="${escapeAdminHTML(p.name)}"></label>
+<label class="field"><span>Price</span><input id="ep_${id}" value="${escapeAdminHTML(p.price)}"></label>
 <label class="field"><span>Variation (optional)</span>
 <div style="display:grid;grid-template-columns:1fr;gap:6px">
 <input id="evn_${id}" value="${escapeAdminHTML(pVariationName)}" placeholder="Option name, e.g. Colour or Type">
@@ -3248,11 +3375,10 @@ el.innerHTML=`
 </div>
 <span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">These become Shopify product variations when you generate the blank product.</span>
 </label>
-<div style="margin-bottom:14px">
-<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Categories</span>
+<details class="advanced-settings"><summary>Categories · ${escapeAdminHTML(pCats.join(', ')||'Choose categories')}</summary>
 <div class="cats" id="ec_${id}">
 ${CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${safe}">${safe}</div>`}).join('')}
-</div></div>
+</div></details>
 <div style="margin-bottom:14px">
 <span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery</span>
 <div class="cats" id="ed_${id}">
@@ -3260,10 +3386,11 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 </div></div>
 <label class="field"><span>Buy Link</span>
 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
-<input id="el_${id}" value="${p.link||''}" style="flex:1 1 100%;min-width:0">
+<input id="el_${id}" value="${escapeAdminHTML(p.link||'')}" style="flex:1 1 100%;min-width:0">
 </div>
 </label>
-<div style="border:1px solid var(--line);border-radius:16px;padding:12px;margin:-4px 0 14px;background:#fbfdfb">
+<details class="advanced-settings"><summary>Advanced checkout settings</summary>
+<div style="padding:0 0 12px;margin:0 0 14px">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
 <span style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px">Active checkout</span>
 <strong style="font-size:12px;color:var(--ink)">${escapeAdminHTML(checkoutMode)}</strong>
@@ -3274,12 +3401,12 @@ ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="th
 </div>
 <div class="msg" id="cm_${id}" style="margin-top:8px"></div>
 </div>
-<label class="field"><span>Shopify Name</span><input id="st_${id}" value="${p.shopifyPlaceholder?.shopifyTitle||''}" placeholder="Optional, e.g. The Gel Runners - Pink"></label>
+<label class="field"><span>Shopify Name</span><input id="st_${id}" value="${escapeAdminHTML(p.shopifyPlaceholder?.shopifyTitle||'')}" placeholder="Optional, e.g. The Gel Runners - Pink"></label>
 <label class="field"><span>Shopify Variant IDs</span><textarea id="sv_${id}" placeholder='{"UK 8":"1234567890","UK 9":"1234567891"}' style="width:100%;min-height:94px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:ui-monospace,Consolas,monospace;outline:none;resize:vertical">${escapeAdminHTML(productShopifyVariantText(p))}</textarea><span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">Used by the website cart. Format: JSON, or one line per size like UK 8 = 1234567890.</span></label>
 <button type="button" class="btn btn-outline" id="sb_${id}" onclick="generateShopifyPlaceholder(${id})">Generate Shopify Product</button>
 <div class="msg" id="sm_${id}"></div>
-<button class="btn" onclick="saveEdit(${id})">Save Changes</button>
-<div class="msg" id="em_${id}"></div>`}
+</details>
+<div class="details-save-bar"><div class="msg" id="em_${id}" role="status"></div><button class="btn" onclick="saveEdit(${id})">Save changes</button></div>`}
 
 async function saveEdit(id){
 const name=document.getElementById('en_'+id).value.trim();
@@ -3410,81 +3537,132 @@ await saveProducts();
 return data;
 }
 
-// TOGGLE IMAGE EDITOR
+// Photo drafts stay separate from the saved catalogue until Save changes is pressed.
+const photoDrafts=new Map();
+let activePhotoEditor=null;
+let catalogueSaveInProgress=false;
+function photoDraft(id){
+  const key=String(id);
+  if(!photoDrafts.has(key)){
+    const p=products.find(x=>String(x.id)===key);
+    if(!p)return null;
+    photoDrafts.set(key,{images:[...(p.images||[])],baseImages:[...(p.images||[])],busy:false,saving:false,message:'',error:false,saved:false});
+  }
+  return photoDrafts.get(key);
+}
+function photoDirty(d){return !!d&&JSON.stringify(d.images)!==JSON.stringify(d.baseImages)}
+function pendingPhotoDrafts(){return [...photoDrafts.entries()].filter(([,d])=>photoDirty(d)||d.busy||d.saving)}
+window.addEventListener('beforeunload',e=>{if(pendingPhotoDrafts().length){e.preventDefault();e.returnValue=''}});
+function updatePhotoDraftNotice(){
+  const pending=pendingPhotoDrafts();
+  const notice=document.getElementById('photoDraftNotice');
+  if(notice)notice.style.display=pending.length?'flex':'none';
+  const text=document.getElementById('photoDraftNoticeText');
+  if(text)text.textContent='Unsaved photos on '+pending.length+' product'+(pending.length===1?'':'s')+'.';
+  photoDrafts.forEach((d,id)=>{const badge=document.getElementById('photoBadge_'+id);if(badge)badge.style.display=photoDirty(d)?'inline':'none'});
+}
+function openNextPhotoDraft(){
+  const entry=pendingPhotoDrafts()[0];if(!entry)return;
+  const p=products.find(x=>String(x.id)===entry[0]);if(!p)return;
+  productFilters.status=isArchivedProduct(p)?'archived':'all';productFilters.category='all';
+  document.getElementById('productSearch').value='';
+  activePhotoEditor=p.id;showTab('products');
+  document.getElementById('imgs_'+p.id)?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function toggleImgEdit(id){
-const el=document.getElementById('imgs_'+id);
-if(el.style.display==='block'){el.style.display='none';return}
-document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
-el.style.display='block';
-const p=products.find(x=>x.id===id);
-if(!p)return;
-renderImgEditor(id,p.images||[])}
-
-function renderImgEditor(id,imgs){
-const el=document.getElementById('imgs_'+id);
-el.innerHTML=`
-<div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px">EDIT IMAGES</div>
-<div class="img-grid">
-${imgs.map((url,i)=>`<div class="img-thumb${i===0?' main':''}">
-<img src="${url}">
-<div class="del" onclick="imgDel(${id},${i})">✕</div>
-${i===0?'<div class="main-label">MAIN</div>':'<div class="star" title="Set as main image" onclick="imgFirst('+id+','+i+')">★</div>'}
-</div>`).join('')}
-</div>
-<label style="display:block;padding:12px;background:var(--g);color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer">
-+ Add Photos <input type="file" accept="image/*" multiple style="display:none" onchange="imgAdd(event,${id})">
-</label>
-<button class="btn btn-outline" onclick="openPickerForEdit(${id})" style="margin-top:8px">📚 Pick from Library</button>
-<div class="msg" id="im_${id}"></div>`}
-
+  const el=document.getElementById('imgs_'+id);if(!el)return;
+  if(el.style.display==='block'){el.style.display='none';activePhotoEditor=null;return}
+  document.querySelectorAll('.edit-panel').forEach(e=>e.style.display='none');
+  el.style.display='block';activePhotoEditor=id;
+  if(!photoDraft(id))return;
+  renderImgEditor(id);el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderImgEditor(id){
+  const el=document.getElementById('imgs_'+id);
+  const d=photoDraft(id);if(!el||!d)return;
+  const disabled=d.busy||d.saving?'disabled':'';
+  const dirty=photoDirty(d);
+  const p=products.find(x=>String(x.id)===String(id));
+  el.innerHTML=`
+  <div class="editor-heading"><div><h3>Product photos</h3><p>${escapeAdminHTML(p?.name||'')} · ${d.images.length} photos</p><p>The cover photo appears first in your store.</p></div><button class="editor-close" onclick="toggleImgEdit(${id})">Close</button></div>
+  <div class="photo-grid">
+  ${d.images.map((url,i)=>`<div class="photo-tile${i===0?' is-cover':''}">
+  <img src="${escapeAdminHTML(url)}" alt="${escapeAdminHTML(p?.name||'Product')} — photo ${i+1}" loading="lazy">
+  <div class="photo-tile-actions">${i===0?'<span class="cover-label">✓ Cover photo</span>':`<button onclick="imgFirst(${id},${i})" ${disabled}>Make cover</button>`}<button class="remove-photo" aria-label="Remove photo ${i+1}" onclick="imgDel(${id},${i})" ${disabled}>×</button></div>
+  </div>`).join('')}
+  </div>
+  <div class="photo-add-actions">
+  <label class="btn btn-outline" ${disabled?'aria-disabled="true"':''}>+ Add photos <input class="photo-file-input" type="file" accept="image/*" multiple aria-label="Add product photos" onchange="imgAdd(event,${id})" ${disabled}></label>
+  <button class="btn btn-outline" onclick="openPickerForEdit(${id})" ${disabled}>Choose from library</button>
+  </div>
+  <div class="photo-save-bar">
+  <div class="photo-save-status ${d.error?'is-error':d.saved?'is-saved':dirty?'is-dirty':''}" id="im_${id}" role="status" aria-live="polite">${escapeAdminHTML(d.message||(dirty?'Unsaved changes. Save to update your store.':'No unsaved changes.'))}</div>
+  <div class="photo-save-actions"><button class="btn btn-outline" onclick="discardPhotoChanges(${id})" ${disabled||(!dirty?'disabled':'')}>Discard</button><button class="btn" id="photoSave_${id}" onclick="imgSave(${id})" ${disabled||(!dirty?'disabled':'')}>${d.saving?'Saving…':d.busy?'Uploading…':'Save changes'}</button></div>
+  </div>`;
+  updatePhotoDraftNotice();
+}
+function setPhotoDraft(id,images){
+  const d=photoDraft(id);if(!d||d.busy||d.saving)return;
+  d.images=[...images];d.message='';d.error=false;d.saved=false;renderImgEditor(id);
+}
+function discardPhotoChanges(id){
+  const d=photoDraft(id);if(!d||d.busy||d.saving)return;
+  if(photoDirty(d)&&!confirm('Discard these unsaved photo changes? Your saved product photos will stay unchanged.'))return;
+  d.images=[...d.baseImages];d.message='Changes discarded.';d.error=false;d.saved=false;renderImgEditor(id);
+}
 function imgDel(id,idx){
-const p=products.find(x=>x.id===id);
-if(!p||!p.images)return;
-if(p.images.length<=1){alert('Must keep at least 1 image');return}
-if(!confirm('Delete this image?'))return;
-const imgs=[...p.images];
-imgs.splice(idx,1);
-imgSave(id,imgs)}
-
+  const d=photoDraft(id);if(!d||d.busy||d.saving)return;
+  if(d.images.length<=1){toast('Keep at least one product photo.','error');return}
+  const imgs=[...d.images];imgs.splice(idx,1);setPhotoDraft(id,imgs);
+}
 function imgFirst(id,idx){
-const p=products.find(x=>x.id===id);
-if(!p||!p.images)return;
-const imgs=[...p.images];
-const[moved]=imgs.splice(idx,1);
-imgs.unshift(moved);
-imgSave(id,imgs)}
-
+  const d=photoDraft(id);if(!d||d.busy||d.saving||idx<=0||idx>=d.images.length)return;
+  const imgs=[...d.images];const[moved]=imgs.splice(idx,1);imgs.unshift(moved);setPhotoDraft(id,imgs);
+}
 async function imgAdd(e,id){
-const files=e.target.files;
-if(!files.length)return;
-const msg=document.getElementById('im_'+id);
-msg.style.color='var(--sub)';msg.textContent='Uploading...';
-const p=products.find(x=>x.id===id);
-const imgs=[...(p.images||[])];
-for(let i=0;i<files.length;i++){
-const file=await compressImage(files[i]);
-const fname='p'+id+'_'+Date.now()+'_'+i+'.jpg';
-try{
-const url=await r2Upload(file,fname);
-imgs.push(url);
-}catch(err){msg.style.color='#e53935';msg.textContent='Upload failed: '+err.message;return}}
-imgSave(id,imgs);
-const m=document.getElementById('im_'+id);
-if(m){m.style.color='var(--g)';m.textContent='Added!';setTimeout(()=>{const x=document.getElementById('im_'+id);if(x)x.textContent=''},2000)}}
-
-async function imgSave(id,imgs){
-const p=products.find(x=>x.id===id);
-if(!p)return;
-const orig=[...(p.images||[])];
-p.images=imgs;
-try{
-await saveProducts();
-renderImgEditor(id,imgs);
-}catch(e){
-p.images=orig;
-console.error('imgSave failed:',e);
-alert('Save failed: '+e.message);
-}}
+  const files=[...(e.target.files||[])];if(!files.length)return;
+  const d=photoDraft(id);if(!d||d.busy||d.saving)return;
+  d.busy=true;d.saved=false;d.error=false;
+  let uploaded=0,failed=0;
+  try{
+    for(let i=0;i<files.length;i++){
+      d.message='Uploading photo '+(i+1)+' of '+files.length+'…';renderImgEditor(id);
+      try{
+        const file=await compressImage(files[i]);
+        const url=await r2Upload(file,'p'+id+'_'+Date.now()+'_'+i+'.jpg');
+        d.images.push(url);uploaded++;
+      }catch(err){failed++;console.error('Photo upload failed:',err)}
+    }
+  }finally{
+    d.busy=false;d.error=failed>0;
+    d.message=failed?failed+' photo'+(failed===1?'':'s')+' could not upload. '+(uploaded?'Your '+uploaded+' uploaded photos are kept. Save changes, then retry the missing photos.':'Please try again.'):'Added '+uploaded+' photo'+(uploaded===1?'':'s')+'. Press Save changes to update your store.';
+    renderImgEditor(id);
+  }
+}
+async function imgSave(id){
+  const d=photoDraft(id);if(!d||d.busy||d.saving||!photoDirty(d))return;
+  if(catalogueSaveInProgress){toast('Another save is finishing. Please try again in a moment.','info');return}
+  catalogueSaveInProgress=true;d.saving=true;d.error=false;d.message='Saving your photos…';renderImgEditor(id);
+  try{
+    // Read the live catalogue directly. Patch only these photos, never stale
+    // names, prices, Shopify links or the smaller fallback catalogue.
+    const response=await r2Fetch('GET','products.json');
+    if(!response.ok)throw new Error('Could not read the current catalogue. Please try again.');
+    const latest=productListFromPayload(await response.json());
+    if(latest.length<MIN_SAFE_PRODUCT_SAVE_COUNT)throw new Error('Could not verify the full catalogue. Your photo changes are kept; please try again.');
+    const p=latest.find(x=>String(x.id)===String(id));
+    if(!p)throw new Error('This product is no longer in the catalogue. Refresh before continuing.');
+    if(JSON.stringify(p.images||[])!==JSON.stringify(d.baseImages)&&JSON.stringify(p.images||[])!==JSON.stringify(d.images))throw new Error('These photos changed in another session. Discard your changes and refresh before trying again.');
+    p.images=[...d.images];
+    await r2Upload(new Blob([JSON.stringify(latest,null,2)],{type:'application/json'}),'products.json');
+    products=latest;d.baseImages=[...d.images];d.saved=true;
+    d.message='✓ Changes saved. Store photos can take up to a minute to refresh.';
+    const cover=document.getElementById('productCover_'+id);if(cover)cover.src=d.images[0]||'';
+    const count=document.getElementById('photoCount_'+id);if(count)count.textContent=d.images.length+' photo'+(d.images.length===1?'':'s');
+    _lastSyncTime=Date.now();syncDashboard();
+  }catch(e){d.error=true;d.saved=false;d.message='Not saved: '+e.message}
+  finally{d.saving=false;catalogueSaveInProgress=false;renderImgEditor(id)}
+}
 
 // DELETE PRODUCT
 async function deleteProduct(id){
@@ -3718,13 +3896,14 @@ renderAddLibPreview()}
 
 // EDIT-PRODUCT PICKER HOOK
 function openPickerForEdit(id){
-openPicker(async urls=>{
-const p=products.find(x=>x.id===id);
-if(!p)return;
-const imgs=[...(p.images||[]),...urls.filter(u=>!(p.images||[]).includes(u))];
-await imgSave(id,imgs);
-const m=document.getElementById('im_'+id);
-if(m){m.style.color='var(--g)';m.textContent='Added '+urls.length+' from library';setTimeout(()=>{const x=document.getElementById('im_'+id);if(x)x.textContent=''},2500)}})}
+const d=photoDraft(id);if(!d||d.busy||d.saving)return;
+openPicker(urls=>{
+const current=photoDraft(id);if(!current||current.busy||current.saving)return;
+const added=urls.filter(u=>!current.images.includes(u));
+setPhotoDraft(id,[...current.images,...added]);
+current.message=added.length?'Added '+added.length+' from the library. Press Save changes to update your store.':'These photos are already on this product.';
+renderImgEditor(id);
+})}
 
 // STOCK CHECK
 async function loadStock(){
