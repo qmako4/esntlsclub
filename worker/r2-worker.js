@@ -2629,7 +2629,7 @@ async function createGrassPreview(env, formData) {
       background,
       prompt,
       env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
-      env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
+      env.OPENAI_GRASS_IMAGE_SIZE || '1024x1536',
       quality,
       references
     );
@@ -2647,7 +2647,7 @@ async function createGrassPreview(env, formData) {
       background,
       prompt,
       env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
-      env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
+      env.OPENAI_GRASS_FALLBACK_SIZE || '1536x2048',
       quality,
       references
     );
@@ -2981,7 +2981,7 @@ async function generateGrassJobImage(env, source, background, prompt, quality, r
       background,
       prompt,
       env.OPENAI_GRASS_IMAGE_MODEL || env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
-      env.OPENAI_GRASS_IMAGE_SIZE || '768x1024',
+      env.OPENAI_GRASS_IMAGE_SIZE || '1024x1536',
       quality,
       references,
       { timeoutMs }
@@ -2994,7 +2994,7 @@ async function generateGrassJobImage(env, source, background, prompt, quality, r
       background,
       prompt,
       env.OPENAI_GRASS_FALLBACK_MODEL || 'gpt-image-1',
-      env.OPENAI_GRASS_FALLBACK_SIZE || '1024x1536',
+      env.OPENAI_GRASS_FALLBACK_SIZE || '1536x2048',
       quality,
       references,
       { timeoutMs }
