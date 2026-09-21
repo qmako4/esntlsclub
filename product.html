@@ -21,9 +21,23 @@ img{display:block;max-width:100%}
 .site-nav{align-items:center;border-bottom:1px solid #ececec;display:flex;justify-content:space-between;min-height:64px;padding:0 18px}
 .home-logo{align-items:center;display:flex;line-height:1}
 .home-logo img{height:40px;object-fit:contain;width:auto}
-.nav-links{display:flex;gap:18px}
-.nav-links a{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
-.nav-links a:hover{color:#00a844}
+.nav-links{align-items:center;display:flex;gap:18px}
+.nav-links a,.nav-shop-trigger{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.nav-links a:hover,.nav-shop-trigger:hover{color:#00a844}
+.nav-shop{position:relative}
+.nav-shop-trigger{align-items:center;background:none;border:0;color:#111;cursor:pointer;display:flex;gap:5px;padding:18px 0}
+.nav-shop-chevron{font-size:8px;transition:transform .18s}
+.nav-shop.open .nav-shop-chevron{transform:rotate(180deg)}
+.nav-dropdown{background:#fff;border:1px solid #e9e9e9;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.13);display:none;min-width:235px;padding:8px;position:absolute;right:0;top:54px;z-index:15}
+.nav-shop.open .nav-dropdown{display:block}
+.nav-dropdown a{border-radius:9px;display:block;font-size:11px;letter-spacing:.4px;padding:10px 12px;text-transform:none}
+.nav-dropdown a:hover{background:#effaf2;color:#007e34}
+.nav-dropdown-label{color:#999;font-size:9px;font-weight:800;letter-spacing:1.2px;padding:8px 12px 5px;text-transform:uppercase}
+@media(max-width:560px){
+  .nav-links{gap:13px}
+  .nav-shop-trigger{padding:18px 0}
+  .nav-dropdown{position:fixed;right:14px;top:124px;width:min(270px,calc(100vw - 28px))}
+}
 .product-shell{margin:0 auto;max-width:1480px;padding:20px 14px 52px}
 .back-link{align-items:center;background:#f4f4f4;border-radius:999px;color:#555;display:inline-flex;font-size:11px;font-weight:800;gap:7px;letter-spacing:.6px;margin:0 0 18px;padding:9px 13px;text-transform:uppercase}
 .back-link:hover{background:#e9e9e9;color:#111}
@@ -144,7 +158,28 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <header class="site-nav">
   <a class="home-logo" href="./" aria-label="ESNTLS CLUB home"><img src="img/esntls-club-logo.jpg" alt="ESNTLS CLUB"></a>
   <nav class="nav-links" aria-label="Main navigation">
-    <a href="./">Shop</a>
+    <div class="nav-shop" id="productShopMenu">
+      <button class="nav-shop-trigger" type="button" onclick="toggleProductShopMenu()" aria-expanded="false" aria-controls="productShopDropdown">Shop <span class="nav-shop-chevron">▼</span></button>
+      <div class="nav-dropdown" id="productShopDropdown">
+        <div class="nav-dropdown-label">Browse</div>
+        <a href="./">Shop all</a>
+        <a href="./#stock">Next-day stock</a>
+        <a href="./?cat=New%20Items">New items</a>
+        <a href="./?cat=Best%20Sellers">Best sellers</a>
+        <div class="nav-dropdown-label">Footwear</div>
+        <a href="./?cat=Footwear">All footwear</a>
+        <a href="./?cat=B30">B30</a>
+        <a href="./?cat=B22">B22</a>
+        <a href="./?cat=Asics">Asics</a>
+        <a href="./?cat=Sandals">Sandals</a>
+        <div class="nav-dropdown-label">Clothing & accessories</div>
+        <a href="./?cat=Jackets">Jackets</a>
+        <a href="./?cat=Hoodies">Hoodies</a>
+        <a href="./?cat=Shirts">Shirts</a>
+        <a href="./?cat=Tracksuits">Tracksuits</a>
+        <a href="./?cat=Bags%20%26%20Accessories">Bags & accessories</a>
+      </div>
+    </div>
     <a href="./#stock">Next day</a>
   </nav>
 </header>
@@ -161,6 +196,22 @@ let product=null;
 let products=[];
 let activeImage=0;
 let productReviewData={reviews:[],aliases:{}};
+
+function toggleProductShopMenu(){
+  const menu=document.getElementById('productShopMenu');
+  if(!menu)return;
+  const open=menu.classList.toggle('open');
+  const trigger=menu.querySelector('.nav-shop-trigger');
+  if(trigger)trigger.setAttribute('aria-expanded',String(open));
+}
+document.addEventListener('click',function(event){
+  const menu=document.getElementById('productShopMenu');
+  if(menu&&menu.classList.contains('open')&&!menu.contains(event.target)){
+    menu.classList.remove('open');
+    const trigger=menu.querySelector('.nav-shop-trigger');
+    if(trigger)trigger.setAttribute('aria-expanded','false');
+  }
+});
 
 function escapeHTML(value){
   return String(value==null?'':value).replace(/[&<>"']/g,function(char){
