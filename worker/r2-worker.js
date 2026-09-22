@@ -82,6 +82,13 @@ const cors = {
 
 
 
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'Content-Type': 'application/json' }
+  });
+}
+
 function base64UrlEncode(value) {
   return btoa(String.fromCharCode(...new Uint8Array(value)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
