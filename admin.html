@@ -1372,7 +1372,7 @@ const GRASS_FINAL_HEIGHT=1024;
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
 //   2. ADMIN_SESSION  = the value of the ADMIN_SESSION env var you set on the worker
 const ADMIN_CONFIG=(typeof window!=='undefined'&&window.ESNTLS_ADMIN_CONFIG&&typeof window.ESNTLS_ADMIN_CONFIG==='object')?window.ESNTLS_ADMIN_CONFIG:{};
-const WORKER_URL=String(ADMIN_CONFIG.workerUrl||'').replace(/\\/$/,'');
+const WORKER_URL=String(ADMIN_CONFIG.workerUrl||'').replace(/\/+$/,'');
 const ADMIN_SESSION_KEY='esntlsAdminSessionV1';
 let ADMIN_SESSION='';
 const ADMIN_SESSION_MS=2*60*60*1000;
@@ -1430,7 +1430,7 @@ async function r2List(){
   const res=await r2Fetch('GET',null,null,'list-type=2');
   if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
   const data=await res.json();
-  return (data.objects||[]).filter(o=>!/^studio-jobs\\/[^/]+\\/(?:sources|background)\\//.test(o.key||''))
+  return (data.objects||[]).filter(o=>!/^studio-jobs\/[^/]+\/(?:sources|background)\//.test(o.key||''))
     .filter(o=>/\\.(jpe?g|png|webp|gif|avif)$/i.test(o.key||''))
     .map(o=>({name:o.key,url:o.url||R2_PUBLIC+o.key,size:o.size||0,created:o.uploaded||''}))
     .sort((a,b)=>(b.created||'').localeCompare(a.created||''));
