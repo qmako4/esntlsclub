@@ -6,7 +6,7 @@
 //        Variable name: BUCKET
 //        Bucket:        esntls-images
 //   2. Environment variables (encrypted):
-//        ADMIN_SECRET   any random string (used by admin.html to authenticate)
+//        ADMIN_SECRET   legacy admin API secret (keep encrypted; optional during migration)\n//        ADMIN_PASSWORD encrypted admin login password\n//        ADMIN_SESSION_SECRET random encrypted HMAC key for short-lived browser sessions
 //        OPENAI_API_KEY used by /shopify-create-product to generate the blank image
 //        SHOPIFY_STORE_DOMAIN e.g. nr00an-yh.myshopify.com
 //        SHOPIFY_ADMIN_ACCESS_TOKEN recommended Shopify Admin token, or:
@@ -28,7 +28,7 @@
 // Public Shopify webhook endpoint:
 //   POST   /shopify-order-webhook → receives Shopify orders/create and records supplier rows
 //
-// Endpoints below require header  X-Admin-Secret: <ADMIN_SECRET>:
+// Admin login is public only at POST /admin-login; all admin endpoints require X-Admin-Session: <short-lived token>.\nLegacy X-Admin-Secret remains accepted for migration but is never sent by the admin UI:
 //   GET    /list             → { objects: [{key, url, size, uploaded}, ...] }
 //   PUT    /upload/<key>     → request body = file bytes, Content-Type = file mime
 //   DELETE /delete/<key>     → removes <key> from the bucket
@@ -76,15 +76,48 @@ let googleSheetsTokenCache = { cacheKey: '', accessToken: '', expiresAt: 0 };
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret, X-ESNTLS-Service-Token',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Session, X-Admin-Secret, X-ESNTLS-Service-Token',
   'Access-Control-Max-Age': '86400'
 };
 
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' }
-  });
+
+
+function base64UrlEncode(value) {
+  return btoa(String.fromCharCode(...new Uint8Array(value)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+function base64UrlDecode(value) {
+  const padded = String(value || '').replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((String(value || '').length + 3) % 4);
+  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+}
+async function hmacBytes(secret, value) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(secret)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
+}
+async function createAdminSession(env) {
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ exp: Date.now() + 2 * 60 * 60 * 1000, nonce: crypto.randomUUID() })));
+  const signature = base64UrlEncode(await hmacBytes(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET, payload));
+  return payload + '.' + signature;
+}
+async function verifyAdminSession(env, token) {
+  if (!token || !(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET)) return false;
+  const [payload, signature] = String(token).split('.');
+  if (!payload || !signature) return false;
+  try {
+    const data = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
+    if (!data.exp || Number(data.exp) <= Date.now()) return false;
+    const expected = await hmacBytes(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET, payload);
+    const supplied = base64UrlDecode(signature);
+    if (supplied.length !== expected.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) diff |= expected[i] ^ supplied[i];
+    return diff === 0;
+  } catch {
+    return false;
+  }
+}
+function adminPassword(env) {
+  return String(env.ADMIN_PASSWORD || env.ESNTLS_ADMIN_PASSWORD || env.ADMIN_PASS || '');
 }
 
 const PRODUCT_SEARCH_QUERY = `
@@ -4512,12 +4545,24 @@ export default {
       return getSupplierSheetImage(req, env, parts);
     }
 
-    const adminAuthorized = req.headers.get('X-Admin-Secret') === env.ADMIN_SECRET;
+    if (req.method === 'POST' && parts[0] === 'admin-login') {
+      let body;
+      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
+      const password = adminPassword(env);
+      if (!password || !(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET)) {
+        return json({ error: 'Admin login is not configured' }, 503);
+      }
+      if (String(body.password || '') !== password) return json({ error: 'Invalid password' }, 401);
+      return json({ ok: true, token: await createAdminSession(env), expiresIn: 7200 });
+    }
+
+    const sessionAuthorized = await verifyAdminSession(env, req.headers.get('X-Admin-Session'));
+    const legacyAuthorized = Boolean(env.ADMIN_SECRET && req.headers.get('X-Admin-Secret') === env.ADMIN_SECRET);
     const serviceAuthorized = Boolean(
       env.ESNTLS_STORE_SERVICE_TOKEN &&
       req.headers.get('X-ESNTLS-Service-Token') === env.ESNTLS_STORE_SERVICE_TOKEN
     );
-    if (!adminAuthorized && !serviceAuthorized) {
+    if (!sessionAuthorized && !legacyAuthorized && !serviceAuthorized) {
       return json({ error: 'Unauthorized' }, 401);
     }
 
@@ -4767,6 +4812,18 @@ export default {
       } catch (error) {
         return json({ error: error.message }, 500);
       }
+    }
+
+    if (req.method === 'GET' && parts[0] === 'object') {
+      const key = parts.slice(1).map(decodeURIComponent).join('/');
+      if (!key || key.includes('..')) return json({ error: 'Invalid key' }, 400);
+      const object = await env.BUCKET.get(key);
+      if (!object) return json({ error: 'Not found' }, 404);
+      const headers = new Headers(cors);
+      object.writeHttpMetadata(headers);
+      headers.set('Content-Length', String(object.size || 0));
+      headers.set('Cache-Control', 'no-store');
+      return new Response(object.body, { headers });
     }
 
     if (req.method === 'GET' && parts[0] === 'list') {
