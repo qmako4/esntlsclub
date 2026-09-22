@@ -1,11 +1,5 @@
-// Copy this file to admin-config.js during deployment.
-// Keep admin-config.js out of Git and inject the values from your hosting secret store.
+// Public, non-secret configuration for admin.html.
+// The Worker URL is safe to expose. Passwords, session keys, and R2 credentials stay in Worker secrets.
 window.ESNTLS_ADMIN_CONFIG = {
-  workerUrl: '',
-  adminSecret: '',
-  adminPass: '',
-  r2Account: '',
-  r2Bucket: 'esntls-images',
-  r2AccessKey: '',
-  r2SecretKey: ''
+  workerUrl: 'https://your-worker.workers.dev'
 };
