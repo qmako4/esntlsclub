@@ -1125,6 +1125,18 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 
 <!-- MEDIA LIBRARY -->
 <div class="page" id="pageMedia">
+<div class="card" id="metadataCleanerCard">
+<h3>Remove image metadata</h3>
+<p style="font-size:12px;color:var(--sub);margin-bottom:12px">Re-encodes images in the browser to remove EXIF, IPTC, XMP, Photoshop and common AI-generation metadata before they reach your catalogue.</p>
+<label class="upload-zone" id="metadataZone">
+<input type="file" accept="image/*" multiple style="display:none" id="metadataFiles" onchange="metadataPendingFiles=[...this.files];renderMetadataFiles();this.value=''">
+<div class="icon">+</div><div class="label">Choose images to clean</div><div class="hint">Nothing is uploaded until you choose an action below.</div>
+</label>
+<div id="metadataFileList" style="font-size:12px;color:var(--sub);margin:10px 0"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" onclick="cleanMetadataAndUpload()">Clean + upload to library</button><button type="button" class="btn btn-outline" onclick="cleanMetadataAndDownload()">Clean + download</button></div>
+<div class="msg" id="metadataMsg"></div>
+</div>
+
 <div class="card">
 <h3>Media Library</h3>
 <label class="upload-zone" id="mediaZone">
@@ -1358,15 +1370,16 @@ const GRASS_FINAL_HEIGHT=1024;
 // Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
 //   2. ADMIN_SECRET  = the value of the ADMIN_SECRET env var you set on the worker
-const WORKER_URL='https://esntls-r2.qmako41212.workers.dev';
-const ADMIN_SECRET='esntls2026';
-const R2_ACCOUNT='2cd63a3dc8a97fd3d54da09e423ab769';
-const R2_BUCKET='esntls-images';
-const R2_HOST=R2_ACCOUNT+'.r2.cloudflarestorage.com';
-const R2_ENDPOINT='https://'+R2_HOST;
-const R2_ACCESS_KEY='dc536b58cf237e0d95da9b91cb62a9cb';
-const R2_SECRET_KEY='61d0f77d798067438039743ec8851668fb2e5714ee82af5fe40ed36f4d6ea6e4';
-const ADMIN_PASS='esntls2026';
+const ADMIN_CONFIG=(typeof window!=='undefined'&&window.ESNTLS_ADMIN_CONFIG&&typeof window.ESNTLS_ADMIN_CONFIG==='object')?window.ESNTLS_ADMIN_CONFIG:{};
+const WORKER_URL=String(ADMIN_CONFIG.workerUrl||'').replace(/\\/$/,'');
+const ADMIN_SECRET=String(ADMIN_CONFIG.adminSecret||'');
+const R2_ACCOUNT=String(ADMIN_CONFIG.r2Account||'');
+const R2_BUCKET=String(ADMIN_CONFIG.r2Bucket||'esntls-images');
+const R2_HOST=R2_ACCOUNT?R2_ACCOUNT+'.r2.cloudflarestorage.com':'';
+const R2_ENDPOINT=R2_HOST?'https://'+R2_HOST:'';
+const R2_ACCESS_KEY=String(ADMIN_CONFIG.r2AccessKey||'');
+const R2_SECRET_KEY=String(ADMIN_CONFIG.r2SecretKey||'');
+const ADMIN_PASS=String(ADMIN_CONFIG.adminPass||'');
 const ADMIN_SESSION_KEY='esntlsAdminRememberV1';
 const ADMIN_SESSION_VERSION='2026-06-30';
 const ADMIN_SESSION_MS=30*24*60*60*1000;
@@ -5959,5 +5972,19 @@ window.showTab=function(t){
     }
   }
 };
+
+
+// ── METADATA CLEANER ──
+let metadataPendingFiles=[];
+function renderMetadataFiles(){const el=document.getElementById('metadataFileList');if(el)el.textContent=metadataPendingFiles.length?metadataPendingFiles.map(f=>f.name).join(' · '):'';}
+async function cleanImageMetadata(file){
+if(!file||!file.type||!file.type.startsWith('image/'))throw new Error('Only image files are supported');
+const image=await createImageBitmap(file);const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d',{alpha:true});ctx.drawImage(image,0,0);image.close();
+const outputType=file.type==='image/png'?'image/png':file.type==='image/webp'?'image/webp':'image/jpeg';
+const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not encode image')),outputType,outputType==='image/jpeg'?0.98:1));
+const base=file.name.replace(/\\.(jpe?g|png|webp|gif|avif|heic|heif)$/i,'');const ext=outputType==='image/png'?'png':outputType==='image/webp'?'webp':'jpg';return new File([blob],base+'-clean.'+ext,{type:outputType,lastModified:Date.now()});}
+async function cleanMetadataBatch(){if(!metadataPendingFiles.length)throw new Error('Choose at least one image first');const cleaned=[];for(const file of metadataPendingFiles)cleaned.push(await cleanImageMetadata(file));return cleaned;}
+async function cleanMetadataAndUpload(){const msg=document.getElementById('metadataMsg');try{msg.style.color='var(--sub)';msg.textContent='Cleaning images...';const cleaned=await cleanMetadataBatch();await uploadToMedia(cleaned);msg.style.color='var(--g)';msg.textContent='Cleaned and uploaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;}}
+async function cleanMetadataAndDownload(){const msg=document.getElementById('metadataMsg');try{msg.style.color='var(--sub)';msg.textContent='Cleaning images...';const cleaned=await cleanMetadataBatch();for(const file of cleaned){const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}msg.style.color='var(--g)';msg.textContent='Cleaned and downloaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;}}
 </script>
 </body></html>
