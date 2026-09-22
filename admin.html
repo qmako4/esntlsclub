@@ -1430,7 +1430,7 @@ async function r2List(){
   const res=await r2Fetch('GET',null,null,'list-type=2');
   if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
   const data=await res.json();
-  return (data.objects||[]).filter(o=>/^studio-jobs\\/[^/]+\\/(?:sources|background)\\//.test(o.key||''))
+  return (data.objects||[]).filter(o=>!/^studio-jobs\\/[^/]+\\/(?:sources|background)\\//.test(o.key||''))
     .filter(o=>/\\.(jpe?g|png|webp|gif|avif)$/i.test(o.key||''))
     .map(o=>({name:o.key,url:o.url||R2_PUBLIC+o.key,size:o.size||0,created:o.uploaded||''}))
     .sort((a,b)=>(b.created||'').localeCompare(a.created||''));
