@@ -1370,20 +1370,14 @@ const GRASS_FINAL_WIDTH=768;
 const GRASS_FINAL_HEIGHT=1024;
 // Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
-//   2. ADMIN_SECRET  = the value of the ADMIN_SECRET env var you set on the worker
+//   2. ADMIN_SESSION  = the value of the ADMIN_SESSION env var you set on the worker
 const ADMIN_CONFIG=(typeof window!=='undefined'&&window.ESNTLS_ADMIN_CONFIG&&typeof window.ESNTLS_ADMIN_CONFIG==='object')?window.ESNTLS_ADMIN_CONFIG:{};
 const WORKER_URL=String(ADMIN_CONFIG.workerUrl||'').replace(/\\/$/,'');
-const ADMIN_SECRET=String(ADMIN_CONFIG.adminSecret||'');
-const R2_ACCOUNT=String(ADMIN_CONFIG.r2Account||'');
-const R2_BUCKET=String(ADMIN_CONFIG.r2Bucket||'esntls-images');
-const R2_HOST=R2_ACCOUNT?R2_ACCOUNT+'.r2.cloudflarestorage.com':'';
-const R2_ENDPOINT=R2_HOST?'https://'+R2_HOST:'';
-const R2_ACCESS_KEY=String(ADMIN_CONFIG.r2AccessKey||'');
-const R2_SECRET_KEY=String(ADMIN_CONFIG.r2SecretKey||'');
-const ADMIN_PASS=String(ADMIN_CONFIG.adminPass||'');
-const ADMIN_SESSION_KEY='esntlsAdminRememberV1';
-const ADMIN_SESSION_VERSION='2026-06-30';
-const ADMIN_SESSION_MS=30*24*60*60*1000;
+const ADMIN_SESSION_KEY='esntlsAdminSessionV1';
+let ADMIN_SESSION='';
+const ADMIN_SESSION_MS=2*60*60*1000;
+function adminHeaders(extra={}){ return {'X-Admin-Session':ADMIN_SESSION,...extra}; }
+function psCanUseWorker(){ return Boolean(WORKER_URL && ADMIN_SESSION); }
 const CORE_CATS=["Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts"];
 const BRAND_CATS=["Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Essentials","Hermes","LV","Monc","Nike"];
 let CATS=[...CORE_CATS,...BRAND_CATS.filter(c=>!CORE_CATS.includes(c))];
@@ -1406,129 +1400,83 @@ let addBgJobPollTimer=null;
 let addBgJobWorkInFlight=false;
 let addBgJob=null;
 
-// R2 S3-COMPATIBLE API (AWS SIG V4 BROWSER SIGNER)
-async function _sha256Hex(data){
-const buf=typeof data==='string'?new TextEncoder().encode(data):data;
-const h=await crypto.subtle.digest('SHA-256',buf);
-return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('')}
-
-async function _hmac(key,data){
-const kb=typeof key==='string'?new TextEncoder().encode(key):key;
-const ck=await crypto.subtle.importKey('raw',kb,{name:'HMAC',hash:'SHA-256'},false,['sign']);
-const db=typeof data==='string'?new TextEncoder().encode(data):data;
-return new Uint8Array(await crypto.subtle.sign('HMAC',ck,db))}
-
-async function _hmacHex(key,data){
-const s=await _hmac(key,data);
-return Array.from(s).map(b=>b.toString(16).padStart(2,'0')).join('')}
-
+// WORKER-BACKED MEDIA API (R2 credentials never reach the browser)
 async function r2Fetch(method,key,body,query){
-const now=new Date();
-const amz=now.toISOString().replace(/[:-]|\.\d{3}/g,'');
-const ds=amz.slice(0,8);
-const encKey=key?encodeURIComponent(key).replace(/%2F/g,'/'):'';
-const path='/'+R2_BUCKET+(encKey?'/'+encKey:'');
-const q=query||'';
-const payloadHash=body?'UNSIGNED-PAYLOAD':await _sha256Hex('');
-const canonHeaders='host:'+R2_HOST+'\nx-amz-content-sha256:'+payloadHash+'\nx-amz-date:'+amz+'\n';
-const signedHeaders='host;x-amz-content-sha256;x-amz-date';
-const canonReq=method+'\n'+path+'\n'+q+'\n'+canonHeaders+'\n'+signedHeaders+'\n'+payloadHash;
-const scope=ds+'/auto/s3/aws4_request';
-const sts='AWS4-HMAC-SHA256\n'+amz+'\n'+scope+'\n'+await _sha256Hex(canonReq);
-const k1=await _hmac('AWS4'+R2_SECRET_KEY,ds);
-const k2=await _hmac(k1,'auto');
-const k3=await _hmac(k2,'s3');
-const kS=await _hmac(k3,'aws4_request');
-const sig=await _hmacHex(kS,sts);
-const auth='AWS4-HMAC-SHA256 Credential='+R2_ACCESS_KEY+'/'+scope+', SignedHeaders='+signedHeaders+', Signature='+sig;
-const headers={'Authorization':auth,'x-amz-content-sha256':payloadHash,'x-amz-date':amz};
-if(body&&body.type)headers['Content-Type']=body.type;
-return fetch(R2_ENDPOINT+path+(q?'?'+q:''),{method,headers,body})}
-
+  if(!psCanUseWorker()) throw new Error('Please sign in first');
+  let path;
+  if(method==='GET' && !key) path='/list'+(query?'?'+query:'');
+  else if(method==='GET') path='/object/'+String(key).split('/').map(encodeURIComponent).join('/');
+  else if(method==='PUT') path='/upload/'+String(key).split('/').map(encodeURIComponent).join('/');
+  else if(method==='DELETE') path='/delete/'+String(key).split('/').map(encodeURIComponent).join('/');
+  else throw new Error('Unsupported media operation');
+  const headers=adminHeaders(body&&body.type?{'Content-Type':body.type}:{});
+  return fetch(WORKER_URL+path,{method,headers,body});
+}
 async function r2Upload(file,key){
-const res=await r2Fetch('PUT',key,file);
-if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
-return R2_PUBLIC+key}
-
+  const res=await r2Fetch('PUT',key,file);
+  if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+  return R2_PUBLIC+key;
+}
 async function r2CopyViaWorker(sourceKey,destKey){
-if(!psCanUseWorker())throw new Error('Worker copy is not configured');
-const data=await psWorkerJson('/copy-r2-object',{
-method:'POST',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({sourceKey,destKey})
-});
-return data.url||R2_PUBLIC+destKey}
-
+  const data=await psWorkerJson('/copy-r2-object',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceKey,destKey})});
+  return data.url||R2_PUBLIC+destKey;
+}
 async function r2Delete(key){
-const res=await r2Fetch('DELETE',key);
-if(!res.ok&&res.status!==204&&res.status!==404){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
-return true}
-
+  const res=await r2Fetch('DELETE',key);
+  if(!res.ok&&res.status!==204&&res.status!==404){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+  return true;
+}
 async function r2List(){
-const res=await r2Fetch('GET',null,null,'list-type=2');
-if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
-const xml=await res.text();
-const doc=new DOMParser().parseFromString(xml,'text/xml');
-const contents=doc.getElementsByTagName('Contents');
-const out=[];
-for(const c of contents){
-const k=c.getElementsByTagName('Key')[0]?.textContent;
-const sz=parseInt(c.getElementsByTagName('Size')[0]?.textContent||'0');
-const lm=c.getElementsByTagName('LastModified')[0]?.textContent||'';
-if(/^studio-jobs\/[^/]+\/(?:sources|background)\//.test(k||''))continue;
-if(k&&/\.(jpe?g|png|webp|gif|avif)$/i.test(k))out.push({name:k,url:R2_PUBLIC+k,size:sz,created:lm})}
-out.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
-return out}
+  const res=await r2Fetch('GET',null,null,'list-type=2');
+  if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('HTTP '+res.status+' '+t.slice(0,200))}
+  const data=await res.json();
+  return (data.objects||[]).filter(o=>/^studio-jobs\\/[^/]+\\/(?:sources|background)\\//.test(o.key||''))
+    .filter(o=>/\\.(jpe?g|png|webp|gif|avif)$/i.test(o.key||''))
+    .map(o=>({name:o.key,url:o.url||R2_PUBLIC+o.key,size:o.size||0,created:o.uploaded||''}))
+    .sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+}
 
 // LOGIN
 function openAdminApp(){
-document.getElementById('loginScreen').style.display='none';
-document.getElementById('app').style.display='block';
-loadCustomCategories();
-loadProducts().then(()=>{if(document.getElementById('pageProducts').classList.contains('active'))renderProductList()}).catch(()=>toast('Could not load products. Please refresh and try again.','error'));
-initCatPills();
-initDropZones();
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadCustomCategories();
+  loadProducts().then(()=>{if(document.getElementById('pageProducts').classList.contains('active'))renderProductList()}).catch(()=>toast('Could not load products. Please refresh and try again.','error'));
+  initCatPills();
+  initDropZones();
 }
-
-function saveAdminSession(){
-try{
-localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify({version:ADMIN_SESSION_VERSION,expires:Date.now()+ADMIN_SESSION_MS}))
-}catch(e){}
-}
-
 function clearAdminSession(){
-try{localStorage.removeItem(ADMIN_SESSION_KEY)}catch(e){}
+  ADMIN_SESSION='';
+  try{sessionStorage.removeItem(ADMIN_SESSION_KEY)}catch(e){}
 }
-
-function hasAdminSession(){
-try{
-const session=JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)||'null');
-if(session&&session.version===ADMIN_SESSION_VERSION&&session.expires>Date.now())return true;
-clearAdminSession()
-}catch(e){clearAdminSession()}
-return false
+function showLogin(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
 }
-
-function login(){
-const pw=document.getElementById('pwInput').value;
-if(pw===ADMIN_PASS){
-document.getElementById('loginErr').textContent='';
-if(document.getElementById('rememberAdmin')?.checked)saveAdminSession();
-else clearAdminSession();
-openAdminApp();
-}else{
-document.getElementById('loginErr').textContent='Incorrect password';
-}}
-
+async function login(){
+  const pw=document.getElementById('pwInput').value;
+  const err=document.getElementById('loginErr');
+  if(!WORKER_URL){err.textContent='Worker URL is not configured';return}
+  err.textContent='Signing in…';
+  try{
+    const res=await fetch(WORKER_URL+'/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.token)throw new Error(data.error||'Login failed');
+    ADMIN_SESSION=String(data.token);
+    try{sessionStorage.setItem(ADMIN_SESSION_KEY,ADMIN_SESSION)}catch(e){}
+    err.textContent='';
+    openAdminApp();
+  }catch(e){clearAdminSession();err.textContent=e.message||'Login failed'}
+}
 function initAdminLogin(){
-if(hasAdminSession()){
-openAdminApp();
-return
+  try{
+    const token=sessionStorage.getItem(ADMIN_SESSION_KEY)||'';
+    if(token){ADMIN_SESSION=token;openAdminApp();return}
+  }catch(e){}
+  showLogin();
+  const input=document.getElementById('pwInput');
+  if(input)input.focus();
 }
-const input=document.getElementById('pwInput');
-if(input)input.focus()
-}
-
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAdminLogin);
 else initAdminLogin();
 
@@ -2229,7 +2177,7 @@ return {model,size,b64};
 }
 
 function psCanUseWorker(){
-return !!(WORKER_URL&&ADMIN_SECRET);
+return !!(WORKER_URL&&ADMIN_SESSION);
 }
 
 function psFriendlyNetworkError(error,target){
@@ -2259,7 +2207,7 @@ let r;
 try{
 r=await fetch(WORKER_URL+'/grass-preview',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET},
+headers:{'X-Admin-Session':ADMIN_SESSION},
 body:form,
 signal
 });
@@ -3031,10 +2979,10 @@ return bits.join(' · ')||'No linked checkout products found';
 }
 
 async function syncLinkedPrice(id,price){
-if(!WORKER_URL||!ADMIN_SECRET)throw new Error('Worker not configured');
+if(!WORKER_URL||!ADMIN_SESSION)throw new Error('Worker not configured');
 const r=await fetch(WORKER_URL+'/sync-linked-price',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
 body:JSON.stringify({productId:id,price})
 });
 const data=await r.json().catch(()=>({}));
@@ -3069,7 +3017,7 @@ return link?'Manual link':'No link'
 async function setCheckoutLinkMode(mode,id){
 const isBulk=id===undefined||id===null;
 const msg=document.getElementById(isBulk?'checkoutModeMsg':'cm_'+id);
-if(!WORKER_URL||!ADMIN_SECRET){
+if(!WORKER_URL||!ADMIN_SESSION){
 if(msg){msg.style.color='#e53935';msg.textContent='Worker not configured.'}
 return
 }
@@ -3085,7 +3033,7 @@ if(!isBulk)body.productId=id;
 else body.includeArchived=true;
 const r=await fetch(WORKER_URL+'/checkout-link-mode',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
 body:JSON.stringify(body)
 });
 const data=await r.json().catch(()=>({}));
@@ -3485,9 +3433,9 @@ const p=products.find(x=>x.id===id);
 const msg=document.getElementById('sm_'+id);
 const btn=document.getElementById('sb_'+id);
 if(!p||!msg||!btn)return;
-if(!WORKER_URL||!ADMIN_SECRET){
+if(!WORKER_URL||!ADMIN_SESSION){
 msg.style.color='#e53935';
-msg.textContent='Worker not configured. Set WORKER_URL + ADMIN_SECRET, then deploy the worker.';
+msg.textContent='Worker not configured. Set WORKER_URL + ADMIN_SESSION, then deploy the worker.';
 return;
 }
 const values=collectEditValues(id);
@@ -3533,7 +3481,7 @@ const p=products.find(x=>String(x.id)===String(id));
 if(!p)throw new Error('Product not found');
 const r=await fetch(WORKER_URL+'/shopify-create-product',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
 body:JSON.stringify({productId:id,createWixBackup:true,forceReplaceLink,shopifyTitleOverride,useExistingImage:p.grassBackground&&p.grassBackground.status==='done'})
 });
 const data=await r.json().catch(()=>({}));
@@ -4048,7 +3996,7 @@ if(priceEl&&!priceEl.value&&p.priceMin)priceEl.value='£'+p.priceMin;
 closeWixPicker();
 }
 // Refresh strategy:
-// 1. If WORKER_URL + ADMIN_SECRET are set, ask the Cloudflare worker to /wix-sync (fetches fresh
+// 1. If WORKER_URL + ADMIN_SESSION are set, ask the Cloudflare worker to /wix-sync (fetches fresh
 //    from Wix → writes wix-products.json to R2). Then re-read from R2.
 // 2. If the worker isn't configured, just re-read the existing R2 snapshot. (The snapshot is kept
 //    fresh out-of-band when the user pings me to re-sync, so this still picks up the latest.)
@@ -4058,10 +4006,10 @@ const status=document.getElementById('wixPickerStatus');
 const prevTxt=btn.textContent;
 btn.disabled=true;btn.textContent='⏳ Refreshing…';
 let workerSyncOk=false,fromWix=0;
-if(WORKER_URL&&ADMIN_SECRET){
+if(WORKER_URL&&ADMIN_SESSION){
   status.textContent='Asking worker to pull latest from Wix…';
   try{
-    const r=await fetch(WORKER_URL+'/wix-sync',{method:'POST',headers:{'X-Admin-Secret':ADMIN_SECRET}});
+    const r=await fetch(WORKER_URL+'/wix-sync',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION}});
     const data=await r.json().catch(()=>({}));
     if(r.ok){workerSyncOk=true;fromWix=data.count||0}
   }catch(e){/* fall through to R2 re-read */}
@@ -4085,8 +4033,8 @@ const priceEl=document.getElementById('aPrice');
 const linkEl=document.getElementById('aLink');
 const msg=document.getElementById('aLinkMsg');
 const setMsg=(t,col)=>{msg.textContent=t;msg.style.color=col||'var(--sub)'};
-if(!WORKER_URL||!ADMIN_SECRET){
-setMsg('Worker not configured — set WORKER_URL + ADMIN_SECRET in admin.html (lines 270–274) and redeploy.','#e53935');return;
+if(!WORKER_URL||!ADMIN_SESSION){
+setMsg('Worker not configured — set WORKER_URL + ADMIN_SESSION in admin.html (lines 270–274) and redeploy.','#e53935');return;
 }
 const initialName=(nameEl.value||'').trim();
 const initialPrice=(priceEl.value||'').trim();
@@ -4233,7 +4181,7 @@ if(!name){wcMsg.textContent='Name required';wcMsg.style.color='#e53935';return}
 if(!price||isNaN(parseFloat(price))){wcMsg.textContent='Sale price must be a number';wcMsg.style.color='#e53935';return}
 const payload={name,priceAmount:price,comparePriceAmount:compare,sizes:wcSizes.slice(),colours:wcColours.slice()};
 // If the worker is not configured, give the user a copy-this-config fallback so they can hand it to whoever has the Wix API access.
-if(!WORKER_URL||!ADMIN_SECRET){
+if(!WORKER_URL||!ADMIN_SESSION){
   const j=JSON.stringify(payload,null,2);
   wcMsg.innerHTML=`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;color:#5d4037;line-height:1.5">Worker not deployed yet. Copy the config below and send it to me in chat — I'll create the Wix product:</div><textarea readonly onclick="this.select()" style="width:100%;height:140px;margin-top:8px;padding:8px;font-family:monospace;font-size:11px;border:1px solid #ccc;border-radius:6px;resize:vertical">${escHtml(j)}</textarea>`;
   wcMsg.style.color='var(--sub)';
@@ -4244,7 +4192,7 @@ wcMsg.style.color='var(--sub)';wcMsg.textContent='Creating on Wix…';
 try{
 const r=await fetch(WORKER_URL+'/wix-create-product',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
 body:JSON.stringify(payload)
 });
 const data=await r.json().catch(()=>({}));
@@ -4497,7 +4445,7 @@ async function psFetchYupooFile(image,index,total){
   if(!imageUrl)throw new Error('Missing Yupoo image URL');
   psSetYupooMsg('Downloading Yupoo photo '+(index+1)+'/'+total+'...','var(--sub)');
   const r=await fetch(WORKER_URL+'/yupoo-image?url='+encodeURIComponent(imageUrl),{
-    headers:{'X-Admin-Secret':ADMIN_SECRET}
+    headers:{'X-Admin-Session':ADMIN_SESSION}
   });
   if(!r.ok){
     const data=await r.json().catch(()=>({}));
@@ -4512,14 +4460,14 @@ async function psImportYupoo(generateAfter){
   const input=document.getElementById('psYupooUrl');
   const raw=input?input.value.trim():'';
   if(!raw){psSetYupooMsg('Paste a Yupoo link first.','#e53935');return}
-  if(!WORKER_URL||!ADMIN_SECRET){psSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
+  if(!WORKER_URL||!ADMIN_SESSION){psSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
   try{new URL(raw)}catch(e){psSetYupooMsg('That does not look like a valid link.','#e53935');return}
   psSetYupooLoading(true);
   psSetYupooMsg('Reading Yupoo page...','var(--sub)');
   try{
     const r=await fetch(WORKER_URL+'/yupoo-images',{
       method:'POST',
-      headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+      headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
       body:JSON.stringify({url:raw,limit:30})
     });
     const data=await r.json().catch(()=>({}));
@@ -4563,14 +4511,14 @@ async function addImportYupoo(generateAfter){
 const input=document.getElementById('aYupooUrl');
 const raw=input?input.value.trim():'';
 if(!raw){addSetYupooMsg('Paste a Yupoo link first.','#e53935');return}
-if(!WORKER_URL||!ADMIN_SECRET){addSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
+if(!WORKER_URL||!ADMIN_SESSION){addSetYupooMsg('Worker is not configured for Yupoo import.','#e53935');return}
 try{new URL(raw)}catch(e){addSetYupooMsg('That does not look like a valid link.','#e53935');return}
 addSetYupooLoading(true);
 addSetYupooMsg('Reading Yupoo page...','var(--sub)');
 try{
 const r=await fetch(WORKER_URL+'/yupoo-images',{
 method:'POST',
-headers:{'X-Admin-Secret':ADMIN_SECRET,'Content-Type':'application/json'},
+headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'},
 body:JSON.stringify({url:raw,limit:30})
 });
 const data=await r.json().catch(()=>({}));
@@ -4874,7 +4822,7 @@ function psStartJobPolling(){
 
 async function psWorkerJson(path,options={}){
   if(!psCanUseWorker())throw new Error('Worker is not configured');
-  const headers={'X-Admin-Secret':ADMIN_SECRET,...(options.headers||{})};
+  const headers={'X-Admin-Session':ADMIN_SESSION,...(options.headers||{})};
   const r=await fetch(WORKER_URL+path,{...options,headers});
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(data.error||data.detail||('Worker HTTP '+r.status));
@@ -5602,10 +5550,10 @@ async function refreshOrders(){
   const status=document.getElementById('orderSyncStatus');
   btn.disabled=true;btn.textContent='⏳ Syncing…';
   let workerOk=false,workerCount=0;
-  if(WORKER_URL&&ADMIN_SECRET){
+  if(WORKER_URL&&ADMIN_SESSION){
     try{
       status.textContent='Asking worker to pull latest from Wix…';
-      const r=await fetch(WORKER_URL+'/wix-orders-sync',{method:'POST',headers:{'X-Admin-Secret':ADMIN_SECRET}});
+      const r=await fetch(WORKER_URL+'/wix-orders-sync',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION}});
       const d=await r.json().catch(()=>({}));
       if(r.ok){workerOk=true;workerCount=d.count||0}
       else{status.innerHTML='<span style="color:#e53935">Worker sync failed: '+(d.error||r.status)+'</span>'}
