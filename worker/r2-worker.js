@@ -2537,12 +2537,40 @@ function grassReplacementPrompt(productName = 'uploaded product') {
   ].join(' ');
 }
 
+function grassRealismGuardrail(prompt) {
+  const text = String(prompt || '').toLowerCase();
+  const isCloseup = /close[ -]?up|preserve the exact crop|do not zoom/.test(text);
+  const common = [
+    'Final realism rules: make this look like an ordinary high-resolution phone photograph taken for the ESNTLSCLUB website, not a polished campaign render.',
+    'The supplied grass must remain recognisably photographic: varied blade direction, small irregularities, natural tonal variation, and slight depth changes. Never make it uniformly bright, plastic, painted, carpet-like, or perfectly repeated.',
+    'Match the existing product lighting to the grass with restrained exposure and colour balance only. Do not add a new spotlight, glow, rim light, dramatic gradient, glossy halo, or light source that is not physically explained.',
+    'Edges must remain detailed and imperfect like a real photograph. Avoid cutout outlines, fuzzy masking, smooth AI surfaces, invented texture, excessive sharpening, and global blur.',
+    'At every point where the product touches the grass, show believable weight: local grass compression, tiny partial blade overlap at the lowest edges, and a short soft contact shadow directly beneath the object.',
+    'Do not create a wide floating shadow or an even drop shadow around the whole silhouette.'
+  ];
+  if (isCloseup) {
+    return common.concat([
+      'Close-up rule: preserve the original crop, camera angle, scale, depth of field, hands, packaging, labels, stitching, fabric grain, creases, wear, and every visible product detail.',
+      'Replace only the unwanted background. Make the grass follow the original scene perspective as a plausible nearby surface; it must not read as a vertical grass wall or a flat digital texture.',
+      'Keep the subject fully sharp at its original detail level. Only the grass may have subtle natural lens falloff consistent with the source photograph.'
+    ]).join(' ');
+  }
+  return common.concat([
+    'Full-product rule: create a believable overhead flat-lay on the grass floor with the product occupying roughly 68-76% of the frame width and visible grass on every side.',
+    'Retain small natural asymmetries, folds, sleeve bends, creases, and uneven drape. Do not make the garment perfectly symmetrical, newly ironed, inflated, or geometrically arranged.',
+    'If the source garment is hanging, hooked, displayed upright, or held against a wall, remove the hanger, hook, rail, wall, sign, showroom floor, and their lighting. Lay the same garment naturally on the grass with realistic gravity and folds.',
+    'For a hanging garment converted to flat-lay, preserve the exact garment identity, colour, logos, text, panels, zip, pockets, hood, cuffs, hem, stitching, and wear; change only its physical presentation so it genuinely rests on the grass.',
+    'Never leave a converted garment floating, standing vertically, attached to an invisible hanger, or casting a showroom-style shadow.'
+  ]).join(' ');
+}
+
 function buildGrassImagePrompt(prompt, hasReferences = false) {
   const fallback = grassReplacementPrompt();
+  const supplied = String(prompt || fallback).trim() || fallback;
   const referenceLine = hasReferences
     ? 'Use the additional reference images only to match the finished ESNTLS artificial-grass product-photo look: real phone photo, natural scale, camera distance, soft grounding, and grass texture. Do not copy or add products, boxes, cards, logos, stickers, packaging, hands, props, text, or layout from the reference images.'
     : '';
-  return [String(prompt || fallback).trim() || fallback, referenceLine].filter(Boolean).join(' ');
+  return [supplied, grassRealismGuardrail(supplied), referenceLine].filter(Boolean).join(' ');
 }
 
 async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality, references = [], options = {}) {
