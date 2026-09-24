@@ -4755,6 +4755,13 @@ async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
     })
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 404) {
+    return {
+      status: "saved",
+      externalStatus: "not_found",
+      warning: "Tracking was saved in the supplier portal, but the XCLUSIVELINE tracking endpoint is unavailable."
+    };
+  }
   if (!response.ok || data.error) {
     throw new Error(data.error || `XCLUSIVELINE tracking update failed: ${response.status}`);
   }
@@ -4832,9 +4839,10 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
   let shopify = null;
   try {
     shopify = supplierPortalBusinessId(order.businessId) === "xclusiveline" ? await updateXclusivelineSupplierTracking(env, order, selectedItems) : await createShopifyFulfillmentForSupplierRows(env, order.orderName, portalTrackingRowsFromItems(selectedItems));
-    const statusText = shopify.status === "fulfilled" ? `Yes - ${supplierTrackingTimestamp()}` : `Already fulfilled or no matching lines - ${supplierTrackingTimestamp()}`;
+    const trackingTimestamp = supplierTrackingTimestamp();
+    const statusText = shopify.status === "fulfilled" ? `Yes - ${trackingTimestamp}` : shopify.status === "saved" ? `Saved in portal - ${trackingTimestamp}` : `Already fulfilled or no matching lines - ${trackingTimestamp}`;
     for (const item of selectedItems) {
-      item.supplierStatus = shopify.status === "fulfilled" ? "Shipped" : "Already fulfilled";
+      item.supplierStatus = shopify.status === "fulfilled" ? "Shipped" : shopify.status === "saved" ? "Tracking saved" : "Already fulfilled";
       item.shopifyUpdated = statusText;
       item.shopifyFulfillmentId = shopify.fulfillmentId || item.shopifyFulfillmentId || "";
     }
