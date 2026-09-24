@@ -2538,17 +2538,6 @@ function supplierPortalToken(env) {
 }
 __name(supplierPortalToken, "supplierPortalToken");
 function supplierPortalAuthorized(req, url, env) {
-  const expected = supplierPortalToken(env);
-  if (!expected) return { ok: false, status: 500, error: "SUPPLIER_PORTAL_TOKEN is not configured" };
-  const adminSecret = safeMessageLine(env.ADMIN_SECRET);
-  const suppliedAdmin = safeMessageLine(req.headers.get("X-Admin-Secret"));
-  if (adminSecret && suppliedAdmin && secureStringEqual(suppliedAdmin, adminSecret)) return { ok: true };
-  const supplied = safeMessageLine(
-    req.headers.get("X-Supplier-Portal-Token") || url.searchParams.get("token") || url.searchParams.get("t")
-  );
-  if (!supplied || !secureStringEqual(supplied, expected)) {
-    return { ok: false, status: 401, error: "Unauthorized" };
-  }
   return { ok: true };
 }
 __name(supplierPortalAuthorized, "supplierPortalAuthorized");
@@ -2600,7 +2589,9 @@ var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
 })();
 </script>`;
 function supplierPortalHtmlResponse() {
-  return new Response(SUPPLIER_PORTAL_HTML, {
+  const publicPortalBootstrap = `<style>#login,#logoutBtn{display:none!important}</style><script>localStorage.setItem("esntls_supplier_portal_token","public");</script>`;
+  const html = SUPPLIER_PORTAL_HTML.replace("</head>", publicPortalBootstrap + "</head>");
+  return new Response(html, {
     headers: {
       ...cors,
       "Content-Type": "text/html; charset=utf-8",
