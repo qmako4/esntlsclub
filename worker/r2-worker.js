@@ -2559,7 +2559,8 @@ var SUPPLIER_FINANCE_PORTAL_STYLE = String.raw`<style>
   .finance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.finance-stat{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:13px}.finance-label{color:#aaa89f;font-size:11px;font-weight:800;text-transform:uppercase}.finance-value{font-size:23px;font-weight:900;margin-top:5px}.finance-share{color:#62d868}
   .finance-actions{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:end;margin-top:14px}.finance-actions label{font-size:12px;color:#c5c2b8}.finance-actions input{margin-top:5px}.finance-note{font-size:12px;color:#c5c2b8;line-height:1.45;margin:12px 0}
   .finance-costs{display:grid;gap:8px;margin-top:14px}.finance-cost-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center;background:#20201d;border-radius:14px;padding:10px}.finance-product{font-weight:800}.finance-option{font-size:11px;color:#aaa89f;margin-top:3px}.finance-history{margin-top:14px;font-size:12px;color:#c5c2b8}.finance-history-row{border-top:1px solid #34342f;padding:9px 0}
-  @media(max-width:740px){.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-login,.finance-actions,.finance-cost-row{grid-template-columns:1fr}.finance-cost-row button,.finance-actions button{width:100%}}
+  .finance-orders{display:grid;gap:9px;margin:12px 0 18px}.finance-order{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:12px}.finance-order-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.finance-order-name{font-size:16px;font-weight:900}.finance-order-date{font-size:11px;color:#aaa89f}.finance-order-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}.finance-order-cell{background:#171715;border-radius:10px;padding:8px}.finance-order-cell span{display:block;color:#aaa89f;font-size:9px;font-weight:800;text-transform:uppercase}.finance-order-cell strong{display:block;font-size:14px;margin-top:3px}.finance-order-warning{color:#ffca79;font-size:11px;margin-top:8px}
+  @media(max-width:740px){.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-login,.finance-actions,.finance-cost-row{grid-template-columns:1fr}.finance-cost-row button,.finance-actions button{width:100%}.finance-order-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-order-cell:last-child{grid-column:1/-1}}
 </style>`;
 var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
 (function(){
@@ -2577,8 +2578,9 @@ var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
   function render(f){
     var warning=[];if(f.missingCostItems)warning.push(f.missingCostItems+' item(s) need a supplier cost');if(f.missingSalesOrders)warning.push(f.missingSalesOrders+' older order(s) need Sync Orders for sales totals');
     var costs=(f.costCatalog||[]).map(function(x){return '<div class="finance-cost-row"><div><div class="finance-product">'+esc(x.productName)+'</div><div class="finance-option">'+esc(x.option||'All options')+'</div></div><input type="number" min="0" step="0.01" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':esc(Number(x.unitCost).toFixed(2)))+'" placeholder="Unit cost £"><button data-cost-save="'+esc(x.costKey)+'">Save</button></div>'}).join('');
+    var orderBreakdown=(f.orderBreakdown||[]).map(function(o){return '<div class="finance-order"><div class="finance-order-head"><div class="finance-order-name">'+esc(o.orderName||'Order')+'</div><div class="finance-order-date">'+esc(o.orderDate?new Date(o.orderDate).toLocaleString('en-GB'):'')+'</div></div><div class="finance-order-grid"><div class="finance-order-cell"><span>Sale</span><strong>'+money(o.salesTotal)+'</strong></div><div class="finance-order-cell"><span>Supplier</span><strong>'+money(o.supplierCost)+'</strong></div><div class="finance-order-cell"><span>Profit</span><strong>'+money(o.estimatedProfit)+'</strong></div><div class="finance-order-cell"><span>Your 50%</span><strong>'+money(o.yourShare)+'</strong></div><div class="finance-order-cell"><span>Brother 50%</span><strong>'+money(o.brotherShare)+'</strong></div></div>'+(o.missingCostItems?'<div class="finance-order-warning">'+esc(o.missingCostItems)+' item(s) still need a supplier cost, so this profit is provisional.</div>':'')+'</div>'}).join('');
     var history=(f.settlements||[]).slice(0,5).map(function(s){return '<div class="finance-history-row">'+esc(new Date(s.paidAt).toLocaleString('en-GB'))+' · Supplier '+money(s.supplierPaid)+' · Profit '+money(s.estimatedProfit)+'</div>'}).join('');
-    shell().innerHTML='<div class="owner-finance-head"><div><h2>Owner Finance</h2><div class="finance-option">50/50 profit split</div></div><button class="secondary" data-finance-close>Close</button></div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales this period</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Estimated profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Unpaid orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' · ')||'All item costs are ready. Profit is sales minus supplier and other costs, before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h3>Supplier cost per item</h3><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'');
+    shell().innerHTML='<div class="owner-finance-head"><div><h2>Owner Finance</h2><div class="finance-option">50/50 profit split</div></div><button class="secondary" data-finance-close>Close</button></div><div class="finance-note"><strong>Counting starts after '+esc(f.cutoffOrderName||'#1233')+'.</strong> Brogan Coyle’s cutoff order and every earlier order are excluded.</div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales this period</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Estimated profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Unpaid orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' · ')||'All item costs are ready. Profit is sales minus supplier and other costs, before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h3>Profit by order</h3><div class="finance-orders">'+(orderBreakdown||'<div class="finance-note">No orders after the cutoff yet.</div>')+'</div><h3>Supplier cost per item</h3><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'');
   }
   async function load(){try{var d=await request('summary');render(d.finance)}catch(e){if(/unauthorized/i.test(e.message)){sessionStorage.removeItem(SESSION_KEY);shell().innerHTML=loginHtml('Session expired. Sign in again.')}else{shell().innerHTML=loginHtml(e.message)}}}
   document.addEventListener('DOMContentLoaded',function(){
@@ -2654,6 +2656,17 @@ function supplierFinanceItemKey(order, item) {
   return `${safeMessageLine(order?.key || order?.orderName)}::${safeMessageLine(item?.itemKey || supplierFinanceCostKey(item))}`;
 }
 __name(supplierFinanceItemKey, "supplierFinanceItemKey");
+var SUPPLIER_FINANCE_CUTOFF_ORDER_NAME = "#1233";
+var SUPPLIER_FINANCE_CUTOFF_ORDER_DATE = "2026-09-22T19:05:17Z";
+function supplierFinanceOrderAfterCutoff(order) {
+  const orderTime = Date.parse(safeMessageLine(order?.orderDate || order?.createdAt || order?.created_at));
+  const cutoffTime = Date.parse(SUPPLIER_FINANCE_CUTOFF_ORDER_DATE);
+  if (Number.isFinite(orderTime) && Number.isFinite(cutoffTime)) return orderTime > cutoffTime;
+  const orderNumber = Number((safeMessageLine(order?.orderName).match(/\d+/) || [])[0]);
+  const cutoffNumber = Number((SUPPLIER_FINANCE_CUTOFF_ORDER_NAME.match(/\d+/) || [])[0]);
+  return Number.isFinite(orderNumber) && Number.isFinite(cutoffNumber) && orderNumber > cutoffNumber;
+}
+__name(supplierFinanceOrderAfterCutoff, "supplierFinanceOrderAfterCutoff");
 async function readSupplierFinanceState(env) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const object = await env.BUCKET.get(SUPPLIER_FINANCE_STATE_KEY);
@@ -2690,7 +2703,9 @@ function supplierFinanceSnapshot(orders, state) {
   const costCatalog = /* @__PURE__ */ new Map();
   const outstandingItems = [];
   const outstandingOrderKeys = /* @__PURE__ */ new Set();
-  for (const order of orders || []) {
+  const periodOrders = (orders || []).filter(supplierFinanceOrderAfterCutoff);
+  for (const order of periodOrders) {
+    const orderKey = safeMessageLine(order.key || order.orderName);
     for (const item of order.items || []) {
       const costKey = supplierFinanceCostKey(item);
       const unitCostRaw = state.costs?.[costKey];
@@ -2706,10 +2721,11 @@ function supplierFinanceSnapshot(orders, state) {
       }
       const itemKey = supplierFinanceItemKey(order, item);
       if (settled.has(itemKey)) continue;
-      outstandingOrderKeys.add(safeMessageLine(order.key || order.orderName));
+      outstandingOrderKeys.add(orderKey);
       outstandingItems.push({
         itemKey,
         costKey,
+        orderKey,
         orderName: safeMessageLine(order.orderName),
         productName: safeMessageLine(item.productName || "Unknown item"),
         option: safeMessageLine(item.option),
@@ -2718,13 +2734,33 @@ function supplierFinanceSnapshot(orders, state) {
       });
     }
   }
-  const outstandingOrders = (orders || []).filter((order) => outstandingOrderKeys.has(safeMessageLine(order.key || order.orderName)));
+  const outstandingOrders = periodOrders.filter((order) => outstandingOrderKeys.has(safeMessageLine(order.key || order.orderName)));
   const salesTotal = supplierFinanceMoney(outstandingOrders.reduce((sum, order) => sum + supplierFinanceMoney(order.salesTotal), 0));
   const supplierOwed = supplierFinanceMoney(outstandingItems.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
   const otherCosts = supplierFinanceMoney(state.otherCosts);
   const estimatedProfit = supplierFinanceMoney(salesTotal - supplierOwed - otherCosts);
+  const orderBreakdown = outstandingOrders.map((order) => {
+    const orderKey = safeMessageLine(order.key || order.orderName);
+    const items = outstandingItems.filter((item) => item.orderKey === orderKey);
+    const orderSales = supplierFinanceMoney(order.salesTotal);
+    const orderSupplierCost = supplierFinanceMoney(items.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
+    const orderProfit = supplierFinanceMoney(orderSales - orderSupplierCost);
+    return {
+      orderKey,
+      orderName: safeMessageLine(order.orderName),
+      orderDate: safeMessageLine(order.orderDate || order.createdAt || order.created_at),
+      salesTotal: orderSales,
+      supplierCost: orderSupplierCost,
+      estimatedProfit: orderProfit,
+      yourShare: supplierFinanceMoney(orderProfit / 2),
+      brotherShare: supplierFinanceMoney(orderProfit / 2),
+      missingCostItems: items.filter((item) => item.unitCost === null).length
+    };
+  }).sort((a, b) => String(b.orderDate || "").localeCompare(String(a.orderDate || "")));
   return {
     currency: "GBP",
+    cutoffOrderName: SUPPLIER_FINANCE_CUTOFF_ORDER_NAME,
+    cutoffOrderDate: SUPPLIER_FINANCE_CUTOFF_ORDER_DATE,
     salesTotal,
     supplierOwed,
     otherCosts,
@@ -2737,6 +2773,7 @@ function supplierFinanceSnapshot(orders, state) {
     missingSalesOrders: outstandingOrders.filter((order) => supplierFinanceMoney(order.salesTotal) <= 0).length,
     costCatalog: [...costCatalog.values()].sort((a, b) => `${a.productName} ${a.option}`.localeCompare(`${b.productName} ${b.option}`)),
     outstandingItems,
+    orderBreakdown,
     settlements: (state.settlements || []).slice().reverse()
   };
 }
