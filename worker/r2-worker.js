@@ -2634,6 +2634,22 @@ function supplierFinanceCostKey(item) {
   return slugify(safeMessageLine(item?.sourceProductId || item?.productName || "item")) || "item";
 }
 __name(supplierFinanceCostKey, "supplierFinanceCostKey");
+function supplierFinanceDefaultUnitCost(item) {
+  const name = safeMessageLine(item?.productName).toLowerCase();
+  if (!name) return null;
+  if (/\bb30\b|\bb22\b/.test(name)) return 53;
+  if (/asics.*(metropolis|gel kayano)|gel kayano|metropolis grey/.test(name)) return 28;
+  if (/maya.*puffer/.test(name)) return 65;
+  if (/casablanca.*t-?shirt/.test(name)) return 17;
+  if (/pm messenger bag/.test(name)) return 27;
+  if (/macmillan.*black badge/.test(name)) return 70;
+  if (/c goose gilet/.test(name)) return 40;
+  if (/adizero evo sl/.test(name)) return 30;
+  if (/wyndham parka/.test(name)) return 85;
+  if (/burberry.*jacket/.test(name)) return 65;
+  return null;
+}
+__name(supplierFinanceDefaultUnitCost, "supplierFinanceDefaultUnitCost");
 function supplierFinanceItemKey(order, item) {
   return `${safeMessageLine(order?.key || order?.orderName)}::${safeMessageLine(item?.itemKey || supplierFinanceCostKey(item))}`;
 }
@@ -2678,8 +2694,8 @@ function supplierFinanceSnapshot(orders, state) {
     for (const item of order.items || []) {
       const costKey = supplierFinanceCostKey(item);
       const unitCostRaw = state.costs?.[costKey];
-      const hasCost = unitCostRaw !== void 0 && unitCostRaw !== null && unitCostRaw !== "";
-      const unitCost = hasCost ? supplierFinanceMoney(unitCostRaw) : null;
+      const hasSavedCost = unitCostRaw !== void 0 && unitCostRaw !== null && unitCostRaw !== "";
+      const unitCost = hasSavedCost ? supplierFinanceMoney(unitCostRaw) : supplierFinanceDefaultUnitCost(item);
       if (!costCatalog.has(costKey)) {
         costCatalog.set(costKey, {
           costKey,
