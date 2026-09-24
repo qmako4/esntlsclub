@@ -65,6 +65,7 @@ var SUPPLIER_PORTAL_SYNC_ROOT = "supplier-portal/sync/";
 var SUPPLIER_PORTAL_SYNC_LOCK_KEY = `${SUPPLIER_PORTAL_SYNC_ROOT}lock.json`;
 var SUPPLIER_PORTAL_HIDDEN_ITEM_ROOT = "supplier-portal/hidden-items/";
 var SUPPLIER_PORTAL_METROPOLIS_IMAGE_URL = "https://raw.githubusercontent.com/qmako4/esntlsclub/main/img/gel-runners-metropolis-grey.jpg";
+var SUPPLIER_FINANCE_STATE_KEY = "supplier-portal/finance/state.json";
 var WHATSAPP_DEFAULT_GRAPH_VERSION = "v21.0";
 var JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 var googleSheetsTokenCache = { cacheKey: "", accessToken: "", expiresAt: 0 };
@@ -135,6 +136,7 @@ query RecentSupplierOrders($first: Int!, $query: String) {
       createdAt
       displayFinancialStatus
       displayFulfillmentStatus
+      currentSubtotalPriceSet { shopMoney { amount currencyCode } }
       shippingAddress {
         name
         address1
@@ -1482,6 +1484,7 @@ async function buildSupplierPortalOrder(env, order, products = null) {
     orderName,
     orderNumber: orderNameNumber(order),
     orderDate,
+    salesTotal: Number(order?.current_subtotal_price || order?.subtotal_price || order?.total_price || 0) || 0,
     shipping,
     addressLines: supplierPortalAddressLines(shipping),
     items,
@@ -1534,6 +1537,7 @@ function mergeSupplierPortalOrder(existing, incoming, options = {}) {
   return {
     ...incoming,
     key: existing?.key || incoming.key,
+    salesTotal: Number(incoming?.salesTotal || existing?.salesTotal || 0) || 0,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
     lastShopifySyncAt: now,
@@ -2548,8 +2552,54 @@ function supplierPortalAuthorized(req, url, env) {
   return { ok: true };
 }
 __name(supplierPortalAuthorized, "supplierPortalAuthorized");
+var SUPPLIER_FINANCE_PORTAL_STYLE = String.raw`<style>
+  .owner-finance-panel{margin:0 0 20px;background:#11110f;color:#fff;border-radius:22px;padding:18px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
+  .owner-finance-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.owner-finance-head h2{margin:0;font-size:20px}.owner-finance-panel .secondary{color:#fff;border-color:#555}
+  .finance-login{display:grid;grid-template-columns:1fr auto;gap:10px}.finance-login input{background:#fff;color:#111}.finance-error{color:#ffaaa3;font-size:12px;margin-top:8px}
+  .finance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.finance-stat{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:13px}.finance-label{color:#aaa89f;font-size:11px;font-weight:800;text-transform:uppercase}.finance-value{font-size:23px;font-weight:900;margin-top:5px}.finance-share{color:#62d868}
+  .finance-actions{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:end;margin-top:14px}.finance-actions label{font-size:12px;color:#c5c2b8}.finance-actions input{margin-top:5px}.finance-note{font-size:12px;color:#c5c2b8;line-height:1.45;margin:12px 0}
+  .finance-costs{display:grid;gap:8px;margin-top:14px}.finance-cost-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center;background:#20201d;border-radius:14px;padding:10px}.finance-product{font-weight:800}.finance-option{font-size:11px;color:#aaa89f;margin-top:3px}.finance-history{margin-top:14px;font-size:12px;color:#c5c2b8}.finance-history-row{border-top:1px solid #34342f;padding:9px 0}
+  @media(max-width:740px){.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-login,.finance-actions,.finance-cost-row{grid-template-columns:1fr}.finance-cost-row button,.finance-actions button{width:100%}}
+</style>`;
+var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
+(function(){
+  var SESSION_KEY='esntls_owner_finance_session';
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}
+  function money(v){return '£'+Number(v||0).toFixed(2)}
+  function session(){return sessionStorage.getItem(SESSION_KEY)||''}
+  async function request(path,options){
+    var o=options||{};var h=Object.assign({'Content-Type':'application/json','X-Admin-Session':session()},o.headers||{});
+    var r=await fetch('/supplier-finance-api/'+path,Object.assign({},o,{headers:h,cache:'no-store'}));
+    var d=await r.json().catch(function(){return{}});if(!r.ok||d.error)throw new Error(d.error||'Request failed');return d;
+  }
+  function shell(){return document.getElementById('ownerFinancePanel')}
+  function loginHtml(message){return '<div class="owner-finance-head"><h2>Owner Finance</h2><button class="secondary" data-finance-close>Close</button></div><p class="finance-note">Private — supplier costs and profit split require your admin password.</p><form class="finance-login" id="financeLogin"><input id="financePassword" type="password" autocomplete="current-password" placeholder="Admin password" required><button>Unlock</button></form><div class="finance-error">'+esc(message||'')+'</div>'}
+  function render(f){
+    var warning=[];if(f.missingCostItems)warning.push(f.missingCostItems+' item(s) need a supplier cost');if(f.missingSalesOrders)warning.push(f.missingSalesOrders+' older order(s) need Sync Orders for sales totals');
+    var costs=(f.costCatalog||[]).map(function(x){return '<div class="finance-cost-row"><div><div class="finance-product">'+esc(x.productName)+'</div><div class="finance-option">'+esc(x.option||'All options')+'</div></div><input type="number" min="0" step="0.01" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':esc(Number(x.unitCost).toFixed(2)))+'" placeholder="Unit cost £"><button data-cost-save="'+esc(x.costKey)+'">Save</button></div>'}).join('');
+    var history=(f.settlements||[]).slice(0,5).map(function(s){return '<div class="finance-history-row">'+esc(new Date(s.paidAt).toLocaleString('en-GB'))+' · Supplier '+money(s.supplierPaid)+' · Profit '+money(s.estimatedProfit)+'</div>'}).join('');
+    shell().innerHTML='<div class="owner-finance-head"><div><h2>Owner Finance</h2><div class="finance-option">50/50 profit split</div></div><button class="secondary" data-finance-close>Close</button></div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales this period</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Estimated profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Unpaid orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' · ')||'All item costs are ready. Profit is sales minus supplier and other costs, before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h3>Supplier cost per item</h3><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'');
+  }
+  async function load(){try{var d=await request('summary');render(d.finance)}catch(e){if(/unauthorized/i.test(e.message)){sessionStorage.removeItem(SESSION_KEY);shell().innerHTML=loginHtml('Session expired. Sign in again.')}else{shell().innerHTML=loginHtml(e.message)}}}
+  document.addEventListener('DOMContentLoaded',function(){
+    var top=document.querySelector('.top-inner');if(!top)return;
+    var button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Owner Finance';button.id='ownerFinanceBtn';top.insertBefore(button,document.getElementById('logoutBtn'));
+    var panel=document.createElement('section');panel.id='ownerFinancePanel';panel.className='owner-finance-panel hidden';var filters=document.querySelector('.filters');filters.parentNode.insertBefore(panel,filters);
+    button.addEventListener('click',function(){panel.classList.remove('hidden');if(session())load();else panel.innerHTML=loginHtml('')});
+    panel.addEventListener('click',async function(e){
+      if(e.target.closest('[data-finance-close]')){panel.classList.add('hidden');return}
+      var save=e.target.closest('[data-cost-save]');if(save){var key=save.getAttribute('data-cost-save');var input=panel.querySelector('[data-cost-input="'+CSS.escape(key)+'"]');try{render((await request('update',{method:'POST',body:JSON.stringify({action:'set-cost',costKey:key,unitCost:input.value})})).finance)}catch(err){alert(err.message)}return}
+      if(e.target.closest('[data-finance-other]')){try{render((await request('update',{method:'POST',body:JSON.stringify({action:'set-other-costs',otherCosts:document.getElementById('financeOtherCosts').value})})).finance)}catch(err){alert(err.message)}return}
+      if(e.target.closest('[data-finance-settle]')){if(!confirm('Confirm the supplier has been paid? This records the payment and resets the outstanding count.'))return;try{render((await request('update',{method:'POST',body:JSON.stringify({action:'settle'})})).finance)}catch(err){alert(err.message)}return}
+      if(e.target.closest('[data-finance-undo]')){if(!confirm('Undo the most recent supplier payment reset?'))return;try{render((await request('update',{method:'POST',body:JSON.stringify({action:'undo-last-settlement'})})).finance)}catch(err){alert(err.message)}}
+    });
+    panel.addEventListener('submit',async function(e){if(e.target.id!=='financeLogin')return;e.preventDefault();var p=document.getElementById('financePassword');try{var r=await fetch('/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p.value})});var d=await r.json();p.value='';if(!r.ok||!d.token)throw new Error(d.error||'Login failed');sessionStorage.setItem(SESSION_KEY,d.token);await load()}catch(err){panel.innerHTML=loginHtml(err.message)}});
+  });
+})();
+</script>`;
 function supplierPortalHtmlResponse() {
-  return new Response(SUPPLIER_PORTAL_HTML, {
+  const html = SUPPLIER_PORTAL_HTML.replace("</head>", SUPPLIER_FINANCE_PORTAL_STYLE + "</head>").replace("</body>", SUPPLIER_FINANCE_PORTAL_SCRIPT + "</body>");
+  return new Response(html, {
     headers: {
       ...cors,
       "Content-Type": "text/html; charset=utf-8",
@@ -2575,6 +2625,168 @@ function supplierPortalPublicOrder(order) {
   };
 }
 __name(supplierPortalPublicOrder, "supplierPortalPublicOrder");
+function supplierFinanceMoney(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round(number * 100) / 100 : 0;
+}
+__name(supplierFinanceMoney, "supplierFinanceMoney");
+function supplierFinanceCostKey(item) {
+  return slugify(safeMessageLine(item?.sourceProductId || item?.productName || "item")) || "item";
+}
+__name(supplierFinanceCostKey, "supplierFinanceCostKey");
+function supplierFinanceItemKey(order, item) {
+  return `${safeMessageLine(order?.key || order?.orderName)}::${safeMessageLine(item?.itemKey || supplierFinanceCostKey(item))}`;
+}
+__name(supplierFinanceItemKey, "supplierFinanceItemKey");
+async function readSupplierFinanceState(env) {
+  if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
+  const object = await env.BUCKET.get(SUPPLIER_FINANCE_STATE_KEY);
+  if (!object) return { costs: {}, settledItemKeys: [], otherCosts: 0, settlements: [] };
+  try {
+    const state = JSON.parse(await object.text());
+    return {
+      costs: state && typeof state.costs === "object" ? state.costs : {},
+      settledItemKeys: Array.isArray(state?.settledItemKeys) ? state.settledItemKeys : [],
+      otherCosts: supplierFinanceMoney(state?.otherCosts),
+      settlements: Array.isArray(state?.settlements) ? state.settlements : []
+    };
+  } catch {
+    return { costs: {}, settledItemKeys: [], otherCosts: 0, settlements: [] };
+  }
+}
+__name(readSupplierFinanceState, "readSupplierFinanceState");
+async function writeSupplierFinanceState(env, state) {
+  const payload = {
+    costs: state.costs || {},
+    settledItemKeys: uniqueList(state.settledItemKeys || []).slice(-1e4),
+    otherCosts: supplierFinanceMoney(state.otherCosts),
+    settlements: (state.settlements || []).slice(-50),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  await env.BUCKET.put(SUPPLIER_FINANCE_STATE_KEY, JSON.stringify(payload, null, 2), {
+    httpMetadata: { contentType: JSON_CONTENT_TYPE }
+  });
+  return payload;
+}
+__name(writeSupplierFinanceState, "writeSupplierFinanceState");
+function supplierFinanceSnapshot(orders, state) {
+  const settled = new Set(state.settledItemKeys || []);
+  const costCatalog = /* @__PURE__ */ new Map();
+  const outstandingItems = [];
+  const outstandingOrderKeys = /* @__PURE__ */ new Set();
+  for (const order of orders || []) {
+    for (const item of order.items || []) {
+      const costKey = supplierFinanceCostKey(item);
+      const unitCostRaw = state.costs?.[costKey];
+      const hasCost = unitCostRaw !== void 0 && unitCostRaw !== null && unitCostRaw !== "";
+      const unitCost = hasCost ? supplierFinanceMoney(unitCostRaw) : null;
+      if (!costCatalog.has(costKey)) {
+        costCatalog.set(costKey, {
+          costKey,
+          productName: safeMessageLine(item.productName || "Unknown item"),
+          option: "All sizes / options",
+          unitCost
+        });
+      }
+      const itemKey = supplierFinanceItemKey(order, item);
+      if (settled.has(itemKey)) continue;
+      outstandingOrderKeys.add(safeMessageLine(order.key || order.orderName));
+      outstandingItems.push({
+        itemKey,
+        costKey,
+        orderName: safeMessageLine(order.orderName),
+        productName: safeMessageLine(item.productName || "Unknown item"),
+        option: safeMessageLine(item.option),
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        unitCost
+      });
+    }
+  }
+  const outstandingOrders = (orders || []).filter((order) => outstandingOrderKeys.has(safeMessageLine(order.key || order.orderName)));
+  const salesTotal = supplierFinanceMoney(outstandingOrders.reduce((sum, order) => sum + supplierFinanceMoney(order.salesTotal), 0));
+  const supplierOwed = supplierFinanceMoney(outstandingItems.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
+  const otherCosts = supplierFinanceMoney(state.otherCosts);
+  const estimatedProfit = supplierFinanceMoney(salesTotal - supplierOwed - otherCosts);
+  return {
+    currency: "GBP",
+    salesTotal,
+    supplierOwed,
+    otherCosts,
+    estimatedProfit,
+    yourShare: supplierFinanceMoney(estimatedProfit / 2),
+    brotherShare: supplierFinanceMoney(estimatedProfit / 2),
+    outstandingItemCount: outstandingItems.length,
+    outstandingOrderCount: outstandingOrders.length,
+    missingCostItems: outstandingItems.filter((item) => item.unitCost === null).length,
+    missingSalesOrders: outstandingOrders.filter((order) => supplierFinanceMoney(order.salesTotal) <= 0).length,
+    costCatalog: [...costCatalog.values()].sort((a, b) => `${a.productName} ${a.option}`.localeCompare(`${b.productName} ${b.option}`)),
+    outstandingItems,
+    settlements: (state.settlements || []).slice().reverse()
+  };
+}
+__name(supplierFinanceSnapshot, "supplierFinanceSnapshot");
+async function supplierFinanceAuthorized(req, env) {
+  const sessionOk = await verifyAdminSession(env, req.headers.get("X-Admin-Session"));
+  const secretOk = Boolean(env.ADMIN_SECRET && req.headers.get("X-Admin-Secret") === env.ADMIN_SECRET);
+  return sessionOk || secretOk;
+}
+__name(supplierFinanceAuthorized, "supplierFinanceAuthorized");
+async function handleSupplierFinanceApi(req, env, parts) {
+  if (!await supplierFinanceAuthorized(req, env)) return json({ error: "Unauthorized" }, 401);
+  const orders = await listSupplierPortalOrders(env, 300);
+  let state = await readSupplierFinanceState(env);
+  const action = parts[1] || "summary";
+  if (req.method === "GET" && action === "summary") {
+    return json({ ok: true, finance: supplierFinanceSnapshot(orders, state) });
+  }
+  if (req.method !== "POST" || action !== "update") return json({ error: "Not found" }, 404);
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+  if (body.action === "set-cost") {
+    const costKey = safeMessageLine(body.costKey);
+    const unitCost = supplierFinanceMoney(body.unitCost);
+    if (!costKey) return json({ error: "Missing cost key" }, 400);
+    if (Number(body.unitCost) < 0 || !Number.isFinite(Number(body.unitCost))) return json({ error: "Enter a valid supplier cost" }, 400);
+    state.costs[costKey] = unitCost;
+  } else if (body.action === "set-other-costs") {
+    if (Number(body.otherCosts) < 0 || !Number.isFinite(Number(body.otherCosts))) return json({ error: "Enter a valid cost amount" }, 400);
+    state.otherCosts = supplierFinanceMoney(body.otherCosts);
+  } else if (body.action === "settle") {
+    const snapshot = supplierFinanceSnapshot(orders, state);
+    if (!snapshot.outstandingItemCount) return json({ error: "There is no outstanding supplier balance" }, 400);
+    if (snapshot.missingCostItems) return json({ error: `Add costs for ${snapshot.missingCostItems} item${snapshot.missingCostItems === 1 ? "" : "s"} before marking paid` }, 400);
+    const settledKeys = snapshot.outstandingItems.map((item) => item.itemKey);
+    const settlement = {
+      id: crypto.randomUUID(),
+      paidAt: (/* @__PURE__ */ new Date()).toISOString(),
+      itemKeys: settledKeys,
+      supplierPaid: snapshot.supplierOwed,
+      salesTotal: snapshot.salesTotal,
+      otherCosts: snapshot.otherCosts,
+      estimatedProfit: snapshot.estimatedProfit,
+      yourShare: snapshot.yourShare,
+      brotherShare: snapshot.brotherShare
+    };
+    state.settledItemKeys = uniqueList([...(state.settledItemKeys || []), ...settledKeys]);
+    state.settlements = [...state.settlements || [], settlement];
+    state.otherCosts = 0;
+  } else if (body.action === "undo-last-settlement") {
+    const last = (state.settlements || []).pop();
+    if (!last) return json({ error: "There is no settlement to undo" }, 400);
+    const undoKeys = new Set(last.itemKeys || []);
+    state.settledItemKeys = (state.settledItemKeys || []).filter((key) => !undoKeys.has(key));
+    state.otherCosts = supplierFinanceMoney(last.otherCosts);
+  } else {
+    return json({ error: "Unknown finance action" }, 400);
+  }
+  state = await writeSupplierFinanceState(env, state);
+  return json({ ok: true, finance: supplierFinanceSnapshot(orders, state) });
+}
+__name(handleSupplierFinanceApi, "handleSupplierFinanceApi");
 async function handleSupplierPortalApi(req, env, ctx, parts, url) {
   const authorized = supplierPortalAuthorized(req, url, env);
   if (!authorized.ok) return json({ error: authorized.error }, authorized.status);
@@ -3948,6 +4160,7 @@ function graphOrderToWebhookOrder(order) {
     created_at: order?.createdAt || "",
     financial_status: order?.displayFinancialStatus || "",
     fulfillment_status: order?.displayFulfillmentStatus || "",
+    current_subtotal_price: order?.currentSubtotalPriceSet?.shopMoney?.amount || "0",
     shipping_address: {
       name: shipping.name || "",
       address1: shipping.address1 || "",
@@ -4256,6 +4469,7 @@ function normalizeExternalSupplierPortalOrder(order, source = {}) {
     orderName,
     orderNumber: supplierPortalExternalOrderNumber({ ...order, orderName }),
     orderDate: safeMessageLine(order?.orderDate || order?.createdAt || order?.created_at || (/* @__PURE__ */ new Date()).toISOString()),
+    salesTotal: Number(order?.salesTotal || order?.subtotal || order?.current_subtotal_price || order?.total || 0) || 0,
     shipping: normalizedShipping,
     addressLines,
     items,
@@ -4541,6 +4755,13 @@ async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
     })
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 404) {
+    return {
+      status: "saved",
+      externalStatus: "not_found",
+      warning: "Tracking was saved in the supplier portal, but the XCLUSIVELINE tracking endpoint is unavailable."
+    };
+  }
   if (!response.ok || data.error) {
     throw new Error(data.error || `XCLUSIVELINE tracking update failed: ${response.status}`);
   }
@@ -4618,9 +4839,10 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
   let shopify = null;
   try {
     shopify = supplierPortalBusinessId(order.businessId) === "xclusiveline" ? await updateXclusivelineSupplierTracking(env, order, selectedItems) : await createShopifyFulfillmentForSupplierRows(env, order.orderName, portalTrackingRowsFromItems(selectedItems));
-    const statusText = shopify.status === "fulfilled" ? `Yes - ${supplierTrackingTimestamp()}` : `Already fulfilled or no matching lines - ${supplierTrackingTimestamp()}`;
+    const trackingTimestamp = supplierTrackingTimestamp();
+    const statusText = shopify.status === "fulfilled" ? `Yes - ${trackingTimestamp}` : shopify.status === "saved" ? `Saved in portal - ${trackingTimestamp}` : `Already fulfilled or no matching lines - ${trackingTimestamp}`;
     for (const item of selectedItems) {
-      item.supplierStatus = shopify.status === "fulfilled" ? "Shipped" : "Already fulfilled";
+      item.supplierStatus = shopify.status === "fulfilled" ? "Shipped" : shopify.status === "saved" ? "Tracking saved" : "Already fulfilled";
       item.shopifyUpdated = statusText;
       item.shopifyFulfillmentId = shopify.fulfillmentId || item.shopifyFulfillmentId || "";
     }
@@ -7128,6 +7350,9 @@ var r2_worker_default = {
     if (parts[0] === "supplier-portal-api") {
       return handleSupplierPortalApi(req, env, ctx, parts, url);
     }
+    if (parts[0] === "supplier-finance-api") {
+      return handleSupplierFinanceApi(req, env, parts);
+    }
     if (req.method === 'POST' && parts[0] === 'admin-login') {
       let body;
       try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
@@ -7729,4 +7954,3 @@ export {
   r2_worker_default as default
 };
 //# sourceMappingURL=r2-worker.js.map
-
