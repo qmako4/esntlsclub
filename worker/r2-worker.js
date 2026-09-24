@@ -4791,8 +4791,14 @@ function portalTrackingRowsFromItems(items) {
 __name(portalTrackingRowsFromItems, "portalTrackingRowsFromItems");
 async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
   const trackingUrl = safeMessageLine(env.XCLUSIVELINE_SUPPLIER_TRACKING_URL);
-  if (!trackingUrl) throw new Error("XCLUSIVELINE_SUPPLIER_TRACKING_URL is not configured");
-  const response = await fetch(trackingUrl, {
+  if (!trackingUrl) {
+    return {
+      status: "saved",
+      externalStatus: "not_configured",
+      warning: "Tracking was saved in the supplier portal. The XCLUSIVELINE tracking connection is not configured."
+    };
+  }
+  const request = new Request(trackingUrl, {
     method: "POST",
     headers: xclusivelineSupplierHeaders(env, true),
     body: JSON.stringify({
@@ -4813,6 +4819,7 @@ async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
       }))
     })
   });
+  const response = env.XCLUSIVELINE_SUPPLIER_WORKER && typeof env.XCLUSIVELINE_SUPPLIER_WORKER.fetch === "function" ? await env.XCLUSIVELINE_SUPPLIER_WORKER.fetch(request) : await fetch(request);
   const data = await response.json().catch(() => ({}));
   if (response.status === 404) {
     return {
