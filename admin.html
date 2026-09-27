@@ -1130,11 +1130,11 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 <h3>Remove image metadata</h3>
 <p style="font-size:12px;color:var(--sub);margin-bottom:12px">Re-encodes images in the browser to remove EXIF, IPTC, XMP, Photoshop and common AI-generation metadata before they reach your catalogue.</p>
 <label class="upload-zone" id="metadataZone">
-<input type="file" accept="image/*" multiple style="display:none" id="metadataFiles" onchange="metadataPendingFiles=[...this.files];renderMetadataFiles();this.value=''">
-<div class="icon">+</div><div class="label">Choose images to clean</div><div class="hint">Nothing is uploaded until you choose an action below.</div>
+<input type="file" accept="image/*" multiple style="display:none" id="metadataFiles" onchange="addMetadataFiles(this.files);this.value=''">
+<div class="icon">+</div><div class="label">Choose multiple images to clean</div><div class="hint">Select several at once, then tap again to add more. Nothing uploads until you choose an action below.</div>
 </label>
 <div id="metadataFileList" style="font-size:12px;color:var(--sub);margin:10px 0"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" onclick="cleanMetadataAndUpload()">Clean + upload to library</button><button type="button" class="btn btn-outline" onclick="cleanMetadataAndDownload()">Clean + download</button></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" onclick="cleanMetadataAndUpload()">Clean + upload all</button><button type="button" class="btn btn-outline" onclick="cleanMetadataAndDownload()">Clean + download all</button><button type="button" class="btn btn-outline" id="metadataClearBtn" onclick="clearMetadataFiles()" style="display:none">Clear selection</button></div>
 <div class="msg" id="metadataMsg"></div>
 </div>
 
@@ -1646,6 +1646,7 @@ addPaste.addEventListener('click',()=>{addPaste.focus();const msg=document.getEl
 addPaste.addEventListener('paste',e=>handlePasteImages(e,'addPasteZone',files=>appendPendingFiles(files),'addMsg'))
 }
 setupDropZone(document.getElementById('mediaZone'),files=>uploadToMedia(files));
+setupDropZone(document.getElementById('metadataZone'),files=>addMetadataFiles(files));
 const mediaPaste=document.getElementById('mediaPasteZone');
 if(mediaPaste&&!mediaPaste._pasteBound){
 mediaPaste._pasteBound=true;
@@ -5925,15 +5926,29 @@ window.showTab=function(t){
 
 // ── METADATA CLEANER ──
 let metadataPendingFiles=[];
-function renderMetadataFiles(){const el=document.getElementById('metadataFileList');if(el)el.textContent=metadataPendingFiles.length?metadataPendingFiles.map(f=>f.name).join(' · '):'';}
+function metadataFileKey(file){return [file.name,file.size,file.lastModified].join(':')}
+function addMetadataFiles(files){
+const incoming=[...(files||[])].filter(file=>file&&file.type&&file.type.startsWith('image/'));
+const seen=new Set(metadataPendingFiles.map(metadataFileKey));
+for(const file of incoming){const key=metadataFileKey(file);if(!seen.has(key)){metadataPendingFiles.push(file);seen.add(key)}}
+renderMetadataFiles()
+}
+function removeMetadataFile(index){metadataPendingFiles.splice(index,1);renderMetadataFiles()}
+function clearMetadataFiles(){metadataPendingFiles=[];renderMetadataFiles();const msg=document.getElementById('metadataMsg');if(msg)msg.textContent=''}
+function renderMetadataFiles(){
+const el=document.getElementById('metadataFileList');const clear=document.getElementById('metadataClearBtn');if(!el)return;
+if(clear)clear.style.display=metadataPendingFiles.length?'inline-flex':'none';
+if(!metadataPendingFiles.length){el.innerHTML='<span>No images selected yet.</span>';return}
+el.innerHTML='<div style="font-weight:700;color:var(--text);margin-bottom:7px">'+metadataPendingFiles.length+' image'+(metadataPendingFiles.length===1?'':'s')+' selected</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+metadataPendingFiles.map((file,index)=>'<span style="display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:9px;background:#fff"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px">'+esc(file.name)+'</span><button type="button" aria-label="Remove '+esc(file.name)+'" onclick="removeMetadataFile('+index+')" style="border:0;background:transparent;color:#d32f2f;font-size:17px;line-height:1;padding:0 2px;cursor:pointer">&times;</button></span>').join('')+'</div>'
+}
 async function cleanImageMetadata(file){
 if(!file||!file.type||!file.type.startsWith('image/'))throw new Error('Only image files are supported');
 const image=await createImageBitmap(file);const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d',{alpha:true});ctx.drawImage(image,0,0);image.close();
 const outputType=file.type==='image/png'?'image/png':file.type==='image/webp'?'image/webp':'image/jpeg';
 const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not encode image')),outputType,outputType==='image/jpeg'?0.98:1));
 const base=file.name.replace(/\\.(jpe?g|png|webp|gif|avif|heic|heif)$/i,'');const ext=outputType==='image/png'?'png':outputType==='image/webp'?'webp':'jpg';return new File([blob],base+'-clean.'+ext,{type:outputType,lastModified:Date.now()});}
-async function cleanMetadataBatch(){if(!metadataPendingFiles.length)throw new Error('Choose at least one image first');const cleaned=[];for(const file of metadataPendingFiles)cleaned.push(await cleanImageMetadata(file));return cleaned;}
-async function cleanMetadataAndUpload(){const msg=document.getElementById('metadataMsg');try{msg.style.color='var(--sub)';msg.textContent='Cleaning images...';const cleaned=await cleanMetadataBatch();await uploadToMedia(cleaned);msg.style.color='var(--g)';msg.textContent='Cleaned and uploaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;}}
+async function cleanMetadataBatch(){if(!metadataPendingFiles.length)throw new Error('Choose at least one image first');const files=[...metadataPendingFiles];const cleaned=[];const msg=document.getElementById('metadataMsg');for(let i=0;i<files.length;i++){if(msg)msg.textContent='Cleaning '+(i+1)+' of '+files.length+'...';cleaned.push(await cleanImageMetadata(files[i]))}return cleaned;}
+async function cleanMetadataAndUpload(){const msg=document.getElementById('metadataMsg');try{msg.style.color='var(--sub)';msg.textContent='Cleaning images...';const cleaned=await cleanMetadataBatch();await uploadToMedia(cleaned);msg.style.color='var(--g)';msg.textContent='Cleaned and uploaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';clearMetadataFiles();msg.textContent='Cleaned and uploaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;}}
 async function cleanMetadataAndDownload(){const msg=document.getElementById('metadataMsg');try{msg.style.color='var(--sub)';msg.textContent='Cleaning images...';const cleaned=await cleanMetadataBatch();for(const file of cleaned){const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}msg.style.color='var(--g)';msg.textContent='Cleaned and downloaded '+cleaned.length+' image'+(cleaned.length===1?'':'s')+'.';}catch(e){msg.style.color='#e53935';msg.textContent='Failed: '+e.message;}}
 </script>
 </body></html>
