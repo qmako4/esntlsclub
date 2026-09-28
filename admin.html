@@ -1309,6 +1309,7 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 <!-- TOOLS -->
 <div class="page" id="pageTools">
 <div class="card"><h3>Checkout settings</h3><p style="font-size:12px;color:var(--sub);margin-bottom:16px">Switch the checkout links for your catalogue. Existing product details and photos are kept.</p><button class="btn btn-outline" onclick="setCheckoutLinkMode('shopify')">Use Shopify links</button><button class="btn btn-outline" onclick="setCheckoutLinkMode('wix')">Use Wix backups</button><div class="msg" id="checkoutModeMsg"></div></div>
+<div class="card"><h3>Supplier portal product sync</h3><p style="font-size:12px;color:var(--sub);margin-bottom:12px">Automatically refreshes matching supplier-portal item names and photos when a linked Shopify product is updated. Order sizes, quantities, tracking and fulfilment details stay unchanged.</p><button class="btn" id="enableProductSyncBtn" onclick="enableSupplierProductSync()">Enable automatic product updates</button><div class="msg" id="productSyncMsg"></div></div>
 <div class="card">
 <h3>Restore Hardcoded Products</h3>
 <p style="font-size:12px;color:var(--sub);margin-bottom:10px">One-time: imports the 36 hardcoded products into R2 so you can edit, reorder, or delete them like new ones.</p>
@@ -5922,6 +5923,16 @@ window.showTab=function(t){
     }
   }
 };
+
+async function enableSupplierProductSync(){
+const btn=document.getElementById('enableProductSyncBtn');const msg=document.getElementById('productSyncMsg');
+try{
+btn.disabled=true;btn.textContent='Enabling...';msg.style.color='var(--sub)';msg.textContent='Connecting Shopify product updates...';
+const response=await fetch(WORKER_URL+'/shopify-product-webhook-ensure',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'}});
+const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Could not enable product updates');
+btn.textContent='Automatic product updates enabled';msg.style.color='var(--g)';msg.textContent=data.status==='already-installed'?'Already enabled — Shopify product changes will refresh the supplier portal.':'Enabled — future Shopify product changes will refresh the supplier portal.';
+}catch(error){btn.disabled=false;btn.textContent='Try enabling again';msg.style.color='#e53935';msg.textContent='Failed: '+error.message}
+}
 
 
 // ── METADATA CLEANER ──
