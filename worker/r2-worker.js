@@ -177,6 +177,16 @@ query SupplierWebhookStatus($topics: [WebhookSubscriptionTopic!]) {
     nodes { id topic uri format createdAt updatedAt }
   }
 }`;
+var SHOPIFY_PRODUCT_WEBHOOK_CREATE_MUTATION = `
+mutation EnsureProductUpdateWebhook($uri: String!) {
+  webhookSubscriptionCreate(
+    topic: PRODUCTS_UPDATE
+    webhookSubscription: { uri: $uri, format: JSON }
+  ) {
+    webhookSubscription { id topic uri }
+    userErrors { field message }
+  }
+}`;
 var SUPPLIER_TRACKING_ORDER_QUERY = `
 query SupplierTrackingOrder($query: String!) {
   orders(first: 1, query: $query) {
@@ -2529,6 +2539,20 @@ async function checkShopifyWebhookStatus(env, expectedUri) {
   };
 }
 __name(checkShopifyWebhookStatus, "checkShopifyWebhookStatus");
+async function ensureShopifyProductUpdateWebhook(env, uri) {
+  const expectedUri = safeMessageLine(uri);
+  if (!expectedUri || !/^https:\/\//i.test(expectedUri)) throw new Error("A secure Shopify product webhook URL is required");
+  const current = await shopifyGraphql(env, SHOPIFY_WEBHOOK_STATUS_QUERY, { topics: ["PRODUCTS_UPDATE"] });
+  const existing = (current?.webhookSubscriptions?.nodes || []).find((webhook) => webhook.topic === "PRODUCTS_UPDATE" && safeMessageLine(webhook.uri) === expectedUri);
+  if (existing) return { ok: true, status: "already-installed", webhook: existing };
+  const data = await shopifyGraphql(env, SHOPIFY_PRODUCT_WEBHOOK_CREATE_MUTATION, { uri: expectedUri });
+  const result = data?.webhookSubscriptionCreate || {};
+  const errors = result.userErrors || [];
+  if (errors.length) throw new Error(errors.map((error) => error.message).filter(Boolean).join("; ") || "Shopify rejected the product webhook");
+  if (!result.webhookSubscription) throw new Error("Shopify did not return the new product webhook");
+  return { ok: true, status: "installed", webhook: result.webhookSubscription };
+}
+__name(ensureShopifyProductUpdateWebhook, "ensureShopifyProductUpdateWebhook");
 function secureStringEqual(a, b) {
   return constantTimeEqualBytes(
     new TextEncoder().encode(String(a || "")),
@@ -7519,6 +7543,13 @@ var r2_worker_default = {
     );
     if (!adminAuthorized && !serviceAuthorized) {
       return json({ error: "Unauthorized" }, 401);
+    }
+    if (req.method === "POST" && parts[0] === "shopify-product-webhook-ensure") {
+      try {
+        return json(await ensureShopifyProductUpdateWebhook(env, `${url.origin}/shopify-product-webhook`));
+      } catch (error) {
+        return json({ error: error.message }, 500);
+      }
     }
     if (req.method === "POST" && parts[0] === "shopify-create-product") {
       let body;
