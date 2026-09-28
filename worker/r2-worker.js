@@ -2513,14 +2513,17 @@ async function syncSupplierTrackingFromSheet(env, requestBody = {}) {
 }
 __name(syncSupplierTrackingFromSheet, "syncSupplierTrackingFromSheet");
 async function checkShopifyWebhookStatus(env, expectedUri) {
-  const data = await shopifyGraphql(env, SHOPIFY_WEBHOOK_STATUS_QUERY, { topics: ["ORDERS_CREATE"] });
+  const data = await shopifyGraphql(env, SHOPIFY_WEBHOOK_STATUS_QUERY, { topics: ["ORDERS_CREATE", "PRODUCTS_UPDATE"] });
   const webhooks = data?.webhookSubscriptions?.nodes || [];
   const expected = safeMessageLine(expectedUri);
+  const expectedProductUri = expected.replace(/\/shopify-order-webhook$/, "/shopify-product-webhook");
   return {
     ok: true,
     shop: data?.shop || null,
     expectedUri: expected,
-    installed: expected ? webhooks.some((webhook) => safeMessageLine(webhook.uri) === expected) : webhooks.length > 0,
+    expectedProductUri,
+    installed: expected ? webhooks.some((webhook) => webhook.topic === "ORDERS_CREATE" && safeMessageLine(webhook.uri) === expected) : webhooks.length > 0,
+    productUpdateInstalled: expectedProductUri ? webhooks.some((webhook) => webhook.topic === "PRODUCTS_UPDATE" && safeMessageLine(webhook.uri) === expectedProductUri) : false,
     webhookCount: webhooks.length,
     webhooks
   };
@@ -4080,6 +4083,88 @@ async function handleShopifyOrderWebhook(req, env, ctx) {
   return json({ ok: true, accepted: true, orderName: shopifyOrderDisplayName(order) || null }, 202);
 }
 __name(handleShopifyOrderWebhook, "handleShopifyOrderWebhook");
+function shopifyProductWebhookImage(product) {
+  const candidates = [
+    product?.image,
+    product?.featured_image,
+    Array.isArray(product?.images) ? product.images[0] : null
+  ];
+  for (const candidate of candidates) {
+    const value = safeMessageLine(candidate?.src || candidate?.url || candidate);
+    if (value) return value;
+  }
+  return "";
+}
+__name(shopifyProductWebhookImage, "shopifyProductWebhookImage");
+async function syncShopifyProductToSupplierPortal(env, product) {
+  if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
+  const productId = normalizeShopifyNumericId(product?.admin_graphql_api_id || product?.id);
+  if (!productId) throw new Error("Shopify product webhook is missing a product id");
+  const productName = safeMessageLine(product?.title);
+  const imageUrl = shopifyProductWebhookImage(product);
+  const syncedAt = (/* @__PURE__ */ new Date()).toISOString();
+  let cursor = void 0;
+  let scannedOrders = 0;
+  let updatedOrders = 0;
+  let updatedItems = 0;
+  do {
+    const listed = await env.BUCKET.list({ prefix: SUPPLIER_PORTAL_ORDER_ROOT, limit: 1e3, cursor });
+    for (const object of listed.objects || []) {
+      const stored = await env.BUCKET.get(object.key);
+      if (!stored) continue;
+      let order;
+      try {
+        order = JSON.parse(await stored.text());
+      } catch {
+        continue;
+      }
+      scannedOrders++;
+      let changed = false;
+      const items = (Array.isArray(order.items) ? order.items : []).map((item) => {
+        if (normalizeShopifyNumericId(item?.shopifyProductId) !== productId) return item;
+        const next = {
+          ...item,
+          productName: productName || item.productName || "",
+          imageUrl: imageUrl || item.imageUrl || "",
+          shopifyProductSyncedAt: syncedAt
+        };
+        if (next.productName !== item.productName || next.imageUrl !== item.imageUrl || next.shopifyProductSyncedAt !== item.shopifyProductSyncedAt) {
+          changed = true;
+          updatedItems++;
+        }
+        return next;
+      });
+      if (!changed) continue;
+      await writeSupplierPortalOrder(env, {
+        ...order,
+        key: object.key,
+        items,
+        lastShopifyProductSyncAt: syncedAt
+      });
+      updatedOrders++;
+    }
+    cursor = listed.truncated ? listed.cursor : void 0;
+  } while (cursor);
+  return { ok: true, productId, productName, imageUrl, scannedOrders, updatedOrders, updatedItems, syncedAt };
+}
+__name(syncShopifyProductToSupplierPortal, "syncShopifyProductToSupplierPortal");
+async function handleShopifyProductWebhook(req, env, ctx) {
+  const rawBody = await req.arrayBuffer();
+  const verification = await verifyShopifyWebhookRequest(req, rawBody, env);
+  if (!verification.ok) return json({ error: verification.error }, verification.status);
+  let product;
+  try {
+    product = JSON.parse(new TextDecoder().decode(rawBody));
+  } catch {
+    return json({ error: "Invalid Shopify webhook JSON" }, 400);
+  }
+  const productId = normalizeShopifyNumericId(product?.admin_graphql_api_id || product?.id);
+  ctx.waitUntil(syncShopifyProductToSupplierPortal(env, product).catch((error) => {
+    console.error("supplier_portal_product_sync_failed", { productId, error: error.message });
+  }));
+  return json({ ok: true, accepted: true, productId: productId || null }, 202);
+}
+__name(handleShopifyProductWebhook, "handleShopifyProductWebhook");
 async function processSupplierOrderWebhook(env, order, options = {}) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const key = supplierOrderLogKey(order, options.deliveryId);
@@ -7397,6 +7482,9 @@ var r2_worker_default = {
     const parts = url.pathname.split("/").filter(Boolean);
     if (req.method === "POST" && parts[0] === "shopify-order-webhook") {
       return handleShopifyOrderWebhook(req, env, ctx);
+    }
+    if (req.method === "POST" && parts[0] === "shopify-product-webhook") {
+      return handleShopifyProductWebhook(req, env, ctx);
     }
     if ((req.method === "GET" || req.method === "HEAD") && parts[0] === "supplier-image") {
       return getSupplierSheetImage(req, env, parts);
