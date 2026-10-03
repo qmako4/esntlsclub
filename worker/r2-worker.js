@@ -7878,6 +7878,22 @@ var r2_worker_default = {
         return json({ error: error.message }, 500);
       }
     }
+    // Authenticated reads used by the admin when patching the live catalogue
+    // (for example /object/products.json). Keep this behind the admin/session
+    // check above so the bucket is never exposed through this Worker route.
+    if (req.method === "GET" && parts[0] === "object") {
+      const key = parts.slice(1).map(decodeURIComponent).join("/");
+      if (!key || key.includes("..") || key.includes("\\")) {
+        return json({ error: "Invalid object key" }, 400);
+      }
+      const object = await env.BUCKET.get(key);
+      if (!object) return json({ error: "Object not found" }, 404);
+      const headers = new Headers(cors);
+      object.writeHttpMetadata(headers);
+      headers.set("etag", object.httpEtag);
+      headers.set("Cache-Control", "no-store, max-age=0");
+      return new Response(req.method === "HEAD" ? null : object.body, { status: 200, headers });
+    }
     if (req.method === "GET" && parts[0] === "list") {
       const out = [];
       let cursor;
