@@ -336,6 +336,7 @@ const PRODUCT_ACCESS_HASH='18e62510a64c48755187b7a1ce68207ded7a35df6d3c5c0cdd49f
 
 function productRequiresPassword(item){
   if(!item)return false;
+  if(String(productId(item))==='95')return true;
   if(item.passwordProtected===true||item.accessProtected===true)return true;
   return /\bt1\b.*\bscott\b|\bscott\b.*\bt1\b/i.test(String(item.name||''));
 }
