@@ -147,6 +147,15 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .state h1{font-size:clamp(26px,8vw,34px);margin-bottom:10px}
 .state p{color:#666;font-size:13px;margin-bottom:18px}
 .state a{background:#111;border-radius:999px;color:#fff;display:inline-flex;font-size:12px;font-weight:700;padding:13px 18px;text-transform:uppercase}
+.access-card{background:#fff;border:1px solid #e6e6e6;border-radius:20px;box-shadow:0 14px 34px rgba(0,0,0,.08);max-width:420px;padding:28px;text-align:left;width:100%}
+.access-card h1{font-size:clamp(30px,8vw,42px);margin-bottom:10px}
+.access-card p{color:#666;font-size:13px;line-height:1.55;margin-bottom:18px}
+.access-form{display:grid;gap:10px}
+.access-form input{border:1px solid #d8d8d8;border-radius:999px;font-size:16px;min-height:50px;padding:0 17px;width:100%}
+.access-form input:focus{border-color:#00a844;outline:2px solid rgba(0,200,83,.16)}
+.access-form button{background:#00c853;border:0;border-radius:999px;color:#fff;cursor:pointer;font-size:13px;font-weight:800;min-height:50px;padding:13px 18px}
+.access-form button:hover{background:#00ad46}
+.access-error{color:#bd2020;font-size:12px;font-weight:700;min-height:16px}
 .confirm{align-items:center;background:rgba(0,0,0,.5);display:flex;inset:0;justify-content:center;opacity:0;padding:16px;pointer-events:none;position:fixed;transition:opacity .2s;z-index:20}
 .confirm.open{opacity:1;pointer-events:auto}
 .confirm-box{background:#fff;border-radius:20px;box-shadow:0 18px 42px rgba(0,0,0,.2);max-width:430px;padding:24px;width:100%}
@@ -323,6 +332,61 @@ function checkoutLink(item){
   return shopify||item.wixLink||saved;
 }
 
+const PRODUCT_ACCESS_HASH='18e62510a64c48755187b7a1ce68207ded7a35df6d3c5c0cdd49fd9416b14b35';
+
+function productRequiresPassword(item){
+  if(!item)return false;
+  if(item.passwordProtected===true||item.accessProtected===true)return true;
+  return /\bt1\b.*\bscott\b|\bscott\b.*\bt1\b/i.test(String(item.name||''));
+}
+
+function productAccessKey(item){
+  return 'esntls-product-access-'+productId(item);
+}
+
+function productIsUnlocked(item){
+  if(!productRequiresPassword(item))return true;
+  try{return localStorage.getItem(productAccessKey(item))==='1';}catch(error){return false;}
+}
+
+function renderProductAccessGate(){
+  const app=document.getElementById('productApp');
+  app.className='state';
+  app.innerHTML='<div class="access-card">'
+    +'<h1>Private item</h1>'
+    +'<p>Enter the access code to view this product.</p>'
+    +'<form class="access-form" onsubmit="unlockProduct(event)">'
+    +'<input id="productAccessCode" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Access code" aria-label="Access code" required>'
+    +'<div id="productAccessError" class="access-error" role="alert" aria-live="polite"></div>'
+    +'<button type="submit">View product</button>'
+    +'</form></div>';
+  const input=document.getElementById('productAccessCode');
+  if(input)input.focus();
+}
+
+async function unlockProduct(event){
+  if(event)event.preventDefault();
+  const input=document.getElementById('productAccessCode');
+  const error=document.getElementById('productAccessError');
+  const code=input?String(input.value||'').trim():'';
+  let digest='';
+  try{
+    const bytes=new TextEncoder().encode(code);
+    const hash=await crypto.subtle.digest('SHA-256',bytes);
+    digest=Array.from(new Uint8Array(hash)).map(function(byte){return byte.toString(16).padStart(2,'0');}).join('');
+  }catch(hashError){
+    digest='';
+  }
+  if(digest!==PRODUCT_ACCESS_HASH){
+    if(error)error.textContent='That code is not correct.';
+    if(input){input.value='';input.focus();}
+    return false;
+  }
+  try{localStorage.setItem(productAccessKey(product),'1');}catch(storageError){}
+  renderProduct();
+  return false;
+}
+
 async function loadProducts(){
   const sources=[R2_BASE+'products.json?t='+Date.now(),'products.json?t='+Date.now()];
   const catalogue=new Map();
@@ -480,6 +544,7 @@ function renderError(){
 function renderProduct(){
   if(!product){renderError();return;}
   document.title=product.name+' | ESNTLS CLUB';
+  if(!productIsUnlocked(product)){renderProductAccessGate();return;}
   const gallery=product.images;
   const sold=String(product.price).toLowerCase()==='out of stock';
   const category=categoryLabel(product);
