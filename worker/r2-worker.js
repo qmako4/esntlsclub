@@ -2628,37 +2628,46 @@ function supplierPortalHtmlResponse() {
 }
 __name(supplierPortalHtmlResponse, "supplierPortalHtmlResponse");
 function ownerFinanceHtmlResponse() {
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ESNTLS Owner Finance</title><meta name="description" content="ESNTLS supplier balance and profit tracker"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2311110f'/%3E%3Cpath d='M15 18h34v9H26v6h20v8H26v6h23v9H15z' fill='%2300d45a'/%3E%3C/svg%3E"><style>
-  :root{color-scheme:light;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f2ed;color:#11110f}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#00d45a 0 9px,#f3f2ed 9px 100%)}button,input{font:inherit}button{cursor:pointer}.page{max-width:980px;margin:0 auto;padding:28px 16px 60px}.site-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.brand{font-size:1.35rem;font-weight:950;letter-spacing:-.04em}.brand span{color:#00b950}.refresh{border:1px solid #cbc9bf;background:#fff;border-radius:999px;padding:11px 17px;font-weight:800;color:#11110f}.owner-finance-panel{background:#11110f;color:#fff;border-radius:24px;padding:clamp(16px,4vw,28px);box-shadow:0 18px 55px rgba(20,20,16,.18)}
-  .owner-finance-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}.owner-finance-head h1{margin:0;font-size:clamp(1.75rem,6vw,2.6rem);letter-spacing:-.05em}.finance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.finance-stat{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:14px}.finance-label{color:#aaa89f;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.finance-value{font-size:clamp(1.35rem,4vw,1.75rem);font-weight:950;margin-top:5px}.finance-share{color:#62d868}.finance-note{font-size:.85rem;color:#c5c2b8;line-height:1.5;margin:13px 0}.finance-actions{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:end;margin:16px 0 24px}.finance-actions label{font-size:.85rem;color:#c5c2b8}.finance-actions input,.finance-cost-row input{width:100%;margin-top:6px;padding:13px;border:1px solid #555;border-radius:12px;background:#fff;color:#111}.owner-finance-panel button{border:0;border-radius:12px;background:#00d45a;color:#07120b;padding:13px 16px;font-weight:900}.owner-finance-panel button.secondary{background:#292925;color:#fff;border:1px solid #4a4a44}.owner-finance-panel h2{font-size:1.1rem;margin:24px 0 10px}
-  .finance-orders,.finance-costs{display:grid;gap:9px}.finance-order,.finance-cost-row{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:13px}.finance-order-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.finance-order-name,.finance-product{font-weight:900}.finance-order-date,.finance-option{font-size:.75rem;color:#aaa89f}.finance-order-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}.finance-order-cell{background:#171715;border-radius:10px;padding:9px}.finance-order-cell span{display:block;color:#aaa89f;font-size:.7rem;font-weight:800;text-transform:uppercase}.finance-order-cell strong{display:block;font-size:.95rem;margin-top:4px}.finance-order-warning{color:#ffca79;font-size:.8rem;margin-top:9px}.finance-cost-row{display:grid;grid-template-columns:1fr 130px auto;gap:9px;align-items:center}.finance-cost-row input{margin:0}.finance-history{margin-top:24px;font-size:.85rem;color:#c5c2b8}.finance-history-row{border-top:1px solid #34342f;padding:10px 0}.loading{padding:40px;text-align:center;color:#c5c2b8}.error{background:#4a1d1d;color:#ffd4d4;border-radius:14px;padding:14px;margin-bottom:14px}
-  @media(max-width:740px){.page{padding:22px 12px 44px}.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-actions,.finance-cost-row{grid-template-columns:1fr}.finance-actions button,.finance-cost-row button{width:100%}.finance-order-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-order-cell:last-child{grid-column:1/-1}.finance-order-head{display:block}.finance-order-date{margin-top:3px}}
-  </style></head><body><main class="page"><header class="site-head"><div class="brand">ESNTLS <span>CLUB</span></div><button class="refresh" id="refreshBtn" type="button">Refresh</button></header><section id="ownerFinancePanel" class="owner-finance-panel"><div class="loading">Loading finance figures…</div></section></main><script>
-  (function(){function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}function money(v){return '£'+Number(v||0).toFixed(2)}function shell(){return document.getElementById('ownerFinancePanel')}async function request(path,options){var r=await fetch('/supplier-finance-api/'+path,Object.assign({cache:'no-store',headers:{'Content-Type':'application/json'}},options||{}));var d=await r.json().catch(function(){return{}});if(!r.ok||d.error)throw new Error(d.error||'Request failed');return d}
-  function render(f){var warning=[];if(f.missingCostItems)warning.push(f.missingCostItems+' item(s) need a supplier cost');if(f.missingSalesOrders)warning.push(f.missingSalesOrders+' order(s) need a sales total');var orders=(f.orderBreakdown||[]).map(function(o){return '<div class="finance-order"><div class="finance-order-head"><div class="finance-order-name">'+esc(o.orderName||'Order')+'</div><div class="finance-order-date">'+esc(o.orderDate?new Date(o.orderDate).toLocaleString('en-GB'):'')+'</div></div><div class="finance-order-grid"><div class="finance-order-cell"><span>Sale</span><strong>'+money(o.salesTotal)+'</strong></div><div class="finance-order-cell"><span>Supplier</span><strong>'+money(o.supplierCost)+'</strong></div><div class="finance-order-cell"><span>Profit</span><strong>'+money(o.estimatedProfit)+'</strong></div><div class="finance-order-cell"><span>Your 50%</span><strong>'+money(o.yourShare)+'</strong></div><div class="finance-order-cell"><span>Brother 50%</span><strong>'+money(o.brotherShare)+'</strong></div></div>'+(o.missingCostItems?'<div class="finance-order-warning">'+esc(o.missingCostItems)+' item(s) need a supplier cost. Profit is provisional.</div>':'')+'</div>'}).join('');var costs=(f.costCatalog||[]).map(function(x){return '<div class="finance-cost-row"><div><div class="finance-product">'+esc(x.productName)+'</div><div class="finance-option">'+esc(x.option||'All options')+'</div></div><input type="number" min="0" step="0.01" inputmode="decimal" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':esc(Number(x.unitCost).toFixed(2)))+'" placeholder="Unit cost £"><button data-cost-save="'+esc(x.costKey)+'">Save</button></div>'}).join('');var history=(f.settlements||[]).slice(0,5).map(function(s){return '<div class="finance-history-row">'+esc(new Date(s.paidAt).toLocaleString('en-GB'))+' · Supplier '+money(s.supplierPaid)+' · Profit '+money(s.estimatedProfit)+'</div>'}).join('');shell().innerHTML='<div class="owner-finance-head"><div><div class="finance-option">OWNER FINANCE</div><h1>Money overview</h1></div></div><div class="finance-note"><strong>Counting starts after '+esc(f.cutoffOrderName||'#1233')+'.</strong> Brogan Coyle’s order and every earlier order are excluded.</div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' · ')||'All supplier costs are ready. Profit is before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save other costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h2>Profit by order</h2><div class="finance-orders">'+(orders||'<div class="finance-note">No orders after the cutoff yet.</div>')+'</div><h2>Supplier costs</h2><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'')}
-  async function load(){shell().innerHTML='<div class="loading">Loading finance figures…</div>';try{render((await request('summary')).finance)}catch(e){shell().innerHTML='<div class="error">'+esc(e.message)+'</div><button data-finance-retry>Try again</button>'}}document.getElementById('refreshBtn').addEventListener('click',load);shell().addEventListener('click',async function(e){if(e.target.closest('[data-finance-retry]')){load();return}var save=e.target.closest('[data-cost-save]');if(save){var key=save.getAttribute('data-cost-save');var input=shell().querySelector('[data-cost-input="'+CSS.escape(key)+'"]');try{render((await request('update',{method:'POST',body:JSON.stringify({action:'set-cost',costKey:key,unitCost:input.value})})).finance)}catch(err){alert(err.message)}return}if(e.target.closest('[data-finance-other]')){try{render((await request('update',{method:'POST',body:JSON.stringify({action:'set-other-costs',otherCosts:document.getElementById('financeOtherCosts').value})})).finance)}catch(err){alert(err.message)}return}if(e.target.closest('[data-finance-settle]')){if(!confirm('Confirm the supplier has been paid? This records the payment and resets the outstanding count.'))return;try{render((await request('update',{method:'POST',body:JSON.stringify({action:'settle'})})).finance)}catch(err){alert(err.message)}return}if(e.target.closest('[data-finance-undo]')){if(!confirm('Undo the most recent supplier payment reset?'))return;try{render((await request('update',{method:'POST',body:JSON.stringify({action:'undo-last-settlement'})})).finance)}catch(err){alert(err.message)}}});load()})();
-  </script><script>
-  (function(){
-    var panel=document.getElementById('ownerFinancePanel');
-    if(!panel)return;
-    function inject(){
-      if(panel.querySelector('[data-manual-payment-box]'))return;
-      var anchor=panel.querySelector('.finance-actions');
-      if(!anchor)return;
-      var box=document.createElement('div');box.setAttribute('data-manual-payment-box','');box.className='finance-actions';box.style.marginTop='0';
-      box.innerHTML='<label>Supplier paid<input id="manualSupplierPaid" type="number" min="0" step="0.01" inputmode="decimal" value="0.00"></label><label>Your 50% paid<input id="manualOwnerPaid" type="number" min="0" step="0.01" inputmode="decimal" value="0.00"></label><button id="manualPaymentSave" type="button">Save payments</button>';
-      anchor.parentNode.insertBefore(box,anchor);
-      fetch('/supplier-finance-api/summary',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){var f=d.finance||{};document.getElementById('manualSupplierPaid').value=Number(f.supplierPaid||0).toFixed(2);document.getElementById('manualOwnerPaid').value=Number(f.yourSharePaid||0).toFixed(2)}).catch(function(){});
-      document.getElementById('manualPaymentSave').addEventListener('click',async function(){
-        var supplier=document.getElementById('manualSupplierPaid').value;var owner=document.getElementById('manualOwnerPaid').value;
-        if(Number(supplier)<0||Number(owner)<0||!Number.isFinite(Number(supplier))||!Number.isFinite(Number(owner))){alert('Enter valid payment amounts');return}
-        this.disabled=true;this.textContent='Saving…';
-        try{var r=await fetch('/supplier-finance-api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set-payments',supplierPaid:supplier,ownerPaid:owner})});var d=await r.json();if(!r.ok||d.error)throw new Error(d.error||'Could not save payments');location.reload()}catch(e){alert(e.message);this.disabled=false;this.textContent='Save payments'}
-      });
-    }
-    new MutationObserver(inject).observe(panel,{childList:true,subtree:true});inject();
-  })();
-  </script></body></html>`;
+  const html = String.raw`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ESNTLS Owner Finance</title><meta name="description" content="Supplier payments and your 50/50 profit balances">
+<style>
+:root{color-scheme:light;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17251e;background:#f3f5f1}*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer;min-height:46px;padding:11px 16px;border:0;border-radius:12px;background:#167348;color:white;font-weight:700}button:disabled{opacity:.55;cursor:wait}button.secondary{background:#eef3ed;color:#285b3e;border:1px solid #ccd9cd}input{width:100%;min-height:48px;padding:12px;border:1px solid #becabe;border-radius:10px;background:white;color:#17251e;font-size:16px}input:focus,button:focus-visible,summary:focus-visible{outline:3px solid #8edbb0;outline-offset:3px}.page{max-width:1020px;margin:auto;padding:28px 16px 64px}.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}.brand{font-size:19px;font-weight:900;letter-spacing:-.6px}.brand span{color:#167348}h1{font-size:30px;letter-spacing:-1px;margin:0 0 8px}h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0}.muted{color:#627167;font-size:14px;line-height:1.5}.intro{margin-bottom:22px}.balances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card,.section{background:white;border:1px solid #d9e2d7;border-radius:18px;padding:20px}.card{border-top:4px solid #167348}.amount{font-size:32px;font-weight:850;letter-spacing:-1px;margin:12px 0}.ledger{display:flex;justify-content:space-between;gap:12px;color:#627167;font-size:13px;margin:7px 0}.ledger strong{color:#263e2e}.stats{display:flex;flex-wrap:wrap;gap:10px 24px;margin:20px 0;color:#627167;font-size:14px}.stats strong{color:#17251e}.section{margin-top:16px}.payment-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}label{display:block;font-size:14px;font-weight:700}label input{margin-top:8px}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.notice{padding:14px 16px;background:#fff4dc;border:1px solid #edd49b;color:#765615;border-radius:12px;font-size:14px;margin:16px 0;line-height:1.5}.status{min-height:20px;margin-top:12px;font-size:14px;color:#167348}.status.error{color:#aa2929}details>summary{cursor:pointer;font-size:17px;font-weight:750;padding:2px 0;min-height:36px}.detail-body{margin-top:16px}.cost-row{display:grid;grid-template-columns:1fr 120px auto;gap:12px;align-items:center;padding:14px 0;border-top:1px solid #e5ebe3}.cost-name{font-size:14px;font-weight:700}.cost-row .muted{font-size:12px}.missing{color:#906212}.search{margin:14px 0}.order{border-top:1px solid #e5ebe3;padding:14px 0}.order-head{display:flex;justify-content:space-between;gap:12px}.order-grid{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:8px;font-size:13px;color:#627167}.order-grid strong{color:#17251e}.history-row{border-top:1px solid #e5ebe3;padding:12px 0;font-size:14px}.history-row .muted{font-size:12px}.other-costs{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;max-width:420px}.loading{padding:30px;text-align:center}.note{margin:12px 0 0}.credit{color:#906212}.payment-preview{font-size:13px;color:#167348;margin-top:7px}.section p{margin:8px 0}
+@media(max-width:680px){.page{padding:22px 12px 44px}.balances,.payment-fields{grid-template-columns:1fr}.card,.section{padding:18px}.card .amount{margin:9px 0;font-size:30px}.ledger{font-size:14px}.cost-row{grid-template-columns:1fr 110px}.cost-row button{grid-column:1/-1}.other-costs{grid-template-columns:1fr}.actions button{width:100%}.order-head{flex-wrap:wrap}.header button{padding:10px 14px}.stats{gap:8px 16px}}
+</style></head><body><main class="page"><header class="header"><div class="brand">ESNTLS <span>CLUB</span></div><button id="refreshBtn" class="secondary" type="button">Refresh</button></header>
+<section class="intro"><h1>Owner finance</h1><div class="muted">What is still owed, after payments.</div></section>
+<div id="pageStatus" class="status" role="status" aria-live="polite"></div><div id="ownerFinancePanel"><div class="loading">Loading balances…</div></div></main>
+<script>
+(function(){
+  var finance=null,busy=false;
+  var panel=document.getElementById('ownerFinancePanel');
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}
+  function money(v){return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(Number(v||0))}
+  function amount(v){return Number(v||0).toFixed(2)}
+  function message(text,error){var el=document.getElementById('pageStatus');el.textContent=text||'';el.className='status'+(error?' error':'')}
+  async function request(path,body){var options={cache:'no-store'};if(body){options.method='POST';options.headers={'Content-Type':'application/json'};options.body=JSON.stringify(body)}var response=await fetch('/supplier-finance-api/'+path,options);var data=await response.json().catch(function(){return{}});if(!response.ok||data.error||!data.finance)throw new Error(data.error||'Could not load finance. Please try again.');return data.finance}
+  function card(title,total,paid,remaining){return '<article class="card"><h3>'+title+'</h3><div class="amount">'+money(Math.max(0,remaining))+'</div><div class="muted">Remaining to pay</div><div class="ledger"><span>Total earned / cost</span><strong>'+money(total)+'</strong></div><div class="ledger"><span>Already paid</span><strong>'+money(paid)+'</strong></div>'+(remaining<0?'<div class="muted credit">Paid above balance: '+money(-remaining)+'</div>':'')+'</article>'}
+  function field(id,label,paid){return '<label>'+label+'<input id="'+id+'" type="number" min="0" max="1000000000" step="0.01" inputmode="decimal" required value="'+amount(paid)+'"><div class="payment-preview" data-preview="'+id+'"></div></label>'}
+  function render(f){
+    finance=f;
+    var orders=(f.orderBreakdown||[]).map(function(o){return '<div class="order"><div class="order-head"><strong>'+esc(o.orderName||'Order')+'</strong><span class="muted">'+esc(o.orderDate?new Date(o.orderDate).toLocaleDateString('en-GB'):'')+'</span></div><div class="order-grid"><span>Sales <strong>'+money(o.salesTotal)+'</strong></span><span>Supplier <strong>'+money(o.supplierCost)+'</strong></span><span>Profit <strong>'+money(o.estimatedProfit)+'</strong></span><span>Each 50% <strong>'+money(o.yourShare)+'</strong></span></div>'+(o.missingCostItems?'<p class="muted missing">Missing supplier costs — profit is provisional.</p>':'')+'</div>'}).join('');
+    var costs=(f.costCatalog||[]).map(function(x){return '<div class="cost-row" data-product="'+esc(String(x.productName).toLowerCase())+'"><div><div class="cost-name">'+esc(x.productName)+'</div><div class="muted '+(x.unitCost==null?'missing':'')+'">'+(x.unitCost==null?'Cost needed':'All sizes / options')+'</div></div><label><span class="muted">Unit cost £</span><input aria-label="'+esc(x.productName)+' supplier cost" type="number" min="0" step="0.01" inputmode="decimal" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':amount(x.unitCost))+'"></label><button type="button" data-cost-save="'+esc(x.costKey)+'">Save cost</button></div>'}).join('');
+    var history=(f.paymentHistory||[]).map(function(h){return '<div class="history-row"><strong>Paid totals updated</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' · You '+money(h.ownerPaid)+' · Brother '+money(h.brotherPaid)+'</div></div>'}).join('');
+    var resets=(f.settlements||[]).map(function(h){return '<div class="history-row"><strong>Previous period closed</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' · Profit '+money(h.estimatedProfit)+'</div></div>'}).join('');
+    panel.innerHTML='<div class="balances">'+card('Supplier',f.supplierOwed,f.supplierPaid,f.supplierRemaining)+card('Your 50%',f.yourShare,f.yourSharePaid,f.yourShareRemaining)+card('Brother’s 50%',f.brotherShare,f.brotherSharePaid,f.brotherShareRemaining)+'</div><div class="stats"><span>Sales <strong>'+money(f.salesTotal)+'</strong></span><span>Profit <strong>'+money(f.estimatedProfit)+'</strong></span><span>Orders <strong>'+esc(f.outstandingOrderCount)+'</strong></span></div>'+(f.missingCostItems||f.missingSalesOrders?'<div class="notice"><strong>Balances are provisional.</strong> '+(f.missingCostItems?esc(f.missingCostItems)+' ordered item(s) need supplier costs. ':'')+(f.missingSalesOrders?esc(f.missingSalesOrders)+' order(s) need a sales total.':'')+' Add missing costs below for accurate profit.</div>':'')+'<section class="section"><h2>How much has been paid?</h2><p class="muted">Enter the <strong>total already paid</strong> for each person, not just the latest payment. Saving the same number twice will not count it twice.</p><form id="paymentForm"><div class="payment-fields">'+field('supplierPaid','Supplier paid so far (£)',f.supplierPaid)+field('ownerPaid','Your share paid so far (£)',f.yourSharePaid)+field('brotherPaid','Brother’s share paid so far (£)',f.brotherSharePaid)+'</div><div class="actions"><button type="submit">Save paid totals</button><span class="muted">Only records payments — does not transfer money.</span></div><div id="paymentStatus" class="status" role="status"></div></form></section><details class="section"><summary>Supplier costs'+(f.missingCostItems?' — missing costs need attention':'')+'</summary><div class="detail-body"><input class="search" id="costSearch" type="search" placeholder="Find a product…" aria-label="Find a product"><div>'+(costs||'<p class="muted">No products yet.</p>')+'</div></div></details><details class="section"><summary>Profit by order ('+esc(f.outstandingOrderCount)+')</summary><div class="detail-body"><p class="muted">Order profit is sales minus supplier cost. Other business costs are deducted from the overall profit above.</p>'+(orders||'<p class="muted">No orders in this period.</p>')+'</div></details><details class="section"><summary>Other business costs</summary><div class="detail-body"><p class="muted">Enter the total fees, shipping and other costs for this period. These reduce profit before the 50/50 split.</p><form id="otherCostsForm" class="other-costs"><label>Total other costs (£)<input id="otherCosts" type="number" min="0" step="0.01" inputmode="decimal" required value="'+amount(f.otherCosts)+'"></label><button type="submit">Save costs</button></form></div></details><details class="section"><summary>Payment history</summary><div class="detail-body">'+(history||'<p class="muted">Existing paid totals: supplier '+money(f.supplierPaid)+', you '+money(f.yourSharePaid)+', brother '+money(f.brotherSharePaid)+'. Future changes will appear here.</p>')+resets+'</div></details><p class="muted note">Counting starts after '+esc(f.cutoffOrderName||'#1233')+'. That order and earlier orders are excluded. Supplier payments reduce the balance owed, not the profit. Profit is an estimate; add all fees and taxes under other costs.</p>';
+    preview();
+  }
+  function preview(){if(!finance)return;[['supplierPaid',finance.supplierOwed],['ownerPaid',finance.yourShare],['brotherPaid',finance.brotherShare]].forEach(function(pair){var input=document.getElementById(pair[0]);if(!input)return;var n=Number(input.value);var label=panel.querySelector('[data-preview="'+pair[0]+'"]');if(input.value===''||!Number.isFinite(n)||n<0){label.textContent='Enter a valid amount';return}var left=Math.round((pair[1]-n)*100)/100;label.textContent=left<0?'Paid above balance: '+money(-left):'Remaining after saving: '+money(left)})}
+  async function load(){if(busy)return;if(finance&&hasUnsavedPayments()&&!confirm('Discard your unsaved payment changes and refresh?'))return;busy=true;document.getElementById('refreshBtn').disabled=true;message('Loading…');try{render(await request('summary'));message('')}catch(e){message(e.message,true)}finally{busy=false;document.getElementById('refreshBtn').disabled=false}}
+  function hasUnsavedPayments(){if(!finance)return false;return [['supplierPaid',finance.supplierPaid],['ownerPaid',finance.yourSharePaid],['brotherPaid',finance.brotherSharePaid]].some(function(p){var input=document.getElementById(p[0]);return input&&input.value!==amount(p[1])})}
+  async function save(body,button){if(busy)return;busy=true;var open=Array.from(panel.querySelectorAll('details')).map(function(d){return d.open});var buttons=Array.from(document.querySelectorAll('button'));buttons.forEach(function(b){b.disabled=true});var old=button.textContent;button.textContent='Saving…';message('');try{render(await request('update',body));panel.querySelectorAll('details').forEach(function(d,i){d.open=open[i]});message('Saved. Remaining balances are up to date.')}catch(e){message(e.message,true)}finally{busy=false;buttons.forEach(function(b){b.disabled=false});button.textContent=old}}
+  panel.addEventListener('submit',function(e){e.preventDefault();if(e.target.id==='paymentForm'){if(!e.target.reportValidity())return;var values={action:'set-payments',supplierPaid:document.getElementById('supplierPaid').value,ownerPaid:document.getElementById('ownerPaid').value,brotherPaid:document.getElementById('brotherPaid').value};save(values,e.target.querySelector('button'))}else if(e.target.id==='otherCostsForm'){if(!e.target.reportValidity())return;if(hasUnsavedPayments()){message('Save your paid totals first, before changing other costs.',true);return}save({action:'set-other-costs',otherCosts:document.getElementById('otherCosts').value},e.target.querySelector('button'))}});
+  panel.addEventListener('click',function(e){var button=e.target.closest('[data-cost-save]');if(!button)return;if(hasUnsavedPayments()){message('Save your paid totals first, before changing product costs.',true);return}var key=button.getAttribute('data-cost-save');var input=Array.from(panel.querySelectorAll('[data-cost-input]')).find(function(x){return x.getAttribute('data-cost-input')===key});if(input.value===''||!input.reportValidity()){message('Enter a valid supplier cost.',true);return}save({action:'set-cost',costKey:key,unitCost:input.value},button)});
+  panel.addEventListener('input',function(e){if(e.target.id==='costSearch'){var q=e.target.value.toLowerCase();panel.querySelectorAll('[data-product]').forEach(function(row){row.hidden=row.getAttribute('data-product').indexOf(q)===-1})}else preview()});
+  window.addEventListener('beforeunload',function(e){if(hasUnsavedPayments()){e.preventDefault();e.returnValue=''}});
+  document.getElementById('refreshBtn').addEventListener('click',load);load();
+})();
+</script></body></html>`;
   return new Response(html, { headers: { ...cors, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 __name(ownerFinanceHtmlResponse, "ownerFinanceHtmlResponse");
@@ -2722,7 +2731,7 @@ __name(supplierFinanceOrderAfterCutoff, "supplierFinanceOrderAfterCutoff");
 async function readSupplierFinanceState(env) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const object = await env.BUCKET.get(SUPPLIER_FINANCE_STATE_KEY);
-  if (!object) return { costs: {}, settledItemKeys: [], otherCosts: 0, supplierPaid: 0, ownerPaid: 0, settlements: [] };
+  if (!object) return { costs: {}, settledItemKeys: [], otherCosts: 0, supplierPaid: 0, ownerPaid: 0, brotherPaid: 0, paymentHistory: [], settlements: [] };
   try {
     const state = JSON.parse(await object.text());
     return {
@@ -2731,10 +2740,12 @@ async function readSupplierFinanceState(env) {
       otherCosts: supplierFinanceMoney(state?.otherCosts),
       supplierPaid: supplierFinanceMoney(state?.supplierPaid),
       ownerPaid: supplierFinanceMoney(state?.ownerPaid),
+      brotherPaid: supplierFinanceMoney(state?.brotherPaid),
+      paymentHistory: Array.isArray(state?.paymentHistory) ? state.paymentHistory : [],
       settlements: Array.isArray(state?.settlements) ? state.settlements : []
     };
   } catch {
-    return { costs: {}, settledItemKeys: [], otherCosts: 0, supplierPaid: 0, ownerPaid: 0, settlements: [] };
+    throw new Error("Could not read the saved finance data. No balances have been changed.");
   }
 }
 __name(readSupplierFinanceState, "readSupplierFinanceState");
@@ -2745,6 +2756,8 @@ async function writeSupplierFinanceState(env, state) {
     otherCosts: supplierFinanceMoney(state.otherCosts),
     supplierPaid: supplierFinanceMoney(state.supplierPaid),
     ownerPaid: supplierFinanceMoney(state.ownerPaid),
+    brotherPaid: supplierFinanceMoney(state.brotherPaid),
+    paymentHistory: (state.paymentHistory || []).slice(-100),
     settlements: (state.settlements || []).slice(-50),
     updatedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
@@ -2797,7 +2810,12 @@ function supplierFinanceSnapshot(orders, state) {
   const estimatedProfit = supplierFinanceMoney(salesTotal - supplierOwed - otherCosts);
   const supplierPaid = supplierFinanceMoney(state.supplierPaid);
   const ownerPaid = supplierFinanceMoney(state.ownerPaid);
-  const supplierRemaining = supplierFinanceMoney(Math.max(0, supplierOwed - supplierPaid));
+  const brotherPaid = supplierFinanceMoney(state.brotherPaid);
+  const yourShare = supplierFinanceMoney(estimatedProfit / 2);
+  const brotherShare = supplierFinanceMoney(estimatedProfit - yourShare);
+  // Payments settle liabilities; they do not change the cost or profit.
+  // Preserve negative balances so overpayments/losses are not silently hidden.
+  const supplierRemaining = supplierFinanceMoney(supplierOwed - supplierPaid);
   const orderBreakdown = outstandingOrders.map((order) => {
     const orderKey = safeMessageLine(order.key || order.orderName);
     const items = outstandingItems.filter((item) => item.orderKey === orderKey);
@@ -2826,10 +2844,13 @@ function supplierFinanceSnapshot(orders, state) {
     supplierRemaining,
     otherCosts,
     estimatedProfit,
-    yourShare: supplierFinanceMoney(estimatedProfit / 2),
+    yourShare,
     yourSharePaid: ownerPaid,
-    yourShareRemaining: supplierFinanceMoney(Math.max(0, estimatedProfit / 2 - ownerPaid)),
-    brotherShare: supplierFinanceMoney(estimatedProfit / 2),
+    yourShareRemaining: supplierFinanceMoney(yourShare - ownerPaid),
+    brotherShare,
+    brotherSharePaid: brotherPaid,
+    brotherShareRemaining: supplierFinanceMoney(brotherShare - brotherPaid),
+    paymentHistory: (state.paymentHistory || []).slice().reverse(),
     outstandingItemCount: outstandingItems.length,
     outstandingOrderCount: outstandingOrders.length,
     missingCostItems: outstandingItems.filter((item) => item.unitCost === null).length,
@@ -2865,10 +2886,25 @@ async function handleSupplierFinanceApi(req, env, parts) {
     if (Number(body.otherCosts) < 0 || !Number.isFinite(Number(body.otherCosts))) return json({ error: "Enter a valid cost amount" }, 400);
     state.otherCosts = supplierFinanceMoney(body.otherCosts);
   } else if (body.action === "set-payments") {
-    if (Number(body.supplierPaid) < 0 || !Number.isFinite(Number(body.supplierPaid))) return json({ error: "Enter a valid supplier payment" }, 400);
-    if (Number(body.ownerPaid) < 0 || !Number.isFinite(Number(body.ownerPaid))) return json({ error: "Enter a valid owner payment" }, 400);
-    state.supplierPaid = supplierFinanceMoney(body.supplierPaid);
-    state.ownerPaid = supplierFinanceMoney(body.ownerPaid);
+    const fields = ["supplierPaid", "ownerPaid", "brotherPaid"];
+    const provided = fields.filter((field) => Object.prototype.hasOwnProperty.call(body, field));
+    if (!provided.length) return json({ error: "Enter at least one paid total" }, 400);
+    for (const field of provided) {
+      const value = body[field];
+      if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === "" ||
+          !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 1e9 ||
+          Math.abs(Number(value) * 100 - Math.round(Number(value) * 100)) > 0.0001) {
+        return json({ error: "Enter valid paid totals in pounds, with up to two decimal places" }, 400);
+      }
+    }
+    const previous = Object.fromEntries(fields.map((field) => [field, supplierFinanceMoney(state[field])]));
+    for (const field of provided) state[field] = supplierFinanceMoney(body[field]);
+    if (fields.some((field) => supplierFinanceMoney(state[field]) !== previous[field])) {
+      state.paymentHistory = [...(state.paymentHistory || []), {
+        id: crypto.randomUUID(), paidAt: new Date().toISOString(), previous,
+        supplierPaid: state.supplierPaid, ownerPaid: state.ownerPaid, brotherPaid: state.brotherPaid
+      }];
+    }
   } else if (body.action === "settle") {
     const snapshot = supplierFinanceSnapshot(orders, state);
     if (!snapshot.outstandingItemCount) return json({ error: "There is no outstanding supplier balance" }, 400);
@@ -2880,6 +2916,8 @@ async function handleSupplierFinanceApi(req, env, parts) {
       itemKeys: settledKeys,
       supplierPaid: snapshot.supplierOwed,
       ownerPaid: snapshot.yourSharePaid,
+      brotherPaid: snapshot.brotherSharePaid,
+      previousSupplierPaid: snapshot.supplierPaid,
       salesTotal: snapshot.salesTotal,
       otherCosts: snapshot.otherCosts,
       estimatedProfit: snapshot.estimatedProfit,
@@ -2891,14 +2929,16 @@ async function handleSupplierFinanceApi(req, env, parts) {
     state.otherCosts = 0;
     state.supplierPaid = 0;
     state.ownerPaid = 0;
+    state.brotherPaid = 0;
   } else if (body.action === "undo-last-settlement") {
     const last = (state.settlements || []).pop();
     if (!last) return json({ error: "There is no settlement to undo" }, 400);
     const undoKeys = new Set(last.itemKeys || []);
     state.settledItemKeys = (state.settledItemKeys || []).filter((key) => !undoKeys.has(key));
     state.otherCosts = supplierFinanceMoney(last.otherCosts);
-    state.supplierPaid = supplierFinanceMoney(last.supplierPaid || 0);
+    state.supplierPaid = supplierFinanceMoney(last.previousSupplierPaid ?? last.supplierPaid ?? 0);
     state.ownerPaid = supplierFinanceMoney(last.ownerPaid || 0);
+    state.brotherPaid = supplierFinanceMoney(last.brotherPaid || 0);
   } else {
     return json({ error: "Unknown finance action" }, 400);
   }
