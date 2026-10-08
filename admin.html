@@ -3387,12 +3387,18 @@ const delivery=dels.join(',');
 const msg=document.getElementById('em_'+id);
 const p=products.find(x=>x.id===id);
 if(!p){msg.style.color='#e53935';msg.textContent='Product not found';return}
-const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,shopifyVariants:p.shopifyVariants,variantIds:p.variantIds,variantsMap:p.variantsMap,shopifyVariantId:p.shopifyVariantId};
+const orig={name:p.name,price:p.price,category:p.category,brand:p.brand,link:p.link,delivery:p.delivery,variationName:p.variationName,variationValues:p.variationValues,shopifyVariants:p.shopifyVariants,variantIds:p.variantIds,variantsMap:p.variantsMap,shopifyVariantId:p.shopifyVariantId,sizes:p.sizes,shopifyPlaceholder:p.shopifyPlaceholder};
 const oldNumericPrice=numericPriceAmount(orig.price);
 const newNumericPrice=numericPriceAmount(price);
 const priceChanged=oldNumericPrice!==newNumericPrice;
 Object.assign(p,{name,price,category:cat,brand,link,delivery,variationName:variationValues.length?(variationName||'Style'):'',variationValues,shopifyVariants:shopifyVariants||{}});
 p.shopifyVariantId=shopifyVariants?Object.values(shopifyVariants)[0]||'':'';
+// Keep the displayed size selector in sync with edited size-only checkout maps.
+const checkoutSizes=Object.keys(shopifyVariants||{});
+if(checkoutSizes.length&&checkoutSizes.every(size=>/^(XXS|XS|S|M|L|XL|XXL|XXXL|ONE SIZE|OS|OSFA|(?:UK\s*)?\d{1,2}(?:\.\d)?)$/i.test(size.trim()))){
+p.sizes=checkoutSizes;
+if(p.shopifyPlaceholder)p.shopifyPlaceholder={...p.shopifyPlaceholder,sizes:checkoutSizes,variants:{...shopifyVariants},variantCount:checkoutSizes.length};
+}
 try{
 await saveProducts();
 let toastText=`Updated "${name}"`;
