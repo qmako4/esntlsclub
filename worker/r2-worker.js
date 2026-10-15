@@ -1732,19 +1732,20 @@ async function listSupplierPortalOrders(env, limit = 100) {
       limit: Math.min(1e3, safeLimit - orders.length),
       cursor
     });
-    for (const object of listed.objects || []) {
-      const stored = await env.BUCKET.get(object.key);
-      if (!stored) continue;
-      try {
-        const order = JSON.parse(await stored.text());
-        orders.push({
-          ...order,
-          key: object.key,
-          uploaded: object.uploaded
-        });
-      } catch {
-        orders.push({ key: object.key, status: "unreadable", items: [] });
-      }
+    // Bound concurrent R2 reads: serial reads make finance wait on every order.
+    const objects = listed.objects || [];
+    for (let offset = 0; offset < objects.length; offset += 10) {
+      const batch = await Promise.all(objects.slice(offset, offset + 10).map(async (object) => {
+        const stored = await env.BUCKET.get(object.key);
+        if (!stored) return null;
+        try {
+          const order = JSON.parse(await stored.text());
+          return { ...order, key: object.key, uploaded: object.uploaded };
+        } catch {
+          return { key: object.key, status: "unreadable", items: [] };
+        }
+      }));
+      orders.push(...batch.filter(Boolean));
     }
     if (!listed.truncated || !listed.cursor) break;
     cursor = listed.cursor;
@@ -2645,7 +2646,7 @@ function ownerFinanceHtmlResponse() {
   function money(v){return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(Number(v||0))}
   function amount(v){return Number(v||0).toFixed(2)}
   function message(text,error){var el=document.getElementById('pageStatus');el.textContent=text||'';el.className='status'+(error?' error':'')}
-  async function request(path,body){var options={cache:'no-store'};if(body){options.method='POST';options.headers={'Content-Type':'application/json'};options.body=JSON.stringify(body)}var response=await fetch('/supplier-finance-api/'+path,options);var data=await response.json().catch(function(){return{}});if(!response.ok||data.error||!data.finance)throw new Error(data.error||'Could not load finance. Please try again.');return data.finance}
+  async function request(path,body){var controller=new AbortController();var timer=setTimeout(function(){controller.abort()},25000);var options={cache:'no-store',signal:controller.signal};if(body){options.method='POST';options.headers={'Content-Type':'application/json'};options.body=JSON.stringify(body)}try{var response=await fetch('/supplier-finance-api/'+path,options);var data=await response.json().catch(function(){return{}});if(!response.ok||data.error||!data.finance)throw new Error(data.error||'Could not load finance. Please try again.');return data.finance}catch(e){if(e.name==='AbortError')throw new Error(body?'The request timed out. Refresh balances to check whether your change saved before trying again.':'Loading took too long. Tap Refresh to try again.');throw e}finally{clearTimeout(timer)}}
   function card(title,total,paid,remaining){return '<article class="card"><h3>'+title+'</h3><div class="amount">'+money(Math.max(0,remaining))+'</div><div class="muted">Remaining to pay</div><div class="ledger"><span>Total earned / cost</span><strong>'+money(total)+'</strong></div><div class="ledger"><span>Already paid</span><strong>'+money(paid)+'</strong></div>'+(remaining<0?'<div class="muted credit">Paid above balance: '+money(-remaining)+'</div>':'')+'</article>'}
   function field(id,label,paid){return '<label>'+label+'<input id="'+id+'" type="number" min="0" max="1000000000" step="0.01" inputmode="decimal" required value="'+amount(paid)+'"><div class="payment-preview" data-preview="'+id+'"></div></label>'}
   function render(f){
@@ -2658,7 +2659,7 @@ function ownerFinanceHtmlResponse() {
     preview();
   }
   function preview(){if(!finance)return;[['supplierPaid',finance.supplierOwed],['ownerPaid',finance.yourShare],['brotherPaid',finance.brotherShare]].forEach(function(pair){var input=document.getElementById(pair[0]);if(!input)return;var n=Number(input.value);var label=panel.querySelector('[data-preview="'+pair[0]+'"]');if(input.value===''||!Number.isFinite(n)||n<0){label.textContent='Enter a valid amount';return}var left=Math.round((pair[1]-n)*100)/100;label.textContent=left<0?'Paid above balance: '+money(-left):'Remaining after saving: '+money(left)})}
-  async function load(){if(busy)return;if(finance&&hasUnsavedPayments()&&!confirm('Discard your unsaved payment changes and refresh?'))return;busy=true;document.getElementById('refreshBtn').disabled=true;message('Loading…');try{render(await request('summary'));message('')}catch(e){message(e.message,true)}finally{busy=false;document.getElementById('refreshBtn').disabled=false}}
+  async function load(){if(busy)return;if(finance&&hasUnsavedPayments()&&!confirm('Discard your unsaved payment changes and refresh?'))return;busy=true;document.getElementById('refreshBtn').disabled=true;message('Loading…');try{render(await request('summary'));message('')}catch(e){if(!finance)panel.innerHTML='<div class="notice">Balances could not be loaded. Use Refresh to try again.</div>';message(e.message,true)}finally{busy=false;document.getElementById('refreshBtn').disabled=false}}
   function hasUnsavedPayments(){if(!finance)return false;return [['supplierPaid',finance.supplierPaid],['ownerPaid',finance.yourSharePaid],['brotherPaid',finance.brotherSharePaid]].some(function(p){var input=document.getElementById(p[0]);return input&&input.value!==amount(p[1])})}
   async function save(body,button){if(busy)return;busy=true;var open=Array.from(panel.querySelectorAll('details')).map(function(d){return d.open});var buttons=Array.from(document.querySelectorAll('button'));buttons.forEach(function(b){b.disabled=true});var old=button.textContent;button.textContent='Saving…';message('');try{render(await request('update',body));panel.querySelectorAll('details').forEach(function(d,i){d.open=open[i]});message('Saved. Remaining balances are up to date.')}catch(e){message(e.message,true)}finally{busy=false;buttons.forEach(function(b){b.disabled=false});button.textContent=old}}
   panel.addEventListener('submit',function(e){e.preventDefault();if(e.target.id==='paymentForm'){if(!e.target.reportValidity())return;var values={action:'set-payments',supplierPaid:document.getElementById('supplierPaid').value,ownerPaid:document.getElementById('ownerPaid').value,brotherPaid:document.getElementById('brotherPaid').value};save(values,e.target.querySelector('button'))}else if(e.target.id==='otherCostsForm'){if(!e.target.reportValidity())return;if(hasUnsavedPayments()){message('Save your paid totals first, before changing other costs.',true);return}save({action:'set-other-costs',otherCosts:document.getElementById('otherCosts').value},e.target.querySelector('button'))}});
@@ -2863,8 +2864,11 @@ function supplierFinanceSnapshot(orders, state) {
 }
 __name(supplierFinanceSnapshot, "supplierFinanceSnapshot");
 async function handleSupplierFinanceApi(req, env, parts) {
-  const orders = await listSupplierPortalOrders(env, 300);
-  let state = await readSupplierFinanceState(env);
+  const [orders, savedState] = await Promise.all([
+    listSupplierPortalOrders(env, 300),
+    readSupplierFinanceState(env)
+  ]);
+  let state = savedState;
   const action = parts[1] || "summary";
   if (req.method === "GET" && action === "summary") {
     return json({ ok: true, finance: supplierFinanceSnapshot(orders, state) });
