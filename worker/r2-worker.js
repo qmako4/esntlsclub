@@ -4800,8 +4800,118 @@ async function syncXclusivelineSupplierOrdersToPortal(env, requestBody = {}) {
   };
 }
 __name(syncXclusivelineSupplierOrdersToPortal, "syncXclusivelineSupplierOrdersToPortal");
+// Fixed at the owner's request; never derive this from deployment/restart time.
+const WIX_SUPPLIER_START_AT = "2026-10-15T19:44:06.000Z";
+function wixSupplierOrderEligible(order) {
+  const created = Date.parse(order?.createdDate || "");
+  return Number.isFinite(created) && created >= Date.parse(WIX_SUPPLIER_START_AT)
+    && order.status === "APPROVED" && order.paymentStatus === "PAID"
+    && !order.imported && !order.channelInfo?.externalOrderId;
+}
+async function wixSupplierApi(env, path, body) {
+  const response = await fetch("https://www.wixapis.com" + path, {
+    method: body ? "POST" : "GET",
+    headers: { Authorization: env.WIX_API_TOKEN, "wix-site-id": env.WIX_SITE_ID, "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!response.ok) throw new Error("Wix orders API returned " + response.status);
+  return response.json();
+}
+function buildWixSupplierPortalOrder(order, products) {
+  const recipient = order.recipientInfo || order.shippingInfo?.logistics?.shippingDestination || {};
+  const address = recipient.address || {};
+  const contact = recipient.contactDetails || {};
+  const items = (order.lineItems || []).map((line) => {
+    const wixId = String(line.catalogReference?.catalogItemId || "");
+    const product = products.find(p => wixId && [p.wixProductId, p.wixBackupProductId, p.wixBackupPlaceholder?.id].some(id => String(id || "") === wixId));
+    const options = line.catalogReference?.options?.options || {};
+    const option = Object.entries(options).map(([name, value]) => name + ": " + String(value)).join(" / ");
+    const fulfilled = order.fulfillmentStatus === "FULFILLED";
+    return {
+      itemKey: "wix-" + safeMessageLine(line.id),
+      sourceProductId: product ? String(product.id) : "wix-" + wixId,
+      productName: product?.name || line.productName?.original || "Unknown item",
+      option, quantity: Number(line.quantity || 1),
+      imageUrl: line.image?.url || product?.images?.[0] || "", productPageUrl: "",
+      wixLineItemId: safeMessageLine(line.id), wixProductId: wixId,
+      supplierStatus: fulfilled ? "Already fulfilled" : "New",
+      shopifyUpdated: fulfilled ? "Already fulfilled in Wix" : "No",
+      trackingNumber: "", courier: "", supplierNotes: ""
+    };
+  });
+  const shipping = {
+    name: [contact.firstName, contact.lastName].filter(Boolean).join(" "),
+    address1: address.addressLine || [address.streetAddress?.number, address.streetAddress?.name].filter(Boolean).join(" "),
+    address2: address.addressLine2 || "", city: address.city || "",
+    province: address.subdivisionFullname || address.subdivision || "",
+    postcode: address.postalCode || "", country: address.countryFullname || address.country || ""
+  };
+  if (!shipping.name && !shipping.address1) throw new Error("Wix order has no delivery address");
+  const name = "#" + order.number;
+  return {
+    key: supplierPortalOrderKey(order.id, "esntls-wix"), businessId: "esntls-wix", businessName: "ESNTLS · Wix",
+    orderId: order.id, orderName: name, orderNumber: Number(order.number), orderDate: order.createdDate,
+    salesTotal: Number(order.priceSummary?.total?.amount || 0), currency: order.currency,
+    shipping, addressLines: supplierPortalAddressLines(shipping), items,
+    status: supplierPortalOrderStatus(items), source: "wix", sourceUpdatedAt: order.updatedDate,
+    excludedLineItems: [], unresolvedLineItems: []
+  };
+}
+async function syncWixSupplierOrdersToPortal(env, requestBody = {}) {
+  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) return { ok: false, businessId: "esntls-wix", status: "not_configured", error: "Wix API credentials are not configured", syncedOrders: 0 };
+  const products = (await readProductsPayload(env)).list;
+  const results = [];
+  let cursor;
+  do {
+    const search = cursor ? { cursorPaging: { limit: 100, cursor } } : {
+      filter: { createdDate: { $gte: WIX_SUPPLIER_START_AT } },
+      sort: [{ fieldName: "createdDate", order: "DESC" }], cursorPaging: { limit: 100 }
+    };
+    const data = await wixSupplierApi(env, "/ecom/v1/orders/search", { search });
+    for (const order of data.orders || []) {
+      if (!wixSupplierOrderEligible(order)) continue;
+      try {
+        let incoming = buildWixSupplierPortalOrder(order, products);
+        incoming = await applySupplierPortalHiddenItems(env, incoming);
+        if (!incoming.items.length) continue;
+        const existing = await readSupplierPortalOrder(env, incoming.key);
+        if (!existing && order.fulfillmentStatus === "FULFILLED") continue;
+        if (requestBody.dryRun !== true) await writeSupplierPortalOrder(env, mergeSupplierPortalOrder(existing, incoming));
+        results.push({ orderName: incoming.orderName, status: requestBody.dryRun ? "ready" : existing ? "updated" : "created" });
+      } catch (error) { results.push({ orderName: "#" + order.number, status: "failed", error: error.message }); }
+    }
+    cursor = data.metadata?.cursors?.next;
+  } while (cursor);
+  return { ok: !results.some(r => r.status === "failed"), businessId: "esntls-wix", startAt: WIX_SUPPLIER_START_AT,
+    syncedOrders: results.filter(r => r.status === "created" || r.status === "updated").length, results };
+}
+async function updateWixSupplierTracking(env, order, items) {
+  const base = "/ecom/v1/fulfillments/orders/" + encodeURIComponent(order.orderId);
+  const data = await wixSupplierApi(env, base);
+  const fulfillments = data.orderWithFulfillments?.fulfillments || [];
+  let fulfillmentId = "";
+  for (const item of items) {
+    const existing = fulfillments.filter(f => f.completed !== false && (f.lineItems || []).some(l => l.id === item.wixLineItemId));
+    const same = existing.find(f => f.trackingInfo?.trackingNumber === item.trackingNumber);
+    if (same) { fulfillmentId = same.id; continue; }
+    if (existing.length) throw new Error("Item is already fulfilled in Wix; edit its tracking in Wix to avoid duplicate fulfilment");
+    const result = await wixSupplierApi(env, base + "/create-fulfillment", { fulfillment: {
+      lineItems: [{ id: item.wixLineItemId, quantity: item.quantity }],
+      trackingInfo: { trackingNumber: item.trackingNumber, shippingProvider: item.courier || "Other" }
+    }});
+    fulfillmentId = result.fulfillmentId;
+  }
+  return { status: "fulfilled", fulfillmentId };
+}
+
 async function syncExternalSupplierOrdersToPortal(env, requestBody = {}) {
   const sources = [];
+  try {
+    sources.push(await syncWixSupplierOrdersToPortal(env, requestBody));
+  } catch (error) {
+    sources.push({ ok: false, businessId: "esntls-wix", status: "failed", error: error.message, syncedOrders: 0 });
+  }
   if (xclusivelineSupplierEnabled(env)) {
     try {
       sources.push(await syncXclusivelineSupplierOrdersToPortal(env, requestBody));
@@ -5090,7 +5200,7 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
   }
   let shopify = null;
   try {
-    shopify = supplierPortalBusinessId(order.businessId) === "xclusiveline" ? await updateXclusivelineSupplierTracking(env, order, selectedItems) : await createShopifyFulfillmentForSupplierRows(env, order.orderName, portalTrackingRowsFromItems(selectedItems));
+    shopify = supplierPortalBusinessId(order.businessId) === "esntls-wix" ? await updateWixSupplierTracking(env, order, selectedItems) : supplierPortalBusinessId(order.businessId) === "xclusiveline" ? await updateXclusivelineSupplierTracking(env, order, selectedItems) : await createShopifyFulfillmentForSupplierRows(env, order.orderName, portalTrackingRowsFromItems(selectedItems));
     const trackingTimestamp = supplierTrackingTimestamp();
     const statusText = shopify.status === "fulfilled" ? `Yes - ${trackingTimestamp}` : shopify.status === "saved" ? `Saved in portal - ${trackingTimestamp}` : `Already fulfilled or no matching lines - ${trackingTimestamp}`;
     for (const item of selectedItems) {
