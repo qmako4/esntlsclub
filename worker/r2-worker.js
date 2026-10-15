@@ -4859,7 +4859,7 @@ function buildWixSupplierPortalOrder(order, products) {
   };
 }
 async function syncWixSupplierOrdersToPortal(env, requestBody = {}) {
-  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) return { ok: false, businessId: "esntls-wix", status: "not_configured", error: "Wix API credentials are not configured", syncedOrders: 0 };
+  if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) return { ok: true, businessId: "esntls-wix", status: "not_configured", reason: "Wix API credentials are not configured", syncedOrders: 0 };
   const products = (await readProductsPayload(env)).list;
   const results = [];
   let cursor;
