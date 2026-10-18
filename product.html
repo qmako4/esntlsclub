@@ -420,6 +420,17 @@ function categoryLabel(item){
   return values.join(' / ');
 }
 
+
+// Previous selling prices confirmed by the owner; presentation only.
+function previousSellingPrice(value){
+  if(value==null||/out of stock/i.test(String(value)))return '';
+  const text=String(value).trim();
+  const match=text.replace(/,/g,'').match(/^(?:£\s*)?(\d+(?:\.\d{1,2})?)$/);
+  if(!match)return '';
+  const pennies=Math.round(Number(match[1])*100);
+  return Number.isSafeInteger(pennies)&&pennies>=0?'£'+((pennies+2000)/100).toFixed(2):'';
+}
+
 function displayPrice(value){
   const price=String(value==null?'':value);
   if(!price||price==='Out of stock'||/[£$]/.test(price))return price;
@@ -576,7 +587,7 @@ function renderProduct(){
     +'<aside class="product-info">'
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
-    +'<div class="prices">'+(product.originalPrice&&!sold?'<span class="was">'+escapeHTML(displayPrice(product.originalPrice))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
+    +'<div class="prices">'+(previousSellingPrice(product.price)&&!sold?'<span class="was">'+escapeHTML(previousSellingPrice(product.price))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Currently unavailable':'Available to order')+'</span>'
