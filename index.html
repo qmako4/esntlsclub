@@ -701,12 +701,23 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  </div>
  <div class="pc-meta">
  <div class="pc-name">${escapeHTML(p.n)}</div>
- <div class="pc-price">${p.originalPrice&&!oos?`<span class="pc-original-price">${escapeHTML(displayPrice(p.originalPrice))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
+ <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
  </div>
  ${saleMeta}<span class="pc-option-link">${oos?'View item':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
   return 'product.html?id='+encodeURIComponent(productSourceId(p));
+}
+
+
+// Previous selling prices confirmed by the owner; presentation only.
+function previousSellingPrice(value){
+  if(value==null||/out of stock/i.test(String(value)))return '';
+  const text=String(value).trim();
+  const match=text.replace(/,/g,'').match(/^(?:£\s*)?(\d+(?:\.\d{1,2})?)$/);
+  if(!match)return '';
+  const pennies=Math.round(Number(match[1])*100);
+  return Number.isSafeInteger(pennies)&&pennies>=0?'£'+((pennies+2000)/100).toFixed(2):'';
 }
 
 function displayPrice(value){
@@ -1070,7 +1081,7 @@ return `
 <div style="position:absolute;top:14px;left:14px;background:#00C853;color:#fff;font-size:10px;font-weight:700;padding:5px 14px;border-radius:50px;letter-spacing:1.5px;text-transform:uppercase">⚡ Featured Drop</div>
 <div style="position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);padding:10px 16px;border-radius:12px;text-align:right">
 <div style="font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1.5px;color:#888;text-transform:uppercase">${hero.n}</div>
-${hero.originalPrice?`<div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.5px;color:#aaa;text-decoration:line-through">${hero.originalPrice}</div>`:''}
+${previousSellingPrice(hero.price)?`<div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.5px;color:#aaa;text-decoration:line-through">${escapeHTML(previousSellingPrice(hero.price))}</div>`:''}
 <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#00C853">${hero.price}</div>
 </div>
 </a>
@@ -1891,9 +1902,9 @@ ${gallery.map((img,i)=>`<img src="${img}" class="gthumb${i===0?' active':''}" on
 <div style="padding:16px 18px 20px">
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111">${p.n}</h2>
 <div style="margin-bottom:8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-${p.originalPrice&&!oos?`<span style="font-size:14px;color:#999;text-decoration:line-through;font-weight:500">${p.originalPrice}</span>`:''}
+${previousSellingPrice(p.price)&&!oos?`<span style="font-size:14px;color:#999;text-decoration:line-through;font-weight:500">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}
 <span style="font-size:22px;font-weight:700;color:${oos?'#888':'#00C853'}">${p.price}</span>
-${p.originalPrice&&!oos?`<span style="background:#ff5722;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">SALE</span>`:''}
+${previousSellingPrice(p.price)&&!oos?`<span style="background:#ff5722;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">SALE</span>`:''}
 </div>
 ${gallery.length>1?`<div style="font-size:11px;color:#aaa;margin-bottom:10px">${gallery.length} photos — tap image to view fullscreen</div>`:''}
 <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
@@ -1912,7 +1923,7 @@ ${related.length?`<div style="padding:0 18px 20px">
 <div style="display:grid;grid-template-columns:repeat(${Math.min(related.length,4)},1fr);gap:8px">
 ${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=>openProduct(${rid}),150)">
 <img src="${r.img}" alt="${r.n}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${r.originalPrice?`<s style="color:#aaa;font-weight:500;margin-right:4px">${r.originalPrice}</s>`:''}${r.price}</div></div>
+<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${previousSellingPrice(r.price)?`<s style="color:#aaa;font-weight:500;margin-right:4px">${escapeHTML(previousSellingPrice(r.price))}</s>`:''}${r.price}</div></div>
 </div>`}).join('')}
 </div></div>`:''}
 <!-- Sticky CTA bar (must be last child for sticky-bottom to work) -->
