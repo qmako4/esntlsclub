@@ -706,18 +706,18 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  ${saleMeta}<span class="pc-option-link">${oos?'View item':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
-  return 'product.html?id='+encodeURIComponent(productSourceId(p));
+  return 'product.html?id='+encodeURIComponent(productSourceId(p))+'&v=20261018-prices2';
 }
 
 
 // Previous selling prices confirmed by the owner; presentation only.
 function previousSellingPrice(value){
   if(value==null||/out of stock/i.test(String(value)))return '';
-  const text=String(value).trim();
-  const match=text.replace(/,/g,'').match(/^(?:£\s*)?(\d+(?:\.\d{1,2})?)$/);
+  const source=String(value).trim().replace(/,/g,'');
+  const match=source.match(/^(From\s+)?(?:£\s*)?(\d+(?:\.\d{1,2})?)(?:\s*[–—-]\s*(?:£\s*)?(\d+(?:\.\d{1,2})?))?$/i);
   if(!match)return '';
-  const pennies=Math.round(Number(match[1])*100);
-  return Number.isSafeInteger(pennies)&&pennies>=0?'£'+((pennies+2000)/100).toFixed(2):'';
+  const plusTwenty=amount=>'£'+((Math.round(Number(amount)*100)+2000)/100).toFixed(2);
+  return (match[1]?'From ':'')+plusTwenty(match[2])+(match[3]?' – '+plusTwenty(match[3]):'');
 }
 
 function displayPrice(value){
