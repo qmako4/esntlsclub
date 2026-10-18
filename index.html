@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ESNTLS CLUB — Premium Streetwear</title>
 <meta name="description" content="Curated designer footwear, jackets & accessories. Free UK shipping.">
 <meta name="theme-color" content="#00C853">
@@ -278,6 +278,10 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .daily-deal-card.lead .daily-deal-action{background:#fff;color:#111}
 @media(max-width:920px){.daily-deals-grid{grid-template-columns:repeat(2,1fr)}.daily-deals-head{align-items:flex-start;flex-direction:column}.daily-deals-note{text-align:left}.daily-deals-side{align-items:flex-start}}
 @media(max-width:560px){.daily-deals{padding-top:22px}.daily-deals-grid{display:flex;gap:10px;overflow-x:auto;padding:0 12px 4px;scroll-snap-type:x mandatory;scrollbar-width:none}.daily-deals-grid::-webkit-scrollbar{display:none}.daily-deal-card{flex:0 0 78vw;min-height:178px;scroll-snap-align:start}.daily-deals-head{padding:0 12px}.daily-deal-action{width:100%}}
+
+/* Collection refresh: original brand, full-resolution uncropped photography. */
+.g2{gap:24px 12px}.pc-media{aspect-ratio:3/4;border-radius:6px;background:#f4f5f2}.pc img{object-fit:contain}.pc:hover img{transform:none}.pc-meta{display:block;padding:10px 1px 0}.pc-name{font-size:13px;line-height:1.4}.pc-price{text-align:left;font-size:13px;margin-top:5px}.pc-original-price{display:inline;margin-right:6px}.pc-option-link{display:flex;justify-content:space-between;align-items:center;border:1px solid #dce1da;border-radius:6px;padding:10px 12px;margin:10px 0 2px;font-size:11px;font-weight:700;min-height:42px}.pc:hover .pc-option-link{border-color:#00a844;color:#008c3a}.pc:focus-visible{outline:3px solid #00a844;outline-offset:3px}.collection{padding:20px 12px 40px;max-width:1600px;margin:auto}.collection-heading{padding:0 4px;margin-bottom:16px}.collection-kicker{font-size:10px;color:#008c3a;letter-spacing:2px;font-weight:700;text-transform:uppercase;margin-bottom:4px}.collection h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,6vw,46px);letter-spacing:1.2px;line-height:1.1}.collection-nav{display:flex;gap:20px;border-bottom:1px solid #e9ece7;margin-top:14px;overflow:auto;scrollbar-width:none}.collection-nav::-webkit-scrollbar{display:none}.collection-nav button{font-family:inherit;background:none;border:0;border-bottom:2px solid transparent;padding:10px 0;min-height:44px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;color:#61685e}.collection-nav button[aria-current=true]{border-color:#00a844;color:#111}.collection-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:14px}.collection-controls input,.collection-controls select{min-width:0;width:100%;font-family:inherit;background:#fff;color:#222;border:1px solid #dce1da;border-radius:6px;padding:10px;font-size:12px;min-height:44px}.collection-controls input{grid-column:1/-1;font-size:16px}.collection-summary{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 2px 12px;font-size:11px;color:#646d60}.collection-more{font-family:inherit;font-size:12px;max-width:160px;min-height:44px;background:white;border:0;color:#333}.collection-empty{text-align:center;padding:48px 18px;font-size:14px;line-height:1.7}.collection-empty button{display:block;margin:14px auto 0;font:inherit;border:1px solid #ddd;background:white;padding:10px 18px;border-radius:6px}.collection-club{margin:28px 0 0;padding:22px;background:#f3f8f0;border-radius:8px}.collection-club h2{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.8px}.collection-club p{font-size:12px;color:#55634f;margin:7px 0 12px;line-height:1.6}.collection-club a{display:inline-block;padding:10px 0;margin-right:24px;font-size:12px;font-weight:700;color:#007b34;min-height:44px}#nav .esntls-cart-fab{position:relative!important;inset:auto!important;z-index:5;min-height:40px;padding:7px 10px;font-size:11px;gap:6px;box-shadow:none;margin-left:auto}#nav .esntls-cart-fab span{height:20px;min-width:20px;font-size:10px}.nav-cart-slot{min-width:70px;display:flex;justify-content:flex-end}#nav .dnav{margin-right:12px}@media(min-width:768px){.collection{padding:28px 24px 56px}.collection-controls{display:flex}.collection-controls input{flex:1}.collection-controls select{width:180px}.g2{gap:30px 18px}}@media(prefers-reduced-motion:reduce){.pc{transition:none;transform:none;opacity:1}.pc:hover,.pc:active{transform:none}}
+
 </style>
 </head>
 <body>
@@ -359,7 +363,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="https://instagram.com/cluesntl" target="_blank" class="nl">Contact</a>
 </div>
 <!-- Right spacer (mobile) to balance hamburger for centered logo -->
-<div class="mbtn" style="width:44px;min-height:44px;pointer-events:none;opacity:0"></div>
+<div class="nav-cart-slot" id="navCartSlot"></div>
 </div>
 <!-- ═══ MOBILE MENU: full-screen, grouped sections, searchable ═══ -->
 <div id="mob" class="mob-menu" style="display:none">
@@ -641,6 +645,8 @@ function parsePrice(s){if(s==null||/out of stock/i.test(String(s)))return null;c
 const PRICE_RANGES={'all':null,'under50':v=>v<50,'50-100':v=>v>=50&&v<100,'100-150':v=>v>=100&&v<150,'150plus':v=>v>=150};
 const PRICE_LABELS={'all':'All Prices','under50':'Under £50','50-100':'£50 – £100','100-150':'£100 – £150','150plus':'£150+'};
 let priceFilter='all';
+let collectionSearch='';
+let collectionSort='featured';
 function setPriceFilter(p){priceFilter=p;const cv=currentView;if(cv&&cv.type==='shop')showCat(cv.cat||'All',{preservePrice:true})}
 // Total stock count for a product (returns null if not tracked)
 // LIVE_STOCK groups by parent product; links maps colour-name → pid for each variant
@@ -689,7 +695,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  const sourceId=productSourceId(p);
  return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
  <div class="pc-media">
- <img src="${p.img}" alt="${escapeHTML(p.n)}" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
+ <img src="${escapeHTML(p.img)}" alt="${escapeHTML(p.n)}" width="900" height="1200" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
  ${stockBadge}
  ${saleBadge}
  </div>
@@ -697,7 +703,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  <div class="pc-name">${escapeHTML(p.n)}</div>
  <div class="pc-price">${p.originalPrice&&!oos?`<span class="pc-original-price">${escapeHTML(displayPrice(p.originalPrice))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
  </div>
- ${saleMeta}</a>`}
+ ${saleMeta}<span class="pc-option-link">${oos?'View item':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
   return 'product.html?id='+encodeURIComponent(productSourceId(p));
@@ -997,26 +1003,42 @@ renderReviewsOnly();
 /*╔═══════════════════════════╗
   ║  SHOP PAGE                ║
   ╚═══════════════════════════╝*/
+function collectionItems(cat){
+  const term=collectionSearch.trim().toLowerCase();
+  const filtered=allProducts().filter(p=>(cat==='All'||cat==='New Items'||catMatch(p,cat))&&(!PRICE_RANGES[priceFilter]||(()=>{const v=parsePrice(p.price);return v!==null&&PRICE_RANGES[priceFilter](v)})())&&(!term||[p.n,p.brand,p.cat].join(' ').toLowerCase().includes(term)));
+  if(collectionSort==='low'||collectionSort==='high')return filtered.sort((a,b)=>{const av=parsePrice(a.price),bv=parsePrice(b.price);if(av===null)return bv===null?0:1;if(bv===null)return -1;return collectionSort==='low'?av-bv:bv-av});
+  return sortForCollection(filtered,collectionSort==='newest'?'New Items':cat);
+}
+function collectionResultsHTML(items){
+  return items.length?`<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>`:`<div class="collection-empty">No products match your search.<button type="button" onclick="resetCollectionFilters()">Clear search and filters</button></div>`;
+}
+function refreshCollection(){
+  if(!currentView||currentView.type!=='shop')return;
+  const items=collectionItems(currentView.cat||'All');
+  const results=document.getElementById('collectionResults');
+  if(!results)return;
+  results.innerHTML=collectionResultsHTML(items);
+  document.getElementById('collectionCount').textContent=items.length+' items';
+  bindSaleCountdowns();
+  if(typeof observeElements==='function')observeElements();
+}
+function resetCollectionFilters(){collectionSearch='';priceFilter='all';const input=document.getElementById('collectionSearch');if(input)input.value='';const select=document.getElementById('collectionPrice');if(select)select.value='all';refreshCollection()}
 function shopHTML(cat){
-const all=allProducts();
-const byCat=(cat==='All'||cat==='New Items')?all:all.filter(p=>catMatch(p,cat));
-const priceFn=PRICE_RANGES[priceFilter];
-const byPrice=priceFn?byCat.filter(p=>{const v=parsePrice(p.price);return v!==null&&priceFn(v)}):byCat;
-const items=sortForCollection(byPrice,cat);
-const count=c=>(c==='All'||c==='New Items')?all.length:all.filter(p=>catMatch(p,c)).length;
-const priceKeys=Object.keys(PRICE_RANGES);
-return `<section style="padding:24px 8px 48px;max-width:1600px;margin:0 auto">
-<div style="margin-bottom:20px;padding:0 12px">
-<div style="font-size:11px;color:#00C853;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px">Collection</div>
-<h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,44px);color:#111;margin:0 0 12px;letter-spacing:2px">${cat==='All'?'All Items':cat} <span style="color:#888;font-size:clamp(18px,3vw,24px)">(${items.length})</span></h2>
-<div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:#f8f8f8;border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:11px;color:#555;font-weight:600">
-<span>⚡ Free Next-Day UK Shipping</span><span style="color:#ddd">·</span><span>🔒 Secure Checkout</span><span style="color:#ddd">·</span><span>💬 DM Support</span>
-</div>
-<div class="hscroll">${CATS.map(c=>`<button class="fb${c===cat?' on':''}" onclick="showCat('${c}')">${c} (${count(c)})</button>`).join('')}</div>
-<div class="hscroll" style="margin-top:8px">${priceKeys.map(k=>`<button class="fb${priceFilter===k?' on':''}" onclick="setPriceFilter('${k}')">${PRICE_LABELS[k]}</button>`).join('')}</div>
-</div>
-${items.length?`<div class="g2">${items.map((p,i)=>card(p,i)).join('')}</div>`:`<div style="text-align:center;padding:60px 20px"><div style="font-size:40px;margin-bottom:10px">🔍</div><div style="font-size:14px;font-weight:600;color:#111">No items match this filter</div><div style="font-size:12px;color:#888;margin-top:6px">Try a different price range or category</div></div>`}
-</section>`}
+  const items=collectionItems(cat);
+  const navCats=['New Items','Best Sellers','Jackets','Footwear','All'];
+  if(!navCats.includes(cat))navCats.splice(0,0,cat);
+  return `<section class="collection">
+    <div class="collection-heading"><div class="collection-kicker">ESNTLS COLLECTION</div><h1>${escapeHTML(cat==='All'?'Shop All':cat)}</h1>
+    <div class="collection-nav" aria-label="Collections">${navCats.map(c=>`<button type="button" aria-current="${c===cat}" onclick="showCat('${jsString(c)}',{preservePrice:true})">${escapeHTML(c==='New Items'?'New in':c==='All'?'Shop all':c)}</button>`).join('')}</div></div>
+    <div class="collection-controls"><input type="search" id="collectionSearch" aria-label="Search this collection" placeholder="Search this collection…" value="${escapeHTML(collectionSearch)}" oninput="collectionSearch=this.value;refreshCollection()"><select id="collectionPrice" aria-label="Filter by price" onchange="priceFilter=this.value;refreshCollection()">${Object.keys(PRICE_RANGES).map(k=>`<option value="${k}"${priceFilter===k?' selected':''}>${PRICE_LABELS[k]}</option>`).join('')}</select><select aria-label="Sort products" onchange="collectionSort=this.value;refreshCollection()">${[['featured','Featured'],['newest','Newest first'],['low','Price: low to high'],['high','Price: high to low']].map(([v,t])=>`<option value="${v}"${collectionSort===v?' selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="collection-summary"><span id="collectionCount" role="status" aria-live="polite">${items.length} items</span><select class="collection-more" aria-label="Browse all collections" onchange="if(this.value)showCat(this.value,{preservePrice:true})"><option value="">More collections</option>${CATS.filter(c=>!navCats.includes(c)).map(c=>`<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}</select></div>
+    <div id="collectionResults">${collectionResultsHTML(items)}</div>
+    <aside class="collection-club"><h2>Stay in the club.</h2><p>New arrivals and product updates, all in one place.</p><a href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener">WhatsApp ↗</a><a href="https://t.me/esntlsclub" target="_blank" rel="noopener">Telegram ↗</a></aside>
+  </section>`;
+}
+function mountNavCart(){const slot=document.getElementById('navCartSlot');const cart=document.querySelector('.esntls-cart-fab');if(slot&&cart&&!slot.contains(cart))slot.appendChild(cart)}
+window.addEventListener('load',mountNavCart,{once:true});
+document.addEventListener('DOMContentLoaded',()=>setTimeout(mountNavCart,0),{once:true});
 
 /*╔═══════════════════════════╗
   ║  HOME PAGE                ║
@@ -1227,7 +1249,7 @@ const app=document.getElementById('app');
 app.style.animation='none';
 app.offsetHeight; // force reflow
 app.style.animation='blurIn .4s ease both';
-if(currentView==='shop') app.innerHTML=shopHTML(currentView.cat||'All');
+if(currentView&&currentView.type==='shop') app.innerHTML=shopHTML(currentView.cat||'All');
 else app.innerHTML=homeHTML();
 window.scrollTo({top:0,behavior:'smooth'});
 initCategoryScroll();
@@ -2311,3 +2333,4 @@ setTimeout(initHeroDots,300);
 </div>
 </body>
 </html>
+
