@@ -442,7 +442,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div id="modal" class="modal-bg" style="display:none" onclick="closeModal()"></div>
 
 
-<script src="cart.js?v=20260806-b30pair"></script>
+<script src="cart.js?v=20261019-availability"></script>
 <script>
 /*╔═══════════════════════════════════════════╗
   ║  PRODUCT DATA — CORRECT PRICES FROM SITE  ║
@@ -555,12 +555,28 @@ loadR2Products();
 
 // Prefer the live products.json (customProducts) when it loaded.
 // Fall back to the inline P list only if R2 is unreachable so the site still works offline.
+
+// Owner-directed availability snapshot, 19 Oct 2026: no recorded sales in the
+// 30-day Shopify report; products created after 18 Sep are excluded.
+const WITHDRAWN_SITE_IDS=new Set(["1","3","4","5","6","8","13","14","16","17","18","19","20","28","30","31","32","34","35","39","40","43","44","45","46","47","48","49","50","51","53","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","79","80","81","82","84","85","86","83","87","88","89","91"]);
+const WITHDRAWN_SHOPIFY_IDS=new Set(["9279138595066","9279202197754","9279202296058","9279202328826","9279202394362","9279202590970","9279202853114","9279202918650","9279203115258","9279203148026","9279203246330","9279203311866","9279203377402","9279204622586","9279204917498","9279205048570","9279205146874","9279205409018","9279205572858","9279205835002","9279205867770","9279206031610","9279206064378","9279206129914","9279206195450","9279206293754","9279206359290","9279206424826","9279206457594","9279206555898","9279206654202","9279206883578","9279206981882","9279207014650","9279207080186","9279207145722","9279207244026","9279409127674","9283221061882","9283279552762","9285497585914","9285517738234","9287500333306","9287562035450","9287599751418","9288146911482","9288158347514","9288162279674","9306730889466","9306738491642","9309225844986","9310228939002","9365984674042","9365984739578","9366508536058","9366847029498","9367045144826","9369071845626","9369269993722","9369855459578","9370521895162","9383697613050","9384106131706","9393738580218","9444484186362"]);
+function storeItemUnavailable(item){
+  if(!item)return false;
+  const id=String(item.dbId!=null?item.dbId:(item.productId||item.id||'')).replace(/^r2_/,'');
+  const linked=String(item.shopifyProductId||(item.shopifyPlaceholder&&item.shopifyPlaceholder.shopifyProductId)||'').split('/').pop();
+  return WITHDRAWN_SITE_IDS.has(id)||WITHDRAWN_SHOPIFY_IDS.has(id.split('/').pop())||WITHDRAWN_SHOPIFY_IDS.has(linked);
+}
+function applyStoreAvailability(item){
+  return storeItemUnavailable(item)?Object.assign({},item,{price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
+}
+
+
 function allProducts(){
 const source=customProducts.length?customProducts:P;
 return source.map(p=>{
 const imgs=(IMG_OVERRIDES[String(p.id)]||[]).map(edgeMediaUrl);
 const normalised=imgs.length?{...p,img:imgs[0],imgs}:{...p,img:edgeMediaUrl(p.img),imgs:(p.imgs||[]).map(edgeMediaUrl)};
-return effectiveProductPrice(normalised);
+return applyStoreAvailability(effectiveProductPrice(normalised));
 })}
 
 const CATS=["All","New Items","Best Sellers","Essentials","Footwear","Sandals","Jackets","Hoodies","Accessories","Tracksuits","Shirts","Old Money","Summer","Winter","Shorts","Apple","Asics","B22","B30","Burberry","C Goose","Corteiz","CP","Ermes","Hermes","LV","Monc","Nike"];
@@ -687,7 +703,7 @@ const isBestSeller=!oos&&catMatch(p,'Best Sellers');
 const sale=timedSaleState(p);
 // Badge priority: Sold out > Low stock > Best seller
 const stockBadge=oos
-  ?`<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">Sold Out</div>`
+  ?`<div style="position:absolute;top:8px;left:8px;background:#444444;color:#fff;font-size:10px;font-weight:700;padding:6px 9px;border-radius:0;letter-spacing:.5px;text-transform:uppercase">Out of stock</div>`
   :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">🔥 Only ${sc} left</div>`
   :isBestSeller?`<div style="position:absolute;top:8px;left:8px;background:#111;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">🔥 Bestseller</div>`:'';
 const saleBadge=sale&&!oos?`<div class="pc-sale-badge">${escapeHTML(sale.label)} <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
@@ -703,10 +719,10 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  <div class="pc-name">${escapeHTML(p.n)}</div>
  <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
  </div>
- ${saleMeta}<span class="pc-option-link">${oos?'View item':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
+ ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
-  return 'product.html?id='+encodeURIComponent(productSourceId(p))+'&v=20261018-prices2';
+  return 'product.html?id='+encodeURIComponent(productSourceId(p))+'&v=20261019-availability';
 }
 
 
@@ -2344,4 +2360,5 @@ setTimeout(initHeroDots,300);
 </div>
 </body>
 </html>
+
 
