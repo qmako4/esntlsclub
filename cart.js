@@ -17,13 +17,18 @@
 // 30-day Shopify report; products created after 18 Sep are excluded.
 const WITHDRAWN_SITE_IDS=new Set(["1","3","4","5","6","8","13","14","16","17","18","19","20","28","30","31","32","34","35","39","40","43","44","45","46","47","48","49","50","51","53","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","79","80","81","82","84","85","86","83","87","88","89","91"]);
 const WITHDRAWN_SHOPIFY_IDS=new Set(["9279138595066","9279202197754","9279202296058","9279202328826","9279202394362","9279202590970","9279202853114","9279202918650","9279203115258","9279203148026","9279203246330","9279203311866","9279203377402","9279204622586","9279204917498","9279205048570","9279205146874","9279205409018","9279205572858","9279205835002","9279205867770","9279206031610","9279206064378","9279206129914","9279206195450","9279206293754","9279206359290","9279206424826","9279206457594","9279206555898","9279206654202","9279206883578","9279206981882","9279207014650","9279207080186","9279207145722","9279207244026","9279409127674","9283221061882","9283279552762","9285497585914","9285517738234","9287500333306","9287562035450","9287599751418","9288146911482","9288158347514","9288162279674","9306730889466","9306738491642","9309225844986","9310228939002","9365984674042","9365984739578","9366508536058","9366847029498","9367045144826","9369071845626","9369269993722","9369855459578","9370521895162","9383697613050","9384106131706","9393738580218","9444484186362"]);
+
+function isOrangeUK9Product(item){const id=String(item&&(item.dbId!=null?item.dbId:(item.productId||item.id))||'').replace(/^r2_/,'').split('/').pop();return id==='45'||id==='9279206129914';}
+
 function storeItemUnavailable(item){
+  if(isOrangeUK9Product(item))return !!(item.variantId&&String(item.variantId).split('/').pop()!=='49074583961850');
   if(!item)return false;
   const id=String(item.dbId!=null?item.dbId:(item.productId||item.id||'')).replace(/^r2_/,'');
   const linked=String(item.shopifyProductId||(item.shopifyPlaceholder&&item.shopifyPlaceholder.shopifyProductId)||'').split('/').pop();
   return WITHDRAWN_SITE_IDS.has(id)||WITHDRAWN_SHOPIFY_IDS.has(id.split('/').pop())||WITHDRAWN_SHOPIFY_IDS.has(linked);
 }
 function applyStoreAvailability(item){
+  if(isOrangeUK9Product(item))return Object.assign({},item,{price:'£59.99',originalPrice:item.originalPrice||'',withdrawn:false,sizes:['UK 9'],availableSizes:['UK 9'],shopifyVariants:{'UK 9':'49074583961850'},shopifyVariantId:'49074583961850',timedSale:null,shopifyPlaceholder:Object.assign({},item.shopifyPlaceholder||{},{sizes:['UK 9'],variants:{'UK 9':'49074583961850'},variantCount:1})});
   return storeItemUnavailable(item)?Object.assign({},item,{price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
 }
 
@@ -118,6 +123,7 @@ function applyStoreAvailability(item){
   }
 
   function inferSizes(product){
+    if(isOrangeUK9Product(product))return ['UK 9'];
     const explicit = splitList(product && (product.sizes || product.size || product.availableSizes));
     if(explicit.length) return explicit;
     const placeholderSizes = splitList(product && product.shopifyPlaceholder && product.shopifyPlaceholder.sizes);
@@ -151,6 +157,7 @@ function applyStoreAvailability(item){
   }
 
   function variantEntries(product){
+    if(isOrangeUK9Product(product))return [{id:'49074583961850',options:{Size:'UK 9'},title:'UK 9'}];
     const source = product && (product.shopifyVariants || product.variantIds || product.variantsMap);
     if(Array.isArray(source)){
       return source.map(entry => ({
@@ -323,6 +330,8 @@ function applyStoreAvailability(item){
   }
 
   function buildLine(product, selections, qty){
+    if(isOrangeUK9Product(product)&&String((selections||{}).Size||'').replace(/\s/g,'').toUpperCase()!=='UK9')throw new Error('Only UK 9 is available for this item.');
+    product=applyStoreAvailability(product);
     if(storeItemUnavailable(product))throw new Error('This item is currently out of stock.');
     product = effectiveProductPrice(product);
     const options = selections || {};
@@ -392,6 +401,7 @@ function applyStoreAvailability(item){
   }
 
   async function checkoutSingle(product, selections){
+    if(isOrangeUK9Product(product)&&String((selections||{}).Size||'').replace(/\s/g,'').toUpperCase()!=='UK9'){alert('Only UK 9 is available for this item.');return false;}
     if(storeItemUnavailable(product)){alert('This item is currently out of stock.');return false;}
     let variantId = selectedVariantId(product, selections || {});
     if(!variantId){
