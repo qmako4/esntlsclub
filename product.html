@@ -405,7 +405,7 @@ function storeItemUnavailable(item){
 }
 function applyStoreAvailability(item){
   if(isOrangeUK9Product(item))return Object.assign({},item,{price:'£59.99',originalPrice:item.originalPrice||'',withdrawn:false,sizes:['UK 9'],availableSizes:['UK 9'],shopifyVariants:{'UK 9':'49074583961850'},shopifyVariantId:'49074583961850',timedSale:null,shopifyPlaceholder:Object.assign({},item.shopifyPlaceholder||{},{sizes:['UK 9'],variants:{'UK 9':'49074583961850'},variantCount:1})});
-  return storeItemUnavailable(item)?Object.assign({},item,{price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
+  return storeItemUnavailable(item)?Object.assign({},item,{sellingPrice:item.sellingPrice||item.price,price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
 }
 
 
@@ -450,6 +450,11 @@ function previousSellingPrice(value){
   if(!match)return '';
   const plusTwenty=amount=>'£'+((Math.round(Number(amount)*100)+2000)/100).toFixed(2);
   return (match[1]?'From ':'')+plusTwenty(match[2])+(match[3]?' – '+plusTwenty(match[3]):'');
+}
+
+// Keep the saved selling price visible without changing sold-out purchase guards.
+function productDisplayPrice(item){
+  return displayPrice(item.sellingPrice||item.price);
 }
 
 function displayPrice(value){
@@ -609,7 +614,7 @@ function renderProduct(){
     +'<aside class="product-info">'
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
-    +'<div class="prices">'+(previousSellingPrice(product.price)&&!sold?'<span class="was">'+escapeHTML(previousSellingPrice(product.price))+'</span>':'')+'<span class="price">'+escapeHTML(displayPrice(product.price))+'</span></div>'
+    +'<div class="prices">'+(previousSellingPrice(product.price)&&!sold?'<span class="was">'+escapeHTML(previousSellingPrice(product.price))+'</span>':'')+'<span class="price">'+escapeHTML(productDisplayPrice(product))+'</span></div>'
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':'Available to order')+'</span>'
@@ -617,7 +622,7 @@ function renderProduct(){
     +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
-      :'<div class="buy-actions"><button class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+      :'<div class="buy-actions"><button class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
@@ -628,9 +633,9 @@ function renderProduct(){
     +'</aside></div>'
     +productReviewsHTML(reviews)
     +(related.length?'<section class="related"><div class="related-head"><h2>You may also like</h2><a href="./">Shop all</a></div><div class="related-grid">'+related.map(function(item){
-      return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(displayPrice(item.price))+'</span></div></a>';
+      return '<a class="related-item" href="'+productHref(item)+'"><img src="'+escapeHTML(item.image)+'" alt="'+escapeHTML(item.name)+'"><div class="related-meta"><span class="related-name">'+escapeHTML(item.name)+'</span><span class="related-price">'+escapeHTML(productDisplayPrice(item))+'</span></div></a>';
     }).join('')+'</div></section>':'');
-  if(!sold)app.insertAdjacentHTML('beforeend','<button class="mobile-buy" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(displayPrice(product.price))+'</button>');
+  if(!sold)app.insertAdjacentHTML('beforeend','<button class="mobile-buy" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button>');
   bindGalleryScroll();
   bindSaleCountdowns();
 }
