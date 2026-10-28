@@ -570,7 +570,7 @@ function storeItemUnavailable(item){
 }
 function applyStoreAvailability(item){
   if(isOrangeUK9Product(item))return Object.assign({},item,{price:'£59.99',originalPrice:item.originalPrice||'',withdrawn:false,sizes:['UK 9'],availableSizes:['UK 9'],shopifyVariants:{'UK 9':'49074583961850'},shopifyVariantId:'49074583961850',timedSale:null,shopifyPlaceholder:Object.assign({},item.shopifyPlaceholder||{},{sizes:['UK 9'],variants:{'UK 9':'49074583961850'},variantCount:1})});
-  return storeItemUnavailable(item)?Object.assign({},item,{price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
+  return storeItemUnavailable(item)?Object.assign({},item,{sellingPrice:item.sellingPrice||item.price,price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
 }
 
 
@@ -720,7 +720,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  </div>
  <div class="pc-meta">
  <div class="pc-name">${escapeHTML(p.n)}</div>
- <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(displayPrice(p.price))}</div>
+ <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(productDisplayPrice(p))}</div>
  </div>
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
@@ -737,6 +737,11 @@ function previousSellingPrice(value){
   if(!match)return '';
   const plusTwenty=amount=>'£'+((Math.round(Number(amount)*100)+2000)/100).toFixed(2);
   return (match[1]?'From ':'')+plusTwenty(match[2])+(match[3]?' – '+plusTwenty(match[3]):'');
+}
+
+// Keep the saved selling price visible without changing sold-out purchase guards.
+function productDisplayPrice(item){
+  return displayPrice(item.sellingPrice||item.price);
 }
 
 function displayPrice(value){
@@ -1922,7 +1927,7 @@ ${gallery.map((img,i)=>`<img src="${img}" class="gthumb${i===0?' active':''}" on
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111">${p.n}</h2>
 <div style="margin-bottom:8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
 ${previousSellingPrice(p.price)&&!oos?`<span style="font-size:14px;color:#999;text-decoration:line-through;font-weight:500">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}
-<span style="font-size:22px;font-weight:700;color:${oos?'#888':'#00C853'}">${p.price}</span>
+<span style="font-size:22px;font-weight:700;color:${oos?'#888':'#00C853'}">${escapeHTML(productDisplayPrice(p))}</span>
 ${previousSellingPrice(p.price)&&!oos?`<span style="background:#ff5722;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">SALE</span>`:''}
 </div>
 ${gallery.length>1?`<div style="font-size:11px;color:#aaa;margin-bottom:10px">${gallery.length} photos — tap image to view fullscreen</div>`:''}
@@ -1942,7 +1947,7 @@ ${related.length?`<div style="padding:0 18px 20px">
 <div style="display:grid;grid-template-columns:repeat(${Math.min(related.length,4)},1fr);gap:8px">
 ${related.map(r=>{const rid=typeof r.id==='string'?"'"+r.id+"'":r.id;return `<div style="cursor:pointer;border-radius:10px;overflow:hidden;border:1px solid #eee" onclick="closeModal();setTimeout(()=>openProduct(${rid}),150)">
 <img src="${r.img}" alt="${r.n}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover">
-<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${previousSellingPrice(r.price)?`<s style="color:#aaa;font-weight:500;margin-right:4px">${escapeHTML(previousSellingPrice(r.price))}</s>`:''}${r.price}</div></div>
+<div style="padding:6px 8px"><div style="font-size:10px;font-weight:600;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.n}</div><div style="font-size:10px;color:#00C853;font-weight:700">${previousSellingPrice(r.price)?`<s style="color:#aaa;font-weight:500;margin-right:4px">${escapeHTML(previousSellingPrice(r.price))}</s>`:''}${escapeHTML(productDisplayPrice(r))}</div></div>
 </div>`}).join('')}
 </div></div>`:''}
 <!-- Sticky CTA bar (must be last child for sticky-bottom to work) -->
@@ -2183,7 +2188,7 @@ if(matches.length){
           <div style="font-size:13px;font-weight:700;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safeName}</div>
           <div style="font-size:11px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.brand||'Other'}${p.cat?' · '+p.cat.split(',')[0]:''}</div>
         </div>
-        <div style="font-size:12px;color:${oos?'#aaa':'#00C853'};font-weight:800;flex-shrink:0">${oos?'Sold out':p.price}</div>
+        <div style="font-size:12px;color:${oos?'#aaa':'#00C853'};font-weight:800;flex-shrink:0">${escapeHTML(productDisplayPrice(p))}${oos?'<span style="display:block;font-size:10px;margin-top:3px">Sold out</span>':''}</div>
       </a>`;
     }).join('');
 } else {
