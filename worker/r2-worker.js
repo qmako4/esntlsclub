@@ -129,11 +129,12 @@ mutation ProductVariantsBulkUpdateForPriceSync($productId: ID!, $variants: [Prod
 }`;
 var RECENT_SUPPLIER_ORDERS_QUERY = `
 query RecentSupplierOrders($first: Int!, $query: String) {
-  orders(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
+  orders(first: $first, query: $query, sortKey: UPDATED_AT, reverse: true) {
     nodes {
       id
       name
       createdAt
+      cancelledAt
       displayFinancialStatus
       displayFulfillmentStatus
       currentSubtotalPriceSet { shopMoney { amount currencyCode } }
@@ -154,6 +155,7 @@ query RecentSupplierOrders($first: Int!, $query: String) {
           sku
           quantity
           currentQuantity
+          discountedTotalSet { shopMoney { amount } }
           variantTitle
           image { url }
           product { id title handle }
@@ -1069,6 +1071,20 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
+function fastParkaSourceId(lineItem) {
+  const match = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(21|22|23|24)-FAST-(XS|S|M|L|XL)$/i);
+  return match?.[1] || "";
+}
+function fastParkaShippedQuantity(order, lineItem) {
+  const lineId = normalizeShopifyNumericId(lineItem?.admin_graphql_api_id || lineItem?.id);
+  if (!lineId) return 0;
+  const quantity = (order.fulfillments || []).flatMap((fulfillment) => {
+    if (String(fulfillment.status).toUpperCase() !== "SUCCESS") return [];
+    return fulfillment.fulfillmentLineItems?.nodes || fulfillment.line_items || [];
+  }).filter((entry) => normalizeShopifyNumericId(entry.lineItem?.id || entry.admin_graphql_api_id || entry.id) === lineId)
+    .reduce((total, entry) => total + (Number(entry.quantity) || 0), 0);
+  return Math.max(0, Math.min(quantity, Number(lineItem.current_quantity ?? lineItem.quantity) || 0));
+}
 function isSupplierWhatsappExcludedItem(lineItem, product) {
   const sku = shopifyLineItemSku(lineItem);
   if (/^ESNTLS[-_]?0*54(?:[-_]|$)/i.test(sku)) return true;
@@ -1379,7 +1395,7 @@ __name(supplierPortalAddressLines, "supplierPortalAddressLines");
 function supplierPortalOrderStatus(items) {
   const visibleItems = Array.isArray(items) ? items : [];
   if (!visibleItems.length) return "empty";
-  const shipped = visibleItems.filter((item) => /^yes\b|^already\b/i.test(safeMessageLine(item.shopifyUpdated)));
+  const shipped = visibleItems.filter((item) => item.fastDelivery ? item.shippedQuantity >= item.quantity : /^yes\b|^already\b/i.test(safeMessageLine(item.shopifyUpdated)));
   if (shipped.length === visibleItems.length) return "fulfilled";
   if (shipped.length) return "partial";
   return "open";
@@ -1408,7 +1424,7 @@ async function buildSupplierSheetRows(env, order) {
   const unresolvedLineItems = [];
   for (const lineItem of shopifyLineItems(order)) {
     const product = resolveEsntlsProductForShopifyLineItem(lineItem, products);
-    if (isSupplierWhatsappExcludedItem(lineItem, product)) {
+    if (fastParkaSourceId(lineItem) || isSupplierWhatsappExcludedItem(lineItem, product)) {
       excludedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
       continue;
     }
@@ -1462,6 +1478,8 @@ async function buildSupplierPortalOrder(env, order, products = null) {
       index++;
       continue;
     }
+    const fastDelivery = Boolean(fastParkaSourceId(lineItem));
+    const shippedQuantity = fastDelivery ? fastParkaShippedQuantity(order, lineItem) : 0;
     const optionParts = lineItemOptionParts(lineItem);
     const quantity = Math.max(1, Number(lineItem?.quantity || lineItem?.current_quantity || 1));
     const productTitle = safeMessageLine(product?.title || product?.raw?.name || fallbackShopifyLineItemTitle(lineItem));
@@ -1469,14 +1487,18 @@ async function buildSupplierPortalOrder(env, order, products = null) {
     if (!product) unresolvedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
     items.push({
       itemKey: supplierPortalItemKey(lineItem, product, index),
-      sourceProductId: safeMessageLine(product?.raw?.id || product?.id),
+      sourceProductId: safeMessageLine(product?.raw?.id || product?.id || fastParkaSourceId(lineItem)),
       productName: productTitle,
       option: optionParts.join(" - "),
       quantity,
+      ...(fastDelivery ? {
+        fastDelivery, shippedQuantity,
+        netSales: Number(lineItem.discountedTotalAmount ?? (Number(lineItem.price || 0) * quantity - Number(lineItem.total_discount || 0))) || 0
+      } : {}),
       imageUrl,
       productPageUrl: "",
       ...supplierPortalLineItemIds(lineItem),
-      supplierStatus: "New",
+      supplierStatus: fastDelivery ? "ESNTLS dispatch · Do not ship" : "New",
       trackingNumber: "",
       courier: "",
       supplierNotes: product ? "" : "Check item match",
@@ -1495,8 +1517,8 @@ async function buildSupplierPortalOrder(env, order, products = null) {
     orderNumber: orderNameNumber(order),
     orderDate,
     salesTotal: Number(order?.current_subtotal_price || order?.subtotal_price || order?.total_price || 0) || 0,
-    shipping,
-    addressLines: supplierPortalAddressLines(shipping),
+    shipping: items.length && items.every((item) => item.fastDelivery) ? {} : shipping,
+    addressLines: items.length && items.every((item) => item.fastDelivery) ? [] : supplierPortalAddressLines(shipping),
     items,
     status: supplierPortalOrderStatus(items),
     excludedLineItems,
@@ -1507,6 +1529,7 @@ async function buildSupplierPortalOrder(env, order, products = null) {
 __name(buildSupplierPortalOrder, "buildSupplierPortalOrder");
 function supplierPortalMergeItem(incoming, existingItems) {
   const existing = existingItems.find((item) => item.itemKey === incoming.itemKey) || existingItems.find((item) => {
+    if (incoming.fastDelivery || item.fastDelivery) return false;
     return normalizeTitleKey(item.productName) === normalizeTitleKey(incoming.productName) && normalizeTitleKey(item.option) === normalizeTitleKey(incoming.option);
   });
   if (!existing) return incoming;
@@ -1772,7 +1795,7 @@ async function buildSupplierWhatsappOrder(env, order) {
   const excludedLineItems = [];
   for (const lineItem of shopifyLineItems(order)) {
     const product = resolveEsntlsProductForShopifyLineItem(lineItem, products);
-    if (isSupplierWhatsappExcludedItem(lineItem, product)) {
+    if (fastParkaSourceId(lineItem) || isSupplierWhatsappExcludedItem(lineItem, product)) {
       excludedLineItems.push(fallbackShopifyLineItemTitle(lineItem));
       continue;
     }
@@ -2301,7 +2324,7 @@ function buildSupplierTrackingFulfillmentInput(order, rows, products) {
       if (!remainingQuantity || fulfillmentLine?.requiresShipping === false) continue;
       const lineItem = fulfillmentTrackingLineItem(fulfillmentLine);
       const product = resolveEsntlsProductForShopifyLineItem(lineItem, products);
-      if (isSupplierWhatsappExcludedItem(lineItem, product)) continue;
+      if (fastParkaSourceId(lineItem) || isSupplierWhatsappExcludedItem(lineItem, product)) continue;
       const matchingRows = supplierTrackingLineMatchesRows(lineItem, product, fulfillmentLine, rows);
       const candidate = {
         fulfillmentOrderId: fulfillmentOrder.id,
@@ -2683,9 +2706,13 @@ function supplierPortalPublicItem(item) {
 }
 __name(supplierPortalPublicItem, "supplierPortalPublicItem");
 function supplierPortalPublicOrder(order) {
+  const items = (Array.isArray(order?.items) ? order.items : []).map(supplierPortalPublicItem);
+  if (!items.some((item) => item.fastDelivery)) return { ...order, items };
   return {
     ...order,
-    items: (Array.isArray(order?.items) ? order.items : []).map(supplierPortalPublicItem)
+    shipping: {},
+    addressLines: [],
+    items: items.map((item) => item.fastDelivery ? item : { ...item, dispatchAddressLines: order.addressLines || [] })
   };
 }
 __name(supplierPortalPublicOrder, "supplierPortalPublicOrder");
@@ -2790,22 +2817,38 @@ function supplierFinanceSnapshot(orders, state) {
         });
       }
       const itemKey = supplierFinanceItemKey(order, item);
-      if (settled.has(itemKey)) continue;
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const payableKeys = item.fastDelivery
+        ? Array.from({ length: Math.min(quantity, Math.max(0, item.shippedQuantity || 0)) }, (_, index) => itemKey + "::unit-" + (index + 1))
+          .filter((key) => !settled.has(key))
+        : settled.has(itemKey) ? [] : [itemKey];
+      if (!payableKeys.length) continue;
       outstandingOrderKeys.add(orderKey);
       outstandingItems.push({
         itemKey,
+        payableKeys,
+        fastDelivery: Boolean(item.fastDelivery),
+        netSales: item.fastDelivery ? supplierFinanceMoney((item.netSales || 0) * payableKeys.length / quantity) : 0,
         costKey,
         orderKey,
         orderName: safeMessageLine(order.orderName),
         productName: safeMessageLine(item.productName || "Unknown item"),
         option: safeMessageLine(item.option),
-        quantity: Math.max(1, Number(item.quantity || 1)),
+        quantity: item.fastDelivery ? payableKeys.length : quantity,
         unitCost
       });
     }
   }
   const outstandingOrders = periodOrders.filter((order) => outstandingOrderKeys.has(safeMessageLine(order.key || order.orderName)));
-  const salesTotal = supplierFinanceMoney(outstandingOrders.reduce((sum, order) => sum + supplierFinanceMoney(order.salesTotal), 0));
+  const salesForOrder = (order) => {
+    const orderItems = outstandingItems.filter((item) => item.orderKey === safeMessageLine(order.key || order.orderName));
+    const ordinarySales = orderItems.some((item) => !item.fastDelivery)
+      ? supplierFinanceMoney(order.salesTotal) - (order.items || []).filter((item) => item.fastDelivery)
+        .reduce((total, item) => total + (item.netSales || 0), 0)
+      : 0;
+    return supplierFinanceMoney(ordinarySales + orderItems.reduce((total, item) => total + item.netSales, 0));
+  };
+  const salesTotal = supplierFinanceMoney(outstandingOrders.reduce((sum, order) => sum + salesForOrder(order), 0));
   const supplierOwed = supplierFinanceMoney(outstandingItems.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
   const otherCosts = supplierFinanceMoney(state.otherCosts);
   const estimatedProfit = supplierFinanceMoney(salesTotal - supplierOwed - otherCosts);
@@ -2820,7 +2863,7 @@ function supplierFinanceSnapshot(orders, state) {
   const orderBreakdown = outstandingOrders.map((order) => {
     const orderKey = safeMessageLine(order.key || order.orderName);
     const items = outstandingItems.filter((item) => item.orderKey === orderKey);
-    const orderSales = supplierFinanceMoney(order.salesTotal);
+    const orderSales = salesForOrder(order);
     const orderSupplierCost = supplierFinanceMoney(items.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
     const orderProfit = supplierFinanceMoney(orderSales - orderSupplierCost);
     return {
@@ -2913,7 +2956,7 @@ async function handleSupplierFinanceApi(req, env, parts) {
     const snapshot = supplierFinanceSnapshot(orders, state);
     if (!snapshot.outstandingItemCount) return json({ error: "There is no outstanding supplier balance" }, 400);
     if (snapshot.missingCostItems) return json({ error: `Add costs for ${snapshot.missingCostItems} item${snapshot.missingCostItems === 1 ? "" : "s"} before marking paid` }, 400);
-    const settledKeys = snapshot.outstandingItems.map((item) => item.itemKey);
+    const settledKeys = snapshot.outstandingItems.flatMap((item) => item.payableKeys || [item.itemKey]);
     const settlement = {
       id: crypto.randomUUID(),
       paidAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -3470,11 +3513,12 @@ var SUPPLIER_PORTAL_HTML = String.raw(_a || (_a = __template([`<!doctype html>
             img +
             '<div class="item-main">' +
               '<div>' + title + '<div class="item-meta">' + escapeHtml(meta) + '</div></div>' +
-              '<div class="tracking-grid">' +
+              (item.dispatchAddressLines && item.dispatchAddressLines.length ? '<div class="address">' + item.dispatchAddressLines.map(escapeHtml).join("<br>") + '</div>' : '') +
+              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS 发货 · 供应商请勿发货" : "Fast delivery · ESNTLS ships · Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
                 '<div class="field"><label>' + escapeHtml(t("tracking")) + '</label><input data-field="tracking" value="' + escapeAttr(item.trackingNumber || "") + '" placeholder="' + escapeAttr(t("trackingPlaceholder")) + '"></div>' +
                 '<div class="field"><label>' + escapeHtml(t("courier")) + '</label><input data-field="courier" value="' + escapeAttr(item.courier || "") + '" placeholder="' + escapeAttr(t("courierPlaceholder")) + '"></div>' +
                 '<button type="button" data-action="save">' + escapeHtml(t("save")) + '</button>' +
-              '</div>' +
+              '</div>') +
               '<div class="status-line">' + escapeHtml(item.shopifyUpdated || t("noUpdate")) + '</div>' +
             '</div>' +
           '</div>';
@@ -4041,11 +4085,12 @@ var SUPPLIER_PORTAL_HTML = String.raw(_a || (_a = __template([`<!doctype html>
             img +
             '<div class="item-main">' +
               '<div>' + title + '<div class="item-meta">' + escapeHtml(meta) + '</div></div>' +
-              '<div class="tracking-grid">' +
+              (item.dispatchAddressLines && item.dispatchAddressLines.length ? '<div class="address">' + item.dispatchAddressLines.map(escapeHtml).join("<br>") + '</div>' : '') +
+              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS 发货 · 供应商请勿发货" : "Fast delivery · ESNTLS ships · Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
                 '<div class="field"><label>' + escapeHtml(t("tracking")) + '</label><input data-field="tracking" value="' + escapeAttr(item.trackingNumber || "") + '" placeholder="' + escapeAttr(t("trackingPlaceholder")) + '"></div>' +
                 '<div class="field"><label>' + escapeHtml(t("courier")) + '</label><input data-field="courier" value="' + escapeAttr(item.courier || "") + '" placeholder="' + escapeAttr(t("courierPlaceholder")) + '"></div>' +
                 '<button type="button" data-action="save">' + escapeHtml(t("save")) + '</button>' +
-              '</div>' +
+              '</div>') +
               '<div class="status-line">' + escapeHtml(item.shopifyUpdated || t("noUpdate")) + '</div>' +
             '</div>' +
           '</div>';
@@ -4308,6 +4353,13 @@ async function processSupplierOrderWebhook(env, order, options = {}) {
         unresolvedLineItems: built.unresolvedLineItems
       };
     }
+    if (shopifyLineItems(order).some(fastParkaSourceId)) {
+      const portal = await upsertSupplierPortalOrder(env, order, { source: options.source || "shopify" });
+      if (portal.status === "created" || portal.status === "updated") {
+        await writeSupplierOrderLog(env, key, { ...baseRecord, status: "recorded", portal });
+        return { ok: true, status: "recorded", orderName: baseRecord.orderName, portal };
+      }
+    }
     await writeSupplierOrderLog(env, key, { ...baseRecord, status: "skipped", reason: "No supplier line items after exclusions" });
     return { ok: true, status: "skipped", reason: "No supplier line items after exclusions", key };
   }
@@ -4382,6 +4434,7 @@ function graphOrderLineItemToWebhookLineItem(lineItem) {
     sku: lineItem?.sku || variant.sku || "",
     quantity: lineItem?.quantity,
     current_quantity: lineItem?.currentQuantity,
+    discountedTotalAmount: lineItem?.discountedTotalSet?.shopMoney?.amount,
     variant_title: lineItem?.variantTitle || variant.title || "",
     product_id: product.id || "",
     variant_id: variant.id || "",
@@ -4404,6 +4457,7 @@ function graphOrderToWebhookOrder(order) {
     name: order?.name || "",
     created_at: order?.createdAt || "",
     financial_status: order?.displayFinancialStatus || "",
+    fulfillments: order?.fulfillments || [],
     fulfillment_status: order?.displayFulfillmentStatus || "",
     current_subtotal_price: order?.currentSubtotalPriceSet?.shopMoney?.amount || "0",
     shipping_address: {
@@ -4427,7 +4481,8 @@ function supplierSyncSkipsOrder(order, options) {
   if (!options.includeUnpaid && String(order?.displayFinancialStatus || "").toUpperCase() !== "PAID") {
     return `Financial status ${order?.displayFinancialStatus || "unknown"}`;
   }
-  if (!options.includeFulfilled && String(order?.displayFulfillmentStatus || "").toUpperCase() === "FULFILLED") {
+  if (order?.cancelledAt) return "Cancelled";
+  if (!options.includeFulfilled && String(order?.displayFulfillmentStatus || "").toUpperCase() === "FULFILLED" && !shopifyLineItems(order).some(fastParkaSourceId)) {
     return "Already fulfilled";
   }
   if (!order?.shippingAddress) return "Missing shipping address";
@@ -4568,6 +4623,15 @@ async function runSupplierPortalRecentOrderSync(env, requestBody = {}) {
     if (reason) {
       skippedOrders.push({ orderName: order?.name || "", reason });
       continue;
+    }
+    if (shopifyLineItems(order).some(fastParkaSourceId)) {
+      const shipment = await shopifyGraphql(env, `query FastParkaShipments($id: ID!) {
+        order(id: $id) { fulfillments(first: 15) {
+          status
+          fulfillmentLineItems(first: 40) { nodes { quantity lineItem { id } } }
+        } }
+      }`, { id: order.id });
+      order.fulfillments = shipment.order?.fulfillments || [];
     }
     const supplierOrder = graphOrderToWebhookOrder(order);
     if (dryRun) {
@@ -5188,6 +5252,7 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
     const itemKey = safeMessageLine(requestItem.itemKey);
     const item = (order.items || []).find((candidate) => candidate.itemKey === itemKey);
     if (!item) throw new Error(`Order item ${itemKey || "(missing)"} was not found`);
+    if (item.fastDelivery) throw new Error("ESNTLS dispatches this item. Supplier tracking is disabled.");
     const trackingNumbers = splitTrackingNumbers(requestItem.trackingNumber);
     if (!trackingNumbers.length) throw new Error(`Tracking number is missing for ${item.productName}`);
     item.trackingNumber = trackingNumbers.join(", ");
@@ -5224,7 +5289,7 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
     ok: shopify.status !== "failed",
     status: shopify.status,
     orderName: saved.orderName,
-    order: saved,
+    order: supplierPortalPublicOrder(saved),
     shopify,
     sheet
   };
@@ -7700,6 +7765,25 @@ var r2_worker_default = {
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
+    if (req.method === "GET" && parts[0] === "fast-parka-stock") {
+      const sourceId = parts[1];
+      if (!/^(21|22|23|24)$/.test(sourceId || "")) return json({ variants: [] }, 404);
+      try {
+        const data = await shopifyGraphql(env, `query FastParkaStock($query: String!) {
+          products(first: 1, query: $query) { nodes { status variants(first: 10) { nodes {
+            id sku price inventoryQuantity inventoryPolicy inventoryItem { tracked }
+          } } } }
+        }`, { query: "handle:esntls-fast-" + sourceId });
+        const product = data.products?.nodes?.[0];
+        const variants = product?.status === "ACTIVE" ? product.variants.nodes
+          .filter((variant) => fastParkaSourceId(variant) === sourceId && variant.inventoryPolicy === "DENY" &&
+            variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
+          .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1), price: variant.price })) : [];
+        return json({ variants });
+      } catch {
+        return json({ variants: [] }, 502);
+      }
+    }
     if (req.method === "POST" && parts[0] === "shopify-order-webhook") {
       return handleShopifyOrderWebhook(req, env, ctx);
     }

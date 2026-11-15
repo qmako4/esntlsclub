@@ -64,6 +64,11 @@ img{display:block;max-width:100%}
 .back-link{align-items:center;background:#f4f4f4;border-radius:999px;color:#555;display:inline-flex;font-size:11px;font-weight:800;gap:7px;letter-spacing:.6px;margin:0 0 18px;padding:9px 13px;text-transform:uppercase}
 .back-link:hover{background:#e9e9e9;color:#111}
 .product-layout{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+.delivery-options{border:0;padding:0;margin:12px 0;color:#111}
+.delivery-options legend{font-size:13px;font-weight:700;margin-bottom:7px}
+.delivery-options label{display:flex;gap:9px;align-items:flex-start;padding:9px 0;cursor:pointer}
+.delivery-options input{accent-color:#08783b;margin-top:3px}
+.delivery-estimate{font-size:13px;line-height:1.45;color:#505050;margin:3px 0 7px}
 .gallery{min-width:0}
 .gallery-stage{background:#f4f4f4;border-radius:16px;overflow:hidden;position:relative}
 .gallery-track{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-behavior:smooth;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x}
@@ -429,7 +434,73 @@ async function loadProducts(){
   return Array.from(catalogue.values());
 }
 
+const FAST_PARKA_STOCK_URL='https://esntls-r2.qmako41212.workers.dev/fast-parka-stock/';
+const FAST_PARKA_IDS=new Set(['21','22','23','24']);
+let fastParkaStock=[];
+let fastParkaRequest=0;
+
+function fastParkaDates(now=new Date()){
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(now);
+  const fields=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  const dispatch=new Date(Date.UTC(Number(fields.year),Number(fields.month)-1,Number(fields.day)+1));
+  if(dispatch.getUTCDay()===0)dispatch.setUTCDate(dispatch.getUTCDate()+1);
+  const arrival=new Date(dispatch.getTime()+86400000);
+  const format=new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',weekday:'long',day:'numeric',month:'short'});
+  return {dispatched:format.format(dispatch),expected:format.format(arrival)};
+}
+
+function selectedFastParka(){
+  const size=EsntlsCart.selectedOptionsFrom('productOptions').Size;
+  return fastParkaStock.find(variant=>variant.size===size);
+}
+
+function updateFastParkaOptions(){
+  const group=document.getElementById('fastParkaDelivery');
+  if(!group)return;
+  const estimate=document.getElementById('fastParkaEstimate');
+  const choice=document.getElementById('fastParkaChoice');
+  const button=document.getElementById('productBuyNow');
+  const variant=selectedFastParka();
+  group.hidden=!variant;
+  choice.disabled=!variant;
+  if(!variant)document.getElementById('standardParkaChoice').checked=true;
+  if(variant){
+    const dates=fastParkaDates();
+    estimate.textContent='Fast dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected;
+    document.getElementById('fastParkaPrice').textContent='Fast UK delivery · £'+Number(variant.price).toFixed(2);
+  }
+  if(button)button.textContent='Buy now - '+(choice.checked&&variant?'£'+Number(variant.price).toFixed(2):productDisplayPrice(product));
+}
+
+async function loadFastParkaStock(){
+  if(!product||!FAST_PARKA_IDS.has(String(product.id)))return;
+  const request=++fastParkaRequest;
+  try{
+    const response=await fetch(FAST_PARKA_STOCK_URL+encodeURIComponent(product.id),{cache:'no-store'});
+    if(!response.ok)return;
+    const payload=await response.json();
+    if(request!==fastParkaRequest)return;
+    fastParkaStock=(payload.variants||[]).filter(variant=>/^\d+$/.test(variant.id)&&Number(variant.price)>0);
+    updateFastParkaOptions();
+  }catch{
+    // Standard checkout stays available if fast stock cannot be verified.
+  }
+}
+
+function productCheckoutSelection(){
+  const options=EsntlsCart.selectedOptionsFrom('productOptions');
+  if(!document.getElementById('fastParkaChoice')?.checked)return {item:product,options};
+  const variant=selectedFastParka();
+  if(!variant)return null;
+  return {
+    item:{...product,id:'fast-'+product.id,dbId:'fast-'+product.id,name:product.name+' · Fast UK delivery',
+      price:'£'+Number(variant.price).toFixed(2),timedSale:null,shopifyVariants:{[variant.size]:variant.id}},
+    options
+  };
+}
+
 function deliveryLabel(item){
+  if(FAST_PARKA_IDS.has(String(item.id)))return '7–12 days standard';
   const values=String(item.delivery||'').split(',').map(function(value){return value.trim();}).filter(Boolean);
   return values.length?values.join(' / '):'UK delivery available';
 }
@@ -619,9 +690,10 @@ function renderProduct(){
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':'Available to order')+'</span>'
     +'<div class="purchase-panel">'
     +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
+    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="standardParkaChoice" checked><span>Standard · 7–12 days</span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span id="fastParkaPrice">Fast UK delivery</span></label><p class="delivery-estimate" id="fastParkaEstimate"></p></fieldset>':'')
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
-      :'<div class="buy-actions"><button class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+      :'<div class="buy-actions"><button class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
@@ -636,6 +708,11 @@ function renderProduct(){
     }).join('')+'</div></section>':'');
   bindGalleryScroll();
   bindSaleCountdowns();
+  if(document.getElementById('fastParkaDelivery')){
+    app.querySelector('.purchase-panel').addEventListener('change',updateFastParkaOptions);
+    updateFastParkaOptions();
+    loadFastParkaStock();
+  }
 }
 
 function updateGalleryActive(index){
@@ -717,12 +794,15 @@ function closeFullscreen(){
 }
 
 function openCheckoutConfirm(){
-  const selected=EsntlsCart.selectedOptionsFrom('productOptions');
+  const choice=productCheckoutSelection();
+  if(!choice)return;
+  const selected=choice.options;
   const optionText=Object.entries(selected).filter(function(entry){return entry[1];}).map(function(entry){return entry[0]+': '+entry[1];}).join(' / ');
   const dialog=document.getElementById('checkoutConfirm');
   dialog.innerHTML='<div class="confirm-box" role="dialog" aria-modal="true" aria-label="Checkout confirmation">'
     +'<h2>Blank item = original item</h2>'
-    +'<p>You are buying: <strong>'+escapeHTML(product.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
+    +'<p>You are buying: <strong>'+escapeHTML(choice.item.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
+    +(choice.item!==product?'<p>Dispatch '+escapeHTML(fastParkaDates().dispatched)+' · Estimated delivery '+escapeHTML(fastParkaDates().expected)+'</p>':'')
     +'<div class="confirm-actions"><button class="confirm-go" type="button" onclick="continueToCheckout()">Open secure checkout</button><button class="confirm-back" type="button" onclick="closeCheckoutConfirm()">Back to item</button></div>'
     +'</div>';
   dialog.classList.add('open');
@@ -736,11 +816,13 @@ function closeCheckoutConfirm(){
 }
 
 function continueToCheckout(){
-  EsntlsCart.checkoutSingle(product,EsntlsCart.selectedOptionsFrom('productOptions'));
+  const choice=productCheckoutSelection();
+  if(choice)EsntlsCart.checkoutSingle(choice.item,choice.options);
 }
 
 function addCurrentToCart(){
-  EsntlsCart.add(product,EsntlsCart.selectedOptionsFrom('productOptions'),1);
+  const choice=productCheckoutSelection();
+  if(choice)EsntlsCart.add(choice.item,choice.options,1);
 }
 
 document.addEventListener('keydown',function(event){
