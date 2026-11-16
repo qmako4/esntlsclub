@@ -718,6 +718,7 @@ const stockBadge=oos
 const saleBadge=sale&&!oos?`<div class="pc-sale-badge">${escapeHTML(sale.label)} <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
 const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
  const sourceId=productSourceId(p);
+ const fastAvailable=!oos&&Boolean(nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]);
  return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
  <div class="pc-media">
  <img src="${escapeHTML(p.img)}" alt="${escapeHTML(p.n)}" width="900" height="1200" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
@@ -728,6 +729,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  <div class="pc-name">${escapeHTML(p.n)}</div>
  <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(productDisplayPrice(p))}</div>
  </div>
+ ${fastAvailable?'<span style="align-self:flex-start;border-radius:999px;background:#e8f8ee;color:#135e37;padding:4px 8px;font-size:11px;font-weight:750">⚡ Next-day delivery on selected sizes</span>':''}
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
@@ -1071,6 +1073,7 @@ function shopHTML(cat){
   return `<section class="collection">
     <div class="collection-heading"><div class="collection-kicker">ESNTLS COLLECTION</div><h1>${escapeHTML(cat==='All'?'Shop All':cat)}</h1>
     <div class="collection-nav" aria-label="Collections">${navCats.map(c=>`<button type="button" aria-current="${c===cat}" onclick="showCat('${jsString(c)}',{preservePrice:true})">${escapeHTML(c==='New Items'?'New in':c==='All'?'Shop all':c)}</button>`).join('')}</div></div>
+    ${cat==='New Items'?'<a href="/#stock" onclick="return showStock()" style="display:inline-flex;align-items:center;margin:0 0 14px;padding:9px 14px;border-radius:999px;background:#e8f8ee;color:#135e37;font-weight:750;text-decoration:none">⚡ Shop live Next-Day Stock →</a>':''}
     <div class="collection-controls"><input type="search" id="collectionSearch" aria-label="Search this collection" placeholder="Search this collection…" value="${escapeHTML(collectionSearch)}" oninput="collectionSearch=this.value;refreshCollection()"><select id="collectionPrice" aria-label="Filter by price" onchange="priceFilter=this.value;refreshCollection()">${Object.keys(PRICE_RANGES).map(k=>`<option value="${k}"${priceFilter===k?' selected':''}>${PRICE_LABELS[k]}</option>`).join('')}</select><select aria-label="Sort products" onchange="collectionSort=this.value;refreshCollection()">${[['featured','Featured'],['newest','Newest first'],['low','Price: low to high'],['high','Price: high to low']].map(([v,t])=>`<option value="${v}"${collectionSort===v?' selected':''}>${t}</option>`).join('')}</select></div>
     <div class="collection-summary"><span id="collectionCount" role="status" aria-live="polite">${items.length} items</span><select class="collection-more" aria-label="Browse all collections" onchange="if(this.value)showCat(this.value,{preservePrice:true})"><option value="">More collections</option>${CATS.filter(c=>!navCats.includes(c)).map(c=>`<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}</select></div>
     <div id="collectionResults">${collectionResultsHTML(items)}</div>
@@ -1466,32 +1469,68 @@ const FALLBACK_STOCK = {
   }}
 };
 
-// Dynamic stock — loaded from Supabase, falls back to hardcoded
-let LIVE_STOCK = {...FALLBACK_STOCK};
-let STOCK_UPDATED = "13 Apr 2026";
-let stockLoaded = false;
+// Only confirmed inventory reaches the Next-Day Stock page.
+const FAST_STOCK_FEED='https://esntls-r2.qmako41212.workers.dev/fast-parka-stock';
+const FAST_STOCK_PARKAS={
+  '21':'MacMillan Black Badge','22':'MacMillan Red Badge',
+  '23':'Wyndham Parka – Red Badge','24':'Wyndham Parka – Black Badge'
+};
+let LIVE_STOCK=removeLegacyParkas(FALLBACK_STOCK);
+let nextDayStock={};
+let stockUpdated='';
+let stockFeedStatus='loading';
+let stockRequestedAt=0;
 
-// Load stock LIVE from Wix via Supabase Edge Function
-async function loadLiveStock(){
-  try{
-    const res = await fetch(SB_URL+'/functions/v1/wix-stock');
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    if(data.stock && Object.keys(data.stock).length > 0){
-      LIVE_STOCK = data.stock;
-      const d = new Date(data.updated);
-      STOCK_UPDATED = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      stockLoaded = true;
-      console.log('Live stock loaded from Wix, items:', data.itemCount);
-      if(currentView === 'stock') showStock();
-    } else {
-      console.log('No stock returned from Wix, using fallback');
-      STOCK_UPDATED = "Fallback";
-    }
-  }catch(e){
-    console.log('Using fallback stock data:',e.message);
-    STOCK_UPDATED = "Offline";
+function removeLegacyParkas(stock){
+  const clean={};
+  for(const [name,entry] of Object.entries(stock||{})){
+    const links=entry.links||{};
+    if(Object.hasOwn(FAST_STOCK_PARKAS,String(links._)))continue;
+    const remaining=Object.keys(entry.colors||{}).filter(color=>!Object.hasOwn(FAST_STOCK_PARKAS,String(links[color])));
+    if(!remaining.length)continue;
+    clean[name]={...entry,links:Object.fromEntries(Object.entries(links).filter(([,id])=>!Object.hasOwn(FAST_STOCK_PARKAS,String(id)))),
+      colors:Object.fromEntries(remaining.map(color=>[color,entry.colors[color]]))};
   }
+  return clean;
+}
+
+function fastShopifyStock(stock){
+  const result={};
+  for(const [id,title] of Object.entries(FAST_STOCK_PARKAS)){
+    const variants=(stock?.[id]||[]).filter(v=>/^(XS|S|M|L|XL)$/.test(v.size)&&Number.isInteger(v.quantity)&&v.quantity>0&&Number(v.price)>0);
+    if(!variants.length)continue;
+    result[title]={price:'£'+Math.min(...variants.map(v=>Number(v.price))).toFixed(2),links:{_:Number(id)},shopifyFast:true,
+      colors:{'':{sizes:Object.fromEntries(variants.map(v=>[v.size,v.quantity]))}}};
+  }
+  return result;
+}
+
+async function fetchStockFeed(url){
+  const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw new Error('Stock response '+response.status);
+  const data=await response.json();
+  if(!data.stock||typeof data.stock!=='object'||Array.isArray(data.stock))throw new Error('Invalid stock response');
+  return data.stock;
+}
+
+async function loadLiveStock(){
+  if(Date.now()-stockRequestedAt<30000)return;
+  stockRequestedAt=Date.now();
+  const [legacy,fast]=await Promise.allSettled([
+    fetchStockFeed(SB_URL+'/functions/v1/wix-stock'),
+    fetchStockFeed(FAST_STOCK_FEED)
+  ]);
+  const liveWix=legacy.status==='fulfilled'?removeLegacyParkas(legacy.value):{};
+  const liveParkas=fast.status==='fulfilled'?fastShopifyStock(fast.value):{};
+  nextDayStock={...liveWix,...liveParkas};
+  LIVE_STOCK={...(legacy.status==='fulfilled'?liveWix:removeLegacyParkas(FALLBACK_STOCK)),...liveParkas};
+  stockFeedStatus=legacy.status==='fulfilled'&&fast.status==='fulfilled'?'ready':
+    legacy.status==='rejected'&&fast.status==='rejected'?'unavailable':'partial';
+  if(stockFeedStatus!=='unavailable'){
+    stockUpdated=new Date().toLocaleString('en-GB',{timeZone:'Europe/London',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+  if(currentView==='stock')showStock();
+  else if(currentView?.type==='shop')refreshCollection();
 }
 loadLiveStock();
 
@@ -1724,7 +1763,7 @@ function getProductStockHTML(p){
 }
 
 function getProductIdForStock(product, color){
-  const data = LIVE_STOCK[product];
+  const data = nextDayStock[product];
   if(!data||!data.links) return null;
   if(data.links[color]) return data.links[color];
   if(data.links['_']) return data.links['_'];
@@ -1734,7 +1773,8 @@ function getProductIdForStock(product, color){
 function showStock(filter){
   if(filter) stockFilter = filter;
   currentView='stock';
-  history.replaceState(null,null,'#stock');
+  loadLiveStock();
+  history.replaceState(null,null,'/#stock');
   const app=document.getElementById('app');
   app.style.animation='none';
   app.offsetHeight;
@@ -1759,7 +1799,7 @@ function showStock(filter){
 
   let cardsHtml = '';
 
-  for(const [product, data] of Object.entries(LIVE_STOCK)){
+  for(const [product, data] of Object.entries(nextDayStock)){
     let productTotal = 0;
     let productMatches = false;
     let colorsHtml = '';
@@ -1768,17 +1808,20 @@ function showStock(filter){
       let sizesHtml = '';
       let colorHasMatch = false;
       
-      for(const [size, qty] of Object.entries(info.sizes)){
-        const matches = stockFilter==='all' || size===stockFilter;
+      for(const [size, rawQuantity] of Object.entries(info.sizes)){
+        const qty=Number(rawQuantity);
+        const matches = Number.isInteger(qty) && qty>0 && (stockFilter==='all' || size===stockFilter);
         if(matches){
           productTotal += qty;
           totalItems += qty;
           colorHasMatch = true;
           productMatches = true;
           const pid = getProductIdForStock(product, color);
-          const linkAttr = pid ? `onclick="closeModal();openProduct(${pid})" style="cursor:pointer"` : '';
+          const sizeLink = data.shopifyFast && pid ? 'product.html?id='+encodeURIComponent(pid)+'&size='+encodeURIComponent(size) : '';
+          const linkAttr = pid && !sizeLink ? `onclick="closeModal();openProduct(${Number(pid)})"` : '';
+          const sizeLabel = sizeLink ? `<a href="${escapeHTML(sizeLink)}" style="color:#151715;font-weight:600">${escapeHTML(size)}</a>` : escapeHTML(size);
           sizesHtml += `<div ${linkAttr} style="display:flex;justify-content:space-between;padding:10px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;${pid?'cursor:pointer':''}">
-            <span style="color:#333">${size}</span>
+            <span style="color:#333">${sizeLabel}</span>
             <span style="color:#00C853;font-weight:700">${qty} in stock</span>
           </div>`;
         }
@@ -1834,20 +1877,21 @@ function showStock(filter){
   <div style="text-align:center;margin-bottom:14px">
     <div style="font-size:11px;color:#ff5722;letter-spacing:3px;text-transform:uppercase;font-weight:800;margin-bottom:6px">⚡ Live Availability</div>
     <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,6vw,40px);color:#111;margin:0;letter-spacing:2px">Next-Day Stock</h2>
-    <p style="font-size:12px;color:#aaa;margin-top:6px">Last updated: ${STOCK_UPDATED} · ${totalItems} items across ${totalProducts} products</p>
+    <p style="font-size:12px;color:#aaa;margin-top:6px">Last updated: ${stockUpdated?escapeHTML(stockUpdated)+' UK time · '+totalItems+' items across '+totalProducts+' products':stockFeedStatus==='loading'?'Checking live inventory…':'Live inventory temporarily unavailable'}</p>
   </div>
   <div style="background:linear-gradient(135deg,#fff8e1 0%,#fffde7 100%);border:1.5px solid #ffe082;border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start">
     <div style="font-size:22px;flex-shrink:0;line-height:1">⚡</div>
     <div style="flex:1">
-      <div style="font-size:13px;font-weight:800;color:#5d4037;margin-bottom:3px;letter-spacing:.3px">This is the live stock for next-day delivery</div>
-      <div style="font-size:11px;color:#7c5b25;line-height:1.5">These items ship within 1 working day. If your size isn't here, it may still be available on our 7-9 day delivery option — <a href="https://wa.me/message/QEGPRLGZNZSWN1" target="_blank" rel="noopener noreferrer" style="color:#5d4037;text-decoration:underline;font-weight:700">message us on WhatsApp</a> to check.</div>
+      <div style="font-size:13px;font-weight:800;color:#5d4037;margin-bottom:3px;letter-spacing:.3px">Next-day delivery after dispatch</div>
+      <div style="font-size:11px;color:#7c5b25;line-height:1.5">Dispatch is usually the day after ordering, except Sundays. Check the product page for your estimated arrival. Standard delivery is 7–12 days.</div>
     </div>
   </div>
+  ${stockFeedStatus==='partial'?'<p role="status" style="font-size:13px;color:#5d4037">Some live stock could not be checked. Only confirmed inventory is shown.</p>':''}
   ${shareBar}
   <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#888;text-align:center">Filter by size:</div>
   ${filterBtns}
   ${stockFilter!=='all'?`<div style="text-align:center;margin-bottom:16px"><span style="background:#00C853;color:#fff;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px">${stockFilter}: ${totalItems} items found</span></div>`:''}
-  ${cardsHtml.length?cardsHtml:`<div style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">😞</div><div style="font-size:14px;font-weight:600;color:#111">No items in ${stockFilter}</div><div style="font-size:12px;color:#888;margin-top:4px">Try a different size or check back later</div></div>`}
+  ${cardsHtml.length?cardsHtml:stockFeedStatus==='loading'||stockFeedStatus==='unavailable'?'':`<div style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">😞</div><div style="font-size:14px;font-weight:600;color:#111">No items in ${stockFilter}</div><div style="font-size:12px;color:#888;margin-top:4px">Try a different size or check back later</div></div>`}
   <div style="text-align:center;padding:20px 0 60px">
     <a href="https://wa.me/message/QEGPRLGZNZSWN1" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#111;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:50px;text-decoration:none;min-height:48px">WhatsApp to Order 💬</a>
     <div style="margin-top:12px"><a href="#" onclick="goHome()" style="font-size:13px;color:#00C853;text-decoration:none;font-weight:600">← Back to Shop</a></div>
@@ -2223,13 +2267,13 @@ loadCustomerReviews();
 setTimeout(()=>{
 const params=new URLSearchParams(window.location.search);
 const cat=params.get('cat');
+if(window.location.hash==='#stock'){showStock();return;}
 if(cat){
   showCat(cat,{replace:true});
   return;
 }
 const hash=window.location.hash.slice(1);
-if(hash==='stock'){showStock()}
-else if(hash){
+if(hash){
 const parts=hash.split('-');
 const id=parts[parts.length-1];
 if(id&&!isNaN(id)){openProduct(parseInt(id))}

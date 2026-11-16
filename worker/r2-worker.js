@@ -7767,21 +7767,28 @@ var r2_worker_default = {
     const parts = url.pathname.split("/").filter(Boolean);
     if (req.method === "GET" && parts[0] === "fast-parka-stock") {
       const sourceId = parts[1];
-      if (!/^(21|22|23|24)$/.test(sourceId || "")) return json({ variants: [] }, 404);
+      const sourceIds = ["21", "22", "23", "24"];
+      if (sourceId && !sourceIds.includes(sourceId)) return json({ variants: [] }, 404);
+      const requested = sourceId ? [sourceId] : sourceIds;
       try {
-        const data = await shopifyGraphql(env, `query FastParkaStock($query: String!) {
-          products(first: 1, query: $query) { nodes { status variants(first: 10) { nodes {
+        const data = await shopifyGraphql(env, `query FastParkaStock($first: Int!, $query: String!) {
+          products(first: $first, query: $query) { nodes { handle status variants(first: 10) { nodes {
             id sku price inventoryQuantity inventoryPolicy inventoryItem { tracked }
           } } } }
-        }`, { query: "handle:esntls-fast-" + sourceId });
-        const product = data.products?.nodes?.[0];
-        const variants = product?.status === "ACTIVE" ? product.variants.nodes
-          .filter((variant) => fastParkaSourceId(variant) === sourceId && variant.inventoryPolicy === "DENY" &&
-            variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
-          .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1), price: variant.price })) : [];
-        return json({ variants });
+        }`, { first: requested.length, query: requested.map((id) => "handle:esntls-fast-" + id).join(" OR ") });
+        const stock = Object.fromEntries(requested.map((id) => [id, []]));
+        for (const product of data.products?.nodes || []) {
+          const id = product.handle.replace(/^esntls-fast-/, "");
+          if (!requested.includes(id) || product.status !== "ACTIVE") continue;
+          stock[id] = product.variants.nodes
+            .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
+              variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
+            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase(),
+              price: variant.price, quantity: variant.inventoryQuantity }));
+        }
+        return json(sourceId ? { variants: stock[sourceId] } : { stock });
       } catch {
-        return json({ variants: [] }, 502);
+        return json(sourceId ? { variants: [] } : { stock: {} }, 502);
       }
     }
     if (req.method === "POST" && parts[0] === "shopify-order-webhook") {
