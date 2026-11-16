@@ -7774,7 +7774,7 @@ var r2_worker_default = {
       try {
         const data = await shopifyGraphql(env, `query FastParkaStock($first: Int!, $query: String!) {
           products(first: $first, query: $query) { nodes { handle status variants(first: 10) { nodes {
-            id sku price inventoryQuantity inventoryPolicy inventoryItem { tracked }
+            id sku price compareAtPrice inventoryQuantity inventoryPolicy inventoryItem { tracked }
           } } } }
         }`, { first: requested.length, query: requested.map((id) => "handle:esntls-fast-" + id).join(" OR ") });
         const stock = Object.fromEntries(requested.map((id) => [id, []]));
@@ -7785,7 +7785,7 @@ var r2_worker_default = {
             .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
               variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
             .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase(),
-              price: variant.price, quantity: variant.inventoryQuantity }));
+              price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
         }
         return json(sourceId ? { variants: stock[sourceId] } : { stock });
       } catch {

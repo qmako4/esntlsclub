@@ -67,6 +67,7 @@ img{display:block;max-width:100%}
 .delivery-options{border:0;padding:0;margin:12px 0;color:#111}
 .delivery-options legend{font-size:13px;font-weight:700;margin-bottom:7px}
 .delivery-options label{position:relative;display:block;margin-bottom:8px;cursor:pointer}
+.delivery-options label[hidden]{display:none}
 .delivery-options input{position:absolute;opacity:0;width:1px;height:1px}
 .delivery-card{display:grid;gap:4px;padding:12px 14px;border:1px solid #d8ded8;border-radius:13px}
 .delivery-options input:checked+.delivery-card{background:#eff9f2;border-color:#08773c;box-shadow:inset 0 0 0 1px #08773c}
@@ -473,26 +474,35 @@ function updateFastParkaOptions(selectDefault=false){
   const estimate=document.getElementById('fastParkaEstimate');
   const choice=document.getElementById('fastParkaChoice');
   const standard=document.getElementById('standardParkaChoice');
+  const standardCard=document.getElementById('standardParkaCard');
+  const deliveryFact=document.getElementById('productDeliveryFact');
   const button=document.getElementById('productBuyNow');
   const cart=document.getElementById('productAddToCart');
   const mainPrice=document.getElementById('productSellingPrice');
   const previousPrice=document.getElementById('productPreviousPrice');
   const variant=selectedFastParka();
+  const standardAvailable=standardDeliveryAvailable(product);
+  const fastSelected=Boolean(variant);
   group.hidden=fastParkaStock.length===0;
-  choice.disabled=!variant;
-  if(selectDefault||!variant){
-    fastParkaChoiceConfirmed=false;
-    choice.checked=Boolean(variant);
-    standard.checked=!variant&&!standard.disabled;
-  }
+  choice.disabled=!fastSelected;
+  standard.disabled=fastSelected||!standardAvailable;
+  standardCard.hidden=standard.disabled;
+  choice.checked=fastSelected;
+  standard.checked=!standard.disabled;
+  if(selectDefault)fastParkaChoiceConfirmed=false;
+  if(deliveryFact)deliveryFact.textContent=fastSelected?'Fast UK next day delivery 🚚 💨':standardAvailable?'7–12 days standard':'Unavailable for this size';
   const dates=fastParkaDates();
   estimate.textContent=variant?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:'Unavailable for this size';
-  const fastSelected=Boolean(choice.checked&&variant);
   document.getElementById('fastParkaLow').hidden=!(fastParkaChoiceConfirmed&&fastSelected&&Number(variant.quantity)>0&&Number(variant.quantity)<=2);
-  const priceVariant=fastSelected?variant:standard.disabled?fastParkaStock[0]:null;
+  const priceVariant=variant||(!standardAvailable?fastParkaStock[0]:null);
   const price=priceVariant?'£'+Number(priceVariant.price).toFixed(2):productDisplayPrice(product);
-  const purchasable=fastSelected||!standard.disabled;
-  if(previousPrice)previousPrice.hidden=fastSelected;
+  const purchasable=fastSelected||standardAvailable;
+  if(previousPrice){
+    const compare=Number(priceVariant?.compareAtPrice);
+    const previous=priceVariant?(Number.isFinite(compare)&&compare>Number(priceVariant.price)?'£'+compare.toFixed(2):''):previousSellingPrice(product.price);
+    previousPrice.textContent=previous;
+    previousPrice.hidden=!previous;
+  }
   if(mainPrice)mainPrice.textContent=price;
   if(cart)cart.disabled=!purchasable;
   if(button){
@@ -515,9 +525,8 @@ async function loadFastParkaStock(){
 
 function productCheckoutSelection(){
   const options=EsntlsCart.selectedOptionsFrom('productOptions');
-  if(!document.getElementById('fastParkaChoice')?.checked)return standardDeliveryAvailable(product)?{item:product,options}:null;
   const variant=selectedFastParka();
-  if(!variant)return null;
+  if(!variant)return standardDeliveryAvailable(product)?{item:product,options}:null;
   return {
     item:{id:'fast-'+product.id,name:product.name+' · Fast UK next day delivery 🚚 💨',image:product.image,brand:product.brand,
       price:'£'+Number(variant.price).toFixed(2),shopifyVariants:{[variant.size]:variant.id}},
@@ -711,20 +720,20 @@ function renderProduct(){
     +'<aside class="product-info">'
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
-    +'<div class="prices">'+(previousSellingPrice(product.price)&&!sold?'<span id="productPreviousPrice" class="was">'+escapeHTML(previousSellingPrice(product.price))+'</span>':'')+'<span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(productDisplayPrice(product))+'</span></div>'
+    +'<div class="prices"><span id="productPreviousPrice" class="was"'+(previousSellingPrice(product.price)&&!sold?'':' hidden')+'>'+escapeHTML(sold?'':previousSellingPrice(product.price))+'</span><span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(productDisplayPrice(product))+'</span></div>'
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':standardAvailable?'Available to order':'Fast UK delivery only')+'</span>'
     +'<div class="purchase-panel">'
     +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
-    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="standardParkaChoice" '+(standardAvailable?'checked':'disabled')+'><span class="delivery-card"><strong>Standard UK delivery</strong><span class="delivery-estimate">'+(standardAvailable?'Estimated delivery in 7–12 days':'Currently unavailable')+'</span></span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK next day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
+    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label id="standardParkaCard"><input type="radio" name="parkaDelivery" id="standardParkaChoice" '+(standardAvailable?'checked':'disabled')+'><span class="delivery-card"><strong>Standard UK delivery</strong><span class="delivery-estimate">'+(standardAvailable?'Estimated delivery in 7–12 days':'Currently unavailable')+'</span></span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK next day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
       :'<div class="buy-actions"><button id="productAddToCart" class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
-    +'<div class="fact"><span class="fact-label">Delivery</span><span class="fact-value">'+escapeHTML(deliveryLabel(product))+'</span></div>'
+    +'<div class="fact"><span class="fact-label">Delivery</span><span id="productDeliveryFact" class="fact-value">'+escapeHTML(deliveryLabel(product))+'</span></div>'
     +'<div class="fact"><span class="fact-label">Shipping</span><span class="fact-value">Free UK shipping</span></div>'
     +'</div>'
     +'<a class="support" href="https://wa.me/message/QEGPRLGZNZSWN1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Questions? Message us on WhatsApp</a>'
