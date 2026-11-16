@@ -93,12 +93,18 @@ test("delivery cards update the main and button price and flag only low fast sto
     productDisplayPrice: () => "£149.99"
   });
   vm.runInContext(useFunction(product, "updateFastParkaOptions", "async function loadFastParkaStock"), context);
+  context.updateFastParkaOptions();
+  assert.equal(elements.fastParkaLow.hidden, true);
   elements.fastParkaChoice.checked = true;
   context.updateFastParkaOptions();
   assert.equal(elements.productSellingPrice.textContent, "£159.99");
   assert.equal(elements.productBuyNow.textContent, "Buy now - £159.99");
   assert.equal(elements.fastParkaPill.hidden, false);
   assert.equal(elements.fastParkaLow.hidden, false);
+  elements.fastParkaChoice.checked = false;
+  context.updateFastParkaOptions();
+  assert.equal(elements.fastParkaLow.hidden, true);
+  elements.fastParkaChoice.checked = true;
   size = "M";
   context.updateFastParkaOptions();
   assert.equal(elements.fastParkaLow.hidden, true);
