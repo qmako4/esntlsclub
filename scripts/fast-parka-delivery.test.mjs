@@ -29,10 +29,14 @@ test("fast lines use exact SKU and successful shipped quantity instead of ordere
     shopifyLineItemSku: (line) => line.sku,
     normalizeShopifyNumericId: (id) => String(id || "").split("/").at(-1)
   });
+  vm.runInContext(worker.match(/const fastDeliverySourceIds = [^\n]+/)[0], context);
   vm.runInContext(useFunction(worker, "fastParkaSourceId", "function isSupplierWhatsappExcludedItem"), context);
   const line = { id: "gid://shopify/LineItem/1234", sku: "ESNTLS-021-FAST-XL", quantity: 2 };
   assert.equal(context.fastParkaSourceId(line), "21");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-021-XL" }), "");
+  assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-027-FAST-M" }), "27");
+  assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-FAST-L" }), "28");
+  assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-L" }), "");
   const order = { fulfillments: [
     { status: "SUCCESS", line_items: [{ id: 1234, quantity: 1 }, { id: 9876, quantity: 2 }] },
     { status: "CANCELLED", line_items: [{ id: 1234, quantity: 1 }] }
@@ -112,6 +116,17 @@ test("delivery cards update the main and button price and flag only low fast sto
   assert.equal(elements.productSellingPrice.textContent, "£149.99");
   assert.equal(elements.fastParkaChoice.disabled, true);
   assert.equal(elements.standardParkaChoice.checked, true);
+  elements.standardParkaChoice.disabled = true;
+  size = "S";
+  context.updateFastParkaOptions();
+  assert.equal(elements.productBuyNow.disabled, true);
+  elements.fastParkaChoice.checked = true;
+  context.updateFastParkaOptions();
+  assert.equal(elements.productBuyNow.disabled, false);
+  size = "XL";
+  context.updateFastParkaOptions();
+  assert.equal(elements.productBuyNow.disabled, true);
+  assert.equal(elements.standardParkaChoice.checked, false);
 });
 
 test("catalogue pills follow live stock for each linked product and colour", () => {

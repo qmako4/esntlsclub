@@ -706,7 +706,10 @@ let currentView="home";
   ║  PRODUCT CARD (masonry)   ║
   ╚═══════════════════════════╝*/
 function card(p,i){
-const oos=p.price==='Out of stock';
+const sourceId=productSourceId(p);
+const standardSold=p.price==='Out of stock';
+const fastAvailable=nextDayProductIds.has(String(sourceId));
+const oos=standardSold&&!fastAvailable;
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
 const sc=oos?null:getProductStockCount(p);
 const lowStock=sc!==null&&sc>0&&sc<=4;
@@ -719,8 +722,6 @@ const stockBadge=oos
   :isBestSeller?`<div style="position:absolute;top:8px;left:8px;background:#111;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">🔥 Bestseller</div>`:'';
 const saleBadge=sale&&!oos?`<div class="pc-sale-badge">${escapeHTML(sale.label)} <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
 const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
- const sourceId=productSourceId(p);
- const fastAvailable=!oos&&nextDayProductIds.has(String(sourceId));
  return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
  <div class="pc-media">
  <img src="${escapeHTML(p.img)}" alt="${escapeHTML(p.n)}" width="900" height="1200" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
@@ -729,7 +730,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  </div>
  <div class="pc-meta">
  <div class="pc-name">${escapeHTML(p.n)}</div>
- <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(productDisplayPrice(p))}</div>
+ <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(standardSold&&fastAvailable?nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]?.price||productDisplayPrice(p):productDisplayPrice(p))}</div>
  </div>
  ${oos?'':`<span class="pc-fast-delivery" data-fast-stock-id="${escapeHTML(String(sourceId))}"${fastAvailable?'':' hidden'}>⚡ Next-day delivery available</span>`}
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
@@ -1475,7 +1476,8 @@ const FALLBACK_STOCK = {
 const FAST_STOCK_FEED='https://esntls-r2.qmako41212.workers.dev/fast-parka-stock';
 const FAST_STOCK_PARKAS={
   '21':'MacMillan Black Badge','22':'MacMillan Red Badge',
-  '23':'Wyndham Parka – Red Badge','24':'Wyndham Parka – Black Badge'
+  '23':'Wyndham Parka – Red Badge','24':'Wyndham Parka – Black Badge',
+  '27':'Maya Puffer – Grey','28':'Maya Puffer – Black'
 };
 let LIVE_STOCK=removeLegacyParkas(FALLBACK_STOCK);
 let nextDayStock={};

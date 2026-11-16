@@ -1071,9 +1071,10 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
+const fastDeliverySourceIds = ["21", "22", "23", "24", "27", "28"];
 function fastParkaSourceId(lineItem) {
-  const match = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(21|22|23|24)-FAST-(XS|S|M|L|XL)$/i);
-  return match?.[1] || "";
+  const id = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL)$/i)?.[1];
+  return fastDeliverySourceIds.includes(id) ? id : "";
 }
 function fastParkaShippedQuantity(order, lineItem) {
   const lineId = normalizeShopifyNumericId(lineItem?.admin_graphql_api_id || lineItem?.id);
@@ -7767,7 +7768,7 @@ var r2_worker_default = {
     const parts = url.pathname.split("/").filter(Boolean);
     if (req.method === "GET" && parts[0] === "fast-parka-stock") {
       const sourceId = parts[1];
-      const sourceIds = ["21", "22", "23", "24"];
+      const sourceIds = fastDeliverySourceIds;
       if (sourceId && !sourceIds.includes(sourceId)) return json({ variants: [] }, 404);
       const requested = sourceId ? [sourceId] : sourceIds;
       try {
