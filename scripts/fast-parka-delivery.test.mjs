@@ -90,26 +90,31 @@ test("delivery cards update the main and button price and flag only low fast sto
   const stock = [{ size: "S", price: "159.99", quantity: 2 }, { size: "M", price: "159.99", quantity: 3 }];
   let size = "S";
   const context = vm.createContext({
-    product: {}, fastParkaStock: stock,
+    product: {}, fastParkaStock: stock, fastParkaChoiceConfirmed: false,
     selectedFastParka: () => stock.find((variant) => variant.size === size),
     document: { getElementById: (id) => elements[id] },
     fastParkaDates: () => ({ dispatched: "Tuesday", expected: "Wednesday" }),
     productDisplayPrice: () => "£149.99"
   });
   vm.runInContext(useFunction(product, "updateFastParkaOptions", "async function loadFastParkaStock"), context);
-  context.updateFastParkaOptions();
+  context.updateFastParkaOptions(true);
+  assert.equal(elements.fastParkaChoice.checked, true);
+  assert.equal(elements.standardParkaChoice.checked, false);
   assert.equal(elements.fastParkaLow.hidden, true);
-  elements.fastParkaChoice.checked = true;
+  context.fastParkaChoiceConfirmed = true;
   context.updateFastParkaOptions();
   assert.equal(elements.productSellingPrice.textContent, "£159.99");
   assert.equal(elements.productBuyNow.textContent, "Buy now - £159.99");
   assert.equal(elements.fastParkaLow.hidden, false);
   elements.fastParkaChoice.checked = false;
+  elements.standardParkaChoice.checked = true;
   context.updateFastParkaOptions();
+  assert.equal(elements.fastParkaChoice.checked, false);
+  assert.equal(elements.standardParkaChoice.checked, true);
   assert.equal(elements.fastParkaLow.hidden, true);
-  elements.fastParkaChoice.checked = true;
   size = "M";
-  context.updateFastParkaOptions();
+  context.updateFastParkaOptions(true);
+  assert.equal(elements.fastParkaChoice.checked, true);
   assert.equal(elements.fastParkaLow.hidden, true);
   size = "XS";
   context.updateFastParkaOptions();
@@ -118,10 +123,8 @@ test("delivery cards update the main and button price and flag only low fast sto
   assert.equal(elements.standardParkaChoice.checked, true);
   elements.standardParkaChoice.disabled = true;
   size = "S";
-  context.updateFastParkaOptions();
-  assert.equal(elements.productBuyNow.disabled, true);
-  elements.fastParkaChoice.checked = true;
-  context.updateFastParkaOptions();
+  context.updateFastParkaOptions(true);
+  assert.equal(elements.fastParkaChoice.checked, true);
   assert.equal(elements.productBuyNow.disabled, false);
   size = "XL";
   context.updateFastParkaOptions();
