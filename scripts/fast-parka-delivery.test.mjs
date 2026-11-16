@@ -81,7 +81,7 @@ test("supplier finance charges each shipped unit once across settlements", () =>
 test("delivery cards update the main and button price and flag only low fast stock", () => {
   const elements = Object.fromEntries([
     "fastParkaDelivery", "fastParkaEstimate", "fastParkaChoice", "productBuyNow",
-    "productSellingPrice", "productPreviousPrice", "fastParkaPill", "fastParkaLow", "standardParkaChoice"
+    "productSellingPrice", "productPreviousPrice", "fastParkaLow", "standardParkaChoice"
   ].map((id) => [id, {}]));
   const stock = [{ size: "S", price: "159.99", quantity: 2 }, { size: "M", price: "159.99", quantity: 3 }];
   let size = "S";
@@ -99,7 +99,6 @@ test("delivery cards update the main and button price and flag only low fast sto
   context.updateFastParkaOptions();
   assert.equal(elements.productSellingPrice.textContent, "£159.99");
   assert.equal(elements.productBuyNow.textContent, "Buy now - £159.99");
-  assert.equal(elements.fastParkaPill.hidden, false);
   assert.equal(elements.fastParkaLow.hidden, false);
   elements.fastParkaChoice.checked = false;
   context.updateFastParkaOptions();
@@ -111,10 +110,21 @@ test("delivery cards update the main and button price and flag only low fast sto
   size = "XS";
   context.updateFastParkaOptions();
   assert.equal(elements.productSellingPrice.textContent, "£149.99");
-  assert.equal(elements.fastParkaPill.hidden, false);
-  assert.match(elements.fastParkaPill.textContent, /selected sizes/);
   assert.equal(elements.fastParkaChoice.disabled, true);
   assert.equal(elements.standardParkaChoice.checked, true);
+});
+
+test("catalogue pills follow live stock for each linked product and colour", () => {
+  const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const context = vm.createContext({});
+  vm.runInContext(useFunction(index, "getNextDayProductIds", "async function loadLiveStock"), context);
+  const ids = context.getNextDayProductIds({
+    Parka: { links: { _: 21 }, colors: { "": { sizes: { S: 2 } } } },
+    Trainers: { links: { Black: 5, White: 6 }, colors: {
+      Black: { sizes: { "UK 9": 1 } }, White: { sizes: { "UK 9": 0 } }
+    } }
+  });
+  assert.deepEqual([...ids], ["21", "5"]);
 });
 
 test("the fast-stock view replaces legacy parka rows with positive Shopify counts", () => {

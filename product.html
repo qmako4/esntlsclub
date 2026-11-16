@@ -72,9 +72,8 @@ img{display:block;max-width:100%}
 .delivery-options input:checked+.delivery-card{background:#eff9f2;border-color:#08773c;box-shadow:inset 0 0 0 1px #08773c}
 .delivery-options input:focus-visible+.delivery-card{outline:2px solid #08773c;outline-offset:3px}
 .delivery-options input:disabled+.delivery-card{background:#f6f6f6;color:#555;cursor:default}
-.fast-delivery-pill{position:absolute;top:12px;left:12px;z-index:2;pointer-events:none;max-width:calc(100% - 24px);background:#e8f8ee;color:#135e37;border:1px solid #bde3c8;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:750;box-shadow:0 2px 8px rgba(0,0,0,.14)}
 .fast-delivery-low{display:inline-block;width:fit-content;background:#fff0dd;color:#84440c;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:750}
-.fast-delivery-pill[hidden],.fast-delivery-low[hidden]{display:none}
+.fast-delivery-low[hidden]{display:none}
 .delivery-estimate{font-size:13px;line-height:1.45;color:#505050;margin:3px 0 7px}
 .gallery{min-width:0}
 .gallery-stage{background:#f4f4f4;border-radius:16px;overflow:hidden;position:relative}
@@ -473,9 +472,6 @@ function updateFastParkaOptions(){
   const variant=selectedFastParka();
   group.hidden=fastParkaStock.length===0;
   choice.disabled=!variant;
-  const pill=document.getElementById('fastParkaPill');
-  pill.hidden=fastParkaStock.length===0;
-  pill.textContent=variant?'⚡ Next-day delivery after dispatch':'⚡ Next-day delivery on selected sizes';
   if(!variant)document.getElementById('standardParkaChoice').checked=true;
   const dates=fastParkaDates();
   estimate.textContent=variant?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:'Unavailable for this size';
@@ -684,7 +680,6 @@ function renderProduct(){
     +'<section class="gallery" aria-label="Product images">'
     +'<div class="gallery-stage">'
     +(sold?'<span class="withdrawn-badge">Out of stock</span>':'')
-    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<span id="fastParkaPill" class="fast-delivery-pill" hidden></span>':'')
     +'<div id="galleryTrack" class="gallery-track" aria-label="Swipe through product images">'
     +gallery.map(function(image,index){
       return '<button class="gallery-slide" type="button" onclick="openProductGalleryImage(event)" aria-label="View image '+(index+1)+'"><img src="'+escapeHTML(image)+'" alt="'+escapeHTML(product.name)+' - image '+(index+1)+'"></button>';

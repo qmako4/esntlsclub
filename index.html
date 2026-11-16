@@ -38,6 +38,8 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .pc img{width:100%;height:100%;object-fit:cover;transition:transform .45s cubic-bezier(.22,1,.36,1)}
 .pc:hover img{transform:scale(1.025)}
 .pc-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:10px 2px 2px}
+.pc-fast-delivery{display:block;width:fit-content;margin:6px 0 0;background:#e8f8ee;color:#135e37;border:1px solid #bde3c8;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750;line-height:1.3}
+.pc-fast-delivery[hidden]{display:none}
 .pc-name{font-size:12px;font-weight:700;line-height:1.35;letter-spacing:.1px;min-width:0}
 .pc-price{font-size:12px;font-weight:700;color:#111;white-space:nowrap;text-align:right}
 .pc-original-price{display:inline;font-size:inherit;color:#969696;font-weight:500;text-decoration:line-through;margin-bottom:0}
@@ -718,7 +720,7 @@ const stockBadge=oos
 const saleBadge=sale&&!oos?`<div class="pc-sale-badge">${escapeHTML(sale.label)} <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
 const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
  const sourceId=productSourceId(p);
- const fastAvailable=!oos&&Boolean(nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]);
+ const fastAvailable=!oos&&nextDayProductIds.has(String(sourceId));
  return `<a class="pc" href="${productPageHref(p)}" ontouchstart="preloadProduct('${jsString(sourceId)}')" onmouseenter="preloadProduct('${jsString(sourceId)}')" data-delay="${i*.04}">
  <div class="pc-media">
  <img src="${escapeHTML(p.img)}" alt="${escapeHTML(p.n)}" width="900" height="1200" decoding="async" ${priority} style="${oos?'filter:grayscale(.4);opacity:.7':''}">
@@ -729,7 +731,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  <div class="pc-name">${escapeHTML(p.n)}</div>
  <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(productDisplayPrice(p))}</div>
  </div>
- ${fastAvailable?'<span style="align-self:flex-start;border-radius:999px;background:#e8f8ee;color:#135e37;padding:4px 8px;font-size:11px;font-weight:750">⚡ Next-day delivery on selected sizes</span>':''}
+ ${oos?'':`<span class="pc-fast-delivery" data-fast-stock-id="${escapeHTML(String(sourceId))}"${fastAvailable?'':' hidden'}>⚡ Next-day delivery available</span>`}
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
@@ -1477,6 +1479,7 @@ const FAST_STOCK_PARKAS={
 };
 let LIVE_STOCK=removeLegacyParkas(FALLBACK_STOCK);
 let nextDayStock={};
+let nextDayProductIds=new Set();
 let stockUpdated='';
 let stockFeedStatus='loading';
 let stockRequestedAt=0;
@@ -1513,6 +1516,17 @@ async function fetchStockFeed(url){
   return data.stock;
 }
 
+function getNextDayProductIds(stock){
+  const ids=new Set();
+  for(const {links,colors} of Object.values(stock)){
+    for(const [color,{sizes}] of Object.entries(colors||{})){
+      const id=links?.[color]||links?._;
+      if(id&&Object.values(sizes||{}).some(quantity=>Number(quantity)>0))ids.add(String(id));
+    }
+  }
+  return ids;
+}
+
 async function loadLiveStock(){
   if(Date.now()-stockRequestedAt<30000)return;
   stockRequestedAt=Date.now();
@@ -1523,6 +1537,7 @@ async function loadLiveStock(){
   const liveWix=legacy.status==='fulfilled'?removeLegacyParkas(legacy.value):{};
   const liveParkas=fast.status==='fulfilled'?fastShopifyStock(fast.value):{};
   nextDayStock={...liveWix,...liveParkas};
+  nextDayProductIds=getNextDayProductIds(nextDayStock);
   LIVE_STOCK={...(legacy.status==='fulfilled'?liveWix:removeLegacyParkas(FALLBACK_STOCK)),...liveParkas};
   stockFeedStatus=legacy.status==='fulfilled'&&fast.status==='fulfilled'?'ready':
     legacy.status==='rejected'&&fast.status==='rejected'?'unavailable':'partial';
@@ -1531,6 +1546,9 @@ async function loadLiveStock(){
   }
   if(currentView==='stock')showStock();
   else if(currentView?.type==='shop')refreshCollection();
+  else document.querySelectorAll('[data-fast-stock-id]').forEach(pill=>{
+    pill.hidden=!nextDayProductIds.has(pill.dataset.fastStockId);
+  });
 }
 loadLiveStock();
 
