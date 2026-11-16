@@ -519,7 +519,7 @@ function productCheckoutSelection(){
   const variant=selectedFastParka();
   if(!variant)return null;
   return {
-    item:{id:'fast-'+product.id,name:product.name+' · Fast UK delivery',image:product.image,brand:product.brand,
+    item:{id:'fast-'+product.id,name:product.name+' · Fast UK next day delivery 🚚 💨',image:product.image,brand:product.brand,
       price:'£'+Number(variant.price).toFixed(2),shopifyVariants:{[variant.size]:variant.id}},
     options
   };
@@ -717,7 +717,7 @@ function renderProduct(){
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':standardAvailable?'Available to order':'Fast UK delivery only')+'</span>'
     +'<div class="purchase-panel">'
     +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
-    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="standardParkaChoice" '+(standardAvailable?'checked':'disabled')+'><span class="delivery-card"><strong>Standard UK delivery</strong><span class="delivery-estimate">'+(standardAvailable?'Estimated delivery in 7–12 days':'Currently unavailable')+'</span></span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK delivery</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
+    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="standardParkaChoice" '+(standardAvailable?'checked':'disabled')+'><span class="delivery-card"><strong>Standard UK delivery</strong><span class="delivery-estimate">'+(standardAvailable?'Estimated delivery in 7–12 days':'Currently unavailable')+'</span></span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK next day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
       :'<div class="buy-actions"><button id="productAddToCart" class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')

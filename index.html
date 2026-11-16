@@ -732,7 +732,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  <div class="pc-name">${escapeHTML(p.n)}</div>
  <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(standardSold&&fastAvailable?nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]?.price||productDisplayPrice(p):productDisplayPrice(p))}</div>
  </div>
- ${oos?'':`<span class="pc-fast-delivery" data-fast-stock-id="${escapeHTML(String(sourceId))}"${fastAvailable?'':' hidden'}>⚡ Next-day delivery available</span>`}
+ ${oos?'':`<span class="pc-fast-delivery" data-fast-stock-id="${escapeHTML(String(sourceId))}"${fastAvailable?'':' hidden'}>Fast UK next day delivery 🚚 💨</span>`}
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
 
 function productPageHref(p){
