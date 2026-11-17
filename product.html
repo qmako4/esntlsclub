@@ -691,6 +691,10 @@ function renderProduct(){
   const gallery=product.images;
   const standardAvailable=standardDeliveryAvailable(product);
   const sold=!standardAvailable&&!fastParkaStock.length;
+  const sellingPrice=productDisplayPrice(product);
+  const previousPrice=sold
+    ?(String(product.id)==='20'&&sellingPrice==='£149.99'?'£169.99':'')
+    :previousSellingPrice(product.price);
   const category=categoryLabel(product);
   const sale=timedSaleState(product);
   const related=products.filter(function(item){
@@ -720,7 +724,7 @@ function renderProduct(){
     +'<aside class="product-info">'
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
-    +'<div class="prices"><span id="productPreviousPrice" class="was"'+(previousSellingPrice(product.price)&&!sold?'':' hidden')+'>'+escapeHTML(sold?'':previousSellingPrice(product.price))+'</span><span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(productDisplayPrice(product))+'</span></div>'
+    +'<div class="prices"><span id="productPreviousPrice" class="was"'+(previousPrice?'':' hidden')+'>'+escapeHTML(previousPrice)+'</span><span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(sellingPrice)+'</span></div>'
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':standardAvailable?'Available to order':'Fast UK delivery only')+'</span>'

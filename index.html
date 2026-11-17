@@ -710,6 +710,12 @@ const sourceId=productSourceId(p);
 const standardSold=p.price==='Out of stock';
 const fastAvailable=nextDayProductIds.has(String(sourceId));
 const oos=standardSold&&!fastAvailable;
+const sellingPrice=standardSold&&fastAvailable
+  ?nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]?.price||productDisplayPrice(p)
+  :productDisplayPrice(p);
+const previousPrice=oos
+  ?(String(sourceId)==='20'&&sellingPrice==='£149.99'?'£169.99':'')
+  :previousSellingPrice(p.price);
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
 const sc=oos?null:getProductStockCount(p);
 const lowStock=sc!==null&&sc>0&&sc<=4;
@@ -730,7 +736,7 @@ const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-c
  </div>
  <div class="pc-meta">
  <div class="pc-name">${escapeHTML(p.n)}</div>
- <div class="pc-price">${previousSellingPrice(p.price)&&!oos?`<span class="pc-original-price">${escapeHTML(previousSellingPrice(p.price))}</span>`:''}${escapeHTML(standardSold&&fastAvailable?nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]?.price||productDisplayPrice(p):productDisplayPrice(p))}</div>
+ <div class="pc-price">${previousPrice?`<span class="pc-original-price">${escapeHTML(previousPrice)}</span>`:''}${escapeHTML(sellingPrice)}</div>
  </div>
  ${oos?'':`<span class="pc-fast-delivery" data-fast-stock-id="${escapeHTML(String(sourceId))}"${fastAvailable?'':' hidden'}>Fast UK next day delivery 🚚 💨</span>`}
  ${saleMeta}<span class="pc-option-link">${oos?'Restock updates':'Choose size / options'}<span aria-hidden="true">→</span></span></a>`}
