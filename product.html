@@ -247,7 +247,7 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <main id="productApp" class="state" aria-live="polite"><p>Loading product...</p></main>
 <div id="checkoutConfirm" class="confirm" aria-hidden="true"></div>
 <div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
-<script src="cart.js?v=20261022-orange-uk9"></script>
+<script src="cart.js?v=20261118-next-day"></script>
 <script>
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const R2_BASE='/media/';
@@ -445,13 +445,9 @@ async function loadProducts(){
 }
 
 const FAST_PARKA_STOCK_URL='https://esntls-r2.qmako41212.workers.dev/fast-parka-stock/';
-const FAST_PARKA_IDS=new Set(['21','22','23','24','27','28']);
+const FAST_PARKA_IDS=new Set(['11','21','22','23','24','27','28']);
 let fastParkaStock=[];
 let fastParkaChoiceConfirmed=false;
-
-function standardDeliveryAvailable(item){
-  return String(item.price).toLowerCase()!=='out of stock';
-}
 
 function fastParkaDates(now=new Date()){
   const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(now);
@@ -473,30 +469,24 @@ function updateFastParkaOptions(selectDefault=false){
   if(!group)return;
   const estimate=document.getElementById('fastParkaEstimate');
   const choice=document.getElementById('fastParkaChoice');
-  const standard=document.getElementById('standardParkaChoice');
-  const standardCard=document.getElementById('standardParkaCard');
   const deliveryFact=document.getElementById('productDeliveryFact');
   const button=document.getElementById('productBuyNow');
   const cart=document.getElementById('productAddToCart');
   const mainPrice=document.getElementById('productSellingPrice');
   const previousPrice=document.getElementById('productPreviousPrice');
   const variant=selectedFastParka();
-  const standardAvailable=standardDeliveryAvailable(product);
   const fastSelected=Boolean(variant);
   group.hidden=fastParkaStock.length===0;
   choice.disabled=!fastSelected;
-  standard.disabled=fastSelected||!standardAvailable;
-  standardCard.hidden=standard.disabled;
   choice.checked=fastSelected;
-  standard.checked=!standard.disabled;
   if(selectDefault)fastParkaChoiceConfirmed=false;
-  if(deliveryFact)deliveryFact.textContent=fastSelected?'Fast UK next day delivery 🚚 💨':standardAvailable?'7–12 days standard':'Unavailable for this size';
+  if(deliveryFact)deliveryFact.textContent=fastSelected?'Fast UK next day delivery 🚚 💨':'Unavailable for this size';
   const dates=fastParkaDates();
   estimate.textContent=variant?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:'Unavailable for this size';
   document.getElementById('fastParkaLow').hidden=!(fastParkaChoiceConfirmed&&fastSelected&&Number(variant.quantity)>0&&Number(variant.quantity)<=2);
-  const priceVariant=variant||(!standardAvailable?fastParkaStock[0]:null);
+  const priceVariant=variant||fastParkaStock[0];
   const price=priceVariant?'£'+Number(priceVariant.price).toFixed(2):productDisplayPrice(product);
-  const purchasable=fastSelected||standardAvailable;
+  const purchasable=fastSelected;
   if(previousPrice){
     const compare=Number(priceVariant?.compareAtPrice);
     const previous=priceVariant?(Number.isFinite(compare)&&compare>Number(priceVariant.price)?'£'+compare.toFixed(2):''):previousSellingPrice(product.price);
@@ -517,16 +507,16 @@ async function loadFastParkaStock(){
     const response=await fetch(FAST_PARKA_STOCK_URL+encodeURIComponent(product.id),{cache:'no-store',signal:AbortSignal.timeout(5000)});
     if(!response.ok)return;
     const payload=await response.json();
-    fastParkaStock=(payload.variants||[]).filter(variant=>/^\d+$/.test(variant.id)&&Number(variant.price)>0);
+    fastParkaStock=(payload.variants||[]).filter(variant=>/^\d+$/.test(variant.id)&&Number(variant.price)>0&&Number(variant.quantity)>0);
   }catch{
-    // Standard checkout stays available if fast stock cannot be verified.
+    // Keep checkout closed until there is confirmed UK stock.
   }
 }
 
 function productCheckoutSelection(){
   const options=EsntlsCart.selectedOptionsFrom('productOptions');
   const variant=selectedFastParka();
-  if(!variant)return standardDeliveryAvailable(product)?{item:product,options}:null;
+  if(!variant)return null;
   return {
     item:{id:'fast-'+product.id,name:product.name+' · Fast UK next day delivery 🚚 💨',image:product.image,brand:product.brand,
       price:'£'+Number(variant.price).toFixed(2),shopifyVariants:{[variant.size]:variant.id}},
@@ -534,10 +524,8 @@ function productCheckoutSelection(){
   };
 }
 
-function deliveryLabel(item){
-  if(FAST_PARKA_IDS.has(String(item.id)))return standardDeliveryAvailable(item)?'7–12 days standard':fastParkaStock.length?'Fast UK delivery only':'Currently unavailable';
-  const values=String(item.delivery||'').split(',').map(function(value){return value.trim();}).filter(Boolean);
-  return values.length?values.join(' / '):'UK delivery available';
+function deliveryLabel(){
+  return fastParkaStock.length?'Fast UK next day delivery 🚚 💨':'Currently unavailable';
 }
 
 function categoryLabel(item){
@@ -689,11 +677,10 @@ function renderProduct(){
   document.title=product.name+' | ESNTLS CLUB';
   if(!productIsUnlocked(product)){renderProductAccessGate();return;}
   const gallery=product.images;
-  const standardAvailable=standardDeliveryAvailable(product);
-  const sold=!standardAvailable&&!fastParkaStock.length;
+  const sold=!fastParkaStock.length;
   const sellingPrice=productDisplayPrice(product);
   const previousPrice=sold
-    ?(String(product.id)==='20'&&sellingPrice==='£149.99'?'£169.99':'')
+    ?(['20','23','24'].includes(String(product.id))&&sellingPrice==='£149.99'?'£169.99':'')
     :previousSellingPrice(product.price);
   const category=categoryLabel(product);
   const sale=timedSaleState(product);
@@ -727,10 +714,10 @@ function renderProduct(){
     +'<div class="prices"><span id="productPreviousPrice" class="was"'+(previousPrice?'':' hidden')+'>'+escapeHTML(previousPrice)+'</span><span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(sellingPrice)+'</span></div>'
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
-    +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':standardAvailable?'Available to order':'Fast UK delivery only')+'</span>'
+    +'<span class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':'In UK stock')+'</span>'
     +'<div class="purchase-panel">'
-    +(sold?'':EsntlsCart.optionPickerHTML(product,'productOptions'))
-    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label id="standardParkaCard"><input type="radio" name="parkaDelivery" id="standardParkaChoice" '+(standardAvailable?'checked':'disabled')+'><span class="delivery-card"><strong>Standard UK delivery</strong><span class="delivery-estimate">'+(standardAvailable?'Estimated delivery in 7–12 days':'Currently unavailable')+'</span></span></label><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK next day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
+    +(sold?'':EsntlsCart.optionPickerHTML({sizes:fastParkaStock.map(variant=>variant.size)},'productOptions'))
+    +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Fast UK next day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Selling out soon</span></span></label></fieldset>':'')
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
       :'<div class="buy-actions"><button id="productAddToCart" class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')

@@ -36,6 +36,7 @@ test("fast lines use exact SKU and successful shipped quantity instead of ordere
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-021-XL" }), "");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-027-FAST-M" }), "27");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-FAST-L" }), "28");
+  assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-011-FAST-UK13" }), "11");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-L" }), "");
   const order = { fulfillments: [
     { status: "SUCCESS", line_items: [{ id: 1234, quantity: 1 }, { id: 9876, quantity: 2 }] },
@@ -85,10 +86,9 @@ test("supplier finance charges each shipped unit once across settlements", () =>
 test("delivery cards update the main and button price and flag only low fast stock", () => {
   const elements = Object.fromEntries([
     "fastParkaDelivery", "fastParkaEstimate", "fastParkaChoice", "productBuyNow",
-    "productSellingPrice", "productPreviousPrice", "fastParkaLow", "standardParkaChoice", "standardParkaCard", "productDeliveryFact"
+    "productSellingPrice", "productPreviousPrice", "fastParkaLow", "productDeliveryFact"
   ].map((id) => [id, {}]));
   const stock = [{ size: "S", price: "119.99", compareAtPrice: "139.99", quantity: 2 }, { size: "M", price: "119.99", quantity: 3 }];
-  let standardAvailable = true;
   let size = "S";
   const context = vm.createContext({
     product: {}, fastParkaStock: stock, fastParkaChoiceConfirmed: false,
@@ -96,15 +96,12 @@ test("delivery cards update the main and button price and flag only low fast sto
     document: { getElementById: (id) => elements[id] },
     fastParkaDates: () => ({ dispatched: "Tuesday", expected: "Wednesday" }),
     productDisplayPrice: () => "£119.99",
-    previousSellingPrice: () => "£139.99",
-    standardDeliveryAvailable: () => standardAvailable
+    previousSellingPrice: () => "£139.99"
   });
   vm.runInContext(useFunction(product, "updateFastParkaOptions", "async function loadFastParkaStock"), context);
   context.updateFastParkaOptions(true);
   assert.equal(elements.fastParkaChoice.checked, true);
-  assert.equal(elements.standardParkaChoice.checked, false);
   assert.equal(elements.fastParkaLow.hidden, true);
-  assert.equal(elements.standardParkaCard.hidden, true);
   assert.equal(elements.productPreviousPrice.textContent, "£139.99");
   context.fastParkaChoiceConfirmed = true;
   context.updateFastParkaOptions();
@@ -120,9 +117,7 @@ test("delivery cards update the main and button price and flag only low fast sto
   context.updateFastParkaOptions(true);
   assert.equal(elements.productSellingPrice.textContent, "£119.99");
   assert.equal(elements.fastParkaChoice.disabled, true);
-  assert.equal(elements.standardParkaChoice.checked, true);
-  assert.equal(elements.standardParkaCard.hidden, false);
-  standardAvailable = false;
+  assert.equal(elements.productBuyNow.disabled, true);
   size = "S";
   context.updateFastParkaOptions(true);
   assert.equal(elements.fastParkaChoice.checked, true);
@@ -130,7 +125,6 @@ test("delivery cards update the main and button price and flag only low fast sto
   size = "XL";
   context.updateFastParkaOptions();
   assert.equal(elements.productBuyNow.disabled, true);
-  assert.equal(elements.standardParkaChoice.checked, false);
 });
 
 test("catalogue pills follow live stock for each linked product and colour", () => {
@@ -146,19 +140,15 @@ test("catalogue pills follow live stock for each linked product and colour", () 
   assert.deepEqual([...ids], ["21", "5"]);
 });
 
-test("the fast-stock view replaces legacy parka rows with positive Shopify counts", () => {
+test("the fast-stock view accepts tracked jacket and trainer sizes", () => {
   const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  const context = vm.createContext({ FAST_STOCK_PARKAS: { "21": "MacMillan Black Badge" } });
-  vm.runInContext(useFunction(index, "removeLegacyParkas", "async function fetchStockFeed"), context);
-  const previous = {
-    "The Miller Parka": { links: { _: 21 }, colors: { Black: { sizes: { XS: 99 } } } },
-    Footwear: { links: { _: 5 }, colors: { Blue: { sizes: { "UK 9": 2 } } } }
-  };
-  assert.deepEqual(Object.keys(context.removeLegacyParkas(previous)), ["Footwear"]);
-  const stock = context.fastShopifyStock({ 21: [
+  const context = vm.createContext({ FAST_STOCK_PARKAS: { "21": "MacMillan Black Badge", "11": "B30 Black and White" } });
+  vm.runInContext(useFunction(index, "fastShopifyStock", "async function fetchStockFeed"), context);
+  const stock = context.fastShopifyStock({ 11: [{ size: "UK 13", quantity: 1, price: "99.99" }], 21: [
     { size: "XS", quantity: 0, price: "129.99" },
     { size: "S", quantity: 2, price: "129.99" }
   ] });
   assert.equal(stock["MacMillan Black Badge"].colors[""].sizes.XS, undefined);
   assert.equal(stock["MacMillan Black Badge"].colors[""].sizes.S, 2);
+  assert.equal(stock["B30 Black and White"].colors[""].sizes["UK 13"], 1);
 });

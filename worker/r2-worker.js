@@ -1071,9 +1071,9 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
-const fastDeliverySourceIds = ["21", "22", "23", "24", "27", "28"];
+const fastDeliverySourceIds = ["11", "21", "22", "23", "24", "27", "28"];
 function fastParkaSourceId(lineItem) {
-  const id = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL)$/i)?.[1];
+  const id = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL|UK(?:[6-9]|1[0-3]))$/i)?.[1];
   return fastDeliverySourceIds.includes(id) ? id : "";
 }
 function fastParkaShippedQuantity(order, lineItem) {
@@ -7784,7 +7784,7 @@ var r2_worker_default = {
           stock[id] = product.variants.nodes
             .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
               variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
-            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase(),
+            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase().replace(/^UK(?=\d)/, "UK "),
               price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
         }
         return json(sourceId ? { variants: stock[sourceId] } : { stock });

@@ -327,8 +327,6 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="#" onclick="showCat('New Items')" class="desktop-menu-item">New Items</a>
 <a href="#" onclick="showCat('Best Sellers')" class="desktop-menu-item">🔥 Best Sellers</a>
 <a href="#" onclick="showDailyDeals()" class="desktop-menu-item">Daily Deals</a>
-<a href="#" onclick="showB30Bundle()" class="desktop-menu-item">B30 Bundle - Save £19.99</a>
-<a href="#" onclick="showB22Bundle()" class="desktop-menu-item">B22 Bundle - Save £29.99</a>
 <a href="#" onclick="showCat('Essentials')" class="desktop-menu-item">⭐ Essentials</a>
 <a href="#" onclick="showCat('Old Money')" class="desktop-menu-item">🏛️ Old Money</a>
 </div>
@@ -392,8 +390,6 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
         <a href="#" class="mob-item" data-keywords="new items latest recent arrivals newest drops uploaded" onclick="showCat('New Items');toggleMenu()">New Items</a>
         <a href="#" class="mob-item" data-keywords="best sellers popular hot top trending bestsellers" onclick="showCat('Best Sellers');toggleMenu()">🔥 Best Sellers</a>
         <a href="#" class="mob-item" data-keywords="daily deals offers air pro addon rotating" onclick="showDailyDeals();toggleMenu()">Daily Deals</a>
-        <a href="#" class="mob-item" data-keywords="bundle deal offer b30 two pair save" onclick="showB30Bundle();toggleMenu()">B30 Bundle - Save £19.99</a>
-        <a href="#" class="mob-item" data-keywords="bundle deal offer b22 two pair save" onclick="showB22Bundle();toggleMenu()">B22 Bundle - Save £29.99</a>
         <a href="#" class="mob-item" data-keywords="essentials featured curated" onclick="showCat('Essentials');toggleMenu()">⭐ Essentials</a>
         <a href="#" class="mob-item" data-keywords="old money classic luxury preppy heritage featured" onclick="showCat('Old Money');toggleMenu()">🏛️ Old Money</a>
       </div>
@@ -450,7 +446,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <div id="modal" class="modal-bg" style="display:none" onclick="closeModal()"></div>
 
 
-<script src="cart.js?v=20261019-availability"></script>
+<script src="cart.js?v=20261118-next-day"></script>
 <script>
 /*╔═══════════════════════════════════════════╗
   ║  PRODUCT DATA — CORRECT PRICES FROM SITE  ║
@@ -707,14 +703,13 @@ let currentView="home";
   ╚═══════════════════════════╝*/
 function card(p,i){
 const sourceId=productSourceId(p);
-const standardSold=p.price==='Out of stock';
 const fastAvailable=nextDayProductIds.has(String(sourceId));
-const oos=standardSold&&!fastAvailable;
-const sellingPrice=standardSold&&fastAvailable
+const oos=!fastAvailable;
+const sellingPrice=fastAvailable
   ?nextDayStock[FAST_STOCK_PARKAS[String(sourceId)]]?.price||productDisplayPrice(p)
   :productDisplayPrice(p);
 const previousPrice=oos
-  ?(String(sourceId)==='20'&&sellingPrice==='£149.99'?'£169.99':'')
+  ?(['20','23','24'].includes(String(sourceId))&&sellingPrice==='£149.99'?'£169.99':'')
   :previousSellingPrice(p.price);
 const priority=i<4?'fetchpriority="high"':'loading="lazy"';
 const sc=oos?null:getProductStockCount(p);
@@ -1097,7 +1092,7 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(mountNavCart,0),{onc
   ║  HOME PAGE                ║
   ╚═══════════════════════════╝*/
 function homeHTML(){
-const inStock=allProducts().filter(p=>p.price!=='Out of stock');
+const inStock=allProducts().filter(p=>nextDayProductIds.has(String(productSourceId(p))));
 const feat=[...inStock].reverse().slice(0,8);
 // Best sellers: products explicitly tagged "Best Sellers".
 // If nothing is tagged yet, fall back to a sensible default: top-priced in-stock items so the
@@ -1111,7 +1106,6 @@ if(!bestSellers.length){
   bestSellers=bestSellers.slice(0,6);
 }
 const b30s=inStock.filter(p=>p.brand==='B30');
-const b22s=inStock.filter(p=>p.brand==='B22');
 const hero=b30s.length?b30s[Math.floor(Math.random()*b30s.length)]:(inStock[0]||{n:'ESNTLS CLUB',price:'',img:'',id:0});
  const heroHref=productPageHref(hero);
 return `
@@ -1163,9 +1157,9 @@ WhatsApp customer support <span aria-hidden="true">↗</span>
 <!-- Auto-scrolling Categories -->
 ${catScrollHTML()}
 
-${b22BundleHTML(b22s)}
 
-${b30BundleHTML(b30s)}
+
+
 
 <!-- Customer Reviews -->
 <section style="padding:0 16px 48px;max-width:1280px;margin:0 auto">
@@ -1259,15 +1253,15 @@ ${reviewsHTML()}
 <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,34px);color:#111;margin:0;letter-spacing:2px">FAQ</h2>
 </div>
 <div style="display:flex;flex-direction:column;gap:8px">
-<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout may show a blank placeholder item. Purchase the placeholder to complete checkout. You will receive the original ESNTLS item you selected, and choose your size on the payment page.</p></details>
-<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How fast is shipping?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Most orders ship next-day with free UK delivery. Some items follow a 7–12 day fulfilment window — this is shown on the product page. You'll get a tracking number via email once your order ships.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How does checkout work?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Checkout may show a blank placeholder item. Purchase the placeholder to complete checkout. You will receive the original ESNTLS item you selected, in the size you select on the product page.</p></details>
+<details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How fast is shipping?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">We ship from UK stock with free UK delivery. Check the product page for your estimated delivery date. You'll get a tracking number via email once your order ships.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">Issue with your order?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">For help with your order, message us on WhatsApp at +44 7731 906137 and include your order number.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">How do I know my size?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">All shoes are listed in UK sizes and run true-to-size. If you're between sizes, DM us your usual brand size (Nike / Adidas / etc.) and we'll recommend the right fit. Clothing follows standard UK sizing — S, M, L, XL.</p></details>
 <details style="background:#f8f8f8;border-radius:12px;padding:14px 18px;cursor:pointer"><summary style="font-size:13px;font-weight:700;color:#111;list-style:none;display:flex;justify-content:space-between;align-items:center">Item out of stock — when's it back?<span style="color:#00C853">+</span></summary><p style="font-size:12px;color:#666;margin:10px 0 0;line-height:1.6">Message us on WhatsApp with the item name to ask about restock updates. We also post restock alerts to our Telegram channel.</p></details>
 </div>
 </section>
 
-${dailyDealsHTML()}
+
 
 <!-- Footer -->
 <footer style="border-top:1px solid #eee;padding:32px 16px 24px;max-width:1280px;margin:0 auto">
@@ -1432,83 +1426,25 @@ function showB22Bundle(){
 /*╔═══════════════════════════╗
   ║  PUBLIC STOCK PAGE        ║
   ╚═══════════════════════════╝*/
-// Hardcoded fallback stock data
-const FALLBACK_STOCK = {
-  "Technical Sneakers (B22)":{price:"£129.99",cat:"shoe,Summer",links:{"Light Blue":4,"Black":5,"Dark Blue":2,"White/Black":3},colors:{
-    "Light Blue":{emoji:"🩵",sizes:{"UK 7":1,"UK 9":1,"UK 10":1}},
-    "Black":{emoji:"⚫",sizes:{"UK 7":2,"UK 10":1,"UK 11":1,"UK 12":2}},
-    "Dark Blue":{emoji:"🔵",sizes:{"UK 9":3,"UK 11":1}},
-    "White/Black":{emoji:"◻️",sizes:{"UK 10":1}}
-  }},
-  "Daily Sneakers (B30)":{price:"£99.99",cat:"shoe,Summer",links:{"Black/White":11,"Blue/Black":12,"Lime Soles":16},colors:{
-    "Black/White":{emoji:"⚪⚫",sizes:{"UK 5.5":1}},
-    "Blue/Black":{emoji:"🔵⚫",sizes:{"UK 6.5":1}},
-    "Lime Soles":{emoji:"💚",sizes:{"UK 10":2}}
-  }},
-  "Classic Puffer Jacket":{price:"£189.99",cat:"clothing,Summer",links:{"_":28},colors:{
-    "Black":{emoji:"⚫",sizes:{"S":3,"M":1,"L":1,"XL":1}},
-    "Grey":{emoji:"🩶",sizes:{"S":3,"M":3,"L":2}}
-  }},
-  "The Miller Parka":{price:"£219.99",cat:"clothing,Summer",links:{"_":21},colors:{
-    "Black (Black Badge)":{emoji:"⚫",sizes:{"S":2,"L":1}},
-    "Black (Red Badge)":{emoji:"🔴",sizes:{"S":1}}
-  }},
-  "The Fur Parka":{price:"£229.99",cat:"clothing,Summer",links:{"_":23},colors:{
-    "Black (Red Badge)":{emoji:"🔴",sizes:{"XL":1}}
-  }},
-  "The Berry Puffer Jacket":{price:"£179.99",cat:"clothing,Summer",links:{"_":29},colors:{
-    "Black":{emoji:"⚫",sizes:{"XL":1}}
-  }},
-  "Blank T Shirt":{price:"£24.99",cat:"clothing,Summer",links:{"_":36},colors:{
-    "Black":{emoji:"⚫",sizes:{"S":4,"M":4,"L":4}},
-    "White":{emoji:"⚪",sizes:{"M":3,"L":2}}
-  }},
-  "Classic Everyday Tracksuit":{price:"£89.99",cat:"clothing,Summer",links:{"_":35},colors:{
-    "Black":{emoji:"⚫",sizes:{"M":2,"L":1}},
-    "Grey":{emoji:"🩶",sizes:{"S":1,"M":2,"L":1}}
-  }},
-  "Classic Messenger Bag":{price:"£79.99",cat:"accessory,Summer",links:{"_":33},colors:{
-    "":{emoji:"👜",sizes:{"One Size":7}}
-  }},
-  "Double Pocket Messenger Bag":{price:"£69.99",cat:"accessory,Summer",links:{"_":32},colors:{
-    "":{emoji:"👜",sizes:{"One Size":6}}
-  }},
-  "The Belvoir Bag - Brown":{price:"£99.99",cat:"accessory,Summer",links:{"_":30},colors:{
-    "":{emoji:"🤎",sizes:{"One Size":2}}
-  }}
-};
-
 // Only confirmed inventory reaches the Next-Day Stock page.
 const FAST_STOCK_FEED='https://esntls-r2.qmako41212.workers.dev/fast-parka-stock';
 const FAST_STOCK_PARKAS={
+  '11':'B30 Black and White',
   '21':'MacMillan Black Badge','22':'MacMillan Red Badge',
   '23':'Wyndham Parka – Red Badge','24':'Wyndham Parka – Black Badge',
   '27':'Maya Puffer – Grey','28':'Maya Puffer – Black'
 };
-let LIVE_STOCK=removeLegacyParkas(FALLBACK_STOCK);
+let LIVE_STOCK={};
 let nextDayStock={};
 let nextDayProductIds=new Set();
 let stockUpdated='';
 let stockFeedStatus='loading';
 let stockRequestedAt=0;
 
-function removeLegacyParkas(stock){
-  const clean={};
-  for(const [name,entry] of Object.entries(stock||{})){
-    const links=entry.links||{};
-    if(Object.hasOwn(FAST_STOCK_PARKAS,String(links._)))continue;
-    const remaining=Object.keys(entry.colors||{}).filter(color=>!Object.hasOwn(FAST_STOCK_PARKAS,String(links[color])));
-    if(!remaining.length)continue;
-    clean[name]={...entry,links:Object.fromEntries(Object.entries(links).filter(([,id])=>!Object.hasOwn(FAST_STOCK_PARKAS,String(id)))),
-      colors:Object.fromEntries(remaining.map(color=>[color,entry.colors[color]]))};
-  }
-  return clean;
-}
-
 function fastShopifyStock(stock){
   const result={};
   for(const [id,title] of Object.entries(FAST_STOCK_PARKAS)){
-    const variants=(stock?.[id]||[]).filter(v=>/^(XS|S|M|L|XL)$/.test(v.size)&&Number.isInteger(v.quantity)&&v.quantity>0&&Number(v.price)>0);
+    const variants=(stock?.[id]||[]).filter(v=>/^(XS|S|M|L|XL|UK (?:[6-9]|1[0-3]))$/.test(v.size)&&Number.isInteger(v.quantity)&&v.quantity>0&&Number(v.price)>0);
     if(!variants.length)continue;
     result[title]={price:'£'+Math.min(...variants.map(v=>Number(v.price))).toFixed(2),links:{_:Number(id)},shopifyFast:true,
       colors:{'':{sizes:Object.fromEntries(variants.map(v=>[v.size,v.quantity]))}}};
@@ -1538,25 +1474,22 @@ function getNextDayProductIds(stock){
 async function loadLiveStock(){
   if(Date.now()-stockRequestedAt<30000)return;
   stockRequestedAt=Date.now();
-  const [legacy,fast]=await Promise.allSettled([
-    fetchStockFeed(SB_URL+'/functions/v1/wix-stock'),
-    fetchStockFeed(FAST_STOCK_FEED)
-  ]);
-  const liveWix=legacy.status==='fulfilled'?removeLegacyParkas(legacy.value):{};
-  const liveParkas=fast.status==='fulfilled'?fastShopifyStock(fast.value):{};
-  nextDayStock={...liveWix,...liveParkas};
+  try{
+    nextDayStock=fastShopifyStock(await fetchStockFeed(FAST_STOCK_FEED));
+    stockFeedStatus='ready';
+  }catch{
+    nextDayStock={};
+    stockFeedStatus='unavailable';
+    stockUpdated='';
+  }
   nextDayProductIds=getNextDayProductIds(nextDayStock);
-  LIVE_STOCK={...(legacy.status==='fulfilled'?liveWix:removeLegacyParkas(FALLBACK_STOCK)),...liveParkas};
-  stockFeedStatus=legacy.status==='fulfilled'&&fast.status==='fulfilled'?'ready':
-    legacy.status==='rejected'&&fast.status==='rejected'?'unavailable':'partial';
+  LIVE_STOCK=nextDayStock;
   if(stockFeedStatus!=='unavailable'){
     stockUpdated=new Date().toLocaleString('en-GB',{timeZone:'Europe/London',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   }
   if(currentView==='stock')showStock();
   else if(currentView?.type==='shop')refreshCollection();
-  else document.querySelectorAll('[data-fast-stock-id]').forEach(pill=>{
-    pill.hidden=!nextDayProductIds.has(pill.dataset.fastStockId);
-  });
+  else if(currentView==='home')render();
 }
 loadLiveStock();
 
@@ -1909,7 +1842,7 @@ function showStock(filter){
     <div style="font-size:22px;flex-shrink:0;line-height:1">⚡</div>
     <div style="flex:1">
       <div style="font-size:13px;font-weight:800;color:#5d4037;margin-bottom:3px;letter-spacing:.3px">Next-day delivery after dispatch</div>
-      <div style="font-size:11px;color:#7c5b25;line-height:1.5">Dispatch is usually the day after ordering, except Sundays. Check the product page for your estimated arrival. Standard delivery is 7–12 days.</div>
+      <div style="font-size:11px;color:#7c5b25;line-height:1.5">Dispatch is usually the day after ordering, except Sundays. Check the product page for your estimated arrival.</div>
     </div>
   </div>
   ${stockFeedStatus==='partial'?'<p role="status" style="font-size:13px;color:#5d4037">Some live stock could not be checked. Only confirmed inventory is shown.</p>':''}
@@ -2109,38 +2042,10 @@ el.classList.add('active')}
 
 let checkoutTargetUrl='';
 function openCheckoutConfirm(id){
-const all=allProducts();
-const p=all.find(x=>String(x.id)===String(id));if(!p||!p.link)return false;
-// If we have a live picker for this card and a size is required but not picked, nudge the user instead.
-if(modalPicker && String(modalPicker.cardId)===String(id) && modalPicker.requiresSize && !modalPicker.size){
-  const hint = document.getElementById('pickerHint');
-  if(hint){ hint.style.color='#e53935'; hint.textContent='Pick a size above first 👆'; }
-  const picker = document.getElementById('modalPicker');
-  if(picker) picker.scrollIntoView({behavior:'smooth',block:'center'});
+  openProduct(id);
   return false;
 }
-// Compose the final URL with ?Color=X&Size=Y when a picker selection exists
-const pickedUrl = (modalPicker && String(modalPicker.cardId)===String(id)) ? buildPickedCheckoutUrl() : null;
-checkoutTargetUrl = pickedUrl || p.link;
-closeCheckoutConfirm(true);
-const confirm=document.createElement('div');
-confirm.id='checkoutConfirm';
-confirm.className='checkout-bg';
-confirm.onclick=function(){closeCheckoutConfirm()};
-confirm.innerHTML=`<div class="checkout-box" onclick="event.stopPropagation()">
-<div style="padding:12px 12px 0;display:flex;justify-content:flex-end">
-<button type="button" onclick="closeCheckoutConfirm()" style="background:none;border:none;color:#777;font-size:18px;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center">x</button>
-</div>
-<div style="padding:8px 22px 22px">
-<strong style="display:block;font-size:clamp(22px,6vw,32px);line-height:1.25;font-weight:900;color:#111;text-align:center;margin:6px 0 24px">Buy the blank item shown at checkout. You’ll receive the original item you selected.</strong>
-<button type="button" onclick="confirmCheckout()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:none;border-radius:12px;background:#00C853;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Open Checkout</button>
-<button type="button" onclick="closeCheckoutConfirm()" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:10px">Back to item</button>
-</div>
-</div>`;
-document.body.appendChild(confirm);
-requestAnimationFrame(()=>confirm.classList.add('open'));
-return false;
-}
+
 function closeCheckoutConfirm(immediate){
 const confirm=document.getElementById('checkoutConfirm');
 if(!confirm)return;
