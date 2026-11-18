@@ -364,7 +364,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 <a href="#" onclick="showCat('Winter')" class="desktop-menu-item">❄️ Winter</a>
 </div>
 </div>
-<a href="#" onclick="showStock()" class="nl" style="color:#00C853">⚡ Next-Day Stock</a>
+<a href="#" onclick="return showStock()" class="nl" style="color:#00C853">⚡ Next-Day Stock</a>
 <a href="https://wa.me/message/QEGPRLGZNZSWN1" target="_blank" class="nl">WhatsApp</a>
 </div>
 <!-- Right spacer (mobile) to balance hamburger for centered logo -->
@@ -383,7 +383,7 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
       <div id="menuResults" style="display:none"></div>
       <a href="#" class="mob-quick" onclick="goHome();toggleMenu()">🏠 Home</a>
       <a href="#" class="mob-quick mob-quick-cta" onclick="showCat('All');toggleMenu();return false">🛍️ Shop All</a>
-      <a href="#" class="mob-quick" onclick="showStock();toggleMenu()">⚡ Next-Day Stock</a>
+      <a href="#" class="mob-quick" onclick="toggleMenu();return showStock()">⚡ Next-Day Stock</a>
 
       <div class="mob-section">
         <div class="mob-section-head">⭐ Featured</div>
@@ -553,7 +553,8 @@ const wixLink=wixCheckoutLinkForProduct(p);
 const shopifyLink=p.shopifyLink||shopifyCheckoutLinkForId(p.id);
 return{id:'r2_'+p.id,dbId:p.id,n:p.name,cat:cats.join(','),brand,price:p.price,originalPrice:p.originalPrice||'',link:checkoutLinkForProduct(p),wixLink,shopifyLink,delivery:p.delivery||'',img:images[0]||'',imgs:images,createdAt:p.created_at||p.createdAt||'',sizes:p.sizes||p.availableSizes||[],variationName:p.variationName||p.variantOptionName||p.optionName||'',variationValues:p.variationValues||p.variants||p.variantValues||[],shopifyVariants:p.shopifyVariants||p.variantIds||p.variantsMap||null,shopifyVariantId:p.shopifyVariantId||p.variantId||p.defaultVariantId||'',shopifyPlaceholder:p.shopifyPlaceholder||null,timedSale:p.timedSale||null};
 });
-render();
+if(currentView==='stock')showStock();
+else render();
 }catch(e){console.log('R2 products load error:',e)}}
 loadR2Products();
 
