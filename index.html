@@ -708,7 +708,7 @@ const sale=timedSaleState(p);
 // Badge priority: Sold out > Low stock > Best seller
 const stockBadge=oos
   ?`<div style="position:absolute;top:8px;left:8px;background:#444444;color:#fff;font-size:10px;font-weight:700;padding:6px 9px;border-radius:0;letter-spacing:.5px;text-transform:uppercase">Out of stock</div>`
-  :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">🔥 Only ${sc} left</div>`
+  :lowStock?`<div style="position:absolute;top:8px;left:8px;background:#ff5722;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.5px">Almost sold out</div>`
   :isBestSeller?`<div style="position:absolute;top:8px;left:8px;background:#111;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.5px;text-transform:uppercase">🔥 Bestseller</div>`:'';
 const saleBadge=sale&&!oos?`<div class="pc-sale-badge">${escapeHTML(sale.label)} <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';
 const saleMeta=sale&&!oos?`<div class="pc-sale-meta">Sale ends <span data-sale-countdown="${sale.endsAt}">${countdownText(sale.endsAt-Date.now())}</span></div>`:'';

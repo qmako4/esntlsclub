@@ -88,10 +88,11 @@ test("delivery cards update the main and button price and flag only low fast sto
     "fastParkaDelivery", "fastParkaEstimate", "fastParkaChoice", "productBuyNow",
     "productSellingPrice", "productPreviousPrice", "fastParkaLow", "productDeliveryFact"
   ].map((id) => [id, {}]));
-  const stock = [{ size: "S", price: "119.99", compareAtPrice: "139.99", quantity: 2 }, { size: "M", price: "119.99", quantity: 3 }];
+  const stock = [{ size: "S", price: "119.99", compareAtPrice: "139.99", quantity: 4 }, { size: "M", price: "119.99", quantity: 5 }];
+  elements.productStockStatus = { classList: { toggle() {} } };
   let size = "S";
   const context = vm.createContext({
-    product: {}, fastParkaStock: stock, fastParkaChoiceConfirmed: false,
+    product: {}, fastParkaStock: stock,
     selectedFastParka: () => stock.find((variant) => variant.size === size),
     document: { getElementById: (id) => elements[id] },
     fastParkaDates: () => ({ dispatched: "Tuesday", expected: "Wednesday" }),
@@ -99,27 +100,26 @@ test("delivery cards update the main and button price and flag only low fast sto
     previousSellingPrice: () => "£139.99"
   });
   vm.runInContext(useFunction(product, "updateFastParkaOptions", "async function loadFastParkaStock"), context);
-  context.updateFastParkaOptions(true);
-  assert.equal(elements.fastParkaChoice.checked, true);
-  assert.equal(elements.fastParkaLow.hidden, true);
-  assert.equal(elements.productPreviousPrice.textContent, "£139.99");
-  context.fastParkaChoiceConfirmed = true;
   context.updateFastParkaOptions();
+  assert.equal(elements.fastParkaChoice.checked, true);
+  assert.equal(elements.fastParkaLow.hidden, false);
+  assert.equal(elements.productPreviousPrice.textContent, "£139.99");
   assert.equal(elements.productSellingPrice.textContent, "£119.99");
   assert.equal(elements.productBuyNow.textContent, "Buy now - £119.99");
   assert.equal(elements.fastParkaLow.hidden, false);
   size = "M";
-  context.updateFastParkaOptions(true);
+  context.updateFastParkaOptions();
   assert.equal(elements.fastParkaChoice.checked, true);
   assert.equal(elements.fastParkaLow.hidden, true);
   assert.equal(elements.productPreviousPrice.hidden, true);
   size = "XS";
-  context.updateFastParkaOptions(true);
+  context.updateFastParkaOptions();
   assert.equal(elements.productSellingPrice.textContent, "£119.99");
   assert.equal(elements.fastParkaChoice.disabled, true);
+  assert.equal(elements.productStockStatus.textContent, "Out of stock");
   assert.equal(elements.productBuyNow.disabled, true);
   size = "S";
-  context.updateFastParkaOptions(true);
+  context.updateFastParkaOptions();
   assert.equal(elements.fastParkaChoice.checked, true);
   assert.equal(elements.productBuyNow.disabled, false);
   size = "XL";

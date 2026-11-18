@@ -7783,7 +7783,7 @@ var r2_worker_default = {
           if (!requested.includes(id) || product.status !== "ACTIVE") continue;
           stock[id] = product.variants.nodes
             .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
-              variant.inventoryItem.tracked && variant.inventoryQuantity > 0)
+              variant.inventoryItem.tracked && (sourceId || variant.inventoryQuantity > 0))
             .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase().replace(/^UK(?=\d)/, "UK "),
               price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
         }
