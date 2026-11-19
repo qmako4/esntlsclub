@@ -38,6 +38,7 @@ test("fast lines use exact SKU and successful shipped quantity instead of ordere
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-FAST-L" }), "28");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-011-FAST-UK13" }), "11");
   assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-028-L" }), "");
+  assert.equal(context.fastParkaSourceId({ sku: "ESNTLS-101-ONE-SIZE" }), "101");
   const order = { fulfillments: [
     { status: "SUCCESS", line_items: [{ id: 1234, quantity: 1 }, { id: 9876, quantity: 2 }] },
     { status: "CANCELLED", line_items: [{ id: 1234, quantity: 1 }] }
@@ -142,13 +143,14 @@ test("catalogue pills follow live stock for each linked product and colour", () 
 
 test("the fast-stock view accepts tracked jacket and trainer sizes", () => {
   const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  const context = vm.createContext({ FAST_STOCK_PARKAS: { "21": "MacMillan Black Badge", "11": "B30 Black and White" } });
+  const context = vm.createContext({ FAST_STOCK_PARKAS: { "21": "MacMillan Black Badge", "11": "B30 Black and White", "101": "Oyster - Green Face" } });
   vm.runInContext(useFunction(index, "fastShopifyStock", "async function fetchStockFeed"), context);
-  const stock = context.fastShopifyStock({ 11: [{ size: "UK 13", quantity: 1, price: "99.99" }], 21: [
+  const stock = context.fastShopifyStock({ 11: [{ size: "UK 13", quantity: 1, price: "99.99" }], 101: [{ size: "One Size", quantity: 1, price: "219.99" }], 21: [
     { size: "XS", quantity: 0, price: "129.99" },
     { size: "S", quantity: 2, price: "129.99" }
   ] });
   assert.equal(stock["MacMillan Black Badge"].colors[""].sizes.XS, undefined);
   assert.equal(stock["MacMillan Black Badge"].colors[""].sizes.S, 2);
   assert.equal(stock["B30 Black and White"].colors[""].sizes["UK 13"], 1);
+  assert.equal(stock["Oyster - Green Face"].colors[""].sizes["One Size"], 1);
 });

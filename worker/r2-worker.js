@@ -1071,9 +1071,12 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
-const fastDeliverySourceIds = ["11", "21", "22", "23", "24", "27", "28"];
+const fastDeliverySourceIds = ["11", "21", "22", "23", "24", "27", "28", "101"];
+const fastDeliveryWatchHandle = "essentials-watch-green-face";
 function fastParkaSourceId(lineItem) {
-  const id = shopifyLineItemSku(lineItem).match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL|UK(?:[6-9]|1[0-3]))$/i)?.[1];
+  const sku = shopifyLineItemSku(lineItem);
+  if (sku.toUpperCase() === "ESNTLS-101-ONE-SIZE") return "101";
+  const id = sku.match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL|UK(?:[6-9]|1[0-3]))$/i)?.[1];
   return fastDeliverySourceIds.includes(id) ? id : "";
 }
 function fastParkaShippedQuantity(order, lineItem) {
@@ -7776,15 +7779,15 @@ var r2_worker_default = {
           products(first: $first, query: $query) { nodes { handle status variants(first: 10) { nodes {
             id sku price compareAtPrice inventoryQuantity inventoryPolicy inventoryItem { tracked }
           } } } }
-        }`, { first: requested.length, query: requested.map((id) => "handle:esntls-fast-" + id).join(" OR ") });
+        }`, { first: requested.length, query: requested.map((id) => "handle:" + (id === "101" ? fastDeliveryWatchHandle : "esntls-fast-" + id)).join(" OR ") });
         const stock = Object.fromEntries(requested.map((id) => [id, []]));
         for (const product of data.products?.nodes || []) {
-          const id = product.handle.replace(/^esntls-fast-/, "");
+          const id = product.handle === fastDeliveryWatchHandle ? "101" : product.handle.replace(/^esntls-fast-/, "");
           if (!requested.includes(id) || product.status !== "ACTIVE") continue;
           stock[id] = product.variants.nodes
             .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
               variant.inventoryItem.tracked && (sourceId || variant.inventoryQuantity > 0))
-            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.sku.split("-").at(-1).toUpperCase().replace(/^UK(?=\d)/, "UK "),
+            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: id === "101" ? "One Size" : variant.sku.split("-").at(-1).toUpperCase().replace(/^UK(?=\d)/, "UK "),
               price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
         }
         return json(sourceId ? { variants: stock[sourceId] } : { stock });
