@@ -1071,7 +1071,7 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
-const fastDeliverySourceIds = ["3", "4", "6", "11", "21", "22", "23", "24", "27", "28", "36", "39", "42", "43", "44", "101"];
+const fastDeliverySourceIds = ["3", "4", "6", "11", "21", "22", "23", "24", "27", "28", "35", "36", "39", "42", "43", "44", "101"];
 const fastDeliveryWatchHandle = "essentials-watch-green-face";
 function fastParkaSourceId(lineItem) {
   const sku = shopifyLineItemSku(lineItem);
