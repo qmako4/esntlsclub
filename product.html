@@ -104,6 +104,8 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .stock{background:#effaf2;border-radius:999px;color:#007e34;display:inline-flex;font-size:11px;font-weight:700;letter-spacing:.7px;margin-bottom:14px;padding:7px 11px;text-transform:uppercase}
 .stock.sold{background:#f4f4f4;color:#777}
 .purchase-panel{margin:0 0 17px}
+.asics-size-notice{background:#e8f8ee;border:1.5px solid #b7e7c8;border-radius:14px;color:#135e37;font-size:13px;font-weight:700;line-height:1.45;margin:0 0 14px;padding:12px 14px}
+.asics-size-notice strong{color:#0d7a3a;display:block;font-size:11px;font-weight:800;letter-spacing:.8px;margin-bottom:3px;text-transform:uppercase}
 .esntls-option-panel{display:grid;gap:13px;margin:0 0 14px}
 .esntls-option-label{color:#555;font-size:11px;font-weight:800;letter-spacing:.8px;margin-bottom:8px;text-transform:uppercase}
 .esntls-option-grid{display:flex;flex-wrap:wrap;gap:8px}
@@ -591,9 +593,67 @@ function countdownText(ms){
   return hours+':'+minutes+':'+seconds;
 }
 
+function asicsFlatText(value){
+  if(Array.isArray(value))return value.map(asicsFlatText).join(' ');
+  if(value&&typeof value==='object')return Object.values(value).map(asicsFlatText).join(' ');
+  return String(value==null?'':value);
+}
+
+function asicsFieldList(item){
+  if(!item||typeof item!=='object')return [];
+  const placeholder=item.shopifyPlaceholder&&typeof item.shopifyPlaceholder==='object'?item.shopifyPlaceholder:{};
+  return [
+    item.name,item.n,item.title,
+    item.brand,item.vendor,
+    item.category,item.cat,item.tags,item.productType,item.type,
+    item.description,item.body,item.bodyHtml,item.body_html,
+    placeholder.sourceTitle,placeholder.shopifyTitle,placeholder.title,
+    placeholder.tags,placeholder.vendor,placeholder.productType,placeholder.categories
+  ];
+}
+
+function isAsicsProduct(item){
+  const fields=asicsFieldList(item).map(asicsFlatText);
+  const blob=fields.join('\n');
+  const tokens=blob.split(/[,|\n]/).map(function(token){return token.trim();}).filter(Boolean);
+  if(tokens.some(function(token){return /^(?:asics|onitsuka(?:\s+tiger)?)$/i.test(token);}))return true;
+  const placeholder=item&&item.shopifyPlaceholder;
+  const name=asicsFlatText([
+    item&&item.name,item&&item.n,item&&item.title,
+    placeholder&&placeholder.sourceTitle,placeholder&&placeholder.shopifyTitle,placeholder&&placeholder.title
+  ]);
+  if(/\b(?:asics|onitsuka|kayano|nimbus|kahana|gel(?:[-\s]+(?:runners?|kayano|nimbus|lyte|nyc|quantum|cumulus|kahana|1130))?|1130|gt[-\s]?2160|mexico\s*66)\b/i.test(name))return true;
+  return /\b(?:asics|onitsuka|kayano|nimbus|kahana|gel[-\s]+(?:runners?|kayano|nimbus|lyte|nyc|quantum|cumulus|kahana|1130)|gt[-\s]?2160|mexico\s*66)\b/i.test(blob);
+}
+
+function stripShopifyAsicsSizingLine(value){
+  return String(value==null?'':value)
+    .replace(/Sizing:\s*We recommend sizing up one size\.?/gi,'')
+    .replace(/<p>\s*(?:<strong>\s*)?(?:<\/strong>\s*)?<\/p>/gi,'')
+    .replace(/[ \t]+\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+
+function descriptionSource(item){
+  if(!item)return '';
+  const candidates=[item.description,item.bodyHtml,item.body_html,item.body];
+  for(const value of candidates){
+    if(typeof value==='string'&&value.trim())return value;
+  }
+  return '';
+}
+
+function asicsSizeNoticeHTML(item){
+  if(!isAsicsProduct(item))return '';
+  return '<div class="asics-size-notice" role="note"><strong>Sizing</strong>ASICS fit small: we recommend sizing up one (if you\'re normally a UK 8, choose UK 9).</div>';
+}
+
 function productCopy(item){
-  const type=String(item.category||'').split(',')[0]||'premium streetwear';
-  return 'A curated '+type.toLowerCase()+' piece from the ESNTLS CLUB collection. Review the gallery, then continue securely to checkout.';
+  const type=String((item&&item.category)||'').split(',')[0]||'premium streetwear';
+  const curated='A curated '+type.toLowerCase()+' piece from the ESNTLS CLUB collection. Review the gallery, then continue securely to checkout.';
+  const plain=stripShopifyAsicsSizingLine(descriptionSource(item)).replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/\s+/g,' ').trim();
+  return plain||curated;
 }
 
 function normalizeReviewKey(value){
@@ -720,6 +780,7 @@ function renderProduct(){
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span id="productStockStatus" role="status" class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':'In UK stock')+'</span>'
     +'<div class="purchase-panel">'
+    +asicsSizeNoticeHTML(product)
     +EsntlsCart.optionPickerHTML(fastParkaSizes.length?{sizes:fastParkaSizes,variationName:'Colour',variationValues:fastParkaColours}:product,'productOptions')
     +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Free UK next-day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Almost sold out</span></span></label></fieldset>':'')
     +(sold
