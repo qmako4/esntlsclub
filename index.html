@@ -1708,7 +1708,7 @@ function getProductStockHTML(p){
   
   let total = 0;
   for(const [color, info] of Object.entries(stockEntry.colors)){
-    if(color) html += `<div style="font-size:12px;font-weight:700;color:#333;margin-top:6px;margin-bottom:4px">${info.emoji} ${color}</div>`;
+    if(color) html += `<div style="font-size:12px;font-weight:700;color:#333;margin-top:6px;margin-bottom:4px">${escapeHTML(info.emoji||'')} ${escapeHTML(color)}</div>`;
     for(const [size, qty] of Object.entries(info.sizes)){
       total += qty;
       html += `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:#555">${size}</span><span style="color:#00C853;font-weight:700">${qty} left</span></div>`;
@@ -1789,7 +1789,7 @@ function showStock(filter){
           const pid = getProductIdForStock(product, color);
           colorsHtml += `<div style="margin-bottom:12px">
             <div style="font-size:14px;font-weight:700;color:#333;padding:8px 12px;background:#f9f9f9;border-radius:8px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
-              <span>${info.emoji} ${color}</span>
+              <span>${escapeHTML(info.emoji||'')} ${escapeHTML(color)}</span>
               ${pid?`<span onclick="event.stopPropagation();openProduct(${pid})" style="font-size:11px;color:#00C853;cursor:pointer;font-weight:600">View →</span>`:''}
             </div>
             ${sizesHtml}
