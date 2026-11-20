@@ -95,7 +95,8 @@ test("delivery cards update the main and button price and flag only low fast sto
   const context = vm.createContext({
     product: {}, fastParkaStock: stock,
     selectedFastParka: () => stock.find((variant) => variant.size === size),
-    document: { getElementById: (id) => elements[id] },
+    EsntlsCart: { selectedOptionsFrom: () => ({}) },
+    document: { getElementById: (id) => elements[id], querySelectorAll: () => [] },
     fastParkaDates: () => ({ dispatched: "Tuesday", expected: "Wednesday" }),
     productDisplayPrice: () => "£119.99",
     previousSellingPrice: () => "£139.99"

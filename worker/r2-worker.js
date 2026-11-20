@@ -1071,13 +1071,14 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
-const fastDeliverySourceIds = ["11", "21", "22", "23", "24", "27", "28", "101"];
+const fastDeliverySourceIds = ["3", "4", "6", "11", "21", "22", "23", "24", "27", "28", "36", "39", "42", "43", "44", "101"];
 const fastDeliveryWatchHandle = "essentials-watch-green-face";
 function fastParkaSourceId(lineItem) {
   const sku = shopifyLineItemSku(lineItem);
   if (sku.toUpperCase() === "ESNTLS-101-ONE-SIZE") return "101";
-  const id = sku.match(/^ESNTLS-0?(\d{2})-FAST-(XS|S|M|L|XL|UK(?:[6-9]|1[0-3]))$/i)?.[1];
-  return fastDeliverySourceIds.includes(id) ? id : "";
+  const id = sku.match(/^ESNTLS-(\d{2,3})-FAST-(?:XS|S|M|L|XL|UK-?(?:[5-9]|1[0-3]))(?:-(?:BLACK|WHITE))?$/i)?.[1];
+  const sourceId = String(Number(id));
+  return fastDeliverySourceIds.includes(sourceId) ? sourceId : "";
 }
 function fastParkaShippedQuantity(order, lineItem) {
   const lineId = normalizeShopifyNumericId(lineItem?.admin_graphql_api_id || lineItem?.id);
@@ -7777,7 +7778,7 @@ var r2_worker_default = {
       try {
         const data = await shopifyGraphql(env, `query FastParkaStock($first: Int!, $query: String!) {
           products(first: $first, query: $query) { nodes { handle status variants(first: 10) { nodes {
-            id sku price compareAtPrice inventoryQuantity inventoryPolicy inventoryItem { tracked }
+            id sku price compareAtPrice inventoryQuantity inventoryPolicy selectedOptions { name value } inventoryItem { tracked }
           } } } }
         }`, { first: requested.length, query: requested.map((id) => "handle:" + (id === "101" ? fastDeliveryWatchHandle : "esntls-fast-" + id)).join(" OR ") });
         const stock = Object.fromEntries(requested.map((id) => [id, []]));
@@ -7787,7 +7788,8 @@ var r2_worker_default = {
           stock[id] = product.variants.nodes
             .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
               variant.inventoryItem.tracked && (sourceId || variant.inventoryQuantity > 0))
-            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: id === "101" ? "One Size" : variant.sku.split("-").at(-1).toUpperCase().replace(/^UK(?=\d)/, "UK "),
+            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.selectedOptions.find((option) => option.name === "Size")?.value || "One Size",
+              colour: variant.selectedOptions.find((option) => option.name === "Colour")?.value,
               price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
         }
         return json(sourceId ? { variants: stock[sourceId] } : { stock });

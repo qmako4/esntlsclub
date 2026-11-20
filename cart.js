@@ -22,7 +22,7 @@ function isOrangeUK9Product(item){const id=String(item&&(item.dbId!=null?item.db
 
 function storeItemUnavailable(item){
   const sourceId=String(item?.dbId??item?.productId??item?.id??'');
-  if(!/^fast-(11|21|22|23|24|27|28)$/.test(sourceId))return true;
+  if(!/^fast-(3|4|6|11|21|22|23|24|27|28|36|39|42|43|44|101)$/.test(sourceId))return true;
   if(isOrangeUK9Product(item))return !!(item.variantId&&String(item.variantId).split('/').pop()!=='49074583961850');
   if(!item)return false;
   const id=String(item.dbId!=null?item.dbId:(item.productId||item.id||'')).replace(/^r2_/,'');

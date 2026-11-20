@@ -1422,6 +1422,9 @@ const FAST_STOCK_PARKAS={
   '21':'MacMillan Black Badge','22':'MacMillan Red Badge',
   '23':'Wyndham Parka – Red Badge','24':'Wyndham Parka – Black Badge',
   '27':'Maya Puffer – Grey','28':'Maya Puffer – Black',
+  '3':'B22 Black & White','4':'B22 Light Blue','6':'B22 Grey',
+  '36':'Casablanca T-Shirt','39':'Pressure Slides',
+  '42':'The Gel Runners - Graphite Grey','43':'The Gel Runners - Monaco Blue','44':'The Gel Runners - Light Blue',
   '101':'Oyster - Green Face'
 };
 let LIVE_STOCK={};
@@ -1434,10 +1437,15 @@ let stockRequestedAt=0;
 function fastShopifyStock(stock){
   const result={};
   for(const [id,title] of Object.entries(FAST_STOCK_PARKAS)){
-    const variants=(stock?.[id]||[]).filter(v=>/^(XS|S|M|L|XL|One Size|UK (?:[6-9]|1[0-3]))$/.test(v.size)&&Number.isInteger(v.quantity)&&v.quantity>0&&Number(v.price)>0);
+    const variants=(stock?.[id]||[]).filter(v=>/^(XS|S|M|L|XL|One Size|UK (?:[5-9]|1[0-3]))$/.test(v.size)&&Number.isInteger(v.quantity)&&v.quantity>0&&Number(v.price)>0);
     if(!variants.length)continue;
-    result[title]={price:'£'+Math.min(...variants.map(v=>Number(v.price))).toFixed(2),links:{_:Number(id)},shopifyFast:true,
-      colors:{'':{sizes:Object.fromEntries(variants.map(v=>[v.size,v.quantity]))}}};
+    const colors={};
+    for(const variant of variants){
+      const colour=variant.colour||'';
+      colors[colour]??={sizes:{}};
+      colors[colour].sizes[variant.size]=variant.quantity;
+    }
+    result[title]={price:'£'+Math.min(...variants.map(v=>Number(v.price))).toFixed(2),links:{_:Number(id)},shopifyFast:true,colors};
   }
   return result;
 }
@@ -1766,7 +1774,7 @@ function showStock(filter){
           colorHasMatch = true;
           productMatches = true;
           const pid = getProductIdForStock(product, color);
-          const sizeLink = data.shopifyFast && pid ? 'product.html?id='+encodeURIComponent(pid)+'&size='+encodeURIComponent(size) : '';
+          const sizeLink = data.shopifyFast && pid ? 'product.html?id='+encodeURIComponent(pid)+'&size='+encodeURIComponent(size)+(color?'&colour='+encodeURIComponent(color):'') : '';
           const linkAttr = pid && !sizeLink ? `onclick="closeModal();openProduct(${Number(pid)})"` : '';
           const sizeLabel = sizeLink ? `<a href="${escapeHTML(sizeLink)}" style="color:#151715;font-weight:600">${escapeHTML(size)}</a>` : escapeHTML(size);
           sizesHtml += `<div ${linkAttr} style="display:flex;justify-content:space-between;padding:10px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;${pid?'cursor:pointer':''}">
