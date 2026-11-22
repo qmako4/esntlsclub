@@ -24,6 +24,7 @@ function isOrangeUK9Product(item){const id=String(item&&(item.dbId!=null?item.db
 function storeItemUnavailable(item){
   const sourceId=String(item?.dbId??item?.productId??item?.id??'');
   const id=String(item?.dbId!=null?item.dbId:(item?.productId||item?.id||'')).replace(/^r2_/,'');
+  if(item&&item.deliveryConfigured&&/7\s*[--]\s*14/i.test(item.delivery||''))return false;
   if(STANDARD_DELIVERY_PARKA_IDS.has(id))return false;
   if(!/^fast-(3|4|6|11|21|22|23|24|27|28|35|36|39|42|43|44|101)$/.test(sourceId))return true;
   if(isOrangeUK9Product(item))return !!(item.variantId&&String(item.variantId).split('/').pop()!=='49074583961850');
@@ -32,7 +33,7 @@ function storeItemUnavailable(item){
   return WITHDRAWN_SITE_IDS.has(id)||WITHDRAWN_SHOPIFY_IDS.has(id.split('/').pop())||WITHDRAWN_SHOPIFY_IDS.has(linked);
 }
 function applyStoreAvailability(item){
-  if(isOrangeUK9Product(item))return Object.assign({},item,{price:'£59.99',originalPrice:item.originalPrice||'',withdrawn:false,sizes:['UK 9'],availableSizes:['UK 9'],shopifyVariants:{'UK 9':'49074583961850'},shopifyVariantId:'49074583961850',timedSale:null,shopifyPlaceholder:Object.assign({},item.shopifyPlaceholder||{},{sizes:['UK 9'],variants:{'UK 9':'49074583961850'},variantCount:1})});
+  if(isOrangeUK9Product(item))return Object.assign({},item,{price:'�59.99',originalPrice:item.originalPrice||'',withdrawn:false,sizes:['UK 9'],availableSizes:['UK 9'],shopifyVariants:{'UK 9':'49074583961850'},shopifyVariantId:'49074583961850',timedSale:null,shopifyPlaceholder:Object.assign({},item.shopifyPlaceholder||{},{sizes:['UK 9'],variants:{'UK 9':'49074583961850'},variantCount:1})});
   return storeItemUnavailable(item)?Object.assign({},item,{price:'Out of stock',originalPrice:'',withdrawn:true,timedSale:item.timedSale?Object.assign({},item.timedSale,{active:false}):null}):item;
 }
 
@@ -72,8 +73,8 @@ function applyStoreAvailability(item){
 
   function displayPrice(value){
     const price = String(value == null ? '' : value);
-    if(!price || price === 'Out of stock' || /[£$]/.test(price)) return price;
-    return '£' + price;
+    if(!price || price === 'Out of stock' || /[�$]/.test(price)) return price;
+    return '�' + price;
   }
 
   function timedSaleState(product, now){
@@ -301,11 +302,11 @@ function applyStoreAvailability(item){
     if(repairPromise) return repairPromise;
     repairPromise = (async () => {
       const cart = readCart();
-      if(!cart.some(item => !item.variantId && !item.standardDelivery)) return cart;
+      if(!cart.some(item => !item.variantId)) return cart;
       const catalogue = await loadCatalogue();
       let changed = false;
       const repaired = cart.map(item => {
-        if(item.variantId || item.standardDelivery) return item;
+        if(item.variantId) return item;
         const product = findCatalogueProduct(item, catalogue);
         if(!product) return item;
         const variantId = selectedVariantId(product, item.options || {});
@@ -346,10 +347,12 @@ function applyStoreAvailability(item){
       price: product && product.price || '',
       image: product && (product.image || product.img || (product.images && product.images[0]) || (product.imgs && product.imgs[0])) || '',
       options,
-      variantId: product && product.standardDelivery ? '' : selectedVariantId(product, options),
+      variantId: selectedVariantId(product, options),
       fallbackUrl: sourceLink,
       brand: product && product.brand || '',
       standardDelivery: Boolean(product && product.standardDelivery),
+      deliveryConfigured:Boolean(product&&product.deliveryConfigured),
+      delivery:product&&product.delivery||'',
       qty: Math.max(1, Number(qty || 1) || 1)
     };
   }
@@ -393,6 +396,8 @@ function applyStoreAvailability(item){
     let cart = items || readCart();
     if(cart.some(item => !item.variantId)) cart = await repairSavedCart();
     if(cart.some(storeItemUnavailable)){alert('Some items in your cart are now out of stock. Remove them before checkout.');return false;}
+    const deliveryTypes=new Set(cart.map(item=>item.options&&item.options.Delivery).filter(Boolean));
+    if(deliveryTypes.size>1){alert('Please check out next-day and 7-14 day items separately so each order has the correct delivery method.');return false;}
     const url = checkoutUrlForItems(cart);
     if(url){
       navigateNoReferrer(url);
@@ -409,13 +414,6 @@ function applyStoreAvailability(item){
     const quantity = Math.max(1, Math.min(99, Number(qty) || 1));
     if(isOrangeUK9Product(product)&&String((selections||{}).Size||'').replace(/\s/g,'').toUpperCase()!=='UK9'){alert('Only UK 9 is available for this item.');return false;}
     if(storeItemUnavailable(product)){alert('This item is currently out of stock.');return false;}
-    if(product && product.standardDelivery){
-      const standardLink=product.wixLink || product.link || product.shopifyLink || '';
-      if(standardLink){
-        navigateNoReferrer(standardLink);
-        return true;
-      }
-    }
     let variantId = selectedVariantId(product, selections || {});
     if(!variantId){
       const catalogue = await loadCatalogue();
@@ -485,10 +483,10 @@ function applyStoreAvailability(item){
 
   function activeBundleOffer(items){
     if(b22Quantity(items) >= 2){
-      return {code:B22_BUNDLE_CODE, discount:B22_BUNDLE_DISCOUNT, label:'B22 pair saving', note:'Any 2 B22s for £229.99 applied at Shopify checkout'};
+      return {code:B22_BUNDLE_CODE, discount:B22_BUNDLE_DISCOUNT, label:'B22 pair saving', note:'Any 2 B22s for �229.99 applied at Shopify checkout'};
     }
     if(b30Quantity(items) >= 2){
-      return {code:B30_BUNDLE_CODE, discount:B30_BUNDLE_DISCOUNT, label:'B30 pair saving', note:'Any 2 B30s for £179.99 applied at Shopify checkout'};
+      return {code:B30_BUNDLE_CODE, discount:B30_BUNDLE_DISCOUNT, label:'B30 pair saving', note:'Any 2 B30s for �179.99 applied at Shopify checkout'};
     }
     return null;
   }
@@ -500,7 +498,7 @@ function applyStoreAvailability(item){
       code:AIR_PRO_ADDON_CODE,
       discount:AIR_PRO_ADDON_DISCOUNT,
       label:'Air Pro add-on saving',
-      note:'Air Pro for £24.99 with any item applied at Shopify checkout'
+      note:'Air Pro for �24.99 with any item applied at Shopify checkout'
     };
   }
 
@@ -544,7 +542,7 @@ function applyStoreAvailability(item){
         '<div class="esntls-cart-line-info">' +
         '<strong>' + escapeHTML(item.name) + '</strong>' +
         (optionText ? '<span>' + optionText + '</span>' : '') +
-        (storeItemUnavailable(item)?'<em>Out of stock — remove this item to continue.</em>':'') +
+        (storeItemUnavailable(item)?'<em>Out of stock - remove this item to continue.</em>':'') +
         (!item.variantId ? '<em>Checkout details loading. If this stays, remove and re-add this item.</em>' : '') +
         '<b>' + escapeHTML(displayPrice(item.price)) + '</b>' +
         '<div class="esntls-cart-qty"><button type="button" onclick="EsntlsCart.setQty(' + index + ',' + (Number(item.qty || 1)-1) + ')">-</button><input value="' + escapeHTML(item.qty || 1) + '" inputmode="numeric" onchange="EsntlsCart.setQty(' + index + ',this.value)"><button type="button" onclick="EsntlsCart.setQty(' + index + ',' + (Number(item.qty || 1)+1) + ')">+</button></div>' +
@@ -553,9 +551,9 @@ function applyStoreAvailability(item){
         '</div>';
     }).join('');
     const pricing = cartPricing(items);
-    footer.innerHTML = pricing.offers.map(offer => '<div class="esntls-cart-saving"><span>' + escapeHTML(offer.label) + '</span><strong>-£' + offer.discount.toFixed(2) + '</strong></div>').join('') +
-      '<div class="esntls-cart-total"><span>Total</span><strong>£' + pricing.total.toFixed(2) + '</strong></div>' +
-      (pricing.offers.length ? '<div class="esntls-cart-promo-note">' + escapeHTML(pricing.offers.map(offer => offer.note).join(' · ')) + '</div>' : '') +
+    footer.innerHTML = pricing.offers.map(offer => '<div class="esntls-cart-saving"><span>' + escapeHTML(offer.label) + '</span><strong>-�' + offer.discount.toFixed(2) + '</strong></div>').join('') +
+      '<div class="esntls-cart-total"><span>Total</span><strong>�' + pricing.total.toFixed(2) + '</strong></div>' +
+      (pricing.offers.length ? '<div class="esntls-cart-promo-note">' + escapeHTML(pricing.offers.map(offer => offer.note).join(' � ')) + '</div>' : '') +
       '<button class="esntls-cart-checkout" type="button"'+(items.some(storeItemUnavailable)?' disabled aria-disabled="true"':'')+' onclick="EsntlsCart.checkout()">'+(items.some(storeItemUnavailable)?'Remove out-of-stock items':'Checkout')+'</button>' +
       '<button class="esntls-cart-continue" type="button" onclick="EsntlsCart.closeCart()">Keep shopping</button>';
   }
@@ -649,6 +647,7 @@ function applyStoreAvailability(item){
   }
 
   window.EsntlsCart = {
+    optionDefinitions,
     add,
     addBundle,
     checkout,
@@ -667,4 +666,3 @@ function applyStoreAvailability(item){
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderCart);
   else renderCart();
 })();
-
