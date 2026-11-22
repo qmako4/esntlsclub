@@ -39,7 +39,7 @@ img,svg,video{max-width:100%;height:auto}
 .page{display:none;padding:16px;max-width:600px;margin:0 auto;padding-bottom:80px}
 .page.active{display:block}
 
-/* Toast notifications - replaces inline .msg for important feedback */
+/* Toast notifications — replaces inline .msg for important feedback */
 .toast-host{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:calc(100% - 32px);max-width:380px}
 .toast{background:#111;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:auto;animation:toastIn .25s cubic-bezier(.22,1,.36,1);display:flex;align-items:center;gap:10px}
 .toast.success{background:#00C853}
@@ -50,7 +50,7 @@ img,svg,video{max-width:100%;height:auto}
 .toast.dismiss{animation:toastOut .2s ease forwards}
 @keyframes toastOut{to{opacity:0;transform:translateY(-8px)}}
 
-/* Dashboard strip - at-a-glance status visible across all tabs */
+/* Dashboard strip — at-a-glance status visible across all tabs */
 .dash-strip{display:flex;gap:8px;padding:10px 16px;background:linear-gradient(180deg,#fafbfc 0%,#fff 100%);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
 .dash-strip::-webkit-scrollbar{display:none}
 .dash-pill{flex:0 0 auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:11px;font-weight:600;color:#444;display:flex;align-items:center;gap:6px}
@@ -66,10 +66,10 @@ img,svg,video{max-width:100%;height:auto}
 .filter-chip.on{background:#111;color:#fff;border-color:#111}
 .filter-chip.on-g{background:var(--g);color:#fff;border-color:var(--g)}
 
-/* Sticky form save bar - for long forms (Add Product, etc.) */
+/* Sticky form save bar — for long forms (Add Product, etc.) */
 .form-sticky-save{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,#fff 50%);padding:14px 0 4px;margin-top:14px;z-index:30}
 
-/* Product card improvements - slightly more info, cleaner spacing */
+/* Product card improvements — slightly more info, cleaner spacing */
 .product-item{padding:14px;background:#fff;border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:12px;transition:border-color .12s}
 .product-item:hover{border-color:#ccc}
 .product-item .oos-flag{background:#ffebee;color:#c62828;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;margin-left:6px}
@@ -835,7 +835,7 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 .product-item .meta{margin-top:4px}
 .product-item .meta-pills{margin-top:6px}
 .product-item .meta-pill{background:transparent;padding:0;font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--sub);border-radius:0}
-.product-item .meta-pill+.meta-pill::before{content:'�';padding-right:5px}
+.product-item .meta-pill+.meta-pill::before{content:'·';padding-right:5px}
 .product-item .actions{display:flex;gap:8px;flex-shrink:0;align-items:center;width:auto}
 .product-item .actions .action-btn{width:auto;min-width:0;height:40px;padding:0 14px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:12px;font-weight:600;white-space:nowrap;box-shadow:none}
 .product-item .actions .photos-btn{background:#edf6f0;color:#145d3d;border-color:#d2e5da}
@@ -908,7 +908,7 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 <div id="app">
 <div class="topbar">
 <h1>ESNTLS <span>Store admin</span></h1>
-<div class="topbar-actions"><a href="/" target="_blank" rel="noopener">View store ?</a>
+<div class="topbar-actions"><a href="/" target="_blank" rel="noopener">View store ↗</a>
 <button class="logout" onclick="logout()">Log out</button>
 </div>
 </div>
@@ -1073,7 +1073,7 @@ label.field input,select,textarea{border-radius:9px!important;background:#fff}
 <!-- PRODUCTS LIST -->
 <div class="page active" id="pageProducts">
 <div class="page-heading"><div><h2>Products</h2><p>Manage your catalogue, photos and details.</p></div><button class="btn" onclick="showTab('add')">+ Add product</button></div>
-<div class="photo-draft-notice" id="photoDraftNotice" role="status"><span id="photoDraftNoticeText"></span><button onclick="openNextPhotoDraft()">Review photos </button></div>
+<div class="photo-draft-notice" id="photoDraftNotice" role="status"><span id="photoDraftNoticeText"></span><button onclick="openNextPhotoDraft()">Review photos →</button></div>
 <div class="filter-bar" id="productFilterBar">
 <input type="search" class="search" id="productSearch" aria-label="Search products" placeholder="Search by name, category or item number" oninput="renderProductList()">
 <div class="filter-chips" id="productStatusChips">
@@ -1369,7 +1369,7 @@ const OPENAI_IMAGE_FALLBACK_MODEL='gpt-image-1';
 const OPENAI_GRASS_FALLBACK_SIZE='1024x1536';
 const GRASS_FINAL_WIDTH=768;
 const GRASS_FINAL_HEIGHT=1024;
-// Cloudflare Worker (used for live Wix  R2 sync). Fill these in once after deploying the worker:
+// Cloudflare Worker (used for live Wix → R2 sync). Fill these in once after deploying the worker:
 //   1. WORKER_URL    = the worker's public URL (e.g. 'https://r2-worker.<your-subdomain>.workers.dev', no trailing slash)
 //   2. ADMIN_SESSION  = the value of the ADMIN_SESSION env var you set on the worker
 const ADMIN_CONFIG=(typeof window!=='undefined'&&window.ESNTLS_ADMIN_CONFIG&&typeof window.ESNTLS_ADMIN_CONFIG==='object')?window.ESNTLS_ADMIN_CONFIG:{};
@@ -1458,7 +1458,7 @@ async function login(){
   const pw=document.getElementById('pwInput').value;
   const err=document.getElementById('loginErr');
   if(!WORKER_URL){err.textContent='Worker URL is not configured';return}
-  err.textContent='Signing in.';
+  err.textContent='Signing in…';
   try{
     const res=await fetch(WORKER_URL+'/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
     const data=await res.json().catch(()=>({}));
@@ -1947,7 +1947,7 @@ const meta=document.createElement('div');
 meta.className='builder-source-meta';
 const originalUrl=getAddPreviewUrl(file);
 card.innerHTML=`<div class="builder-source-compare"><div class="builder-source-pane"><div class="builder-source-pane-label">Original</div><img src="${originalUrl}" alt="Original source image"></div><div class="builder-source-pane"><div class="builder-source-pane-label">Generated</div>${addBgResultMarkup(file,mode)}</div></div>`;
-meta.innerHTML=`<div class="builder-source-name">${escapeAdminHTML(file.name||('Photo '+(i+1)))}</div><div class="builder-source-state">${i===0?'Main image � ':''}${escapeAdminHTML(addSourceStateLabel(mode))}</div><div class="builder-source-status">${escapeAdminHTML(addBgStatusText(file,mode))}</div><div class="builder-source-controls"><button type="button" class="${addModeButtonClass(mode,'close')}" onclick="setAddSourceMode(${i},'close')">Close up</button><button type="button" class="${addModeButtonClass(mode,'full')}" onclick="setAddSourceMode(${i},'full')">Full photo</button><button type="button" class="keep${addModeButtonClass(mode,'keep')}" onclick="setAddSourceMode(${i},'keep')">Keep</button><button type="button" class="skip${addModeButtonClass(mode,'skip')}" onclick="setAddSourceMode(${i},'skip')">Skip</button></div><div class="builder-source-footer"><button type="button" onclick="movePendingFile(${i},-1)" ${i===0?'disabled':''}>Up</button><button type="button" onclick="movePendingFile(${i},1)" ${i===pendingFiles.length-1?'disabled':''}>Down</button><button type="button" class="delete" onclick="removePendingFile(${i})">Delete</button></div>`;
+meta.innerHTML=`<div class="builder-source-name">${escapeAdminHTML(file.name||('Photo '+(i+1)))}</div><div class="builder-source-state">${i===0?'Main image · ':''}${escapeAdminHTML(addSourceStateLabel(mode))}</div><div class="builder-source-status">${escapeAdminHTML(addBgStatusText(file,mode))}</div><div class="builder-source-controls"><button type="button" class="${addModeButtonClass(mode,'close')}" onclick="setAddSourceMode(${i},'close')">Close up</button><button type="button" class="${addModeButtonClass(mode,'full')}" onclick="setAddSourceMode(${i},'full')">Full photo</button><button type="button" class="keep${addModeButtonClass(mode,'keep')}" onclick="setAddSourceMode(${i},'keep')">Keep</button><button type="button" class="skip${addModeButtonClass(mode,'skip')}" onclick="setAddSourceMode(${i},'skip')">Skip</button></div><div class="builder-source-footer"><button type="button" onclick="movePendingFile(${i},-1)" ${i===0?'disabled':''}>Up</button><button type="button" onclick="movePendingFile(${i},1)" ${i===pendingFiles.length-1?'disabled':''}>Down</button><button type="button" class="delete" onclick="removePendingFile(${i})">Delete</button></div>`;
 card.appendChild(meta);
 grid.appendChild(card);
 });
@@ -1959,7 +1959,7 @@ const summary=document.createElement('div');
 summary.className='builder-source-summary';
 summary.textContent=`${activeAddFiles().length} of ${pendingFiles.length} photos will publish. ${generationCount} set to generate, ${keepCount} kept original, ${skipCount} skipped.`;
 prev.appendChild(summary);
-const lbl=activeAddFiles().length+' photo'+(activeAddFiles().length===1?'':'s')+' ready'+(pendingFiles.length>1?' � reorder below':'');
+const lbl=activeAddFiles().length+' photo'+(activeAddFiles().length===1?'':'s')+' ready'+(pendingFiles.length>1?' · reorder below':'');
 document.querySelector('#uploadZone .label').textContent=pendingFiles.length?lbl:'Upload product photos';
 }
 
@@ -2040,7 +2040,7 @@ const currentLabel=addBgState.currentKey&&addBgState.items[addBgState.currentKey
 const copy={
 idle:['Background',!generationFiles.length?(activeFiles.length?'These photos are set to Keep or Skip. Publish when ready.':'Upload images, then choose how each photo should be used.'):generationFiles.length>1?'Tap Run in Background to change the selected backgrounds.':'Tap Run in Background to change the selected background.'],
 needsSetup:['Setup','Worker or OpenAI key is missing. Open Studio settings if you want to use a browser key.'],
-generating:['Starting',`Preparing ESNTLS background job ${addBgState.done}/${total}${currentLabel?` � current: ${currentLabel}`:''}. You can leave after it starts.`],
+generating:['Starting',`Preparing ESNTLS background job ${addBgState.done}/${total}${currentLabel?` · current: ${currentLabel}`:''}. You can leave after it starts.`],
 done:['Ready',addBgState.useGenerated?(addBgState.approved&&generatedReady?`Approved ${doneText} images. They will attach to this product.`:`Generated ${doneText} previews. Approve them to attach to this product.`):`Original images will upload first.`],
 error:['Check',generatedCount?`Generated ${doneText}. ${addBgState.errorCount} image${addBgState.errorCount===1?'':'s'} failed; ${addBgState.lastError||'tap retry.'}`:`Preview failed: ${addBgState.lastError||'check your OpenAI key and try again.'}`]
 }[addBgState.status]||['Manual','Ready'];
@@ -2965,7 +2965,7 @@ await r2Upload(blob,'products.json');
 }finally{catalogueSaveInProgress=false}}
 
 function numericPriceAmount(value){
-const cleaned=String(value||'').replace(/[�$,\s]/g,'');
+const cleaned=String(value||'').replace(/[£$,\s]/g,'');
 const match=cleaned.match(/\d+(?:\.\d+)?/);
 return match?Number(match[0]).toFixed(2):'';
 }
@@ -2978,7 +2978,7 @@ else if(result.shopify&&result.shopify.status==='skipped')bits.push('Shopify ski
 if(result.wix&&result.wix.status==='updated')bits.push('Wix '+(result.wix.count||0)+' products');
 else if(result.wix&&result.wix.status==='error')bits.push('Wix failed');
 else if(result.wix&&result.wix.status==='skipped')bits.push('Wix skipped');
-return bits.join(' � ')||'No linked checkout products found';
+return bits.join(' · ')||'No linked checkout products found';
 }
 
 async function syncLinkedPrice(id,price){
@@ -3082,7 +3082,7 @@ if(r.category&&p.category!==r.category){p.category=r.category;changed=true}
 if(r.brand&&p.brand!==r.brand){p.brand=r.brand;changed=true}
 if(changed)updated++;
 }
-if(!updated){msg.style.color='var(--g)';msg.textContent='Already in sync - no changes needed.'}
+if(!updated){msg.style.color='var(--g)';msg.textContent='Already in sync — no changes needed.'}
 else{
 msg.style.color='var(--sub)';msg.textContent='Saving '+updated+' updates to R2...';
 await saveProducts();
@@ -3119,7 +3119,7 @@ btn.disabled=false;
 }
 
 // RENDER PRODUCT LIST
-// ��� Product list state: search + filter + sort ���
+// ─── Product list state: search + filter + sort ───
 const productFilters={status:'all',category:'all',q:''};
 function isArchivedProduct(p){return !!(p&&(p.active===false||p.archived===true||p.hidden===true))}
 function activeProducts(){return products.filter(p=>!isArchivedProduct(p))}
@@ -3127,7 +3127,7 @@ function setProductFilter(key,val){productFilters[key]=val;renderProductList()}
 function renderProductList(){
 const list=document.getElementById('productList');
 if(!products.length){
-  list.innerHTML=`<div class="empty"><div class="icon">??</div><div class="title">No products yet</div><div class="hint">Add your first product above</div></div>`;
+  list.innerHTML=`<div class="empty"><div class="icon">📦</div><div class="title">No products yet</div><div class="hint">Add your first product above</div></div>`;
   syncDashboard();return;
 }
 // Capture search & sort
@@ -3197,7 +3197,7 @@ const summaryTotal=productFilters.status==='archived'?archivedCount:visibleProdu
 if(summary)summary.textContent=`${filtered.length} of ${summaryTotal} shown`;
 
 if(!filtered.length){
-  list.innerHTML=`<div class="empty"><div class="icon">??</div><div class="title">No matches</div><div class="hint">Try clearing the search or filters</div></div>`;
+  list.innerHTML=`<div class="empty"><div class="icon">🔍</div><div class="title">No matches</div><div class="hint">Try clearing the search or filters</div></div>`;
   syncDashboard();return;
 }
 
@@ -3221,8 +3221,8 @@ ${productVariationValues(p).length?`<span class="meta-pill">${productVariationVa
 <div class="actions">
 <button class="action-btn photos-btn" onclick="toggleImgEdit(${p.id})" aria-controls="imgs_${p.id}">Photos</button>
 <button class="action-btn" onclick="toggleEdit(${p.id})" aria-controls="edit_${p.id}">Edit details</button>
-<details class="product-menu"><summary class="action-btn" aria-label="More options for ${escapeAdminHTML(p.name)}">More ���</summary><div class="product-menu-content">
-<a href="product.html?id=${p.id}" target="_blank" rel="noopener">View on store ?</a>
+<details class="product-menu"><summary class="action-btn" aria-label="More options for ${escapeAdminHTML(p.name)}">More ···</summary><div class="product-menu-content">
+<a href="product.html?id=${p.id}" target="_blank" rel="noopener">View on store ↗</a>
 <button onclick="quickToggleOOS(${p.id})">${isOos?'Mark in stock':'Mark out of stock'}</button>
 <button onclick="toggleArchiveProduct(${p.id})">${archived?'Restore product':'Archive product'}</button>
 <button class="danger" onclick="deleteProduct(${p.id})">Delete product</button>
@@ -3248,7 +3248,7 @@ async function quickToggleOOS(id){
   const prev=p.price;
   if(wasOos){
     // Restore from any stashed last price, otherwise leave blank for the user to fill
-    p.price=p._lastPrice||p.price.replace(/out of stock/i,'').trim()||'�0.00';
+    p.price=p._lastPrice||p.price.replace(/out of stock/i,'').trim()||'£0.00';
   } else {
     p._lastPrice=p.price;
     p.price='Out of stock';
@@ -3263,7 +3263,7 @@ async function quickToggleOOS(id){
   }
 }
 
-// ��� Toast notifications ���
+// ─── Toast notifications ───
 async function toggleArchiveProduct(id){
   const p=products.find(x=>x.id===id);if(!p)return;
   const wasArchived=isArchivedProduct(p);
@@ -3294,13 +3294,13 @@ function toast(msg,type='info',ms=2800){
   const host=document.getElementById('toastHost');if(!host)return;
   const el=document.createElement('div');
   el.className='toast '+(type==='success'?'success':type==='error'?'error':'info');
-  const icon=type==='success'?'V':type==='error'?'?':'?';
-  el.innerHTML=`<span style="font-size:15px">${icon}</span><span style="flex:1">${msg}</span><span class="x" onclick="this.parentElement.classList.add('dismiss');setTimeout(()=>this.parentElement.remove(),200)">�</span>`;
+  const icon=type==='success'?'✓':type==='error'?'⚠':'ℹ';
+  el.innerHTML=`<span style="font-size:15px">${icon}</span><span style="flex:1">${msg}</span><span class="x" onclick="this.parentElement.classList.add('dismiss');setTimeout(()=>this.parentElement.remove(),200)">×</span>`;
   host.appendChild(el);
   setTimeout(()=>{el.classList.add('dismiss');setTimeout(()=>el.remove(),200)},ms);
 }
 
-// ��� Live dashboard strip ���
+// ─── Live dashboard strip ───
 let _lastSyncTime=Date.now();
 function syncDashboard(){
   const visible=activeProducts();
@@ -3324,7 +3324,7 @@ el.style.display='block';
 const p=products.find(x=>x.id===id);
 if(!p)return;
 const pCats=effectiveCategories(p);
-const pDel=(p.delivery||'').split(',').map(d=>d.trim().replace(/7\s*[--]\s*(9|12)\s*Days/i,'7-14 Days'));
+const pDel=(p.delivery||'').split(',').map(d=>d.trim().replace(/7\s*[-–]\s*(9|12)\s*Days/i,'7-14 Days'));
 const pVariationName=productVariationName(p);
 const pVariationText=productVariationText(p);
 const checkoutLinks=productCheckoutLinks(p);
@@ -3340,13 +3340,13 @@ el.innerHTML=`
 </div>
 <span style="font-size:10px;color:var(--sub);margin-top:5px;text-transform:none;letter-spacing:0">These become Shopify product variations when you generate the blank product.</span>
 </label>
-<details class="advanced-settings"><summary>Categories � ${escapeAdminHTML(pCats.join(', ')||'Choose categories')}</summary>
+<details class="advanced-settings"><summary>Categories · ${escapeAdminHTML(pCats.join(', ')||'Choose categories')}</summary>
 <div class="cats" id="ec_${id}">
 ${CATS.map(c=>{const safe=escapeAdminHTML(c);return `<div class="cat-pill${pCats.includes(c)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${safe}">${safe}</div>`}).join('')}
 </div></details>
 <div style="margin-bottom:14px">
-<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery - enable one or both</span>
-<p style="font-size:12px;color:var(--sub);margin-bottom:8px">Next-day is offered only for sizes with confirmed UK stock. 7-14 days must be enabled separately.</p>
+<span style="display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Delivery — enable one or both</span>
+<p style="font-size:12px;color:var(--sub);margin-bottom:8px">Next-day is offered only for sizes with confirmed UK stock. 7–14 days must be enabled separately.</p>
 <div class="cats" id="ed_${id}">
 ${DELIVERY.map(d=>`<div class="cat-pill${pDel.includes(d)?' on':''}" onclick="this.classList.toggle('on')" data-cat="${d}">${d}</div>`).join('')}
 </div></div>
@@ -3414,13 +3414,13 @@ msg.style.color='var(--sub)';msg.textContent='Saved locally. Updating linked che
 try{
 const syncResult=await syncLinkedPrice(id,price);
 p.linkedPriceSync=syncResult;
-toastText+=' � '+linkedPriceSummary(syncResult);
+toastText+=' · '+linkedPriceSummary(syncResult);
 }catch(syncErr){
-toastText+=' � linked price sync failed';
+toastText+=' · linked price sync failed';
 if(typeof toast==='function')toast('Linked price sync failed: '+syncErr.message,'error',4200);
 }
 }else if(priceChanged&&!newNumericPrice){
-toastText+=' � linked price sync skipped';
+toastText+=' · linked price sync skipped';
 }
 msg.style.color='var(--g)';msg.textContent='Saved!';
 if(typeof toast==='function')toast(toastText,'success',4200);
@@ -3561,11 +3561,11 @@ function renderImgEditor(id){
   const dirty=photoDirty(d);
   const p=products.find(x=>String(x.id)===String(id));
   el.innerHTML=`
-  <div class="editor-heading"><div><h3>Product photos</h3><p>${escapeAdminHTML(p?.name||'')} � ${d.images.length} photos</p><p>The cover photo appears first in your store.</p></div><button class="editor-close" onclick="toggleImgEdit(${id})">Close</button></div>
+  <div class="editor-heading"><div><h3>Product photos</h3><p>${escapeAdminHTML(p?.name||'')} · ${d.images.length} photos</p><p>The cover photo appears first in your store.</p></div><button class="editor-close" onclick="toggleImgEdit(${id})">Close</button></div>
   <div class="photo-grid">
   ${d.images.map((url,i)=>`<div class="photo-tile${i===0?' is-cover':''}">
-  <img src="${escapeAdminHTML(url)}" alt="${escapeAdminHTML(p?.name||'Product')} - photo ${i+1}" loading="lazy">
-  <div class="photo-tile-actions">${i===0?'<span class="cover-label">V Cover photo</span>':`<button onclick="imgFirst(${id},${i})" ${disabled}>Make cover</button>`}<button class="remove-photo" aria-label="Remove photo ${i+1}" onclick="imgDel(${id},${i})" ${disabled}>�</button></div>
+  <img src="${escapeAdminHTML(url)}" alt="${escapeAdminHTML(p?.name||'Product')} — photo ${i+1}" loading="lazy">
+  <div class="photo-tile-actions">${i===0?'<span class="cover-label">✓ Cover photo</span>':`<button onclick="imgFirst(${id},${i})" ${disabled}>Make cover</button>`}<button class="remove-photo" aria-label="Remove photo ${i+1}" onclick="imgDel(${id},${i})" ${disabled}>×</button></div>
   </div>`).join('')}
   </div>
   <div class="photo-add-actions">
@@ -3574,7 +3574,7 @@ function renderImgEditor(id){
   </div>
   <div class="photo-save-bar">
   <div class="photo-save-status ${d.error?'is-error':d.saved?'is-saved':dirty?'is-dirty':''}" id="im_${id}" role="status" aria-live="polite">${escapeAdminHTML(d.message||(dirty?'Unsaved changes. Save to update your store.':'No unsaved changes.'))}</div>
-  <div class="photo-save-actions"><button class="btn btn-outline" onclick="discardPhotoChanges(${id})" ${disabled||(!dirty?'disabled':'')}>Discard</button><button class="btn" id="photoSave_${id}" onclick="imgSave(${id})" ${disabled||(!dirty?'disabled':'')}>${d.saving?'Saving.':d.busy?'Uploading.':'Save changes'}</button></div>
+  <div class="photo-save-actions"><button class="btn btn-outline" onclick="discardPhotoChanges(${id})" ${disabled||(!dirty?'disabled':'')}>Discard</button><button class="btn" id="photoSave_${id}" onclick="imgSave(${id})" ${disabled||(!dirty?'disabled':'')}>${d.saving?'Saving…':d.busy?'Uploading…':'Save changes'}</button></div>
   </div>`;
   updatePhotoDraftNotice();
 }
@@ -3603,7 +3603,7 @@ async function imgAdd(e,id){
   let uploaded=0,failed=0;
   try{
     for(let i=0;i<files.length;i++){
-      d.message='Uploading photo '+(i+1)+' of '+files.length+'.';renderImgEditor(id);
+      d.message='Uploading photo '+(i+1)+' of '+files.length+'…';renderImgEditor(id);
       try{
         const file=await compressImage(files[i]);
         const url=await r2Upload(file,'p'+id+'_'+Date.now()+'_'+i+'.jpg');
@@ -3619,7 +3619,7 @@ async function imgAdd(e,id){
 async function imgSave(id){
   const d=photoDraft(id);if(!d||d.busy||d.saving||!photoDirty(d))return;
   if(catalogueSaveInProgress){toast('Another save is finishing. Please try again in a moment.','info');return}
-  catalogueSaveInProgress=true;d.saving=true;d.error=false;d.message='Saving your photos.';renderImgEditor(id);
+  catalogueSaveInProgress=true;d.saving=true;d.error=false;d.message='Saving your photos…';renderImgEditor(id);
   try{
     // Read the live catalogue directly. Patch only these photos, never stale
     // names, prices, Shopify links or the smaller fallback catalogue.
@@ -3633,7 +3633,7 @@ async function imgSave(id){
     p.images=[...d.images];
     await r2Upload(new Blob([JSON.stringify(latest,null,2)],{type:'application/json'}),'products.json');
     products=latest;d.baseImages=[...d.images];d.saved=true;
-    d.message='V Changes saved. Store photos can take up to a minute to refresh.';
+    d.message='✓ Changes saved. Store photos can take up to a minute to refresh.';
     const cover=document.getElementById('productCover_'+id);if(cover)cover.src=d.images[0]||'';
     const count=document.getElementById('photoCount_'+id);if(count)count.textContent=d.images.length+' photo'+(d.images.length===1?'':'s');
     _lastSyncTime=Date.now();syncDashboard();
@@ -3674,16 +3674,16 @@ const list=document.getElementById('mediaList');
 const count=document.getElementById('mediaCount');
 const validNames=new Set(mediaImages.map(m=>m.name));
 [...mediaSelected].forEach(n=>{if(!validNames.has(n))mediaSelected.delete(n)});
-count.textContent=mediaImages.length+' image'+(mediaImages.length===1?'':'s')+(mediaSelected.size?` � ${mediaSelected.size} selected`:'');
+count.textContent=mediaImages.length+' image'+(mediaImages.length===1?'':'s')+(mediaSelected.size?` · ${mediaSelected.size} selected`:'');
 const dashImg=document.getElementById('dashImgCount');if(dashImg)dashImg.textContent=mediaImages.length;
 if(!mediaImages.length){
-list.innerHTML=`<div class="empty"><div class="icon">??</div><div class="title">No images yet</div><div class="hint">Upload above or via Add Product</div></div>`;
+list.innerHTML=`<div class="empty"><div class="icon">📷</div><div class="title">No images yet</div><div class="hint">Upload above or via Add Product</div></div>`;
 renderMediaBulkBar();return}
 const used=getUsedUrls();
 list.innerHTML='<div class="media-grid">'+mediaImages.map(m=>`<div class="media-item${mediaSelected.has(m.name)?' selected':''}" onclick="toggleMediaSelect('${m.name}')">
 <img src="${m.url}" loading="lazy">
-<div class="check">V</div>
-<div class="trash" onclick="event.stopPropagation();deleteMedia('${m.name}')">??</div>
+<div class="check">✓</div>
+<div class="trash" onclick="event.stopPropagation();deleteMedia('${m.name}')">🗑</div>
 ${used.has(m.url)?'<div class="used">USED</div>':''}
 </div>`).join('')+'</div>';
 renderMediaBulkBar()}
@@ -3708,16 +3708,16 @@ const used=getUsedUrls();
 const usedCount=[...mediaSelected].filter(n=>used.has(R2_PUBLIC+n)).length;
 bar.style.display='flex';
 bar.className='media-bulk-bar';
-bar.innerHTML=`<span class="ct">${mediaSelected.size} selected${usedCount?` � <span style="color:#ffb74d">${usedCount} USED</span>`:''}</span>
+bar.innerHTML=`<span class="ct">${mediaSelected.size} selected${usedCount?` · <span style="color:#ffb74d">${usedCount} USED</span>`:''}</span>
 <div style="display:flex;gap:6px"><button class="btn-clear" onclick="clearMediaSelection()">Clear</button>
-<button class="btn-del" onclick="deleteMediaBulk()">?? Delete ${mediaSelected.size}</button></div>`}
+<button class="btn-del" onclick="deleteMediaBulk()">🗑 Delete ${mediaSelected.size}</button></div>`}
 
 async function deleteMediaBulk(){
 if(!mediaSelected.size)return;
 const used=getUsedUrls();
 const usedCount=[...mediaSelected].filter(n=>used.has(R2_PUBLIC+n)).length;
 let warn=`Delete ${mediaSelected.size} image${mediaSelected.size===1?'':'s'} from library?`;
-if(usedCount)warn=`?? ${usedCount} of these are USED by a product. Delete all ${mediaSelected.size} anyway?`;
+if(usedCount)warn=`⚠️ ${usedCount} of these are USED by a product. Delete all ${mediaSelected.size} anyway?`;
 if(!confirm(warn))return;
 const names=[...mediaSelected];
 const msg=document.getElementById('mediaMsg');
@@ -3735,7 +3735,7 @@ setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},1200);
 mediaSelected.clear();
 renderMedia();
 msg.style.color=failed?'#e53935':'var(--g)';
-msg.textContent=`Deleted ${ok}${failed?' � '+failed+' failed':''}`;
+msg.textContent=`Deleted ${ok}${failed?' · '+failed+' failed':''}`;
 setTimeout(()=>{msg.textContent=''},5000);
 if(typeof toast==='function')toast(`Deleted ${ok} image${ok===1?'':'s'}`,failed?'error':'success')}
 
@@ -3756,7 +3756,7 @@ catch(e){lastErr=e.message;console.error('Upload error:',fname,e)}}
 bar.style.width='100%';
 setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},1500);
 if(ok===files.length){msg.style.color='var(--g)';msg.textContent=ok+' uploaded'}
-else if(ok>0){msg.style.color='var(--g)';msg.textContent=ok+'/'+files.length+' uploaded � '+lastErr}
+else if(ok>0){msg.style.color='var(--g)';msg.textContent=ok+'/'+files.length+' uploaded · '+lastErr}
 else{msg.style.color='#e53935';msg.textContent='Upload failed: '+lastErr}
 setTimeout(()=>{msg.textContent=''},8000);
 await loadMedia();renderMedia()}
@@ -3789,7 +3789,7 @@ bar.style.width='100%';
 setTimeout(()=>{prog.style.display='none';bar.style.width='0%'},2000);
 const savedMb=(savedBytes/1024/1024).toFixed(1);
 msg.style.color=ok?'var(--g)':'#e53935';
-msg.textContent=ok+' compressed ('+savedMb+' MB saved) � '+skipped+' skipped � '+failed+' failed';
+msg.textContent=ok+' compressed ('+savedMb+' MB saved) · '+skipped+' skipped · '+failed+' failed';
 setTimeout(()=>{msg.textContent=''},20000);
 await loadMedia();renderMedia()}
 
@@ -3797,7 +3797,7 @@ async function deleteMedia(name){
 const used=getUsedUrls();
 const url=R2_PUBLIC+name;
 let warn='Delete this image from library?';
-if(used.has(url))warn='?? This image is USED by a product. Delete anyway?';
+if(used.has(url))warn='⚠️ This image is USED by a product. Delete anyway?';
 if(!confirm(warn))return;
 try{
 await r2Delete(name);
@@ -3810,7 +3810,7 @@ async function openPicker(callback){
 pickerCallback=callback;
 pickerSelected=new Set();
 document.getElementById('mediaPicker').style.display='flex';
-document.getElementById('pickerBody').innerHTML='<div class="empty"><div class="icon">?</div><div class="hint">Loading.</div></div>';
+document.getElementById('pickerBody').innerHTML='<div class="empty"><div class="icon">⏳</div><div class="hint">Loading…</div></div>';
 await loadMedia();
 renderPicker()}
 
@@ -3825,11 +3825,11 @@ const cnt=document.getElementById('pickerCount');
 const n=pickerSelected.size;
 cnt.textContent=n?'Add '+n+' photo'+(n===1?'':'s'):'Tap to select';
 if(!mediaImages.length){
-body.innerHTML='<div class="empty"><div class="icon">??</div><div class="title">Library is empty</div><div class="hint">Upload via the Media tab first</div></div>';return}
+body.innerHTML='<div class="empty"><div class="icon">📷</div><div class="title">Library is empty</div><div class="hint">Upload via the Media tab first</div></div>';return}
 const used=getUsedUrls();
 body.innerHTML='<div class="media-grid">'+mediaImages.map(m=>`<div class="media-item${pickerSelected.has(m.url)?' selected':''}" onclick="togglePick('${m.url}')">
 <img src="${m.url}" loading="lazy">
-<div class="check">V</div>
+<div class="check">✓</div>
 ${used.has(m.url)?'<div class="used">USED</div>':''}
 </div>`).join('')+'</div>'}
 
@@ -3853,12 +3853,12 @@ renderAddLibPreview()})}
 function renderAddLibPreview(){
 const div=document.getElementById('addLibPreview');
 if(!addLibraryUrls.length){div.innerHTML='';return}
-const note=addLibraryUrls.length>1?' � ? to set main':'';
+const note=addLibraryUrls.length>1?' · ★ to set main':'';
 div.innerHTML='<div style="font-size:11px;font-weight:600;color:var(--sub);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">From Library ('+addLibraryUrls.length+')'+note+'</div><div class="img-grid">'+
 addLibraryUrls.map((u,i)=>`<div class="img-thumb${i===0?' main':''}">
 <img src="${u}">
-<div class="del" onclick="removeAddLib(${i})">?</div>
-${i===0?'<div class="main-label">MAIN</div>':`<div class="star" title="Set as main" onclick="setLibMain(${i})">?</div>`}
+<div class="del" onclick="removeAddLib(${i})">✕</div>
+${i===0?'<div class="main-label">MAIN</div>':`<div class="star" title="Set as main" onclick="setLibMain(${i})">★</div>`}
 </div>`).join('')+'</div>'}
 
 function setLibMain(idx){
@@ -3904,7 +3904,7 @@ else{el.innerHTML='<div style="font-size:12px;color:#e53935">No stock data retur
 }catch(e){el.innerHTML='<div style="font-size:12px;color:#e53935">Error: '+e.message+'</div>'}
 btn.disabled=false;btn.textContent='Check Stock'}
 
-/* ��� WIX PRODUCT PICKER ��� */
+/* ═══ WIX PRODUCT PICKER ═══ */
 // Loads a cached snapshot of the Wix catalog from R2 (wix-products.json) and shows
 // a searchable modal. Selecting a product writes its URL into the given target input.
 let wixCatalog=null,wixCatalogPromise=null,wixCatalogUpdatedAt=null,wixPickerTargetId=null;
@@ -3932,14 +3932,14 @@ m.innerHTML=`
 <div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2)">
 <div style="background:#00C853;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;color:#fff">
 <div><div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700">Pick a Wix Product</div>
-<div style="font-size:11px;opacity:.85" id="wixPickerStatus">Loading catalog.</div></div>
-<button onclick="closeWixPicker()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:18px;cursor:pointer;width:34px;height:34px;border-radius:50%">?</button>
+<div style="font-size:11px;opacity:.85" id="wixPickerStatus">Loading catalog…</div></div>
+<button onclick="closeWixPicker()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:18px;cursor:pointer;width:34px;height:34px;border-radius:50%">✕</button>
 </div>
-<div style="padding:14px 16px 8px"><input id="wixPickerSearch" placeholder="?? Search by name." style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box"></div>
+<div style="padding:14px 16px 8px"><input id="wixPickerSearch" placeholder="🔍 Search by name…" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box"></div>
 <div id="wixPickerList" style="flex:1;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch"></div>
 <div style="padding:10px 16px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888">
 <span id="wixPickerCount"></span>
-<button onclick="refreshWixCatalog()" id="wixPickerRefreshBtn" style="background:none;border:none;color:#00C853;font-weight:700;cursor:pointer;font-size:11px">? Refresh from Wix</button>
+<button onclick="refreshWixCatalog()" id="wixPickerRefreshBtn" style="background:none;border:none;color:#00C853;font-weight:700;cursor:pointer;font-size:11px">↻ Refresh from Wix</button>
 </div>
 </div>`;
 document.body.appendChild(m);
@@ -3952,11 +3952,11 @@ listEl.addEventListener('mouseout',e=>{const row=e.target.closest('.wix-pick-row
 }
 m.style.display='flex';
 const status=document.getElementById('wixPickerStatus');
-status.textContent='Loading catalog.';
+status.textContent='Loading catalog…';
 // Always force-refresh from R2 on open so newly-added Wix products appear without needing a manual Refresh tap
 loadWixCatalog(true).then(list=>{
-const stamp=wixCatalogUpdatedAt?` � synced ${new Date(wixCatalogUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
-status.textContent=`${list.length} products � tap to pick${stamp}`;
+const stamp=wixCatalogUpdatedAt?` · synced ${new Date(wixCatalogUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
+status.textContent=`${list.length} products · tap to pick${stamp}`;
 renderWixPicker('');
 document.getElementById('wixPickerSearch').focus();
 }).catch(e=>{
@@ -3977,8 +3977,8 @@ if(!filtered.length){list.innerHTML=`<div style="padding:24px;text-align:center;
 list.innerHTML=filtered.map(p=>{
 const oos=p.availability==='OUT_OF_STOCK';
 const partial=p.availability==='PARTIALLY_OUT_OF_STOCK';
-const priceTxt=p.priceMin===p.priceMax?`�${escHtml(p.priceMin)}`:`�${escHtml(p.priceMin)} - �${escHtml(p.priceMax)}`;
-const cmpTxt=p.compareMin?`<span style="text-decoration:line-through;color:#aaa;margin-left:6px">�${escHtml(p.compareMin)}</span>`:'';
+const priceTxt=p.priceMin===p.priceMax?`£${escHtml(p.priceMin)}`:`£${escHtml(p.priceMin)} – £${escHtml(p.priceMax)}`;
+const cmpTxt=p.compareMin?`<span style="text-decoration:line-through;color:#aaa;margin-left:6px">£${escHtml(p.compareMin)}</span>`:'';
 const status=oos?'<span style="background:#ffebee;color:#c62828;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">OOS</span>':(partial?'<span style="background:#fff8e1;color:#f57c00;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">LOW</span>':'');
 return `<div class="wix-pick-row" data-id="${escHtml(p.id)}" style="display:flex;gap:12px;align-items:center;padding:10px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s">
 <img src="${escHtml(p.image||'')}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#f5f5f5;flex-shrink:0">
@@ -3987,7 +3987,7 @@ return `<div class="wix-pick-row" data-id="${escHtml(p.id)}" style="display:flex
 <div style="font-size:11px;color:#00C853;font-weight:700;margin-top:2px">${priceTxt}${cmpTxt}</div>
 <div style="font-size:10px;color:#aaa;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">/${escHtml(p.slug||'')}</div>
 </div>
-<div style="color:#00C853;font-weight:700;font-size:18px;flex-shrink:0">></div>
+<div style="color:#00C853;font-weight:700;font-size:18px;flex-shrink:0">›</div>
 </div>`;
 }).join('');
 }
@@ -4005,24 +4005,24 @@ if(wixPickerTargetId==='aLink'){
 const nameEl=document.getElementById('aName');
 const priceEl=document.getElementById('aPrice');
 if(nameEl&&!nameEl.value)nameEl.value=p.name||'';
-if(priceEl&&!priceEl.value&&p.priceMin)priceEl.value='�'+p.priceMin;
+if(priceEl&&!priceEl.value&&p.priceMin)priceEl.value='£'+p.priceMin;
 }
 }
 closeWixPicker();
 }
 // Refresh strategy:
 // 1. If WORKER_URL + ADMIN_SESSION are set, ask the Cloudflare worker to /wix-sync (fetches fresh
-//    from Wix  writes wix-products.json to R2). Then re-read from R2.
+//    from Wix → writes wix-products.json to R2). Then re-read from R2.
 // 2. If the worker isn't configured, just re-read the existing R2 snapshot. (The snapshot is kept
 //    fresh out-of-band when the user pings me to re-sync, so this still picks up the latest.)
 async function refreshWixCatalog(){
 const btn=document.getElementById('wixPickerRefreshBtn');
 const status=document.getElementById('wixPickerStatus');
 const prevTxt=btn.textContent;
-btn.disabled=true;btn.textContent='? Refreshing.';
+btn.disabled=true;btn.textContent='⏳ Refreshing…';
 let workerSyncOk=false,fromWix=0;
 if(WORKER_URL&&ADMIN_SESSION){
-  status.textContent='Asking worker to pull latest from Wix.';
+  status.textContent='Asking worker to pull latest from Wix…';
   try{
     const r=await fetch(WORKER_URL+'/wix-sync',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION}});
     const data=await r.json().catch(()=>({}));
@@ -4030,11 +4030,11 @@ if(WORKER_URL&&ADMIN_SESSION){
   }catch(e){/* fall through to R2 re-read */}
 }
 try{
-  status.textContent=workerSyncOk?`Synced ${fromWix} from Wix � loading R2.`:'Re-reading R2 snapshot.';
+  status.textContent=workerSyncOk?`Synced ${fromWix} from Wix · loading R2…`:'Re-reading R2 snapshot…';
   await loadWixCatalog(true);
   const search=document.getElementById('wixPickerSearch');
   renderWixPicker(search?search.value:'');
-  const stamp=wixCatalogUpdatedAt?` � last sync ${new Date(wixCatalogUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
+  const stamp=wixCatalogUpdatedAt?` · last sync ${new Date(wixCatalogUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
   status.textContent=`${(wixCatalog||[]).length} products available${stamp}`;
 }catch(e){status.textContent='Refresh failed: '+e.message}
 btn.disabled=false;btn.textContent=prevTxt;
@@ -4049,12 +4049,12 @@ const linkEl=document.getElementById('aLink');
 const msg=document.getElementById('aLinkMsg');
 const setMsg=(t,col)=>{msg.textContent=t;msg.style.color=col||'var(--sub)'};
 if(!WORKER_URL||!ADMIN_SESSION){
-setMsg('Worker not configured - set WORKER_URL + ADMIN_SESSION in admin.html (lines 270-274) and redeploy.','#e53935');return;
+setMsg('Worker not configured — set WORKER_URL + ADMIN_SESSION in admin.html (lines 270–274) and redeploy.','#e53935');return;
 }
 const initialName=(nameEl.value||'').trim();
 const initialPrice=(priceEl.value||'').trim();
 if(!initialName){setMsg('Type a product Name first, then click Create on Wix.','#e53935');return}
-if(!initialPrice){setMsg('Type a Price first (e.g. �89.99).','#e53935');return}
+if(!initialPrice){setMsg('Type a Price first (e.g. £89.99).','#e53935');return}
 let m=document.getElementById('wixCreateModal');
 if(!m){
 m=document.createElement('div');m.id='wixCreateModal';
@@ -4064,18 +4064,18 @@ m.innerHTML=`
 <div onclick="event.stopPropagation()" style="background:#fff;border-radius:18px;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2)">
 <div style="background:#111;padding:16px 20px;color:#fff;flex-shrink:0">
 <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700">Create Wix Placeholder Product</div>
-<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Pick sizes + colours � creates the Wix product + auto-fills the Buy Link.</div>
+<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Pick sizes + colours · creates the Wix product + auto-fills the Buy Link.</div>
 </div>
 <div style="padding:16px 18px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch">
 <label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Wix product name (placeholder)</label>
 <input id="wcNamePh" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:10px">
 <div style="display:flex;gap:8px;margin-bottom:10px">
 <div style="flex:1">
-<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sale price (�)</label>
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sale price (£)</label>
 <input id="wcPricePh" placeholder="89.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
 </div>
 <div style="flex:1">
-<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Compare-at (�)</label>
+<label style="display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Compare-at (£)</label>
 <input id="wcComparePh" placeholder="109.99" style="width:100%;padding:11px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
 </div>
 </div>
@@ -4084,10 +4084,10 @@ m.innerHTML=`
 <label style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
 <span>Sizes</span>
 <select id="wcSizePreset" onchange="wcApplySizePreset()" style="font-size:11px;font-weight:600;border:1px solid #e0e0e0;border-radius:6px;background:#fff;padding:3px 6px;text-transform:none;letter-spacing:0;color:#111">
-<option value="">- Preset -</option>
-<option value="ukShoes">UK Shoes (5  13)</option>
-<option value="ukShoesShort">UK Shoes (5  12)</option>
-<option value="clothing">Clothing (S  XXL)</option>
+<option value="">— Preset —</option>
+<option value="ukShoes">UK Shoes (5 → 13)</option>
+<option value="ukShoesShort">UK Shoes (5 → 12)</option>
+<option value="clothing">Clothing (S → XXL)</option>
 <option value="oneSize">One Size</option>
 <option value="clear">Clear</option>
 </select>
@@ -4099,7 +4099,7 @@ m.innerHTML=`
 <div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
 <label style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
 <span>Colours</span>
-<span style="font-size:10px;font-weight:500;color:#aaa;text-transform:none;letter-spacing:0">optional � skip = no colour option</span>
+<span style="font-size:10px;font-weight:500;color:#aaa;text-transform:none;letter-spacing:0">optional · skip = no colour option</span>
 </label>
 <div id="wcColoursList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
 <input id="wcColourAdd" placeholder="Type a colour + press Enter (e.g. Black, White, Grey)" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;box-sizing:border-box">
@@ -4117,7 +4117,7 @@ document.body.appendChild(m);
 }
 m.style.display='flex';
 document.getElementById('wcNamePh').value=initialName;
-const cleanPrice=initialPrice.replace(/[�$,\s]/g,'');
+const cleanPrice=initialPrice.replace(/[£$,\s]/g,'');
 document.getElementById('wcPricePh').value=cleanPrice;
 document.getElementById('wcComparePh').value='';
 document.getElementById('wcMsg').textContent='';
@@ -4154,7 +4154,7 @@ setTimeout(()=>document.getElementById('wcNamePh').focus(),50);
 }
 function closeWixCreateModal(){const m=document.getElementById('wixCreateModal');if(m)m.style.display='none'}
 
-// �� Picker state for Sizes + Colours inside the Create-Wix modal ��
+// ── Picker state for Sizes + Colours inside the Create-Wix modal ──
 let wcSizes=[],wcColours=[];
 const WC_SIZE_PRESETS={
   ukShoes:['UK 5','UK 5.5','UK 6','UK 6.5','UK 7','UK 7.5','UK 8','UK 8.5','UK 9','UK 9.5','UK 10','UK 11','UK 12','UK 13'],
@@ -4172,19 +4172,19 @@ function wcApplySizePreset(){
 }
 function wcRenderSizes(){
   const grid=document.getElementById('wcSizesGrid');if(!grid)return;
-  grid.innerHTML=wcSizes.map((s,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:7px 4px;font-size:11px;font-weight:700;text-align:center;color:#111;position:relative">${escHtml(s)}<span onclick="wcRemoveSize(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#111;color:#fff;border-radius:50%;font-size:10px;line-height:16px;text-align:center;cursor:pointer;font-weight:700">�</span></div>`).join('')||'<div style="font-size:11px;color:#aaa;grid-column:1/-1;text-align:center;padding:4px">No sizes - Wix product will have a single default variant</div>';
+  grid.innerHTML=wcSizes.map((s,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:7px 4px;font-size:11px;font-weight:700;text-align:center;color:#111;position:relative">${escHtml(s)}<span onclick="wcRemoveSize(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#111;color:#fff;border-radius:50%;font-size:10px;line-height:16px;text-align:center;cursor:pointer;font-weight:700">×</span></div>`).join('')||'<div style="font-size:11px;color:#aaa;grid-column:1/-1;text-align:center;padding:4px">No sizes — Wix product will have a single default variant</div>';
 }
 function wcRemoveSize(i){wcSizes.splice(i,1);wcRenderSizes();wcUpdateVariantCount()}
 function wcRenderColours(){
   const list=document.getElementById('wcColoursList');if(!list)return;
-  list.innerHTML=wcColours.map((c,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#111;display:inline-flex;align-items:center;gap:6px">${escHtml(c)}<span onclick="wcRemoveColour(${i})" style="cursor:pointer;color:#888;font-weight:700">�</span></div>`).join('')||'';
+  list.innerHTML=wcColours.map((c,i)=>`<div style="background:#fff;border:1.5px solid #00C853;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#111;display:inline-flex;align-items:center;gap:6px">${escHtml(c)}<span onclick="wcRemoveColour(${i})" style="cursor:pointer;color:#888;font-weight:700">×</span></div>`).join('')||'';
 }
 function wcRemoveColour(i){wcColours.splice(i,1);wcRenderColours();wcUpdateVariantCount()}
 function wcUpdateVariantCount(){
   const el=document.getElementById('wcVariantCount');if(!el)return;
   const s=Math.max(wcSizes.length,1),c=Math.max(wcColours.length,1);
   const n=s*c;
-  el.textContent=`Will create ${n} variant${n===1?'':'s'} � all at the same price`;
+  el.textContent=`Will create ${n} variant${n===1?'':'s'} · all at the same price`;
 }
 async function submitWixCreate(){
 const name=document.getElementById('wcNamePh').value.trim();
@@ -4198,12 +4198,12 @@ const payload={name,priceAmount:price,comparePriceAmount:compare,sizes:wcSizes.s
 // If the worker is not configured, give the user a copy-this-config fallback so they can hand it to whoever has the Wix API access.
 if(!WORKER_URL||!ADMIN_SESSION){
   const j=JSON.stringify(payload,null,2);
-  wcMsg.innerHTML=`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;color:#5d4037;line-height:1.5">Worker not deployed yet. Copy the config below and send it to me in chat - I'll create the Wix product:</div><textarea readonly onclick="this.select()" style="width:100%;height:140px;margin-top:8px;padding:8px;font-family:monospace;font-size:11px;border:1px solid #ccc;border-radius:6px;resize:vertical">${escHtml(j)}</textarea>`;
+  wcMsg.innerHTML=`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;color:#5d4037;line-height:1.5">Worker not deployed yet. Copy the config below and send it to me in chat — I'll create the Wix product:</div><textarea readonly onclick="this.select()" style="width:100%;height:140px;margin-top:8px;padding:8px;font-family:monospace;font-size:11px;border:1px solid #ccc;border-radius:6px;resize:vertical">${escHtml(j)}</textarea>`;
   wcMsg.style.color='var(--sub)';
   return;
 }
-submit.disabled=true;submit.textContent='Creating.';
-wcMsg.style.color='var(--sub)';wcMsg.textContent='Creating on Wix.';
+submit.disabled=true;submit.textContent='Creating…';
+wcMsg.style.color='var(--sub)';wcMsg.textContent='Creating on Wix…';
 try{
 const r=await fetch(WORKER_URL+'/wix-create-product',{
 method:'POST',
@@ -4216,7 +4216,7 @@ const linkEl=document.getElementById('aLink');
 linkEl.value=data.url||'';
 const aMsg=document.getElementById('aLinkMsg');
 aMsg.style.color='var(--g)';
-aMsg.textContent=`V Created "${data.name}" on Wix - link filled in. Picker cache will refresh on next sync.`;
+aMsg.textContent=`✓ Created "${data.name}" on Wix — link filled in. Picker cache will refresh on next sync.`;
 closeWixCreateModal();
 // Invalidate the in-memory catalog so the next picker open re-fetches
 wixCatalog=null;wixCatalogPromise=null;
@@ -4228,7 +4228,7 @@ submit.disabled=false;submit.textContent='Create Product';
 // Warm the cache when admin loads so the picker opens instantly
 loadWixCatalog().catch(()=>{/* no-op; UI will retry */});
 
-/* ��������������� PHOTO STUDIO ��������������� */
+/* ═══════════════ PHOTO STUDIO ═══════════════ */
 // Settings live in localStorage so the OpenAI API key never lands in the repo.
 const PS_LS_KEY='esntlsPhotoStudio';
 const PS_JOB_ID_KEY='esntlsPhotoStudioBackgroundJobIdV1';
@@ -4321,7 +4321,7 @@ function psSaveSettings(){
   };
   localStorage.setItem(PS_LS_KEY,JSON.stringify(s));
   const m=document.getElementById('psSettingsMsg');
-  m.style.color='var(--g)';m.textContent='V Saved to this browser only';
+  m.style.color='var(--g)';m.textContent='✓ Saved to this browser only';
   setTimeout(()=>{m.textContent=''},2500);
   psUpdateGenerateState();
   if(pendingFiles.length)prepareAddBackgroundPreview();
@@ -4354,10 +4354,10 @@ function psRenderReferences(){
   const s=psGetSettings();
   if(use)use.checked=s.useReferences!==false;
   const urls=psCleanReferenceUrls(s.referenceUrls);
-  grid.innerHTML=urls.map((url,i)=>`<div class="studio-reference-tile"><img src="${psEscapeHtml(url)}" alt=""><button type="button" onclick="psRemoveReference(${i})" title="Remove">�</button></div>`).join('');
+  grid.innerHTML=urls.map((url,i)=>`<div class="studio-reference-tile"><img src="${psEscapeHtml(url)}" alt=""><button type="button" onclick="psRemoveReference(${i})" title="Remove">×</button></div>`).join('');
   if(msg){
     msg.style.color='var(--sub)';
-    msg.textContent=(s.useReferences===false?'Reference look off � ':'')+urls.length+' reference image'+(urls.length===1?'':'s')+' ready.';
+    msg.textContent=(s.useReferences===false?'Reference look off · ':'')+urls.length+' reference image'+(urls.length===1?'':'s')+' ready.';
   }
 }
 
@@ -4736,7 +4736,7 @@ function psRenderBackgroundJob(){
   const resumeButton=!terminal?`<button type="button" onclick="psResumeBackgroundJob()">Resume</button>`:'';
   const loadButton=completed?`<button type="button" onclick="psApplyBackgroundJobResults(psState.job,true)">Load results</button>`:'';
   panel.style.display='block';
-  panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Background generation</div><div class="studio-job-meta">${done}/${total} finished${failed?` � ${failed} failed`:''}${cancelled?` � ${cancelled} cancelled`:''}</div></div><div class="studio-job-badge">${psJobStatusLabel(job)}</div></div><div class="studio-job-bar"><span style="width:${progress}%"></span></div><div class="studio-job-actions"><button type="button" onclick="psLoadBackgroundJob()">Refresh</button>${loadButton}${resumeButton}${failedButton}${cancelButton}<button type="button" onclick="psClearBackgroundJob()">Hide</button></div>`;
+  panel.innerHTML=`<div class="studio-job-head"><div><div class="studio-job-title">Background generation</div><div class="studio-job-meta">${done}/${total} finished${failed?` · ${failed} failed`:''}${cancelled?` · ${cancelled} cancelled`:''}</div></div><div class="studio-job-badge">${psJobStatusLabel(job)}</div></div><div class="studio-job-bar"><span style="width:${progress}%"></span></div><div class="studio-job-actions"><button type="button" onclick="psLoadBackgroundJob()">Refresh</button>${loadButton}${resumeButton}${failedButton}${cancelButton}<button type="button" onclick="psClearBackgroundJob()">Hide</button></div>`;
 }
 
 function psRenderRecentJobs(jobs){
@@ -5100,7 +5100,7 @@ async function psGenerateSingleLegacy(){
   }
   const btn=document.getElementById('psGenerateBtn');
   const quality=document.querySelector('input[name="psQuality"]:checked').value;
-  btn.disabled=true;btn.textContent='? Generating. (~10-20s)';
+  btn.disabled=true;btn.textContent='⏳ Generating… (~10–20s)';
   msg.style.color='var(--sub)';msg.textContent=psCanUseWorker()?'Calling ESNTLS Worker...':'Calling OpenAI '+OPENAI_IMAGE_MODEL+'...';
   try{
     const bgBlob=await psFetchAsBlob(s.brandBg);
@@ -5108,18 +5108,18 @@ async function psGenerateSingleLegacy(){
     psState.resultDataUrl=item.dataUrl;
     document.getElementById('psResultImg').src=psState.resultDataUrl;
     document.getElementById('psResultPreview').style.display='block';
-    msg.style.color='var(--g)';msg.textContent='V Generated - review below, save if happy';
+    msg.style.color='var(--g)';msg.textContent='✓ Generated — review below, save if happy';
   }catch(e){
     msg.style.color='#e53935';msg.textContent='Failed: '+e.message;
   }
-  btn.disabled=false;btn.textContent='? Generate';
+  btn.disabled=false;btn.textContent='✨ Generate';
   psUpdateGenerateState();
 }
 function psRegenerateSingleLegacy(){document.getElementById('psResultPreview').style.display='none';psGenerate()}
 async function psSaveToLibrarySingleLegacy(){
   if(!psState.resultDataUrl)return;
   const msg=document.getElementById('psSaveMsg');
-  msg.style.color='var(--sub)';msg.textContent='Uploading to R2.';
+  msg.style.color='var(--sub)';msg.textContent='Uploading to R2…';
   try{
     // Convert data URL to blob
     const res=await fetch(psState.resultDataUrl);
@@ -5127,7 +5127,7 @@ async function psSaveToLibrarySingleLegacy(){
     const fname='studio_'+Date.now()+'_'+Math.floor(Math.random()*9999)+'.jpg';
     const file=new File([blob],fname,{type:'image/jpeg'});
     const url=await r2Upload(file,fname);
-    msg.style.color='var(--g)';msg.innerHTML='V Saved � <a href="'+url+'" target="_blank" style="color:#00C853">view</a>';
+    msg.style.color='var(--g)';msg.innerHTML='✓ Saved · <a href="'+url+'" target="_blank" style="color:#00C853">view</a>';
   }catch(e){
     msg.style.color='#e53935';msg.textContent='Upload failed: '+e.message;
   }
@@ -5318,25 +5318,25 @@ async function psSaveToLibrary(){
 // Wire up Studio drag-and-drop
 setupDropZone(document.getElementById('psUploadZone'),psHandleFile);
 
-/* ��������������� ORDERS / SUPPLIER FORWARDING ��������������� */
+/* ═══════════════ ORDERS / SUPPLIER FORWARDING ═══════════════ */
 // Pulls a cached snapshot of recent Wix orders from R2 (wix-orders.json), maps each
 // line item back to the ESNTLS-branded product card (so the supplier sees the right
 // version, not the blank), and generates a bilingual supplier message you can copy.
-// "Mark sent" state lives in localStorage only - Wix order is NOT touched.
+// "Mark sent" state lives in localStorage only — Wix order is NOT touched.
 const ORDERS_LS_KEY='esntlsOrdersSent';
 let wixOrders=null;
 let wixOrdersUpdatedAt=null;
 let orderFilter='unfulfilled';
 let ordersSentSet=null;
 
-// UK shoe sizes  EU conversion for the supplier (Asian supplier reads EU)
+// UK shoe sizes → EU conversion for the supplier (Asian supplier reads EU)
 const UK_TO_EU={
   '5':'38','5.5':'38.5','6':'39','6.5':'40','7':'40.5','7.5':'41',
   '8':'42','8.5':'42.5','9':'43','9.5':'44','10':'44.5','10.5':'45',
   '11':'45.5','11.5':'46','12':'46.5','12.5':'47','13':'47.5'
 };
 
-// ��� localStorage: order numbers that have been sent to the supplier
+// ─── localStorage: order numbers that have been sent to the supplier
 function ordersLoadSent(){
   if(ordersSentSet)return ordersSentSet;
   try{ordersSentSet=new Set(JSON.parse(localStorage.getItem(ORDERS_LS_KEY)||'[]'))}
@@ -5354,17 +5354,17 @@ function ordersToggleSent(num){
   ordersSaveSent();
 }
 
-// ��� Reverse-lookup: checkout order line item  ESNTLS product card
+// ─── Reverse-lookup: checkout order line item → ESNTLS product card
 // 1. Match saved Shopify placeholder metadata first when an order came from ESNTLS Blanks.
 // 2. Match Wix catalog IDs/slugs when an order came from the Wix backup checkout.
 // 3. Special case for the OLD combined Daily Sneakers product (a627a...): use
 //    the Color option to find the matching B30 ESNTLS product by name.
-// 4. Otherwise  no match (the supplier message falls back to the checkout product name).
+// 4. Otherwise → no match (the supplier message falls back to the checkout product name).
 const DAILY_SNEAKERS_OLD_ID='a627a529-8d8e-4918-8e93-acaa0f9e35ef';
 
 function normColour(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
 function colourMatchesEsntls(orderColour,esntlsName){
-  // "Grey/White"  "greywhite"; "B30 Grey and White"  "b30greyandwhite"  strip "b30and"  ...
+  // "Grey/White" → "greywhite"; "B30 Grey and White" → "b30greyandwhite" → strip "b30and" → ...
   const oc=normColour(orderColour);                             // greywhite
   const enRaw=normColour(esntlsName);                           // b30greyandwhite
   const en=enRaw.replace(/^b30/,'').replace(/and/g,'').replace(/x/g,'');  // greywhite
@@ -5511,7 +5511,7 @@ function findEsntlsForLineItem(item, wixProductsBySlug, wixProductsById){
     }
   }
 
-  // 2. Old combined Daily Sneakers  match by Color
+  // 2. Old combined Daily Sneakers → match by Color
   if(wixId===DAILY_SNEAKERS_OLD_ID && colourOpt){
     const candidates=products.filter(p=>{
       const cats=(p.category||'').toLowerCase();
@@ -5526,15 +5526,15 @@ function findEsntlsForLineItem(item, wixProductsBySlug, wixProductsById){
   return {esntls:null, wixCat, matchType:'none'};
 }
 
-// ��� Fetch wix-orders.json from R2 (no network = empty list, with friendly message)
+// ─── Fetch wix-orders.json from R2 (no network = empty list, with friendly message)
 async function loadWixOrders(){
   const status=document.getElementById('orderSyncStatus');
-  status.textContent='Loading from R2.';
+  status.textContent='Loading from R2…';
   try{
     const res=await fetch(R2_PUBLIC+'wix-orders.json?t='+Date.now());
     if(res.status===404){
       wixOrders=[];wixOrdersUpdatedAt=null;
-      status.innerHTML='<span style="color:#e53935">No orders synced yet</span> � ask Claude to sync or deploy the worker';
+      status.innerHTML='<span style="color:#e53935">No orders synced yet</span> · ask Claude to sync or deploy the worker';
       return [];
     }
     if(!res.ok)throw new Error('HTTP '+res.status);
@@ -5542,7 +5542,7 @@ async function loadWixOrders(){
     wixOrders=Array.isArray(data.orders)?data.orders:[];
     wixOrdersUpdatedAt=data.updatedAt||null;
     const stamp=wixOrdersUpdatedAt?new Date(wixOrdersUpdatedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'unknown';
-    status.innerHTML=`Last sync <strong>${stamp}</strong> � ${wixOrders.length} orders`;
+    status.innerHTML=`Last sync <strong>${stamp}</strong> · ${wixOrders.length} orders`;
     return wixOrders;
   }catch(e){
     wixOrders=[];
@@ -5559,15 +5559,15 @@ function _buildWixIndices(){
   return {byId,bySlug};
 }
 
-// ��� Refresh: try worker first (if configured), then re-read R2
+// ─── Refresh: try worker first (if configured), then re-read R2
 async function refreshOrders(){
   const btn=document.getElementById('ordersRefreshBtn');
   const status=document.getElementById('orderSyncStatus');
-  btn.disabled=true;btn.textContent='? Syncing.';
+  btn.disabled=true;btn.textContent='⏳ Syncing…';
   let workerOk=false,workerCount=0;
   if(WORKER_URL&&ADMIN_SESSION){
     try{
-      status.textContent='Asking worker to pull latest from Wix.';
+      status.textContent='Asking worker to pull latest from Wix…';
       const r=await fetch(WORKER_URL+'/wix-orders-sync',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION}});
       const d=await r.json().catch(()=>({}));
       if(r.ok){workerOk=true;workerCount=d.count||0}
@@ -5578,14 +5578,14 @@ async function refreshOrders(){
   await loadProducts().catch(()=>{});
   await loadWixOrders();
   if(workerOk){
-    status.innerHTML=`V Worker synced <strong>${workerCount}</strong> orders � `+status.innerHTML;
+    status.innerHTML=`✓ Worker synced <strong>${workerCount}</strong> orders · `+status.innerHTML;
   }
   renderOrders();
-  btn.disabled=false;btn.textContent='? Refresh';
+  btn.disabled=false;btn.textContent='↻ Refresh';
   if(typeof toast==='function')toast('Orders refreshed','success');
 }
 
-// ��� Filter chip click
+// ─── Filter chip click
 function setOrderFilter(el,st){
   document.querySelectorAll('#orderStatusChips .filter-chip').forEach(c=>c.classList.remove('on'));
   el.classList.add('on');
@@ -5593,7 +5593,7 @@ function setOrderFilter(el,st){
   renderOrders();
 }
 
-// ��� Supplier message - copy-to-clipboard
+// ─── Supplier message — copy-to-clipboard
 function isSupplierExcludedItem(item,lookup){
   const esntls=lookup&&lookup.esntls;
   const text=[
@@ -5650,7 +5650,7 @@ function copySupplierMessage(num){
   const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
   if(!o)return;
   const txt=buildSupplierMessage(o);
-  if(!txt){if(typeof toast==='function')toast('Only Air Pro items found - not sent to supplier','info');return}
+  if(!txt){if(typeof toast==='function')toast('Only Air Pro items found — not sent to supplier','info');return}
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>{
       if(typeof toast==='function')toast('Supplier message copied','success');
@@ -5664,7 +5664,7 @@ function fallbackCopy(txt){
   document.body.removeChild(ta);
 }
 
-// ��� Fetch an image URL as a File so Web Share can attach it
+// ─── Fetch an image URL as a File so Web Share can attach it
 async function _fetchImageAsFile(url,filename){
   if(!url)return null;
   try{
@@ -5677,7 +5677,7 @@ async function _fetchImageAsFile(url,filename){
   }catch(e){return null}
 }
 
-// ��� Pick the first ESNTLS-branded image for this order (falls back to Wix image)
+// ─── Pick the first ESNTLS-branded image for this order (falls back to Wix image)
 function _orderHeroImageUrl(o){
   const idx=_buildWixIndices();
   for(const {item:li,lookup:lk} of supplierLineItemsForOrder(o,idx)){
@@ -5687,14 +5687,14 @@ function _orderHeroImageUrl(o){
   return '';
 }
 
-// ��� Per-order: Web Share with image + text. On WhatsApp this attaches the photo.
+// ─── Per-order: Web Share with image + text. On WhatsApp this attaches the photo.
 async function shareSupplierMessage(num,btn){
   const o=(wixOrders||[]).find(x=>String(x.number)===String(num));
   if(!o)return;
   const text=buildSupplierMessage(o);
-  if(!text){if(typeof toast==='function')toast('Only Air Pro items found - not sent to supplier','info');return}
+  if(!text){if(typeof toast==='function')toast('Only Air Pro items found — not sent to supplier','info');return}
   const imgUrl=_orderHeroImageUrl(o);
-  if(btn){btn.disabled=true;const orig=btn.innerHTML;btn.innerHTML='? Preparing.';btn._orig=orig}
+  if(btn){btn.disabled=true;const orig=btn.innerHTML;btn.innerHTML='⏳ Preparing…';btn._orig=orig}
   let file=null;
   if(imgUrl)file=await _fetchImageAsFile(imgUrl,'order-'+o.number);
   if(btn){btn.disabled=false;if(btn._orig)btn.innerHTML=btn._orig}
@@ -5713,10 +5713,10 @@ async function shareSupplierMessage(num,btn){
   }else if(imgUrl){
     window.open(imgUrl,'_blank');
   }
-  if(typeof toast==='function')toast('Text copied � image opened in new tab - save & attach in WhatsApp','info',5000);
+  if(typeof toast==='function')toast('Text copied · image opened in new tab — save & attach in WhatsApp','info',5000);
 }
 
-// ��� Bulk: condensed message of all unsent unfulfilled orders, sorted oldest first
+// ─── Bulk: condensed message of all unsent unfulfilled orders, sorted oldest first
 function _bulkOrdersToSend(){
   const sentSet=ordersLoadSent();
   const idx=_buildWixIndices();
@@ -5740,7 +5740,7 @@ function bulkCopyUnfulfilled(){
   const text=buildBulkMessage();
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(()=>{
-      if(typeof toast==='function')toast(`Copied ${list.length} orders - paste in WhatsApp`,'success',4000);
+      if(typeof toast==='function')toast(`Copied ${list.length} orders — paste in WhatsApp`,'success',4000);
     }).catch(()=>fallbackCopy(text));
   }else{fallbackCopy(text)}
 }
@@ -5765,22 +5765,22 @@ function bulkMarkAllSent(){
   if(typeof toast==='function')toast(`Marked ${list.length} as sent`,'success');
 }
 
-// ��� Toggle "mark as sent" + re-render counts/state
+// ─── Toggle "mark as sent" + re-render counts/state
 function markOrderSent(num,btnEl){
   ordersToggleSent(num);
   renderOrders();
 }
 
-// ��� Open the Wix order in the Wix dashboard so user can fulfill manually
+// ─── Open the Wix order in the Wix dashboard so user can fulfill manually
 function openWixOrder(orderId){
   if(!orderId)return;
   const u='https://manage.wix.com/dashboard/'+WIX_SITE_ID_FOR_DASH+'/store/orders/'+orderId;
   window.open(u,'_blank');
 }
-// Hardcoded - pulled from the site id used elsewhere in this admin (admin reads/writes the same store)
+// Hardcoded — pulled from the site id used elsewhere in this admin (admin reads/writes the same store)
 const WIX_SITE_ID_FOR_DASH='7e8c1aa8-aaa7-42ef-8c93-a5c2524c6155';
 
-// ��� Render the orders list
+// ─── Render the orders list
 function renderOrders(){
   const root=document.getElementById('ordersList');
   if(!wixOrders){root.innerHTML='<div style="padding:30px;text-align:center;color:var(--sub);font-size:13px">Tap Refresh to load orders</div>';return}
@@ -5824,15 +5824,15 @@ function renderOrders(){
     return;
   }
 
-  // Bulk action bar - shown only when filtering "To send" (the most common workflow)
+  // Bulk action bar — shown only when filtering "To send" (the most common workflow)
   const unsentCount=_bulkOrdersToSend().length;
   const bulkBar=(orderFilter==='unfulfilled'&&unsentCount>0)?`
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:11px 14px;background:#111;color:#fff;border-radius:12px;margin-bottom:12px;flex-wrap:wrap">
-      <div style="font-size:13px;font-weight:700">?? Forward ${unsentCount} to supplier</div>
+      <div style="font-size:13px;font-weight:700">📤 Forward ${unsentCount} to supplier</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="bulkShareUnfulfilled()" style="background:var(--g);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Share to WhatsApp in one tap">?? Share all</button>
-        <button onclick="bulkCopyUnfulfilled()" style="background:#fff;color:#111;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">?? Copy all</button>
-        <button onclick="bulkMarkAllSent()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="After you've sent them all">V Mark all sent</button>
+        <button onclick="bulkShareUnfulfilled()" style="background:var(--g);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="Share to WhatsApp in one tap">📲 Share all</button>
+        <button onclick="bulkCopyUnfulfilled()" style="background:#fff;color:#111;border:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copy all</button>
+        <button onclick="bulkMarkAllSent()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" title="After you've sent them all">✓ Mark all sent</button>
       </div>
     </div>`:'';
 
@@ -5848,11 +5848,11 @@ function renderOrders(){
       const displayImg=(lookup.esntls&&lookup.esntls.images&&lookup.esntls.images[0])||(lookup.wixCat&&lookup.wixCat.image)||it.image||'';
       const opts=it.options||{};
       const optBits=[];
-      if(opts.Size||opts['Shoe Size'])optBits.push(`<span>?? ${escHtml(opts.Size||opts['Shoe Size'])}</span>`);
-      if(opts.Color||opts.Colour)optBits.push(`<span>?? ${escHtml(opts.Color||opts.Colour)}</span>`);
-      if(opts.Delivery)optBits.push(`<span>?? ${escHtml(opts.Delivery)}</span>`);
-      const matchBadge=String(lookup.matchType||'').startsWith('shopify')?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">V ESNTLS name</span>'
-                       :lookup.matchType==='slug'?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">V matched</span>'
+      if(opts.Size||opts['Shoe Size'])optBits.push(`<span>📏 ${escHtml(opts.Size||opts['Shoe Size'])}</span>`);
+      if(opts.Color||opts.Colour)optBits.push(`<span>🎨 ${escHtml(opts.Color||opts.Colour)}</span>`);
+      if(opts.Delivery)optBits.push(`<span>🚚 ${escHtml(opts.Delivery)}</span>`);
+      const matchBadge=String(lookup.matchType||'').startsWith('shopify')?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ ESNTLS name</span>'
+                       :lookup.matchType==='slug'?'<span style="background:#e8f5e9;color:#2e7d32;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">✓ matched</span>'
                        :lookup.matchType==='b30-colour'?'<span style="background:#e3f2fd;color:#1565c0;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">b30 colour</span>'
                        :'<span style="background:#fff3e0;color:#e65100;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px">no match</span>';
       const checkoutNote=(lookup.esntls&&lookup.esntls.name!==it.productName)?`<div style="font-size:10px;color:#aaa;margin-top:3px">Checkout: ${escHtml(it.productName||'')}</div>`:'';
@@ -5863,41 +5863,41 @@ function renderOrders(){
           ${checkoutNote}
           <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:4px">${optBits.join('')}</div>
         </div>
-        <div style="font-size:12px;font-weight:700;color:var(--g);flex-shrink:0;align-self:flex-start">�${it.quantity||1}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--g);flex-shrink:0;align-self:flex-start">×${it.quantity||1}</div>
       </div>`;
     }).join('');
     const s=o.shipping||{};
     const b=o.buyer||{};
     const addrLines=[s.addressLine,s.city,s.postalCode,s.countryFullname||(s.country==='GB'?'United Kingdom':s.country||'')].filter(Boolean);
     const statusPills=[];
-    if(ful)statusPills.push('<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">?? FULFILLED</span>');
-    else if(sent)statusPills.push('<span style="background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">V SENT TO SUPPLIER</span>');
-    else statusPills.push('<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">?? TO SEND</span>');
+    if(ful)statusPills.push('<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">📦 FULFILLED</span>');
+    else if(sent)statusPills.push('<span style="background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">✓ SENT TO SUPPLIER</span>');
+    else statusPills.push('<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">📨 TO SEND</span>');
     if(!paid)statusPills.push('<span style="background:#ffebee;color:#c62828;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">UNPAID</span>');
     return `<div class="card" style="margin-bottom:10px;padding:14px 16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div>
-          <div style="font-size:11px;color:var(--sub);font-weight:600">#${escHtml(o.number||'')} � ${escHtml(dateStr)}</div>
+          <div style="font-size:11px;color:var(--sub);font-weight:600">#${escHtml(o.number||'')} · ${escHtml(dateStr)}</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px">${escHtml(b.name||'(no name)')}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:14px;font-weight:700;color:var(--g)">�${escHtml(o.total||'0.00')}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--g)">£${escHtml(o.total||'0.00')}</div>
           <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px;flex-wrap:wrap">${statusPills.join('')}</div>
         </div>
       </div>
       ${itemsHtml}
       <details style="margin-top:8px;border-top:1px solid #f0f0f0;padding-top:8px">
-        <summary style="font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;list-style:none">?? Ship to � tap to expand</summary>
+        <summary style="font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;list-style:none">📍 Ship to · tap to expand</summary>
         <div style="font-size:12px;line-height:1.5;margin-top:6px;color:#444">
           ${escHtml(b.name||'')}<br>
           ${addrLines.map(escHtml).join('<br>')}
         </div>
       </details>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn" onclick="shareSupplierMessage('${escHtml(o.number)}',this)" style="flex:1 1 auto;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none" title="Send to WhatsApp with image attached">?? Send (with image)</button>
-        <button class="btn btn-outline" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Copy text only">??</button>
-        <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 12px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'? Undo':'V Sent'}</button>
-        <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">??</button>
+        <button class="btn" onclick="shareSupplierMessage('${escHtml(o.number)}',this)" style="flex:1 1 auto;padding:9px 12px;font-size:12px;background:var(--g);color:#fff;border:none" title="Send to WhatsApp with image attached">📲 Send (with image)</button>
+        <button class="btn btn-outline" onclick="copySupplierMessage('${escHtml(o.number)}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Copy text only">📋</button>
+        <button class="btn" onclick="markOrderSent('${escHtml(o.number)}',this)" style="flex:0 0 auto;padding:9px 12px;font-size:12px;background:${sent?'#fff':'#111'};color:${sent?'#111':'#fff'};border:1.5px solid #111">${sent?'↶ Undo':'✓ Sent'}</button>
+        <button class="btn btn-outline" onclick="openWixOrder('${escHtml(o.id||'')}')" style="flex:0 0 auto;padding:9px 12px;font-size:12px" title="Open on Wix to add tracking + mark fulfilled">🔗</button>
       </div>
     </div>`;
   }).join('');
@@ -5929,7 +5929,7 @@ window.showTab=function(t){
   }
   if(t==='orders'){
     if(!wixOrders){
-      // First open - auto-load from R2 (no worker call, just snapshot)
+      // First open — auto-load from R2 (no worker call, just snapshot)
       Promise.all([loadWixCatalog().catch(()=>{}), loadWixOrders()]).then(renderOrders);
     }else{
       renderOrders();
@@ -5943,12 +5943,12 @@ try{
 btn.disabled=true;btn.textContent='Enabling...';msg.style.color='var(--sub)';msg.textContent='Connecting Shopify product updates...';
 const response=await fetch(WORKER_URL+'/shopify-product-webhook-ensure',{method:'POST',headers:{'X-Admin-Session':ADMIN_SESSION,'Content-Type':'application/json'}});
 const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Could not enable product updates');
-btn.textContent='Automatic product updates enabled';msg.style.color='var(--g)';msg.textContent=data.status==='already-installed'?'Already enabled - Shopify product changes will refresh the supplier portal.':'Enabled - future Shopify product changes will refresh the supplier portal.';
+btn.textContent='Automatic product updates enabled';msg.style.color='var(--g)';msg.textContent=data.status==='already-installed'?'Already enabled — Shopify product changes will refresh the supplier portal.':'Enabled — future Shopify product changes will refresh the supplier portal.';
 }catch(error){btn.disabled=false;btn.textContent='Try enabling again';msg.style.color='#e53935';msg.textContent='Failed: '+error.message}
 }
 
 
-// �� METADATA CLEANER ��
+// ── METADATA CLEANER ──
 let metadataPendingFiles=[];
 let metadataCleanedFiles=[];
 function metadataFileKey(file){return [file.name,file.size,file.lastModified].join(':')}
@@ -5981,7 +5981,7 @@ const msg=document.getElementById('metadataMsg');const share=document.getElement
 try{
 msg.style.color='var(--sub)';msg.textContent='Cleaning images...';metadataCleanedFiles=await cleanMetadataBatch();
 if(navigator.share&&navigator.canShare&&navigator.canShare({files:metadataCleanedFiles})){
-share.style.display='inline-flex';share.textContent='Save all '+metadataCleanedFiles.length+' images to iPhone';msg.style.color='var(--g)';msg.textContent='Ready - tap "Save all '+metadataCleanedFiles.length+' images to iPhone", then choose "Save Images".';return
+share.style.display='inline-flex';share.textContent='Save all '+metadataCleanedFiles.length+' images to iPhone';msg.style.color='var(--g)';msg.textContent='Ready — tap “Save all '+metadataCleanedFiles.length+' images to iPhone”, then choose “Save Images”.';return
 }
 for(const file of metadataCleanedFiles){const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 msg.style.color='var(--g)';msg.textContent='Cleaned and downloaded '+metadataCleanedFiles.length+' image'+(metadataCleanedFiles.length===1?'':'s')+'.';
@@ -5990,7 +5990,8 @@ msg.style.color='var(--g)';msg.textContent='Cleaned and downloaded '+metadataCle
 function shareCleanedMetadataFiles(){
 const msg=document.getElementById('metadataMsg');if(!metadataCleanedFiles.length){msg.style.color='#e53935';msg.textContent='Prepare the images first.';return}
 const files=[...metadataCleanedFiles];
-navigator.share({files,title:'Cleaned ESNTLS images'}).then(()=>{msg.style.color='var(--g)';msg.textContent='Share sheet opened for '+files.length+' cleaned image'+(files.length===1?'':'s')+'.'}).catch(e=>{if(e&&e.name==='AbortError'){msg.style.color='var(--sub)';msg.textContent='Save cancelled - tap the button when you are ready.'}else{msg.style.color='#e53935';msg.textContent='Could not open iPhone save sheet: '+e.message}})
+navigator.share({files,title:'Cleaned ESNTLS images'}).then(()=>{msg.style.color='var(--g)';msg.textContent='Share sheet opened for '+files.length+' cleaned image'+(files.length===1?'':'s')+'.'}).catch(e=>{if(e&&e.name==='AbortError'){msg.style.color='var(--sub)';msg.textContent='Save cancelled — tap the button when you are ready.'}else{msg.style.color='#e53935';msg.textContent='Could not open iPhone save sheet: '+e.message}})
 }
 </script>
 </body></html>
+
