@@ -402,7 +402,8 @@ function applyStoreAvailability(item){
     alert('This cart needs Shopify variant IDs before it can be sent to checkout.');
   }
 
-  async function checkoutSingle(product, selections){
+  async function checkoutSingle(product, selections, qty){
+    const quantity = Math.max(1, Math.min(99, Number(qty) || 1));
     if(isOrangeUK9Product(product)&&String((selections||{}).Size||'').replace(/\s/g,'').toUpperCase()!=='UK9'){alert('Only UK 9 is available for this item.');return false;}
     if(storeItemUnavailable(product)){alert('This item is currently out of stock.');return false;}
     let variantId = selectedVariantId(product, selections || {});
@@ -412,7 +413,7 @@ function applyStoreAvailability(item){
       if(fresh) variantId = selectedVariantId(fresh, selections || {});
     }
     if(variantId){
-      navigateNoReferrer('https://' + SHOPIFY_HOST + '/cart/' + cleanId(variantId) + ':1');
+      navigateNoReferrer('https://' + SHOPIFY_HOST + '/cart/' + cleanId(variantId) + ':' + quantity);
       return true;
     }
     const fallback = product && (product.shopifyLink || product.link || product.wixLink || '');
