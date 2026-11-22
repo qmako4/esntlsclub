@@ -1,23 +1,32 @@
+var __freeze = Object.freeze;
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(raw || cooked.slice()) }));
+
+// worker/r2-worker.js
 function base64UrlEncode(value) {
-  return btoa(String.fromCharCode(...new Uint8Array(value)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  return btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+__name(base64UrlEncode, "base64UrlEncode");
 function base64UrlDecode(value) {
-  const padded = String(value || '').replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((String(value || '').length + 3) % 4);
-  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(value || "").length + 3) % 4);
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
 }
+__name(base64UrlDecode, "base64UrlDecode");
 async function hmacBytes(secret, value) {
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(secret)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
-  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret)), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
 }
+__name(hmacBytes, "hmacBytes");
 async function createAdminSession(env) {
-  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ exp: Date.now() + 2 * 60 * 60 * 1000, nonce: crypto.randomUUID() })));
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ exp: Date.now() + 2 * 60 * 60 * 1e3, nonce: crypto.randomUUID() })));
   const signature = base64UrlEncode(await hmacBytes(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET, payload));
-  return payload + '.' + signature;
+  return payload + "." + signature;
 }
+__name(createAdminSession, "createAdminSession");
 async function verifyAdminSession(env, token) {
   if (!token || !(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET)) return false;
-  const [payload, signature] = String(token).split('.');
+  const [payload, signature] = String(token).split(".");
   if (!payload || !signature) return false;
   try {
     const data = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
@@ -32,17 +41,15 @@ async function verifyAdminSession(env, token) {
     return false;
   }
 }
+__name(verifyAdminSession, "verifyAdminSession");
 function adminPassword(env) {
-  return String(env.ADMIN_PASSWORD || env.ESNTLS_ADMIN_PASSWORD || env.ADMIN_PASS || '');
+  return String(env.ADMIN_PASSWORD || env.ESNTLS_ADMIN_PASSWORD || env.ADMIN_PASS || "");
 }
-
-
-var __freeze = Object.freeze;
-var __defProp = Object.defineProperty;
-var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
-var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(raw || cooked.slice()) }));
-
-// worker/r2-worker.js
+__name(adminPassword, "adminPassword");
+var __freeze2 = Object.freeze;
+var __defProp2 = Object.defineProperty;
+var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
+var __template2 = /* @__PURE__ */ __name((cooked, raw) => __freeze2(__defProp2(cooked, "raw", { value: __freeze2(raw || cooked.slice()) })), "__template");
 var PUBLIC_BASE = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/";
 var DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE = "https://esntls-r2.qmako41212.workers.dev/supplier-image/";
 var DEFAULT_BACKGROUND_URL = "https://esntlsclub.com/img/esntls-blank-concrete-background.jpg";
@@ -102,6 +109,7 @@ function json(body, status = 200) {
   });
 }
 __name(json, "json");
+__name2(json, "json");
 var PRODUCT_SEARCH_QUERY = `
 query ProductsBySourceTag($query: String!) {
   products(first: 1, query: $query) {
@@ -492,6 +500,7 @@ function productText(product) {
   return `${product.title || ""} ${product.categories.join(" ")}`;
 }
 __name(productText, "productText");
+__name2(productText, "productText");
 function stableNameIndex(value, count) {
   if (!count) return 0;
   const text = String(value || "");
@@ -502,17 +511,20 @@ function stableNameIndex(value, count) {
   return hash % count;
 }
 __name(stableNameIndex, "stableNameIndex");
+__name2(stableNameIndex, "stableNameIndex");
 function chooseNameVariant(product, variants) {
   const key = `${product?.id || ""}|${productText(product)}`;
   return variants[stableNameIndex(key, variants.length)];
 }
 __name(chooseNameVariant, "chooseNameVariant");
+__name2(chooseNameVariant, "chooseNameVariant");
 function inferPlaceholderColor(product) {
   const text = productText(product);
   const hit = COLOR_PATTERNS.find(([pattern]) => pattern.test(text));
   return hit ? hit[1] : "";
 }
 __name(inferPlaceholderColor, "inferPlaceholderColor");
+__name2(inferPlaceholderColor, "inferPlaceholderColor");
 function inferPlaceholderBase(product) {
   const text = productText(product).toLowerCase();
   if (/\b(sandals?|slides?|sliders?)\b/.test(text)) return /\b(slides?|sliders?)\b/.test(text) ? "Classic Slides" : "Classic Sandals";
@@ -537,12 +549,14 @@ function inferPlaceholderBase(product) {
   return "Select Piece";
 }
 __name(inferPlaceholderBase, "inferPlaceholderBase");
+__name2(inferPlaceholderBase, "inferPlaceholderBase");
 function buildPlaceholderTitle(product) {
   const base = inferPlaceholderBase(product);
   const color = inferPlaceholderColor(product);
   return color ? `The ${base} - ${color}` : `The ${base}`;
 }
 __name(buildPlaceholderTitle, "buildPlaceholderTitle");
+__name2(buildPlaceholderTitle, "buildPlaceholderTitle");
 function normalizePlaceholderTitleOverride(value) {
   const title = String(value || "").replace(/\s+/g, " ").trim();
   if (!title) return "";
@@ -551,27 +565,32 @@ function normalizePlaceholderTitleOverride(value) {
   return title;
 }
 __name(normalizePlaceholderTitleOverride, "normalizePlaceholderTitleOverride");
+__name2(normalizePlaceholderTitleOverride, "normalizePlaceholderTitleOverride");
 function slugify(value) {
   return String(value || "product").toLowerCase().replace(/['"]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 __name(slugify, "slugify");
+__name2(slugify, "slugify");
 function splitList(value) {
   if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
   if (!value) return [];
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
 }
 __name(splitList, "splitList");
+__name2(splitList, "splitList");
 function isDefaultClothingSizeList(value) {
   const clothing = /* @__PURE__ */ new Set(["XS", "S", "M", "L", "XL"]);
   const sizes = splitList(value).map((size) => size.toUpperCase());
   return sizes.length > 0 && sizes.every((size) => clothing.has(size));
 }
 __name(isDefaultClothingSizeList, "isDefaultClothingSizeList");
+__name2(isDefaultClothingSizeList, "isDefaultClothingSizeList");
 function productLooksLikeFootwear(product) {
   const text = `${product.title || ""} ${product.categories.join(" ")}`.toLowerCase();
   return /\b(sandals?|slides?|sliders?|trainers?|sneakers?|shoes?|footwear|gats?|b22|b30|asics|gel|kayano|saucony)\b/.test(text);
 }
 __name(productLooksLikeFootwear, "productLooksLikeFootwear");
+__name2(productLooksLikeFootwear, "productLooksLikeFootwear");
 function uniqueList(values) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
@@ -585,22 +604,26 @@ function uniqueList(values) {
   return out;
 }
 __name(uniqueList, "uniqueList");
+__name2(uniqueList, "uniqueList");
 function splitOptionValues(value) {
   if (Array.isArray(value) || typeof value === "string") return uniqueList(splitList(value));
   return [];
 }
 __name(splitOptionValues, "splitOptionValues");
+__name2(splitOptionValues, "splitOptionValues");
 function cleanOptionName(value, fallback = "Style") {
   const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, 30);
   return name || fallback;
 }
 __name(cleanOptionName, "cleanOptionName");
+__name2(cleanOptionName, "cleanOptionName");
 function priceAmount(value) {
   const cleaned = String(value || "").replace(/[£$,\s]/g, "");
   const match = cleaned.match(/\d+(?:\.\d+)?/);
   return match ? Number(match[0]).toFixed(2) : "";
 }
 __name(priceAmount, "priceAmount");
+__name2(priceAmount, "priceAmount");
 function normalizeStoredProduct(raw) {
   const title = raw.name || raw.title || raw.productName || "";
   const categories = splitList(raw.category || raw.categories);
@@ -622,6 +645,7 @@ function normalizeStoredProduct(raw) {
   };
 }
 __name(normalizeStoredProduct, "normalizeStoredProduct");
+__name2(normalizeStoredProduct, "normalizeStoredProduct");
 function inferSizes(product, env) {
   if (productLooksLikeFootwear(product) && (!product.sizes.length || isDefaultClothingSizeList(product.sizes))) {
     return splitList(env.DEFAULT_FOOTWEAR_SIZES || "UK 5,UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12");
@@ -637,6 +661,7 @@ function inferSizes(product, env) {
   return splitList(env.DEFAULT_SIZES || "One Size");
 }
 __name(inferSizes, "inferSizes");
+__name2(inferSizes, "inferSizes");
 function buildProductVariantPlan(product, env) {
   const sizes = uniqueList(inferSizes(product, env));
   const variationValues = splitOptionValues(product.variationValues);
@@ -678,15 +703,18 @@ function buildProductVariantPlan(product, env) {
   return { sizes, variationName, variationValues, productOptions, variants };
 }
 __name(buildProductVariantPlan, "buildProductVariantPlan");
+__name2(buildProductVariantPlan, "buildProductVariantPlan");
 function numericShopifyVariantId(value) {
   const match = String(value || "").match(/(\d+)(?:\D*)$/);
   return match ? match[1] : "";
 }
 __name(numericShopifyVariantId, "numericShopifyVariantId");
+__name2(numericShopifyVariantId, "numericShopifyVariantId");
 function shopifyVariantKey(optionValues) {
   return (optionValues || []).map((optionValue) => optionValue.name).filter(Boolean).join("|") || "Default";
 }
 __name(shopifyVariantKey, "shopifyVariantKey");
+__name2(shopifyVariantKey, "shopifyVariantKey");
 function buildShopifyVariantMap(shopifyVariants, variantPlan) {
   const nodes = Array.isArray(shopifyVariants) ? shopifyVariants : [];
   const map = {};
@@ -717,17 +745,20 @@ function buildShopifyVariantMap(shopifyVariants, variantPlan) {
   return map;
 }
 __name(buildShopifyVariantMap, "buildShopifyVariantMap");
+__name2(buildShopifyVariantMap, "buildShopifyVariantMap");
 async function shopifyVariantMapForProduct(env, productId, sourceProduct) {
   const variantPlan = buildProductVariantPlan(sourceProduct, env);
   const data = await shopifyGraphql(env, PRODUCT_VARIANTS_QUERY, { id: productId });
   return buildShopifyVariantMap(data.product?.variants?.nodes || [], variantPlan);
 }
 __name(shopifyVariantMapForProduct, "shopifyVariantMapForProduct");
+__name2(shopifyVariantMapForProduct, "shopifyVariantMapForProduct");
 function shopifyVariantSize(node) {
   const selected = (node?.selectedOptions || []).find((option) => /^size$/i.test(String(option?.name || "")));
   return String(selected?.value || node?.title || "").replace(/\s+/g, " ").trim();
 }
 __name(shopifyVariantSize, "shopifyVariantSize");
+__name2(shopifyVariantSize, "shopifyVariantSize");
 function buildShopifyVariantMapFromNodes(nodes) {
   const map = {};
   for (const node of nodes || []) {
@@ -738,15 +769,18 @@ function buildShopifyVariantMapFromNodes(nodes) {
   return map;
 }
 __name(buildShopifyVariantMapFromNodes, "buildShopifyVariantMapFromNodes");
+__name2(buildShopifyVariantMapFromNodes, "buildShopifyVariantMapFromNodes");
 function productIsB30(rawProduct) {
   const text = `${rawProduct?.name || rawProduct?.title || ""} ${rawProduct?.brand || ""} ${rawProduct?.category || rawProduct?.categories || ""}`.toLowerCase();
   return /\bb30\b/.test(text);
 }
 __name(productIsB30, "productIsB30");
+__name2(productIsB30, "productIsB30");
 function shopifyProductIdForRawProduct(rawProduct) {
   return rawProduct?.shopifyPlaceholder?.shopifyProductId || rawProduct?.shopifyProductId || "";
 }
 __name(shopifyProductIdForRawProduct, "shopifyProductIdForRawProduct");
+__name2(shopifyProductIdForRawProduct, "shopifyProductIdForRawProduct");
 async function restoreB30ShopifyStockFromR2(env, requestBody = {}) {
   const { payload, list } = await readProductsPayload(env);
   const requestedSizes = uniqueList(splitList(requestBody.sizes || env.DEFAULT_FOOTWEAR_SIZES || "UK 5,UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12"));
@@ -854,6 +888,7 @@ async function restoreB30ShopifyStockFromR2(env, requestBody = {}) {
   return { ok: true, dryRun, inventoryPolicy, sizes, updated: products.length, skipped: skipped.length, products, skippedProducts: skipped, updatedAt };
 }
 __name(restoreB30ShopifyStockFromR2, "restoreB30ShopifyStockFromR2");
+__name2(restoreB30ShopifyStockFromR2, "restoreB30ShopifyStockFromR2");
 function sourceTags(product) {
   return [
     "ESNTLS-BLANK-WORKFLOW",
@@ -864,15 +899,18 @@ function sourceTags(product) {
   ].filter(Boolean);
 }
 __name(sourceTags, "sourceTags");
+__name2(sourceTags, "sourceTags");
 function shopifyStoreDomain(env) {
   if (!env.SHOPIFY_STORE_DOMAIN) throw new Error("SHOPIFY_STORE_DOMAIN env var not set");
   return env.SHOPIFY_STORE_DOMAIN.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 __name(shopifyStoreDomain, "shopifyStoreDomain");
+__name2(shopifyStoreDomain, "shopifyStoreDomain");
 function storefrontUrl(env, handle) {
   return `https://${shopifyStoreDomain(env)}/products/${handle}`;
 }
 __name(storefrontUrl, "storefrontUrl");
+__name2(storefrontUrl, "storefrontUrl");
 function extractShopifyHandle(value, env) {
   if (!value) return "";
   try {
@@ -888,6 +926,7 @@ function extractShopifyHandle(value, env) {
   }
 }
 __name(extractShopifyHandle, "extractShopifyHandle");
+__name2(extractShopifyHandle, "extractShopifyHandle");
 function extractWixSlug(value) {
   if (!value) return "";
   try {
@@ -900,18 +939,22 @@ function extractWixSlug(value) {
   }
 }
 __name(extractWixSlug, "extractWixSlug");
+__name2(extractWixSlug, "extractWixSlug");
 function isShopifyCheckoutUrl(value, env) {
   return !!extractShopifyHandle(value, env);
 }
 __name(isShopifyCheckoutUrl, "isShopifyCheckoutUrl");
+__name2(isShopifyCheckoutUrl, "isShopifyCheckoutUrl");
 function isWixCheckoutUrl(value) {
   return !!extractWixSlug(value);
 }
 __name(isWixCheckoutUrl, "isWixCheckoutUrl");
+__name2(isWixCheckoutUrl, "isWixCheckoutUrl");
 function hasUsableWixBackup(backup) {
   return !!(backup && (backup.url || backup.id) && backup.status !== "error" && backup.status !== "skipped");
 }
 __name(hasUsableWixBackup, "hasUsableWixBackup");
+__name2(hasUsableWixBackup, "hasUsableWixBackup");
 function getCheckoutLinks(rawProduct, env) {
   const existing = rawProduct.checkoutLinks && typeof rawProduct.checkoutLinks === "object" ? { ...rawProduct.checkoutLinks } : {};
   const currentLink = rawProduct.link || "";
@@ -935,6 +978,7 @@ function getCheckoutLinks(rawProduct, env) {
   return existing;
 }
 __name(getCheckoutLinks, "getCheckoutLinks");
+__name2(getCheckoutLinks, "getCheckoutLinks");
 function rememberCheckoutLinks(rawProduct, env, updates = {}) {
   const links = getCheckoutLinks(rawProduct, env);
   if (updates.shopifyUrl) links.shopify = updates.shopifyUrl;
@@ -946,6 +990,7 @@ function rememberCheckoutLinks(rawProduct, env, updates = {}) {
   return links;
 }
 __name(rememberCheckoutLinks, "rememberCheckoutLinks");
+__name2(rememberCheckoutLinks, "rememberCheckoutLinks");
 function checkoutUrlForMode(rawProduct, env, mode) {
   const links = getCheckoutLinks(rawProduct, env);
   if (mode === "shopify") {
@@ -957,6 +1002,7 @@ function checkoutUrlForMode(rawProduct, env, mode) {
   return "";
 }
 __name(checkoutUrlForMode, "checkoutUrlForMode");
+__name2(checkoutUrlForMode, "checkoutUrlForMode");
 function buildDescriptionHtml() {
   return [
     "<p><strong>Blank item = original item.</strong></p>",
@@ -964,31 +1010,38 @@ function buildDescriptionHtml() {
   ].join("");
 }
 __name(buildDescriptionHtml, "buildDescriptionHtml");
+__name2(buildDescriptionHtml, "buildDescriptionHtml");
 function shopifyOrderDisplayName(order) {
   return String(order?.name || order?.order_number || order?.id || "").replace(/\s+/g, " ").trim();
 }
 __name(shopifyOrderDisplayName, "shopifyOrderDisplayName");
+__name2(shopifyOrderDisplayName, "shopifyOrderDisplayName");
 function shopifyOrderId(order) {
   return String(order?.admin_graphql_api_id || order?.id || shopifyOrderDisplayName(order) || "").trim();
 }
 __name(shopifyOrderId, "shopifyOrderId");
+__name2(shopifyOrderId, "shopifyOrderId");
 function supplierWhatsappOrderKey(order, deliveryId = "") {
   const stable = shopifyOrderId(order) || deliveryId || crypto.randomUUID();
   return `${WHATSAPP_ORDER_ROOT}${slugify(stable)}.json`;
 }
 __name(supplierWhatsappOrderKey, "supplierWhatsappOrderKey");
+__name2(supplierWhatsappOrderKey, "supplierWhatsappOrderKey");
 function safeMessageLine(value) {
   return String(value || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }
 __name(safeMessageLine, "safeMessageLine");
+__name2(safeMessageLine, "safeMessageLine");
 function normalizeTitleKey(value) {
   return safeMessageLine(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 }
 __name(normalizeTitleKey, "normalizeTitleKey");
+__name2(normalizeTitleKey, "normalizeTitleKey");
 function normalizeShopifyNumericId(value) {
   return numericShopifyVariantId(value);
 }
 __name(normalizeShopifyNumericId, "normalizeShopifyNumericId");
+__name2(normalizeShopifyNumericId, "normalizeShopifyNumericId");
 function shopifyLineItems(order) {
   if (Array.isArray(order?.line_items)) return order.line_items;
   if (Array.isArray(order?.lineItems)) return order.lineItems;
@@ -999,16 +1052,19 @@ function shopifyLineItems(order) {
   return [];
 }
 __name(shopifyLineItems, "shopifyLineItems");
+__name2(shopifyLineItems, "shopifyLineItems");
 function shopifyLineItemSku(lineItem) {
   return safeMessageLine(lineItem?.sku || lineItem?.variant?.sku || lineItem?.node?.sku || "");
 }
 __name(shopifyLineItemSku, "shopifyLineItemSku");
+__name2(shopifyLineItemSku, "shopifyLineItemSku");
 function shopifySourceIdFromSku(lineItem) {
   const sku = shopifyLineItemSku(lineItem);
   const match = sku.match(/^ESNTLS[-_]?0*([0-9]+)(?:[-_]|$)/i);
   return match ? String(Number(match[1])) : "";
 }
 __name(shopifySourceIdFromSku, "shopifySourceIdFromSku");
+__name2(shopifySourceIdFromSku, "shopifySourceIdFromSku");
 function linkedShopifyProductIds(rawProduct) {
   const placeholder = rawProduct?.shopifyPlaceholder || {};
   return uniqueList([
@@ -1018,6 +1074,7 @@ function linkedShopifyProductIds(rawProduct) {
   ].map(normalizeShopifyNumericId).filter(Boolean));
 }
 __name(linkedShopifyProductIds, "linkedShopifyProductIds");
+__name2(linkedShopifyProductIds, "linkedShopifyProductIds");
 function linkedShopifyVariantIds(rawProduct) {
   const placeholder = rawProduct?.shopifyPlaceholder || {};
   const maps = [
@@ -1037,6 +1094,7 @@ function linkedShopifyVariantIds(rawProduct) {
   return uniqueList(ids);
 }
 __name(linkedShopifyVariantIds, "linkedShopifyVariantIds");
+__name2(linkedShopifyVariantIds, "linkedShopifyVariantIds");
 function linkedShopifyTitleKeys(rawProduct) {
   const placeholder = rawProduct?.shopifyPlaceholder || {};
   return uniqueList([
@@ -1047,6 +1105,7 @@ function linkedShopifyTitleKeys(rawProduct) {
   ].map(normalizeTitleKey).filter(Boolean));
 }
 __name(linkedShopifyTitleKeys, "linkedShopifyTitleKeys");
+__name2(linkedShopifyTitleKeys, "linkedShopifyTitleKeys");
 function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   const skuSourceId = shopifySourceIdFromSku(lineItem);
   if (skuSourceId) {
@@ -1071,8 +1130,9 @@ function resolveEsntlsProductForShopifyLineItem(lineItem, products) {
   return null;
 }
 __name(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
-const fastDeliverySourceIds = ["3", "4", "6", "11", "21", "22", "23", "24", "27", "28", "35", "36", "39", "42", "43", "44", "101"];
-const fastDeliveryWatchHandle = "essentials-watch-green-face";
+__name2(resolveEsntlsProductForShopifyLineItem, "resolveEsntlsProductForShopifyLineItem");
+var fastDeliverySourceIds = ["3", "4", "6", "11", "21", "22", "23", "24", "27", "28", "35", "36", "39", "42", "43", "44", "101"];
+var fastDeliveryWatchHandle = "essentials-watch-green-face";
 function fastParkaSourceId(lineItem) {
   const sku = shopifyLineItemSku(lineItem);
   if (sku.toUpperCase() === "ESNTLS-101-ONE-SIZE") return "101";
@@ -1080,16 +1140,17 @@ function fastParkaSourceId(lineItem) {
   const sourceId = String(Number(id));
   return fastDeliverySourceIds.includes(sourceId) ? sourceId : "";
 }
+__name(fastParkaSourceId, "fastParkaSourceId");
 function fastParkaShippedQuantity(order, lineItem) {
   const lineId = normalizeShopifyNumericId(lineItem?.admin_graphql_api_id || lineItem?.id);
   if (!lineId) return 0;
   const quantity = (order.fulfillments || []).flatMap((fulfillment) => {
     if (String(fulfillment.status).toUpperCase() !== "SUCCESS") return [];
     return fulfillment.fulfillmentLineItems?.nodes || fulfillment.line_items || [];
-  }).filter((entry) => normalizeShopifyNumericId(entry.lineItem?.id || entry.admin_graphql_api_id || entry.id) === lineId)
-    .reduce((total, entry) => total + (Number(entry.quantity) || 0), 0);
+  }).filter((entry) => normalizeShopifyNumericId(entry.lineItem?.id || entry.admin_graphql_api_id || entry.id) === lineId).reduce((total, entry) => total + (Number(entry.quantity) || 0), 0);
   return Math.max(0, Math.min(quantity, Number(lineItem.current_quantity ?? lineItem.quantity) || 0));
 }
+__name(fastParkaShippedQuantity, "fastParkaShippedQuantity");
 function isSupplierWhatsappExcludedItem(lineItem, product) {
   const sku = shopifyLineItemSku(lineItem);
   if (/^ESNTLS[-_]?0*54(?:[-_]|$)/i.test(sku)) return true;
@@ -1107,11 +1168,13 @@ function isSupplierWhatsappExcludedItem(lineItem, product) {
   return /\bair pro\b/.test(text) || /\bclassic essentials earphones\b/.test(text);
 }
 __name(isSupplierWhatsappExcludedItem, "isSupplierWhatsappExcludedItem");
+__name2(isSupplierWhatsappExcludedItem, "isSupplierWhatsappExcludedItem");
 function optionLooksLikeSize(value) {
   const text = safeMessageLine(value).toUpperCase();
   return /^(UK\s*)?\d{1,2}(?:\.\d)?$/.test(text) || /^UK\s*\d{1,2}(?:\.\d)?$/.test(text) || /^(XXS|XS|S|M|L|XL|XXL|XXXL|ONE SIZE|OS|OSFA)$/.test(text);
 }
 __name(optionLooksLikeSize, "optionLooksLikeSize");
+__name2(optionLooksLikeSize, "optionLooksLikeSize");
 function normalizeSupplierOption(value) {
   const text = safeMessageLine(value);
   if (!text || /^default title$/i.test(text)) return "";
@@ -1120,6 +1183,7 @@ function normalizeSupplierOption(value) {
   return text;
 }
 __name(normalizeSupplierOption, "normalizeSupplierOption");
+__name2(normalizeSupplierOption, "normalizeSupplierOption");
 function lineItemOptionParts(lineItem) {
   const parts = [];
   const variantTitle = normalizeSupplierOption(lineItem?.variant_title || lineItem?.variantTitle || lineItem?.variant?.title);
@@ -1152,6 +1216,7 @@ function lineItemOptionParts(lineItem) {
   return [...other, ...sizes];
 }
 __name(lineItemOptionParts, "lineItemOptionParts");
+__name2(lineItemOptionParts, "lineItemOptionParts");
 function fallbackShopifyLineItemTitle(lineItem) {
   const title = safeMessageLine(lineItem?.title || lineItem?.product_title || lineItem?.productTitle || lineItem?.name);
   const variant = safeMessageLine(lineItem?.variant_title || lineItem?.variantTitle);
@@ -1161,6 +1226,7 @@ function fallbackShopifyLineItemTitle(lineItem) {
   return title || "Unknown item";
 }
 __name(fallbackShopifyLineItemTitle, "fallbackShopifyLineItemTitle");
+__name2(fallbackShopifyLineItemTitle, "fallbackShopifyLineItemTitle");
 function formatSupplierLineItem(lineItem, product) {
   const title = safeMessageLine(product?.title || product?.raw?.name || fallbackShopifyLineItemTitle(lineItem));
   const titleKey = normalizeTitleKey(title);
@@ -1174,6 +1240,7 @@ function formatSupplierLineItem(lineItem, product) {
   return quantity > 1 ? `${base} x${quantity}` : base;
 }
 __name(formatSupplierLineItem, "formatSupplierLineItem");
+__name2(formatSupplierLineItem, "formatSupplierLineItem");
 function shippingAddressLines(order) {
   const shipping = order?.shipping_address || order?.shippingAddress || {};
   const name = safeMessageLine(
@@ -1192,6 +1259,7 @@ function shippingAddressLines(order) {
   ].map(safeMessageLine).filter(Boolean);
 }
 __name(shippingAddressLines, "shippingAddressLines");
+__name2(shippingAddressLines, "shippingAddressLines");
 function shippingAddressFields(order) {
   const shipping = order?.shipping_address || order?.shippingAddress || {};
   return {
@@ -1207,27 +1275,32 @@ function shippingAddressFields(order) {
   };
 }
 __name(shippingAddressFields, "shippingAddressFields");
+__name2(shippingAddressFields, "shippingAddressFields");
 function r2PublicUrlForKey(key) {
   const cleanKey = safeMessageLine(key).replace(/^\/+/, "");
   return cleanKey ? `${PUBLIC_BASE}${cleanKey}` : "";
 }
 __name(r2PublicUrlForKey, "r2PublicUrlForKey");
+__name2(r2PublicUrlForKey, "r2PublicUrlForKey");
 function cleanSupplierImageKey(value) {
   const key = safeMessageLine(value).replace(/^\/+/, "");
   if (!key || key.includes("..") || key.includes("\\")) return "";
   return key;
 }
 __name(cleanSupplierImageKey, "cleanSupplierImageKey");
+__name2(cleanSupplierImageKey, "cleanSupplierImageKey");
 function encodeR2KeyPath(key) {
   const cleanKey = cleanSupplierImageKey(key);
   return cleanKey ? cleanKey.split("/").map(encodeURIComponent).join("/") : "";
 }
 __name(encodeR2KeyPath, "encodeR2KeyPath");
+__name2(encodeR2KeyPath, "encodeR2KeyPath");
 function supplierImageRouteBase(env) {
   const configured = safeMessageLine(env?.SUPPLIER_IMAGE_ROUTE_BASE || DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE).replace(/\/+$/, "");
   return configured ? `${configured}/` : DEFAULT_SUPPLIER_IMAGE_ROUTE_BASE;
 }
 __name(supplierImageRouteBase, "supplierImageRouteBase");
+__name2(supplierImageRouteBase, "supplierImageRouteBase");
 function r2KeyFromImageUrl(value) {
   const image = safeMessageLine(value);
   if (!image) return "";
@@ -1250,17 +1323,20 @@ function r2KeyFromImageUrl(value) {
   return "";
 }
 __name(r2KeyFromImageUrl, "r2KeyFromImageUrl");
+__name2(r2KeyFromImageUrl, "r2KeyFromImageUrl");
 function supplierSheetImageUrlForR2Key(env, key) {
   const encoded = encodeR2KeyPath(key);
   return encoded ? `${supplierImageRouteBase(env)}${encoded}` : "";
 }
 __name(supplierSheetImageUrlForR2Key, "supplierSheetImageUrlForR2Key");
+__name2(supplierSheetImageUrlForR2Key, "supplierSheetImageUrlForR2Key");
 function supplierSheetImageUrlFromSource(env, value) {
   const image = safeMessageLine(value);
   const key = r2KeyFromImageUrl(image);
   return key ? supplierSheetImageUrlForR2Key(env, key) : image;
 }
 __name(supplierSheetImageUrlFromSource, "supplierSheetImageUrlFromSource");
+__name2(supplierSheetImageUrlFromSource, "supplierSheetImageUrlFromSource");
 function supplierImageSourceUrl(value) {
   const image = safeMessageLine(value);
   if (!image) return "";
@@ -1281,11 +1357,13 @@ function supplierImageSourceUrl(value) {
   return r2PublicUrlForKey(image);
 }
 __name(supplierImageSourceUrl, "supplierImageSourceUrl");
+__name2(supplierImageSourceUrl, "supplierImageSourceUrl");
 async function sha256Hex(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 __name(sha256Hex, "sha256Hex");
+__name2(sha256Hex, "sha256Hex");
 function extensionFromUrlOrContentType(sourceUrl, contentType) {
   try {
     const pathname = new URL(sourceUrl).pathname;
@@ -1296,6 +1374,7 @@ function extensionFromUrlOrContentType(sourceUrl, contentType) {
   return extensionForContentType(contentType);
 }
 __name(extensionFromUrlOrContentType, "extensionFromUrlOrContentType");
+__name2(extensionFromUrlOrContentType, "extensionFromUrlOrContentType");
 async function mirrorSupplierSheetImage(env, sourceUrl, product) {
   if (!sourceUrl || sourceUrl.startsWith(PUBLIC_BASE) || !/^https?:\/\//i.test(sourceUrl)) return sourceUrl || "";
   if (!env.BUCKET) return "";
@@ -1318,6 +1397,7 @@ async function mirrorSupplierSheetImage(env, sourceUrl, product) {
   return r2PublicUrlForKey(key);
 }
 __name(mirrorSupplierSheetImage, "mirrorSupplierSheetImage");
+__name2(mirrorSupplierSheetImage, "mirrorSupplierSheetImage");
 async function firstSupplierSheetImageUrl(env, product, lineItem) {
   const raw = product?.raw || {};
   const candidates = [
@@ -1343,34 +1423,41 @@ async function firstSupplierSheetImageUrl(env, product, lineItem) {
   return "";
 }
 __name(firstSupplierSheetImageUrl, "firstSupplierSheetImageUrl");
+__name2(firstSupplierSheetImageUrl, "firstSupplierSheetImageUrl");
 function esntlsProductPageUrl(product) {
   const id = product?.raw?.id || product?.id;
   return id ? `https://esntlsclub.com/product.html?id=${encodeURIComponent(id)}` : "";
 }
 __name(esntlsProductPageUrl, "esntlsProductPageUrl");
+__name2(esntlsProductPageUrl, "esntlsProductPageUrl");
 function sheetString(value) {
   return String(value ?? "").replace(/\r?\n/g, " ").trim();
 }
 __name(sheetString, "sheetString");
+__name2(sheetString, "sheetString");
 function googleSheetFormulaString(value) {
   return String(value || "").replace(/"/g, '""');
 }
 __name(googleSheetFormulaString, "googleSheetFormulaString");
+__name2(googleSheetFormulaString, "googleSheetFormulaString");
 function googleImageFormula(imageUrl) {
   if (!imageUrl) return "";
   const escaped = googleSheetFormulaString(imageUrl);
   return `=IFERROR(IMAGE("${escaped}",4,96,96),"Image unavailable")`;
 }
 __name(googleImageFormula, "googleImageFormula");
+__name2(googleImageFormula, "googleImageFormula");
 function supplierOrderLogKey(order, deliveryId = "") {
   const stable = shopifyOrderId(order) || deliveryId || crypto.randomUUID();
   return `${SUPPLIER_ORDER_ROOT}${slugify(stable)}.json`;
 }
 __name(supplierOrderLogKey, "supplierOrderLogKey");
+__name2(supplierOrderLogKey, "supplierOrderLogKey");
 function supplierPortalBusinessId(value) {
   return slugify(value || "esntlsclub") || "esntlsclub";
 }
 __name(supplierPortalBusinessId, "supplierPortalBusinessId");
+__name2(supplierPortalBusinessId, "supplierPortalBusinessId");
 function supplierPortalOrderKey(orderName, businessId = "esntlsclub") {
   const stable = safeMessageLine(orderName) || crypto.randomUUID();
   const business = supplierPortalBusinessId(businessId);
@@ -1378,6 +1465,7 @@ function supplierPortalOrderKey(orderName, businessId = "esntlsclub") {
   return `${SUPPLIER_PORTAL_ORDER_ROOT}${slugify(keyBase)}.json`;
 }
 __name(supplierPortalOrderKey, "supplierPortalOrderKey");
+__name2(supplierPortalOrderKey, "supplierPortalOrderKey");
 function supplierPortalItemKey(lineItem, product, index) {
   const stable = safeMessageLine(
     lineItem?.admin_graphql_api_id || lineItem?.id || lineItem?.variant_id || lineItem?.variantId || [product?.raw?.id || product?.id || "item", fallbackShopifyLineItemTitle(lineItem), index + 1].join("-")
@@ -1385,6 +1473,7 @@ function supplierPortalItemKey(lineItem, product, index) {
   return slugify(stable) || `item-${index + 1}`;
 }
 __name(supplierPortalItemKey, "supplierPortalItemKey");
+__name2(supplierPortalItemKey, "supplierPortalItemKey");
 function supplierPortalAddressLines(shipping) {
   return [
     shipping.name,
@@ -1397,6 +1486,7 @@ function supplierPortalAddressLines(shipping) {
   ].map(safeMessageLine).filter(Boolean);
 }
 __name(supplierPortalAddressLines, "supplierPortalAddressLines");
+__name2(supplierPortalAddressLines, "supplierPortalAddressLines");
 function supplierPortalOrderStatus(items) {
   const visibleItems = Array.isArray(items) ? items : [];
   if (!visibleItems.length) return "empty";
@@ -1406,6 +1496,7 @@ function supplierPortalOrderStatus(items) {
   return "open";
 }
 __name(supplierPortalOrderStatus, "supplierPortalOrderStatus");
+__name2(supplierPortalOrderStatus, "supplierPortalOrderStatus");
 function supplierPortalLineItemIds(lineItem) {
   return {
     shopifyLineItemId: safeMessageLine(lineItem?.admin_graphql_api_id || lineItem?.id),
@@ -1414,6 +1505,7 @@ function supplierPortalLineItemIds(lineItem) {
   };
 }
 __name(supplierPortalLineItemIds, "supplierPortalLineItemIds");
+__name2(supplierPortalLineItemIds, "supplierPortalLineItemIds");
 async function buildSupplierSheetRows(env, order) {
   const { list } = await readProductsPayload(env);
   const products = list.map((raw) => {
@@ -1463,6 +1555,7 @@ async function buildSupplierSheetRows(env, order) {
   return { rows, excludedLineItems, unresolvedLineItems };
 }
 __name(buildSupplierSheetRows, "buildSupplierSheetRows");
+__name2(buildSupplierSheetRows, "buildSupplierSheetRows");
 async function buildSupplierPortalOrder(env, order, products = null) {
   const productList = products || (await readProductsPayload(env)).list.map((raw) => {
     const normalized = normalizeStoredProduct(raw);
@@ -1496,14 +1589,15 @@ async function buildSupplierPortalOrder(env, order, products = null) {
       productName: productTitle,
       option: optionParts.join(" - "),
       quantity,
-      ...(fastDelivery ? {
-        fastDelivery, shippedQuantity,
-        netSales: Number(lineItem.discountedTotalAmount ?? (Number(lineItem.price || 0) * quantity - Number(lineItem.total_discount || 0))) || 0
-      } : {}),
+      ...fastDelivery ? {
+        fastDelivery,
+        shippedQuantity,
+        netSales: Number(lineItem.discountedTotalAmount ?? Number(lineItem.price || 0) * quantity - Number(lineItem.total_discount || 0)) || 0
+      } : {},
       imageUrl,
       productPageUrl: "",
       ...supplierPortalLineItemIds(lineItem),
-      supplierStatus: fastDelivery ? "ESNTLS dispatch · Do not ship" : "New",
+      supplierStatus: fastDelivery ? "ESNTLS dispatch \xB7 Do not ship" : "New",
       trackingNumber: "",
       courier: "",
       supplierNotes: product ? "" : "Check item match",
@@ -1532,6 +1626,7 @@ async function buildSupplierPortalOrder(env, order, products = null) {
   };
 }
 __name(buildSupplierPortalOrder, "buildSupplierPortalOrder");
+__name2(buildSupplierPortalOrder, "buildSupplierPortalOrder");
 function supplierPortalMergeItem(incoming, existingItems) {
   const existing = existingItems.find((item) => item.itemKey === incoming.itemKey) || existingItems.find((item) => {
     if (incoming.fastDelivery || item.fastDelivery) return false;
@@ -1560,6 +1655,7 @@ function supplierPortalMergeItem(incoming, existingItems) {
   };
 }
 __name(supplierPortalMergeItem, "supplierPortalMergeItem");
+__name2(supplierPortalMergeItem, "supplierPortalMergeItem");
 function mergeSupplierPortalOrder(existing, incoming, options = {}) {
   const existingItems = Array.isArray(existing?.items) ? existing.items : [];
   const items = incoming.items.map((item) => supplierPortalMergeItem(item, existingItems));
@@ -1584,6 +1680,7 @@ function mergeSupplierPortalOrder(existing, incoming, options = {}) {
   };
 }
 __name(mergeSupplierPortalOrder, "mergeSupplierPortalOrder");
+__name2(mergeSupplierPortalOrder, "mergeSupplierPortalOrder");
 async function readSupplierPortalOrder(env, orderNameOrKey) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const value = safeMessageLine(orderNameOrKey);
@@ -1594,6 +1691,7 @@ async function readSupplierPortalOrder(env, orderNameOrKey) {
   return { ...order, key };
 }
 __name(readSupplierPortalOrder, "readSupplierPortalOrder");
+__name2(readSupplierPortalOrder, "readSupplierPortalOrder");
 async function writeSupplierPortalOrder(env, order) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const key = order.key || supplierPortalOrderKey(order.orderName, order.businessId || "esntlsclub");
@@ -1609,6 +1707,7 @@ async function writeSupplierPortalOrder(env, order) {
   return payload;
 }
 __name(writeSupplierPortalOrder, "writeSupplierPortalOrder");
+__name2(writeSupplierPortalOrder, "writeSupplierPortalOrder");
 function supplierPortalHiddenItemKey(orderName, itemKey = "", businessId = "esntlsclub") {
   const business = supplierPortalBusinessId(businessId);
   const orderPart = slugify(business === "esntlsclub" ? orderName || "order" : `${business}-${orderName || "order"}`);
@@ -1616,18 +1715,21 @@ function supplierPortalHiddenItemKey(orderName, itemKey = "", businessId = "esnt
   return `${SUPPLIER_PORTAL_HIDDEN_ITEM_ROOT}${orderPart}-${itemPart}.json`;
 }
 __name(supplierPortalHiddenItemKey, "supplierPortalHiddenItemKey");
+__name2(supplierPortalHiddenItemKey, "supplierPortalHiddenItemKey");
 function supplierPortalHiddenItemPrefix(orderName, businessId = "esntlsclub") {
   const business = supplierPortalBusinessId(businessId);
   const orderPart = slugify(business === "esntlsclub" ? orderName || "order" : `${business}-${orderName || "order"}`);
   return `${SUPPLIER_PORTAL_HIDDEN_ITEM_ROOT}${orderPart}-`;
 }
 __name(supplierPortalHiddenItemPrefix, "supplierPortalHiddenItemPrefix");
+__name2(supplierPortalHiddenItemPrefix, "supplierPortalHiddenItemPrefix");
 function supplierPortalHiddenItemMatches(hidden, item) {
   if (!hidden || !item) return false;
   if (safeMessageLine(hidden.itemKey) && safeMessageLine(hidden.itemKey) === safeMessageLine(item.itemKey)) return true;
   return normalizeTitleKey(hidden.productName) === normalizeTitleKey(item.productName) && normalizeTitleKey(hidden.option) === normalizeTitleKey(item.option);
 }
 __name(supplierPortalHiddenItemMatches, "supplierPortalHiddenItemMatches");
+__name2(supplierPortalHiddenItemMatches, "supplierPortalHiddenItemMatches");
 async function listSupplierPortalHiddenItems(env, orderNameOrOrder, businessId = "esntlsclub") {
   if (!env.BUCKET) return [];
   const orderName = typeof orderNameOrOrder === "object" ? orderNameOrOrder?.orderName : orderNameOrOrder;
@@ -1646,6 +1748,7 @@ async function listSupplierPortalHiddenItems(env, orderNameOrOrder, businessId =
   return hidden;
 }
 __name(listSupplierPortalHiddenItems, "listSupplierPortalHiddenItems");
+__name2(listSupplierPortalHiddenItems, "listSupplierPortalHiddenItems");
 async function applySupplierPortalHiddenItems(env, order) {
   const hiddenItems = await listSupplierPortalHiddenItems(env, order);
   if (!hiddenItems.length) return order;
@@ -1663,6 +1766,7 @@ async function applySupplierPortalHiddenItems(env, order) {
   };
 }
 __name(applySupplierPortalHiddenItems, "applySupplierPortalHiddenItems");
+__name2(applySupplierPortalHiddenItems, "applySupplierPortalHiddenItems");
 async function writeSupplierPortalHiddenItem(env, order, item, requestBody = {}) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const record = {
@@ -1683,6 +1787,7 @@ async function writeSupplierPortalHiddenItem(env, order, item, requestBody = {})
   return { ...record, key };
 }
 __name(writeSupplierPortalHiddenItem, "writeSupplierPortalHiddenItem");
+__name2(writeSupplierPortalHiddenItem, "writeSupplierPortalHiddenItem");
 async function hideSupplierPortalItem(env, requestBody = {}) {
   const orderKey = safeMessageLine(requestBody.orderKey || requestBody.key || requestBody.orderName);
   if (!orderKey) throw new Error("Missing order key");
@@ -1725,6 +1830,7 @@ async function hideSupplierPortalItem(env, requestBody = {}) {
   };
 }
 __name(hideSupplierPortalItem, "hideSupplierPortalItem");
+__name2(hideSupplierPortalItem, "hideSupplierPortalItem");
 async function upsertSupplierPortalOrder(env, order, options = {}) {
   const incoming = await applySupplierPortalHiddenItems(env, await buildSupplierPortalOrder(env, order, options.products || null));
   if (!incoming.items.length) {
@@ -1749,6 +1855,7 @@ async function upsertSupplierPortalOrder(env, order, options = {}) {
   };
 }
 __name(upsertSupplierPortalOrder, "upsertSupplierPortalOrder");
+__name2(upsertSupplierPortalOrder, "upsertSupplierPortalOrder");
 async function listSupplierPortalOrders(env, limit = 100) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const safeLimit = Math.max(1, Math.min(300, Number(limit || 100)));
@@ -1760,7 +1867,6 @@ async function listSupplierPortalOrders(env, limit = 100) {
       limit: Math.min(1e3, safeLimit - orders.length),
       cursor
     });
-    // Bound concurrent R2 reads: serial reads make finance wait on every order.
     const objects = listed.objects || [];
     for (let offset = 0; offset < objects.length; offset += 10) {
       const batch = await Promise.all(objects.slice(offset, offset + 10).map(async (object) => {
@@ -1788,6 +1894,7 @@ async function listSupplierPortalOrders(env, limit = 100) {
   return orders.slice(0, safeLimit);
 }
 __name(listSupplierPortalOrders, "listSupplierPortalOrders");
+__name2(listSupplierPortalOrders, "listSupplierPortalOrders");
 async function buildSupplierWhatsappOrder(env, order) {
   const { list } = await readProductsPayload(env);
   const products = list.map((raw) => {
@@ -1824,10 +1931,12 @@ async function buildSupplierWhatsappOrder(env, order) {
   };
 }
 __name(buildSupplierWhatsappOrder, "buildSupplierWhatsappOrder");
+__name2(buildSupplierWhatsappOrder, "buildSupplierWhatsappOrder");
 function normalizeWhatsappNumber(value) {
   return String(value || "").replace(/[^\d]/g, "").replace(/^00/, "");
 }
 __name(normalizeWhatsappNumber, "normalizeWhatsappNumber");
+__name2(normalizeWhatsappNumber, "normalizeWhatsappNumber");
 function whatsappRecipients(env) {
   const recipients = [
     ...splitList(env.WHATSAPP_SUPPLIER_TO),
@@ -1836,12 +1945,14 @@ function whatsappRecipients(env) {
   return uniqueList(recipients);
 }
 __name(whatsappRecipients, "whatsappRecipients");
+__name2(whatsappRecipients, "whatsappRecipients");
 function maskWhatsappRecipient(value) {
   const number = normalizeWhatsappNumber(value);
   if (number.length <= 4) return "****";
   return `${"*".repeat(Math.max(0, number.length - 4))}${number.slice(-4)}`;
 }
 __name(maskWhatsappRecipient, "maskWhatsappRecipient");
+__name2(maskWhatsappRecipient, "maskWhatsappRecipient");
 async function hmacSha256Base64(secret, data) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -1854,6 +1965,7 @@ async function hmacSha256Base64(secret, data) {
   return bytesToBase64(new Uint8Array(signature));
 }
 __name(hmacSha256Base64, "hmacSha256Base64");
+__name2(hmacSha256Base64, "hmacSha256Base64");
 function bytesToBase64(bytes) {
   let binary = "";
   const chunkSize = 32768;
@@ -1863,6 +1975,7 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 __name(bytesToBase64, "bytesToBase64");
+__name2(bytesToBase64, "bytesToBase64");
 function base64ToBytes(value) {
   try {
     const binary = atob(String(value || "").trim());
@@ -1874,14 +1987,17 @@ function base64ToBytes(value) {
   }
 }
 __name(base64ToBytes, "base64ToBytes");
+__name2(base64ToBytes, "base64ToBytes");
 function base64UrlEncodeBytes(bytes) {
   return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 __name(base64UrlEncodeBytes, "base64UrlEncodeBytes");
+__name2(base64UrlEncodeBytes, "base64UrlEncodeBytes");
 function base64UrlEncodeJson(value) {
   return base64UrlEncodeBytes(new TextEncoder().encode(JSON.stringify(value)));
 }
 __name(base64UrlEncodeJson, "base64UrlEncodeJson");
+__name2(base64UrlEncodeJson, "base64UrlEncodeJson");
 function pemToArrayBuffer(pem) {
   const normalized = String(pem || "").replace(/\\n/g, "\n").replace(/-----BEGIN PRIVATE KEY-----/g, "").replace(/-----END PRIVATE KEY-----/g, "").replace(/\s+/g, "");
   const bytes = base64ToBytes(normalized);
@@ -1889,6 +2005,7 @@ function pemToArrayBuffer(pem) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 __name(pemToArrayBuffer, "pemToArrayBuffer");
+__name2(pemToArrayBuffer, "pemToArrayBuffer");
 async function signGoogleJwt(unsignedJwt, privateKeyPem) {
   const key = await crypto.subtle.importKey(
     "pkcs8",
@@ -1905,6 +2022,7 @@ async function signGoogleJwt(unsignedJwt, privateKeyPem) {
   return base64UrlEncodeBytes(new Uint8Array(signature));
 }
 __name(signGoogleJwt, "signGoogleJwt");
+__name2(signGoogleJwt, "signGoogleJwt");
 async function getGoogleSheetsAccessToken(env) {
   const email = safeMessageLine(env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
   const privateKey = String(env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n").trim();
@@ -1946,23 +2064,28 @@ async function getGoogleSheetsAccessToken(env) {
   return data.access_token;
 }
 __name(getGoogleSheetsAccessToken, "getGoogleSheetsAccessToken");
+__name2(getGoogleSheetsAccessToken, "getGoogleSheetsAccessToken");
 function googleSheetsTabName(env) {
   return sheetString(env.SUPPLIER_SHEET_TAB || "Orders") || "Orders";
 }
 __name(googleSheetsTabName, "googleSheetsTabName");
+__name2(googleSheetsTabName, "googleSheetsTabName");
 function googleSheetsA1SheetName(tabName) {
   const name = googleSheetFormulaString(tabName);
   return /^[A-Za-z0-9_]+$/.test(name) ? name : `'${name.replace(/'/g, "''")}'`;
 }
 __name(googleSheetsA1SheetName, "googleSheetsA1SheetName");
+__name2(googleSheetsA1SheetName, "googleSheetsA1SheetName");
 function supplierSheetConfigured(env) {
   return Boolean(env.GOOGLE_SUPPLIER_SHEET_ID && env.GOOGLE_SERVICE_ACCOUNT_EMAIL && env.GOOGLE_PRIVATE_KEY);
 }
 __name(supplierSheetConfigured, "supplierSheetConfigured");
+__name2(supplierSheetConfigured, "supplierSheetConfigured");
 function supplierWhatsappEnabled(env) {
   return /^true$/i.test(String(env.SUPPLIER_WHATSAPP_ENABLED || "").trim());
 }
 __name(supplierWhatsappEnabled, "supplierWhatsappEnabled");
+__name2(supplierWhatsappEnabled, "supplierWhatsappEnabled");
 async function appendRowsToSupplierGoogleSheet(env, rows) {
   if (!rows.length) return { status: "skipped", reason: "No supplier rows to append" };
   const sheetId = safeMessageLine(env.GOOGLE_SUPPLIER_SHEET_ID);
@@ -1994,6 +2117,7 @@ async function appendRowsToSupplierGoogleSheet(env, rows) {
   };
 }
 __name(appendRowsToSupplierGoogleSheet, "appendRowsToSupplierGoogleSheet");
+__name2(appendRowsToSupplierGoogleSheet, "appendRowsToSupplierGoogleSheet");
 async function getSupplierGoogleSheetValues(env, range, options = {}) {
   const sheetId = safeMessageLine(env.GOOGLE_SUPPLIER_SHEET_ID);
   if (!sheetId) throw new Error("GOOGLE_SUPPLIER_SHEET_ID env var not set");
@@ -2011,6 +2135,7 @@ async function getSupplierGoogleSheetValues(env, range, options = {}) {
   return data;
 }
 __name(getSupplierGoogleSheetValues, "getSupplierGoogleSheetValues");
+__name2(getSupplierGoogleSheetValues, "getSupplierGoogleSheetValues");
 async function batchUpdateSupplierGoogleSheetValues(env, updates, valueInputOption = "USER_ENTERED") {
   if (!updates.length) return { status: "skipped", rowCount: 0 };
   const sheetId = safeMessageLine(env.GOOGLE_SUPPLIER_SHEET_ID);
@@ -2038,23 +2163,28 @@ async function batchUpdateSupplierGoogleSheetValues(env, updates, valueInputOpti
   };
 }
 __name(batchUpdateSupplierGoogleSheetValues, "batchUpdateSupplierGoogleSheetValues");
+__name2(batchUpdateSupplierGoogleSheetValues, "batchUpdateSupplierGoogleSheetValues");
 function supplierTrackingSyncEnabled(env) {
   return !/^false$/i.test(String(env.SUPPLIER_TRACKING_SYNC_ENABLED || "true").trim());
 }
 __name(supplierTrackingSyncEnabled, "supplierTrackingSyncEnabled");
+__name2(supplierTrackingSyncEnabled, "supplierTrackingSyncEnabled");
 function supplierTrackingCell(row, index) {
   return sheetString(Array.isArray(row) ? row[index] : "");
 }
 __name(supplierTrackingCell, "supplierTrackingCell");
+__name2(supplierTrackingCell, "supplierTrackingCell");
 function supplierTrackingStatusAllowsUpdate(value) {
   const text = safeMessageLine(value).toLowerCase();
   return !text || text === "no" || text === "pending" || text === "ready" || text === "retry";
 }
 __name(supplierTrackingStatusAllowsUpdate, "supplierTrackingStatusAllowsUpdate");
+__name2(supplierTrackingStatusAllowsUpdate, "supplierTrackingStatusAllowsUpdate");
 function splitTrackingNumbers(value) {
   return uniqueList(String(value || "").split(/[\r\n,;]+/).map(safeMessageLine).filter(Boolean));
 }
 __name(splitTrackingNumbers, "splitTrackingNumbers");
+__name2(splitTrackingNumbers, "splitTrackingNumbers");
 function normalizeTrackingCompany(value) {
   const text = safeMessageLine(value);
   const key = normalizeTitleKey(text);
@@ -2074,6 +2204,7 @@ function normalizeTrackingCompany(value) {
   return known[key] || text;
 }
 __name(normalizeTrackingCompany, "normalizeTrackingCompany");
+__name2(normalizeTrackingCompany, "normalizeTrackingCompany");
 function supplierTrackingRowsFromValues(values) {
   const rows = [];
   for (let index = 1; index < (values || []).length; index++) {
@@ -2096,6 +2227,7 @@ function supplierTrackingRowsFromValues(values) {
   return rows;
 }
 __name(supplierTrackingRowsFromValues, "supplierTrackingRowsFromValues");
+__name2(supplierTrackingRowsFromValues, "supplierTrackingRowsFromValues");
 function supplierSheetImageUrlFromCell(value) {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -2107,6 +2239,7 @@ function supplierSheetImageUrlFromCell(value) {
   return /^https?:\/\//i.test(url) ? url : "";
 }
 __name(supplierSheetImageUrlFromCell, "supplierSheetImageUrlFromCell");
+__name2(supplierSheetImageUrlFromCell, "supplierSheetImageUrlFromCell");
 async function supplierPortalSheetImageUrl(env, row) {
   const sourceUrl = supplierSheetImageUrlFromCell(row.raw[SUPPLIER_SHEET_COLS.PRODUCT_IMAGE]) || supplierSheetImageUrlFromCell(row.raw[SUPPLIER_SHEET_COLS.PRODUCT_IMAGE_URL]);
   if (!sourceUrl) return "";
@@ -2121,6 +2254,7 @@ async function supplierPortalSheetImageUrl(env, row) {
   return supplierSheetImageUrlFromSource(env, mirrored || source);
 }
 __name(supplierPortalSheetImageUrl, "supplierPortalSheetImageUrl");
+__name2(supplierPortalSheetImageUrl, "supplierPortalSheetImageUrl");
 async function supplierPortalSheetRowsFromValues(env, values) {
   const rows = [];
   for (let index = 1; index < (values || []).length; index++) {
@@ -2155,6 +2289,7 @@ async function supplierPortalSheetRowsFromValues(env, values) {
   return rows;
 }
 __name(supplierPortalSheetRowsFromValues, "supplierPortalSheetRowsFromValues");
+__name2(supplierPortalSheetRowsFromValues, "supplierPortalSheetRowsFromValues");
 function groupSupplierPortalSheetRows(rows) {
   const grouped = /* @__PURE__ */ new Map();
   for (const row of rows) {
@@ -2165,6 +2300,7 @@ function groupSupplierPortalSheetRows(rows) {
   return [...grouped.values()];
 }
 __name(groupSupplierPortalSheetRows, "groupSupplierPortalSheetRows");
+__name2(groupSupplierPortalSheetRows, "groupSupplierPortalSheetRows");
 function supplierPortalOrderFromSheetGroup(group) {
   const first = group.rows[0] || {};
   const shipping = {
@@ -2212,6 +2348,7 @@ function supplierPortalOrderFromSheetGroup(group) {
   };
 }
 __name(supplierPortalOrderFromSheetGroup, "supplierPortalOrderFromSheetGroup");
+__name2(supplierPortalOrderFromSheetGroup, "supplierPortalOrderFromSheetGroup");
 function groupSupplierTrackingRows(rows) {
   const grouped = /* @__PURE__ */ new Map();
   for (const row of rows) {
@@ -2222,16 +2359,19 @@ function groupSupplierTrackingRows(rows) {
   return [...grouped.values()];
 }
 __name(groupSupplierTrackingRows, "groupSupplierTrackingRows");
+__name2(groupSupplierTrackingRows, "groupSupplierTrackingRows");
 function shopifyOrderSearchQuery(orderName) {
   const clean = safeMessageLine(orderName);
   const numeric = clean.match(/\d+/)?.[0];
   return numeric ? `name:${numeric}` : clean.replace(/["\\]/g, " ");
 }
 __name(shopifyOrderSearchQuery, "shopifyOrderSearchQuery");
+__name2(shopifyOrderSearchQuery, "shopifyOrderSearchQuery");
 function supplierTrackingTimestamp() {
   return `${(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").slice(0, 16)} UTC`;
 }
 __name(supplierTrackingTimestamp, "supplierTrackingTimestamp");
+__name2(supplierTrackingTimestamp, "supplierTrackingTimestamp");
 function supplierTrackingStatusUpdate(env, rowNumber, value) {
   const tab = googleSheetsA1SheetName(googleSheetsTabName(env));
   return {
@@ -2241,6 +2381,7 @@ function supplierTrackingStatusUpdate(env, rowNumber, value) {
   };
 }
 __name(supplierTrackingStatusUpdate, "supplierTrackingStatusUpdate");
+__name2(supplierTrackingStatusUpdate, "supplierTrackingStatusUpdate");
 function trackingInfoForSupplierRows(rows) {
   const numbers = uniqueList(rows.flatMap((row) => row.trackingNumbers || []));
   if (!numbers.length) throw new Error("Tracking number is missing");
@@ -2250,10 +2391,12 @@ function trackingInfoForSupplierRows(rows) {
   return trackingInfo;
 }
 __name(trackingInfoForSupplierRows, "trackingInfoForSupplierRows");
+__name2(trackingInfoForSupplierRows, "trackingInfoForSupplierRows");
 function supplierTrackingOptionParts(value) {
   return uniqueList(String(value || "").split(/\s+-\s+|\/|,|[\r\n]+/).map(normalizeSupplierOption).filter(Boolean));
 }
 __name(supplierTrackingOptionParts, "supplierTrackingOptionParts");
+__name2(supplierTrackingOptionParts, "supplierTrackingOptionParts");
 function fulfillmentTrackingLineItem(line) {
   const lineItem = line?.lineItem || {};
   const productTitle = safeMessageLine(line?.productTitle);
@@ -2271,6 +2414,7 @@ function fulfillmentTrackingLineItem(line) {
   };
 }
 __name(fulfillmentTrackingLineItem, "fulfillmentTrackingLineItem");
+__name2(fulfillmentTrackingLineItem, "fulfillmentTrackingLineItem");
 function supplierTrackingLineTitleKeys(lineItem, product, fulfillmentLine) {
   return uniqueList([
     product?.title,
@@ -2283,6 +2427,7 @@ function supplierTrackingLineTitleKeys(lineItem, product, fulfillmentLine) {
   ].map(normalizeTitleKey).filter(Boolean));
 }
 __name(supplierTrackingLineTitleKeys, "supplierTrackingLineTitleKeys");
+__name2(supplierTrackingLineTitleKeys, "supplierTrackingLineTitleKeys");
 function supplierTrackingTitleMatchesRow(row, lineItem, product, fulfillmentLine) {
   const target = normalizeTitleKey(row.productName);
   if (!target) return false;
@@ -2292,6 +2437,7 @@ function supplierTrackingTitleMatchesRow(row, lineItem, product, fulfillmentLine
   });
 }
 __name(supplierTrackingTitleMatchesRow, "supplierTrackingTitleMatchesRow");
+__name2(supplierTrackingTitleMatchesRow, "supplierTrackingTitleMatchesRow");
 function supplierTrackingOptionMatchesRow(row, lineItem) {
   const targets = supplierTrackingOptionParts(row.option).map(normalizeTitleKey).filter(Boolean);
   if (!targets.length) return true;
@@ -2306,18 +2452,21 @@ function supplierTrackingOptionMatchesRow(row, lineItem) {
   }));
 }
 __name(supplierTrackingOptionMatchesRow, "supplierTrackingOptionMatchesRow");
+__name2(supplierTrackingOptionMatchesRow, "supplierTrackingOptionMatchesRow");
 function supplierTrackingLineMatchesRows(lineItem, product, fulfillmentLine, rows) {
   return rows.filter((row) => {
     return supplierTrackingTitleMatchesRow(row, lineItem, product, fulfillmentLine) && supplierTrackingOptionMatchesRow(row, lineItem);
   });
 }
 __name(supplierTrackingLineMatchesRows, "supplierTrackingLineMatchesRows");
+__name2(supplierTrackingLineMatchesRows, "supplierTrackingLineMatchesRows");
 function fulfillmentOrderCanBeFulfilled(fulfillmentOrder) {
   const status = safeMessageLine(fulfillmentOrder?.status).toUpperCase();
   if (!status) return true;
   return !["CANCELLED", "CLOSED", "INCOMPLETE", "ON_HOLD"].includes(status);
 }
 __name(fulfillmentOrderCanBeFulfilled, "fulfillmentOrderCanBeFulfilled");
+__name2(fulfillmentOrderCanBeFulfilled, "fulfillmentOrderCanBeFulfilled");
 function buildSupplierTrackingFulfillmentInput(order, rows, products) {
   const lineCandidates = [];
   const selected = [];
@@ -2366,8 +2515,9 @@ function buildSupplierTrackingFulfillmentInput(order, rows, products) {
   };
 }
 __name(buildSupplierTrackingFulfillmentInput, "buildSupplierTrackingFulfillmentInput");
+__name2(buildSupplierTrackingFulfillmentInput, "buildSupplierTrackingFulfillmentInput");
 async function acquireSupplierTrackingSyncLock(env, source = "manual") {
-  if (!env.BUCKET) return { ok: true, runId: crypto.randomUUID(), release: /* @__PURE__ */ __name(async () => {
+  if (!env.BUCKET) return { ok: true, runId: crypto.randomUUID(), release: /* @__PURE__ */ __name2(async () => {
   }, "release") };
   const now = Date.now();
   const existing = await env.BUCKET.get(SUPPLIER_TRACKING_LOCK_KEY);
@@ -2390,7 +2540,7 @@ async function acquireSupplierTrackingSyncLock(env, source = "manual") {
   return {
     ok: true,
     runId,
-    release: /* @__PURE__ */ __name(async () => {
+    release: /* @__PURE__ */ __name2(async () => {
       try {
         const current = await env.BUCKET.get(SUPPLIER_TRACKING_LOCK_KEY);
         if (!current) return;
@@ -2402,6 +2552,7 @@ async function acquireSupplierTrackingSyncLock(env, source = "manual") {
   };
 }
 __name(acquireSupplierTrackingSyncLock, "acquireSupplierTrackingSyncLock");
+__name2(acquireSupplierTrackingSyncLock, "acquireSupplierTrackingSyncLock");
 async function writeSupplierTrackingSyncLog(env, record) {
   if (!env.BUCKET) return;
   const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
@@ -2415,6 +2566,7 @@ async function writeSupplierTrackingSyncLog(env, record) {
   }
 }
 __name(writeSupplierTrackingSyncLog, "writeSupplierTrackingSyncLog");
+__name2(writeSupplierTrackingSyncLog, "writeSupplierTrackingSyncLog");
 async function runSupplierTrackingSync(env, requestBody = {}) {
   if (!supplierSheetConfigured(env)) {
     return {
@@ -2535,6 +2687,7 @@ async function runSupplierTrackingSync(env, requestBody = {}) {
   return summary;
 }
 __name(runSupplierTrackingSync, "runSupplierTrackingSync");
+__name2(runSupplierTrackingSync, "runSupplierTrackingSync");
 async function syncSupplierTrackingFromSheet(env, requestBody = {}) {
   const dryRun = requestBody.dryRun !== false;
   let lock = null;
@@ -2551,6 +2704,7 @@ async function syncSupplierTrackingFromSheet(env, requestBody = {}) {
   }
 }
 __name(syncSupplierTrackingFromSheet, "syncSupplierTrackingFromSheet");
+__name2(syncSupplierTrackingFromSheet, "syncSupplierTrackingFromSheet");
 async function checkShopifyWebhookStatus(env, expectedUri) {
   const data = await shopifyGraphql(env, SHOPIFY_WEBHOOK_STATUS_QUERY, { topics: ["ORDERS_CREATE", "PRODUCTS_UPDATE"] });
   const webhooks = data?.webhookSubscriptions?.nodes || [];
@@ -2568,6 +2722,7 @@ async function checkShopifyWebhookStatus(env, expectedUri) {
   };
 }
 __name(checkShopifyWebhookStatus, "checkShopifyWebhookStatus");
+__name2(checkShopifyWebhookStatus, "checkShopifyWebhookStatus");
 async function ensureShopifyProductUpdateWebhook(env, uri) {
   const expectedUri = safeMessageLine(uri);
   if (!expectedUri || !/^https:\/\//i.test(expectedUri)) throw new Error("A secure Shopify product webhook URL is required");
@@ -2582,6 +2737,7 @@ async function ensureShopifyProductUpdateWebhook(env, uri) {
   return { ok: true, status: "installed", webhook: result.webhookSubscription };
 }
 __name(ensureShopifyProductUpdateWebhook, "ensureShopifyProductUpdateWebhook");
+__name2(ensureShopifyProductUpdateWebhook, "ensureShopifyProductUpdateWebhook");
 function secureStringEqual(a, b) {
   return constantTimeEqualBytes(
     new TextEncoder().encode(String(a || "")),
@@ -2589,14 +2745,17 @@ function secureStringEqual(a, b) {
   );
 }
 __name(secureStringEqual, "secureStringEqual");
+__name2(secureStringEqual, "secureStringEqual");
 function supplierPortalToken(env) {
   return safeMessageLine(env.SUPPLIER_PORTAL_TOKEN);
 }
 __name(supplierPortalToken, "supplierPortalToken");
+__name2(supplierPortalToken, "supplierPortalToken");
 function supplierPortalAuthorized(req, url, env) {
   return { ok: true };
 }
 __name(supplierPortalAuthorized, "supplierPortalAuthorized");
+__name2(supplierPortalAuthorized, "supplierPortalAuthorized");
 var SUPPLIER_FINANCE_PORTAL_STYLE = String.raw`<style>
   .owner-finance-panel{margin:0 0 20px;background:#11110f;color:#fff;border-radius:22px;padding:18px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
   .owner-finance-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.owner-finance-head h2{margin:0;font-size:20px}.owner-finance-panel .secondary{color:#fff;border-color:#555}
@@ -2607,11 +2766,12 @@ var SUPPLIER_FINANCE_PORTAL_STYLE = String.raw`<style>
   .finance-orders{display:grid;gap:9px;margin:12px 0 18px}.finance-order{background:#20201d;border:1px solid #34342f;border-radius:16px;padding:12px}.finance-order-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.finance-order-name{font-size:16px;font-weight:900}.finance-order-date{font-size:11px;color:#aaa89f}.finance-order-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}.finance-order-cell{background:#171715;border-radius:10px;padding:8px}.finance-order-cell span{display:block;color:#aaa89f;font-size:9px;font-weight:800;text-transform:uppercase}.finance-order-cell strong{display:block;font-size:14px;margin-top:3px}.finance-order-warning{color:#ffca79;font-size:11px;margin-top:8px}
   @media(max-width:740px){.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-login,.finance-actions,.finance-cost-row{grid-template-columns:1fr}.finance-cost-row button,.finance-actions button{width:100%}.finance-order-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-order-cell:last-child{grid-column:1/-1}}
 </style>`;
-var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
+var _a;
+var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw(_a || (_a = __template([`<script>
 (function(){
   var SESSION_KEY='esntls_owner_finance_session';
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}
-  function money(v){return '£'+Number(v||0).toFixed(2)}
+  function money(v){return '\xA3'+Number(v||0).toFixed(2)}
   function session(){return sessionStorage.getItem(SESSION_KEY)||''}
   async function request(path,options){
     var o=options||{};var h=Object.assign({'Content-Type':'application/json','X-Admin-Session':session()},o.headers||{});
@@ -2619,13 +2779,13 @@ var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
     var d=await r.json().catch(function(){return{}});if(!r.ok||d.error)throw new Error(d.error||'Request failed');return d;
   }
   function shell(){return document.getElementById('ownerFinancePanel')}
-  function loginHtml(message){return '<div class="owner-finance-head"><h2>Owner Finance</h2><button class="secondary" data-finance-close>Close</button></div><p class="finance-note">Private — supplier costs and profit split require your admin password.</p><form class="finance-login" id="financeLogin"><input id="financePassword" type="password" autocomplete="current-password" placeholder="Admin password" required><button>Unlock</button></form><div class="finance-error">'+esc(message||'')+'</div>'}
+  function loginHtml(message){return '<div class="owner-finance-head"><h2>Owner Finance</h2><button class="secondary" data-finance-close>Close</button></div><p class="finance-note">Private \u2014 supplier costs and profit split require your admin password.</p><form class="finance-login" id="financeLogin"><input id="financePassword" type="password" autocomplete="current-password" placeholder="Admin password" required><button>Unlock</button></form><div class="finance-error">'+esc(message||'')+'</div>'}
   function render(f){
     var warning=[];if(f.missingCostItems)warning.push(f.missingCostItems+' item(s) need a supplier cost');if(f.missingSalesOrders)warning.push(f.missingSalesOrders+' older order(s) need Sync Orders for sales totals');
-    var costs=(f.costCatalog||[]).map(function(x){return '<div class="finance-cost-row"><div><div class="finance-product">'+esc(x.productName)+'</div><div class="finance-option">'+esc(x.option||'All options')+'</div></div><input type="number" min="0" step="0.01" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':esc(Number(x.unitCost).toFixed(2)))+'" placeholder="Unit cost £"><button data-cost-save="'+esc(x.costKey)+'">Save</button></div>'}).join('');
+    var costs=(f.costCatalog||[]).map(function(x){return '<div class="finance-cost-row"><div><div class="finance-product">'+esc(x.productName)+'</div><div class="finance-option">'+esc(x.option||'All options')+'</div></div><input type="number" min="0" step="0.01" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':esc(Number(x.unitCost).toFixed(2)))+'" placeholder="Unit cost \xA3"><button data-cost-save="'+esc(x.costKey)+'">Save</button></div>'}).join('');
     var orderBreakdown=(f.orderBreakdown||[]).map(function(o){return '<div class="finance-order"><div class="finance-order-head"><div class="finance-order-name">'+esc(o.orderName||'Order')+'</div><div class="finance-order-date">'+esc(o.orderDate?new Date(o.orderDate).toLocaleString('en-GB'):'')+'</div></div><div class="finance-order-grid"><div class="finance-order-cell"><span>Sale</span><strong>'+money(o.salesTotal)+'</strong></div><div class="finance-order-cell"><span>Supplier</span><strong>'+money(o.supplierCost)+'</strong></div><div class="finance-order-cell"><span>Profit</span><strong>'+money(o.estimatedProfit)+'</strong></div><div class="finance-order-cell"><span>Your 50%</span><strong>'+money(o.yourShare)+'</strong></div><div class="finance-order-cell"><span>Brother 50%</span><strong>'+money(o.brotherShare)+'</strong></div></div>'+(o.missingCostItems?'<div class="finance-order-warning">'+esc(o.missingCostItems)+' item(s) still need a supplier cost, so this profit is provisional.</div>':'')+'</div>'}).join('');
-    var history=(f.settlements||[]).slice(0,5).map(function(s){return '<div class="finance-history-row">'+esc(new Date(s.paidAt).toLocaleString('en-GB'))+' · Supplier '+money(s.supplierPaid)+' · Profit '+money(s.estimatedProfit)+'</div>'}).join('');
-    shell().innerHTML='<div class="owner-finance-head"><div><h2>Owner Finance</h2><div class="finance-option">50/50 profit split</div></div><button class="secondary" data-finance-close>Close</button></div><div class="finance-note"><strong>Counting starts after '+esc(f.cutoffOrderName||'#1233')+'.</strong> Brogan Coyle’s cutoff order and every earlier order are excluded.</div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales this period</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Estimated profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Unpaid orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' · ')||'All item costs are ready. Profit is sales minus supplier and other costs, before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h3>Profit by order</h3><div class="finance-orders">'+(orderBreakdown||'<div class="finance-note">No orders after the cutoff yet.</div>')+'</div><h3>Supplier cost per item</h3><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'');
+    var history=(f.settlements||[]).slice(0,5).map(function(s){return '<div class="finance-history-row">'+esc(new Date(s.paidAt).toLocaleString('en-GB'))+' \xB7 Supplier '+money(s.supplierPaid)+' \xB7 Profit '+money(s.estimatedProfit)+'</div>'}).join('');
+    shell().innerHTML='<div class="owner-finance-head"><div><h2>Owner Finance</h2><div class="finance-option">50/50 profit split</div></div><button class="secondary" data-finance-close>Close</button></div><div class="finance-note"><strong>Counting starts after '+esc(f.cutoffOrderName||'#1233')+'.</strong> Brogan Coyle\u2019s cutoff order and every earlier order are excluded.</div><div class="finance-grid"><div class="finance-stat"><div class="finance-label">Sales this period</div><div class="finance-value">'+money(f.salesTotal)+'</div></div><div class="finance-stat"><div class="finance-label">Supplier owed</div><div class="finance-value">'+money(f.supplierOwed)+'</div></div><div class="finance-stat"><div class="finance-label">Estimated profit</div><div class="finance-value">'+money(f.estimatedProfit)+'</div></div><div class="finance-stat"><div class="finance-label">Your 50%</div><div class="finance-value finance-share">'+money(f.yourShare)+'</div></div><div class="finance-stat"><div class="finance-label">Brother 50%</div><div class="finance-value finance-share">'+money(f.brotherShare)+'</div></div><div class="finance-stat"><div class="finance-label">Unpaid orders</div><div class="finance-value">'+esc(f.outstandingOrderCount)+'</div></div></div><div class="finance-note">'+esc(warning.join(' \xB7 ')||'All item costs are ready. Profit is sales minus supplier and other costs, before payment fees and tax.')+'</div><div class="finance-actions"><label>Other costs this period<input id="financeOtherCosts" type="number" min="0" step="0.01" value="'+esc(Number(f.otherCosts||0).toFixed(2))+'"></label><button data-finance-other>Save costs</button><button data-finance-settle>Mark supplier paid & reset</button></div><h3>Profit by order</h3><div class="finance-orders">'+(orderBreakdown||'<div class="finance-note">No orders after the cutoff yet.</div>')+'</div><h3>Supplier cost per item</h3><div class="finance-costs">'+(costs||'<div class="finance-note">No products found yet.</div>')+'</div><div class="finance-history"><strong>Recent payments</strong>'+(history||'<div class="finance-history-row">No payments recorded yet.</div>')+'</div>'+(f.settlements&&f.settlements.length?'<button class="secondary" data-finance-undo style="margin-top:10px">Undo last reset</button>':'');
   }
   async function load(){try{var d=await request('summary');render(d.finance)}catch(e){if(/unauthorized/i.test(e.message)){sessionStorage.removeItem(SESSION_KEY);shell().innerHTML=loginHtml('Session expired. Sign in again.')}else{shell().innerHTML=loginHtml(e.message)}}}
   document.addEventListener('DOMContentLoaded',function(){
@@ -2643,9 +2803,9 @@ var SUPPLIER_FINANCE_PORTAL_SCRIPT = String.raw`<script>
     panel.addEventListener('submit',async function(e){if(e.target.id!=='financeLogin')return;e.preventDefault();var p=document.getElementById('financePassword');try{var r=await fetch('/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p.value})});var d=await r.json();p.value='';if(!r.ok||!d.token)throw new Error(d.error||'Login failed');sessionStorage.setItem(SESSION_KEY,d.token);await load()}catch(err){panel.innerHTML=loginHtml(err.message)}});
   });
 })();
-</script>`;
+<\/script>`])));
 function supplierPortalHtmlResponse() {
-  const publicPortalBootstrap = `<style>#login,#logoutBtn{display:none!important}</style><script>localStorage.setItem("esntls_supplier_portal_token","public");</script>`;
+  const publicPortalBootstrap = `<style>#login,#logoutBtn{display:none!important}</style><script>localStorage.setItem("esntls_supplier_portal_token","public");<\/script>`;
   const html = SUPPLIER_PORTAL_HTML.replace("</head>", publicPortalBootstrap + "</head>");
   return new Response(html, {
     headers: {
@@ -2656,8 +2816,10 @@ function supplierPortalHtmlResponse() {
   });
 }
 __name(supplierPortalHtmlResponse, "supplierPortalHtmlResponse");
+__name2(supplierPortalHtmlResponse, "supplierPortalHtmlResponse");
+var _b;
 function ownerFinanceHtmlResponse() {
-  const html = String.raw`<!doctype html>
+  const html = String.raw(_b || (_b = __template([`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ESNTLS Owner Finance</title><meta name="description" content="Supplier payments and your 50/50 profit balances">
 <style>
@@ -2665,7 +2827,7 @@ function ownerFinanceHtmlResponse() {
 @media(max-width:680px){.page{padding:22px 12px 44px}.balances,.payment-fields{grid-template-columns:1fr}.card,.section{padding:18px}.card .amount{margin:9px 0;font-size:30px}.ledger{font-size:14px}.cost-row{grid-template-columns:1fr 110px}.cost-row button{grid-column:1/-1}.other-costs{grid-template-columns:1fr}.actions button{width:100%}.order-head{flex-wrap:wrap}.header button{padding:10px 14px}.stats{gap:8px 16px}}
 </style></head><body><main class="page"><header class="header"><div class="brand">ESNTLS <span>CLUB</span></div><button id="refreshBtn" class="secondary" type="button">Refresh</button></header>
 <section class="intro"><h1>Owner finance</h1><div class="muted">What is still owed, after payments.</div></section>
-<div id="pageStatus" class="status" role="status" aria-live="polite"></div><div id="ownerFinancePanel"><div class="loading">Loading balances…</div></div></main>
+<div id="pageStatus" class="status" role="status" aria-live="polite"></div><div id="ownerFinancePanel"><div class="loading">Loading balances\u2026</div></div></main>
 <script>
 (function(){
   var finance=null,busy=false;
@@ -2679,27 +2841,28 @@ function ownerFinanceHtmlResponse() {
   function field(id,label,paid){return '<label>'+label+'<input id="'+id+'" type="number" min="0" max="1000000000" step="0.01" inputmode="decimal" required value="'+amount(paid)+'"><div class="payment-preview" data-preview="'+id+'"></div></label>'}
   function render(f){
     finance=f;
-    var orders=(f.orderBreakdown||[]).map(function(o){return '<div class="order"><div class="order-head"><strong>'+esc(o.orderName||'Order')+'</strong><span class="muted">'+esc(o.orderDate?new Date(o.orderDate).toLocaleDateString('en-GB'):'')+'</span></div><div class="order-grid"><span>Sales <strong>'+money(o.salesTotal)+'</strong></span><span>Supplier <strong>'+money(o.supplierCost)+'</strong></span><span>Profit <strong>'+money(o.estimatedProfit)+'</strong></span><span>Each 50% <strong>'+money(o.yourShare)+'</strong></span></div>'+(o.missingCostItems?'<p class="muted missing">Missing supplier costs — profit is provisional.</p>':'')+'</div>'}).join('');
-    var costs=(f.costCatalog||[]).map(function(x){return '<div class="cost-row" data-product="'+esc(String(x.productName).toLowerCase())+'"><div><div class="cost-name">'+esc(x.productName)+'</div><div class="muted '+(x.unitCost==null?'missing':'')+'">'+(x.unitCost==null?'Cost needed':'All sizes / options')+'</div></div><label><span class="muted">Unit cost £</span><input aria-label="'+esc(x.productName)+' supplier cost" type="number" min="0" step="0.01" inputmode="decimal" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':amount(x.unitCost))+'"></label><button type="button" data-cost-save="'+esc(x.costKey)+'">Save cost</button></div>'}).join('');
-    var history=(f.paymentHistory||[]).map(function(h){return '<div class="history-row"><strong>Paid totals updated</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' · You '+money(h.ownerPaid)+' · Brother '+money(h.brotherPaid)+'</div></div>'}).join('');
-    var resets=(f.settlements||[]).map(function(h){return '<div class="history-row"><strong>Previous period closed</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' · Profit '+money(h.estimatedProfit)+'</div></div>'}).join('');
-    panel.innerHTML='<div class="balances">'+card('Supplier',f.supplierOwed,f.supplierPaid,f.supplierRemaining)+card('Your 50%',f.yourShare,f.yourSharePaid,f.yourShareRemaining)+card('Brother’s 50%',f.brotherShare,f.brotherSharePaid,f.brotherShareRemaining)+'</div><div class="stats"><span>Sales <strong>'+money(f.salesTotal)+'</strong></span><span>Profit <strong>'+money(f.estimatedProfit)+'</strong></span><span>Orders <strong>'+esc(f.outstandingOrderCount)+'</strong></span></div>'+(f.missingCostItems||f.missingSalesOrders?'<div class="notice"><strong>Balances are provisional.</strong> '+(f.missingCostItems?esc(f.missingCostItems)+' ordered item(s) need supplier costs. ':'')+(f.missingSalesOrders?esc(f.missingSalesOrders)+' order(s) need a sales total.':'')+' Add missing costs below for accurate profit.</div>':'')+'<section class="section"><h2>How much has been paid?</h2><p class="muted">Enter the <strong>total already paid</strong> for each person, not just the latest payment. Saving the same number twice will not count it twice.</p><form id="paymentForm"><div class="payment-fields">'+field('supplierPaid','Supplier paid so far (£)',f.supplierPaid)+field('ownerPaid','Your share paid so far (£)',f.yourSharePaid)+field('brotherPaid','Brother’s share paid so far (£)',f.brotherSharePaid)+'</div><div class="actions"><button type="submit">Save paid totals</button><span class="muted">Only records payments — does not transfer money.</span></div><div id="paymentStatus" class="status" role="status"></div></form></section><details class="section"><summary>Supplier costs'+(f.missingCostItems?' — missing costs need attention':'')+'</summary><div class="detail-body"><input class="search" id="costSearch" type="search" placeholder="Find a product…" aria-label="Find a product"><div>'+(costs||'<p class="muted">No products yet.</p>')+'</div></div></details><details class="section"><summary>Profit by order ('+esc(f.outstandingOrderCount)+')</summary><div class="detail-body"><p class="muted">Order profit is sales minus supplier cost. Other business costs are deducted from the overall profit above.</p>'+(orders||'<p class="muted">No orders in this period.</p>')+'</div></details><details class="section"><summary>Other business costs</summary><div class="detail-body"><p class="muted">Enter the total fees, shipping and other costs for this period. These reduce profit before the 50/50 split.</p><form id="otherCostsForm" class="other-costs"><label>Total other costs (£)<input id="otherCosts" type="number" min="0" step="0.01" inputmode="decimal" required value="'+amount(f.otherCosts)+'"></label><button type="submit">Save costs</button></form></div></details><details class="section"><summary>Payment history</summary><div class="detail-body">'+(history||'<p class="muted">Existing paid totals: supplier '+money(f.supplierPaid)+', you '+money(f.yourSharePaid)+', brother '+money(f.brotherSharePaid)+'. Future changes will appear here.</p>')+resets+'</div></details><p class="muted note">Counting starts after '+esc(f.cutoffOrderName||'#1233')+'. That order and earlier orders are excluded. Supplier payments reduce the balance owed, not the profit. Profit is an estimate; add all fees and taxes under other costs.</p>';
+    var orders=(f.orderBreakdown||[]).map(function(o){return '<div class="order"><div class="order-head"><strong>'+esc(o.orderName||'Order')+'</strong><span class="muted">'+esc(o.orderDate?new Date(o.orderDate).toLocaleDateString('en-GB'):'')+'</span></div><div class="order-grid"><span>Sales <strong>'+money(o.salesTotal)+'</strong></span><span>Supplier <strong>'+money(o.supplierCost)+'</strong></span><span>Profit <strong>'+money(o.estimatedProfit)+'</strong></span><span>Each 50% <strong>'+money(o.yourShare)+'</strong></span></div>'+(o.missingCostItems?'<p class="muted missing">Missing supplier costs \u2014 profit is provisional.</p>':'')+'</div>'}).join('');
+    var costs=(f.costCatalog||[]).map(function(x){return '<div class="cost-row" data-product="'+esc(String(x.productName).toLowerCase())+'"><div><div class="cost-name">'+esc(x.productName)+'</div><div class="muted '+(x.unitCost==null?'missing':'')+'">'+(x.unitCost==null?'Cost needed':'All sizes / options')+'</div></div><label><span class="muted">Unit cost \xA3</span><input aria-label="'+esc(x.productName)+' supplier cost" type="number" min="0" step="0.01" inputmode="decimal" data-cost-input="'+esc(x.costKey)+'" value="'+(x.unitCost==null?'':amount(x.unitCost))+'"></label><button type="button" data-cost-save="'+esc(x.costKey)+'">Save cost</button></div>'}).join('');
+    var history=(f.paymentHistory||[]).map(function(h){return '<div class="history-row"><strong>Paid totals updated</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' \xB7 You '+money(h.ownerPaid)+' \xB7 Brother '+money(h.brotherPaid)+'</div></div>'}).join('');
+    var resets=(f.settlements||[]).map(function(h){return '<div class="history-row"><strong>Previous period closed</strong><div class="muted">'+esc(new Date(h.paidAt).toLocaleString('en-GB'))+'</div><div>Supplier '+money(h.supplierPaid)+' \xB7 Profit '+money(h.estimatedProfit)+'</div></div>'}).join('');
+    panel.innerHTML='<div class="balances">'+card('Supplier',f.supplierOwed,f.supplierPaid,f.supplierRemaining)+card('Your 50%',f.yourShare,f.yourSharePaid,f.yourShareRemaining)+card('Brother\u2019s 50%',f.brotherShare,f.brotherSharePaid,f.brotherShareRemaining)+'</div><div class="stats"><span>Sales <strong>'+money(f.salesTotal)+'</strong></span><span>Profit <strong>'+money(f.estimatedProfit)+'</strong></span><span>Orders <strong>'+esc(f.outstandingOrderCount)+'</strong></span></div>'+(f.missingCostItems||f.missingSalesOrders?'<div class="notice"><strong>Balances are provisional.</strong> '+(f.missingCostItems?esc(f.missingCostItems)+' ordered item(s) need supplier costs. ':'')+(f.missingSalesOrders?esc(f.missingSalesOrders)+' order(s) need a sales total.':'')+' Add missing costs below for accurate profit.</div>':'')+'<section class="section"><h2>How much has been paid?</h2><p class="muted">Enter the <strong>total already paid</strong> for each person, not just the latest payment. Saving the same number twice will not count it twice.</p><form id="paymentForm"><div class="payment-fields">'+field('supplierPaid','Supplier paid so far (\xA3)',f.supplierPaid)+field('ownerPaid','Your share paid so far (\xA3)',f.yourSharePaid)+field('brotherPaid','Brother\u2019s share paid so far (\xA3)',f.brotherSharePaid)+'</div><div class="actions"><button type="submit">Save paid totals</button><span class="muted">Only records payments \u2014 does not transfer money.</span></div><div id="paymentStatus" class="status" role="status"></div></form></section><details class="section"><summary>Supplier costs'+(f.missingCostItems?' \u2014 missing costs need attention':'')+'</summary><div class="detail-body"><input class="search" id="costSearch" type="search" placeholder="Find a product\u2026" aria-label="Find a product"><div>'+(costs||'<p class="muted">No products yet.</p>')+'</div></div></details><details class="section"><summary>Profit by order ('+esc(f.outstandingOrderCount)+')</summary><div class="detail-body"><p class="muted">Order profit is sales minus supplier cost. Other business costs are deducted from the overall profit above.</p>'+(orders||'<p class="muted">No orders in this period.</p>')+'</div></details><details class="section"><summary>Other business costs</summary><div class="detail-body"><p class="muted">Enter the total fees, shipping and other costs for this period. These reduce profit before the 50/50 split.</p><form id="otherCostsForm" class="other-costs"><label>Total other costs (\xA3)<input id="otherCosts" type="number" min="0" step="0.01" inputmode="decimal" required value="'+amount(f.otherCosts)+'"></label><button type="submit">Save costs</button></form></div></details><details class="section"><summary>Payment history</summary><div class="detail-body">'+(history||'<p class="muted">Existing paid totals: supplier '+money(f.supplierPaid)+', you '+money(f.yourSharePaid)+', brother '+money(f.brotherSharePaid)+'. Future changes will appear here.</p>')+resets+'</div></details><p class="muted note">Counting starts after '+esc(f.cutoffOrderName||'#1233')+'. That order and earlier orders are excluded. Supplier payments reduce the balance owed, not the profit. Profit is an estimate; add all fees and taxes under other costs.</p>';
     preview();
   }
   function preview(){if(!finance)return;[['supplierPaid',finance.supplierOwed],['ownerPaid',finance.yourShare],['brotherPaid',finance.brotherShare]].forEach(function(pair){var input=document.getElementById(pair[0]);if(!input)return;var n=Number(input.value);var label=panel.querySelector('[data-preview="'+pair[0]+'"]');if(input.value===''||!Number.isFinite(n)||n<0){label.textContent='Enter a valid amount';return}var left=Math.round((pair[1]-n)*100)/100;label.textContent=left<0?'Paid above balance: '+money(-left):'Remaining after saving: '+money(left)})}
-  async function load(){if(busy)return;if(finance&&hasUnsavedPayments()&&!confirm('Discard your unsaved payment changes and refresh?'))return;busy=true;document.getElementById('refreshBtn').disabled=true;message('Loading…');try{render(await request('summary'));message('')}catch(e){if(!finance)panel.innerHTML='<div class="notice">Balances could not be loaded. Use Refresh to try again.</div>';message(e.message,true)}finally{busy=false;document.getElementById('refreshBtn').disabled=false}}
+  async function load(){if(busy)return;if(finance&&hasUnsavedPayments()&&!confirm('Discard your unsaved payment changes and refresh?'))return;busy=true;document.getElementById('refreshBtn').disabled=true;message('Loading\u2026');try{render(await request('summary'));message('')}catch(e){if(!finance)panel.innerHTML='<div class="notice">Balances could not be loaded. Use Refresh to try again.</div>';message(e.message,true)}finally{busy=false;document.getElementById('refreshBtn').disabled=false}}
   function hasUnsavedPayments(){if(!finance)return false;return [['supplierPaid',finance.supplierPaid],['ownerPaid',finance.yourSharePaid],['brotherPaid',finance.brotherSharePaid]].some(function(p){var input=document.getElementById(p[0]);return input&&input.value!==amount(p[1])})}
-  async function save(body,button){if(busy)return;busy=true;var open=Array.from(panel.querySelectorAll('details')).map(function(d){return d.open});var buttons=Array.from(document.querySelectorAll('button'));buttons.forEach(function(b){b.disabled=true});var old=button.textContent;button.textContent='Saving…';message('');try{render(await request('update',body));panel.querySelectorAll('details').forEach(function(d,i){d.open=open[i]});message('Saved. Remaining balances are up to date.')}catch(e){message(e.message,true)}finally{busy=false;buttons.forEach(function(b){b.disabled=false});button.textContent=old}}
+  async function save(body,button){if(busy)return;busy=true;var open=Array.from(panel.querySelectorAll('details')).map(function(d){return d.open});var buttons=Array.from(document.querySelectorAll('button'));buttons.forEach(function(b){b.disabled=true});var old=button.textContent;button.textContent='Saving\u2026';message('');try{render(await request('update',body));panel.querySelectorAll('details').forEach(function(d,i){d.open=open[i]});message('Saved. Remaining balances are up to date.')}catch(e){message(e.message,true)}finally{busy=false;buttons.forEach(function(b){b.disabled=false});button.textContent=old}}
   panel.addEventListener('submit',function(e){e.preventDefault();if(e.target.id==='paymentForm'){if(!e.target.reportValidity())return;var values={action:'set-payments',supplierPaid:document.getElementById('supplierPaid').value,ownerPaid:document.getElementById('ownerPaid').value,brotherPaid:document.getElementById('brotherPaid').value};save(values,e.target.querySelector('button'))}else if(e.target.id==='otherCostsForm'){if(!e.target.reportValidity())return;if(hasUnsavedPayments()){message('Save your paid totals first, before changing other costs.',true);return}save({action:'set-other-costs',otherCosts:document.getElementById('otherCosts').value},e.target.querySelector('button'))}});
   panel.addEventListener('click',function(e){var button=e.target.closest('[data-cost-save]');if(!button)return;if(hasUnsavedPayments()){message('Save your paid totals first, before changing product costs.',true);return}var key=button.getAttribute('data-cost-save');var input=Array.from(panel.querySelectorAll('[data-cost-input]')).find(function(x){return x.getAttribute('data-cost-input')===key});if(input.value===''||!input.reportValidity()){message('Enter a valid supplier cost.',true);return}save({action:'set-cost',costKey:key,unitCost:input.value},button)});
   panel.addEventListener('input',function(e){if(e.target.id==='costSearch'){var q=e.target.value.toLowerCase();panel.querySelectorAll('[data-product]').forEach(function(row){row.hidden=row.getAttribute('data-product').indexOf(q)===-1})}else preview()});
   window.addEventListener('beforeunload',function(e){if(hasUnsavedPayments()){e.preventDefault();e.returnValue=''}});
   document.getElementById('refreshBtn').addEventListener('click',load);load();
 })();
-</script></body></html>`;
+<\/script></body></html>`])));
   return new Response(html, { headers: { ...cors, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 __name(ownerFinanceHtmlResponse, "ownerFinanceHtmlResponse");
+__name2(ownerFinanceHtmlResponse, "ownerFinanceHtmlResponse");
 function supplierPortalPublicItem(item) {
   const productName = safeMessageLine(item?.productName);
   const imageUrl = /gel runners.*metropolis grey|metropolis grey.*gel runners/i.test(productName) ? SUPPLIER_PORTAL_METROPOLIS_IMAGE_URL : safeMessageLine(item?.imageUrl);
@@ -2710,6 +2873,7 @@ function supplierPortalPublicItem(item) {
   };
 }
 __name(supplierPortalPublicItem, "supplierPortalPublicItem");
+__name2(supplierPortalPublicItem, "supplierPortalPublicItem");
 function supplierPortalPublicOrder(order) {
   const items = (Array.isArray(order?.items) ? order.items : []).map(supplierPortalPublicItem);
   if (!items.some((item) => item.fastDelivery)) return { ...order, items };
@@ -2721,15 +2885,18 @@ function supplierPortalPublicOrder(order) {
   };
 }
 __name(supplierPortalPublicOrder, "supplierPortalPublicOrder");
+__name2(supplierPortalPublicOrder, "supplierPortalPublicOrder");
 function supplierFinanceMoney(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.round(number * 100) / 100 : 0;
 }
 __name(supplierFinanceMoney, "supplierFinanceMoney");
+__name2(supplierFinanceMoney, "supplierFinanceMoney");
 function supplierFinanceCostKey(item) {
   return slugify(safeMessageLine(item?.sourceProductId || item?.productName || "item")) || "item";
 }
 __name(supplierFinanceCostKey, "supplierFinanceCostKey");
+__name2(supplierFinanceCostKey, "supplierFinanceCostKey");
 function supplierFinanceDefaultUnitCost(item) {
   const name = safeMessageLine(item?.productName).toLowerCase();
   if (!name) return null;
@@ -2746,10 +2913,12 @@ function supplierFinanceDefaultUnitCost(item) {
   return null;
 }
 __name(supplierFinanceDefaultUnitCost, "supplierFinanceDefaultUnitCost");
+__name2(supplierFinanceDefaultUnitCost, "supplierFinanceDefaultUnitCost");
 function supplierFinanceItemKey(order, item) {
   return `${safeMessageLine(order?.key || order?.orderName)}::${safeMessageLine(item?.itemKey || supplierFinanceCostKey(item))}`;
 }
 __name(supplierFinanceItemKey, "supplierFinanceItemKey");
+__name2(supplierFinanceItemKey, "supplierFinanceItemKey");
 var SUPPLIER_FINANCE_CUTOFF_ORDER_NAME = "#1233";
 var SUPPLIER_FINANCE_CUTOFF_ORDER_DATE = "2026-09-22T19:05:17Z";
 function supplierFinanceOrderAfterCutoff(order) {
@@ -2761,6 +2930,7 @@ function supplierFinanceOrderAfterCutoff(order) {
   return Number.isFinite(orderNumber) && Number.isFinite(cutoffNumber) && orderNumber > cutoffNumber;
 }
 __name(supplierFinanceOrderAfterCutoff, "supplierFinanceOrderAfterCutoff");
+__name2(supplierFinanceOrderAfterCutoff, "supplierFinanceOrderAfterCutoff");
 async function readSupplierFinanceState(env) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const object = await env.BUCKET.get(SUPPLIER_FINANCE_STATE_KEY);
@@ -2782,6 +2952,7 @@ async function readSupplierFinanceState(env) {
   }
 }
 __name(readSupplierFinanceState, "readSupplierFinanceState");
+__name2(readSupplierFinanceState, "readSupplierFinanceState");
 async function writeSupplierFinanceState(env, state) {
   const payload = {
     costs: state.costs || {},
@@ -2800,6 +2971,7 @@ async function writeSupplierFinanceState(env, state) {
   return payload;
 }
 __name(writeSupplierFinanceState, "writeSupplierFinanceState");
+__name2(writeSupplierFinanceState, "writeSupplierFinanceState");
 function supplierFinanceSnapshot(orders, state) {
   const settled = new Set(state.settledItemKeys || []);
   const costCatalog = /* @__PURE__ */ new Map();
@@ -2823,10 +2995,7 @@ function supplierFinanceSnapshot(orders, state) {
       }
       const itemKey = supplierFinanceItemKey(order, item);
       const quantity = Math.max(1, Number(item.quantity || 1));
-      const payableKeys = item.fastDelivery
-        ? Array.from({ length: Math.min(quantity, Math.max(0, item.shippedQuantity || 0)) }, (_, index) => itemKey + "::unit-" + (index + 1))
-          .filter((key) => !settled.has(key))
-        : settled.has(itemKey) ? [] : [itemKey];
+      const payableKeys = item.fastDelivery ? Array.from({ length: Math.min(quantity, Math.max(0, item.shippedQuantity || 0)) }, (_, index) => itemKey + "::unit-" + (index + 1)).filter((key) => !settled.has(key)) : settled.has(itemKey) ? [] : [itemKey];
       if (!payableKeys.length) continue;
       outstandingOrderKeys.add(orderKey);
       outstandingItems.push({
@@ -2845,14 +3014,11 @@ function supplierFinanceSnapshot(orders, state) {
     }
   }
   const outstandingOrders = periodOrders.filter((order) => outstandingOrderKeys.has(safeMessageLine(order.key || order.orderName)));
-  const salesForOrder = (order) => {
+  const salesForOrder = /* @__PURE__ */ __name((order) => {
     const orderItems = outstandingItems.filter((item) => item.orderKey === safeMessageLine(order.key || order.orderName));
-    const ordinarySales = orderItems.some((item) => !item.fastDelivery)
-      ? supplierFinanceMoney(order.salesTotal) - (order.items || []).filter((item) => item.fastDelivery)
-        .reduce((total, item) => total + (item.netSales || 0), 0)
-      : 0;
+    const ordinarySales = orderItems.some((item) => !item.fastDelivery) ? supplierFinanceMoney(order.salesTotal) - (order.items || []).filter((item) => item.fastDelivery).reduce((total, item) => total + (item.netSales || 0), 0) : 0;
     return supplierFinanceMoney(ordinarySales + orderItems.reduce((total, item) => total + item.netSales, 0));
-  };
+  }, "salesForOrder");
   const salesTotal = supplierFinanceMoney(outstandingOrders.reduce((sum, order) => sum + salesForOrder(order), 0));
   const supplierOwed = supplierFinanceMoney(outstandingItems.reduce((sum, item) => sum + (item.unitCost === null ? 0 : item.unitCost * item.quantity), 0));
   const otherCosts = supplierFinanceMoney(state.otherCosts);
@@ -2862,8 +3028,6 @@ function supplierFinanceSnapshot(orders, state) {
   const brotherPaid = supplierFinanceMoney(state.brotherPaid);
   const yourShare = supplierFinanceMoney(estimatedProfit / 2);
   const brotherShare = supplierFinanceMoney(estimatedProfit - yourShare);
-  // Payments settle liabilities; they do not change the cost or profit.
-  // Preserve negative balances so overpayments/losses are not silently hidden.
   const supplierRemaining = supplierFinanceMoney(supplierOwed - supplierPaid);
   const orderBreakdown = outstandingOrders.map((order) => {
     const orderKey = safeMessageLine(order.key || order.orderName);
@@ -2911,6 +3075,7 @@ function supplierFinanceSnapshot(orders, state) {
   };
 }
 __name(supplierFinanceSnapshot, "supplierFinanceSnapshot");
+__name2(supplierFinanceSnapshot, "supplierFinanceSnapshot");
 async function handleSupplierFinanceApi(req, env, parts) {
   const [orders, savedState] = await Promise.all([
     listSupplierPortalOrders(env, 300),
@@ -2943,18 +3108,20 @@ async function handleSupplierFinanceApi(req, env, parts) {
     if (!provided.length) return json({ error: "Enter at least one paid total" }, 400);
     for (const field of provided) {
       const value = body[field];
-      if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === "" ||
-          !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 1e9 ||
-          Math.abs(Number(value) * 100 - Math.round(Number(value) * 100)) > 0.0001) {
+      if (typeof value !== "number" && typeof value !== "string" || String(value).trim() === "" || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 1e9 || Math.abs(Number(value) * 100 - Math.round(Number(value) * 100)) > 1e-4) {
         return json({ error: "Enter valid paid totals in pounds, with up to two decimal places" }, 400);
       }
     }
     const previous = Object.fromEntries(fields.map((field) => [field, supplierFinanceMoney(state[field])]));
     for (const field of provided) state[field] = supplierFinanceMoney(body[field]);
     if (fields.some((field) => supplierFinanceMoney(state[field]) !== previous[field])) {
-      state.paymentHistory = [...(state.paymentHistory || []), {
-        id: crypto.randomUUID(), paidAt: new Date().toISOString(), previous,
-        supplierPaid: state.supplierPaid, ownerPaid: state.ownerPaid, brotherPaid: state.brotherPaid
+      state.paymentHistory = [...state.paymentHistory || [], {
+        id: crypto.randomUUID(),
+        paidAt: (/* @__PURE__ */ new Date()).toISOString(),
+        previous,
+        supplierPaid: state.supplierPaid,
+        ownerPaid: state.ownerPaid,
+        brotherPaid: state.brotherPaid
       }];
     }
   } else if (body.action === "settle") {
@@ -2976,7 +3143,7 @@ async function handleSupplierFinanceApi(req, env, parts) {
       yourShare: snapshot.yourShare,
       brotherShare: snapshot.brotherShare
     };
-    state.settledItemKeys = uniqueList([...(state.settledItemKeys || []), ...settledKeys]);
+    state.settledItemKeys = uniqueList([...state.settledItemKeys || [], ...settledKeys]);
     state.settlements = [...state.settlements || [], settlement];
     state.otherCosts = 0;
     state.supplierPaid = 0;
@@ -2998,6 +3165,7 @@ async function handleSupplierFinanceApi(req, env, parts) {
   return json({ ok: true, finance: supplierFinanceSnapshot(orders, state) });
 }
 __name(handleSupplierFinanceApi, "handleSupplierFinanceApi");
+__name2(handleSupplierFinanceApi, "handleSupplierFinanceApi");
 async function handleSupplierPortalApi(req, env, ctx, parts, url) {
   const authorized = supplierPortalAuthorized(req, url, env);
   if (!authorized.ok) return json({ error: authorized.error }, authorized.status);
@@ -3048,8 +3216,9 @@ async function handleSupplierPortalApi(req, env, ctx, parts, url) {
   return json({ error: "Not found" }, 404);
 }
 __name(handleSupplierPortalApi, "handleSupplierPortalApi");
-var _a;
-var SUPPLIER_PORTAL_HTML = String.raw(_a || (_a = __template([`<!doctype html>
+__name2(handleSupplierPortalApi, "handleSupplierPortalApi");
+var _a2;
+var SUPPLIER_PORTAL_HTML = String.raw(_a2 || (_a2 = __template2([`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -3519,7 +3688,7 @@ var SUPPLIER_PORTAL_HTML = String.raw(_a || (_a = __template([`<!doctype html>
             '<div class="item-main">' +
               '<div>' + title + '<div class="item-meta">' + escapeHtml(meta) + '</div></div>' +
               (item.dispatchAddressLines && item.dispatchAddressLines.length ? '<div class="address">' + item.dispatchAddressLines.map(escapeHtml).join("<br>") + '</div>' : '') +
-              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS 发货 · 供应商请勿发货" : "Fast delivery · ESNTLS ships · Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
+              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS \u53D1\u8D27 \xB7 \u4F9B\u5E94\u5546\u8BF7\u52FF\u53D1\u8D27" : "Fast delivery \xB7 ESNTLS ships \xB7 Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
                 '<div class="field"><label>' + escapeHtml(t("tracking")) + '</label><input data-field="tracking" value="' + escapeAttr(item.trackingNumber || "") + '" placeholder="' + escapeAttr(t("trackingPlaceholder")) + '"></div>' +
                 '<div class="field"><label>' + escapeHtml(t("courier")) + '</label><input data-field="courier" value="' + escapeAttr(item.courier || "") + '" placeholder="' + escapeAttr(t("courierPlaceholder")) + '"></div>' +
                 '<button type="button" data-action="save">' + escapeHtml(t("save")) + '</button>' +
@@ -4091,7 +4260,7 @@ var SUPPLIER_PORTAL_HTML = String.raw(_a || (_a = __template([`<!doctype html>
             '<div class="item-main">' +
               '<div>' + title + '<div class="item-meta">' + escapeHtml(meta) + '</div></div>' +
               (item.dispatchAddressLines && item.dispatchAddressLines.length ? '<div class="address">' + item.dispatchAddressLines.map(escapeHtml).join("<br>") + '</div>' : '') +
-              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS 发货 · 供应商请勿发货" : "Fast delivery · ESNTLS ships · Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
+              (item.fastDelivery ? '<div class="status-line"><strong>' + escapeHtml(currentLang() === "zh" ? "ESNTLS \u53D1\u8D27 \xB7 \u4F9B\u5E94\u5546\u8BF7\u52FF\u53D1\u8D27" : "Fast delivery \xB7 ESNTLS ships \xB7 Do not dispatch") + '</strong></div>' : '<div class="tracking-grid">' +
                 '<div class="field"><label>' + escapeHtml(t("tracking")) + '</label><input data-field="tracking" value="' + escapeAttr(item.trackingNumber || "") + '" placeholder="' + escapeAttr(t("trackingPlaceholder")) + '"></div>' +
                 '<div class="field"><label>' + escapeHtml(t("courier")) + '</label><input data-field="courier" value="' + escapeAttr(item.courier || "") + '" placeholder="' + escapeAttr(t("courierPlaceholder")) + '"></div>' +
                 '<button type="button" data-action="save">' + escapeHtml(t("save")) + '</button>' +
@@ -4206,6 +4375,7 @@ function constantTimeEqualBytes(a, b) {
   return diff === 0;
 }
 __name(constantTimeEqualBytes, "constantTimeEqualBytes");
+__name2(constantTimeEqualBytes, "constantTimeEqualBytes");
 async function verifyShopifyWebhookRequest(req, rawBody, env) {
   const secret = env.SHOPIFY_WEBHOOK_SECRET || env.SHOPIFY_CLIENT_SECRET || "";
   if (!secret) {
@@ -4221,6 +4391,7 @@ async function verifyShopifyWebhookRequest(req, rawBody, env) {
   return { ok: true };
 }
 __name(verifyShopifyWebhookRequest, "verifyShopifyWebhookRequest");
+__name2(verifyShopifyWebhookRequest, "verifyShopifyWebhookRequest");
 async function handleShopifyOrderWebhook(req, env, ctx) {
   const rawBody = await req.arrayBuffer();
   const verification = await verifyShopifyWebhookRequest(req, rawBody, env);
@@ -4243,6 +4414,7 @@ async function handleShopifyOrderWebhook(req, env, ctx) {
   return json({ ok: true, accepted: true, orderName: shopifyOrderDisplayName(order) || null }, 202);
 }
 __name(handleShopifyOrderWebhook, "handleShopifyOrderWebhook");
+__name2(handleShopifyOrderWebhook, "handleShopifyOrderWebhook");
 function shopifyProductWebhookImage(product) {
   const candidates = [
     product?.image,
@@ -4256,6 +4428,7 @@ function shopifyProductWebhookImage(product) {
   return "";
 }
 __name(shopifyProductWebhookImage, "shopifyProductWebhookImage");
+__name2(shopifyProductWebhookImage, "shopifyProductWebhookImage");
 async function syncShopifyProductToSupplierPortal(env, product) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const productId = normalizeShopifyNumericId(product?.admin_graphql_api_id || product?.id);
@@ -4308,6 +4481,7 @@ async function syncShopifyProductToSupplierPortal(env, product) {
   return { ok: true, productId, productName, imageUrl, scannedOrders, updatedOrders, updatedItems, syncedAt };
 }
 __name(syncShopifyProductToSupplierPortal, "syncShopifyProductToSupplierPortal");
+__name2(syncShopifyProductToSupplierPortal, "syncShopifyProductToSupplierPortal");
 async function handleShopifyProductWebhook(req, env, ctx) {
   const rawBody = await req.arrayBuffer();
   const verification = await verifyShopifyWebhookRequest(req, rawBody, env);
@@ -4325,6 +4499,7 @@ async function handleShopifyProductWebhook(req, env, ctx) {
   return json({ ok: true, accepted: true, productId: productId || null }, 202);
 }
 __name(handleShopifyProductWebhook, "handleShopifyProductWebhook");
+__name2(handleShopifyProductWebhook, "handleShopifyProductWebhook");
 async function processSupplierOrderWebhook(env, order, options = {}) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const key = supplierOrderLogKey(order, options.deliveryId);
@@ -4359,10 +4534,10 @@ async function processSupplierOrderWebhook(env, order, options = {}) {
       };
     }
     if (shopifyLineItems(order).some(fastParkaSourceId)) {
-      const portal = await upsertSupplierPortalOrder(env, order, { source: options.source || "shopify" });
-      if (portal.status === "created" || portal.status === "updated") {
-        await writeSupplierOrderLog(env, key, { ...baseRecord, status: "recorded", portal });
-        return { ok: true, status: "recorded", orderName: baseRecord.orderName, portal };
+      const portal2 = await upsertSupplierPortalOrder(env, order, { source: options.source || "shopify" });
+      if (portal2.status === "created" || portal2.status === "updated") {
+        await writeSupplierOrderLog(env, key, { ...baseRecord, status: "recorded", portal: portal2 });
+        return { ok: true, status: "recorded", orderName: baseRecord.orderName, portal: portal2 };
       }
     }
     await writeSupplierOrderLog(env, key, { ...baseRecord, status: "skipped", reason: "No supplier line items after exclusions" });
@@ -4416,17 +4591,20 @@ async function processSupplierOrderWebhook(env, order, options = {}) {
   };
 }
 __name(processSupplierOrderWebhook, "processSupplierOrderWebhook");
+__name2(processSupplierOrderWebhook, "processSupplierOrderWebhook");
 function clampInteger(value, fallback, min, max) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.max(min, Math.min(max, Math.trunc(number)));
 }
 __name(clampInteger, "clampInteger");
+__name2(clampInteger, "clampInteger");
 function orderNameNumber(order) {
   const match = String(order?.name || order?.order_number || order?.number || "").match(/\d+/);
   return match ? Number(match[0]) : 0;
 }
 __name(orderNameNumber, "orderNameNumber");
+__name2(orderNameNumber, "orderNameNumber");
 function graphOrderLineItemToWebhookLineItem(lineItem) {
   const variant = lineItem?.variant || {};
   const product = lineItem?.product || variant.product || {};
@@ -4454,6 +4632,7 @@ function graphOrderLineItemToWebhookLineItem(lineItem) {
   };
 }
 __name(graphOrderLineItemToWebhookLineItem, "graphOrderLineItemToWebhookLineItem");
+__name2(graphOrderLineItemToWebhookLineItem, "graphOrderLineItemToWebhookLineItem");
 function graphOrderToWebhookOrder(order) {
   const shipping = order?.shippingAddress || {};
   return {
@@ -4478,6 +4657,7 @@ function graphOrderToWebhookOrder(order) {
   };
 }
 __name(graphOrderToWebhookOrder, "graphOrderToWebhookOrder");
+__name2(graphOrderToWebhookOrder, "graphOrderToWebhookOrder");
 function supplierSyncSkipsOrder(order, options) {
   const orderNumber = orderNameNumber(order);
   if (options.afterOrderNumber && orderNumber && orderNumber <= options.afterOrderNumber) {
@@ -4494,6 +4674,7 @@ function supplierSyncSkipsOrder(order, options) {
   return "";
 }
 __name(supplierSyncSkipsOrder, "supplierSyncSkipsOrder");
+__name2(supplierSyncSkipsOrder, "supplierSyncSkipsOrder");
 async function syncRecentSupplierOrdersToSheet(env, requestBody = {}) {
   const first = clampInteger(requestBody.first, 50, 1, 50);
   const afterOrderNumber = clampInteger(requestBody.afterOrderNumber, 0, 0, 999999999);
@@ -4550,12 +4731,14 @@ async function syncRecentSupplierOrdersToSheet(env, requestBody = {}) {
   };
 }
 __name(syncRecentSupplierOrdersToSheet, "syncRecentSupplierOrdersToSheet");
+__name2(syncRecentSupplierOrdersToSheet, "syncRecentSupplierOrdersToSheet");
 function supplierPortalSyncEnabled(env) {
   return !/^false$/i.test(String(env.SUPPLIER_PORTAL_SYNC_ENABLED || "true").trim());
 }
 __name(supplierPortalSyncEnabled, "supplierPortalSyncEnabled");
+__name2(supplierPortalSyncEnabled, "supplierPortalSyncEnabled");
 async function acquireSupplierPortalSyncLock(env, source = "manual") {
-  if (!env.BUCKET) return { ok: true, runId: crypto.randomUUID(), release: /* @__PURE__ */ __name(async () => {
+  if (!env.BUCKET) return { ok: true, runId: crypto.randomUUID(), release: /* @__PURE__ */ __name2(async () => {
   }, "release") };
   const now = Date.now();
   const existing = await env.BUCKET.get(SUPPLIER_PORTAL_SYNC_LOCK_KEY);
@@ -4578,7 +4761,7 @@ async function acquireSupplierPortalSyncLock(env, source = "manual") {
   return {
     ok: true,
     runId,
-    release: /* @__PURE__ */ __name(async () => {
+    release: /* @__PURE__ */ __name2(async () => {
       try {
         const current = await env.BUCKET.get(SUPPLIER_PORTAL_SYNC_LOCK_KEY);
         if (!current) return;
@@ -4590,6 +4773,7 @@ async function acquireSupplierPortalSyncLock(env, source = "manual") {
   };
 }
 __name(acquireSupplierPortalSyncLock, "acquireSupplierPortalSyncLock");
+__name2(acquireSupplierPortalSyncLock, "acquireSupplierPortalSyncLock");
 async function writeSupplierPortalSyncLog(env, record) {
   if (!env.BUCKET) return;
   const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
@@ -4603,6 +4787,7 @@ async function writeSupplierPortalSyncLog(env, record) {
   }
 }
 __name(writeSupplierPortalSyncLog, "writeSupplierPortalSyncLog");
+__name2(writeSupplierPortalSyncLog, "writeSupplierPortalSyncLog");
 async function runSupplierPortalRecentOrderSync(env, requestBody = {}) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const first = clampInteger(requestBody.first || env.SUPPLIER_PORTAL_SYNC_FIRST, 50, 1, 50);
@@ -4678,6 +4863,7 @@ async function runSupplierPortalRecentOrderSync(env, requestBody = {}) {
   return summary;
 }
 __name(runSupplierPortalRecentOrderSync, "runSupplierPortalRecentOrderSync");
+__name2(runSupplierPortalRecentOrderSync, "runSupplierPortalRecentOrderSync");
 async function syncRecentSupplierOrdersToPortal(env, requestBody = {}) {
   const dryRun = requestBody.dryRun === true;
   let lock = null;
@@ -4694,11 +4880,13 @@ async function syncRecentSupplierOrdersToPortal(env, requestBody = {}) {
   }
 }
 __name(syncRecentSupplierOrdersToPortal, "syncRecentSupplierOrdersToPortal");
+__name2(syncRecentSupplierOrdersToPortal, "syncRecentSupplierOrdersToPortal");
 function xclusivelineSupplierEnabled(env) {
   if (!safeMessageLine(env.XCLUSIVELINE_SUPPLIER_ORDERS_URL)) return false;
   return !/^false$/i.test(String(env.XCLUSIVELINE_SUPPLIER_ENABLED || "true").trim());
 }
 __name(xclusivelineSupplierEnabled, "xclusivelineSupplierEnabled");
+__name2(xclusivelineSupplierEnabled, "xclusivelineSupplierEnabled");
 function xclusivelineSupplierHeaders(env, includeJson = false) {
   const token = safeMessageLine(env.XCLUSIVELINE_SUPPLIER_SERVICE_TOKEN);
   if (!token) throw new Error("XCLUSIVELINE_SUPPLIER_SERVICE_TOKEN is not configured");
@@ -4709,6 +4897,7 @@ function xclusivelineSupplierHeaders(env, includeJson = false) {
   };
 }
 __name(xclusivelineSupplierHeaders, "xclusivelineSupplierHeaders");
+__name2(xclusivelineSupplierHeaders, "xclusivelineSupplierHeaders");
 function xclusivelineSupplierOrdersUrl(env, requestBody = {}) {
   const base = safeMessageLine(env.XCLUSIVELINE_SUPPLIER_ORDERS_URL);
   if (!base) throw new Error("XCLUSIVELINE_SUPPLIER_ORDERS_URL is not configured");
@@ -4727,6 +4916,7 @@ function xclusivelineSupplierOrdersUrl(env, requestBody = {}) {
   return url;
 }
 __name(xclusivelineSupplierOrdersUrl, "xclusivelineSupplierOrdersUrl");
+__name2(xclusivelineSupplierOrdersUrl, "xclusivelineSupplierOrdersUrl");
 function supplierPortalExternalOrderNumber(order) {
   const numeric = Number(order?.orderNumber);
   if (Number.isFinite(numeric) && numeric > 0) return numeric;
@@ -4734,6 +4924,7 @@ function supplierPortalExternalOrderNumber(order) {
   return match ? Number(match[0]) : 0;
 }
 __name(supplierPortalExternalOrderNumber, "supplierPortalExternalOrderNumber");
+__name2(supplierPortalExternalOrderNumber, "supplierPortalExternalOrderNumber");
 function normalizeExternalSupplierPortalItem(item, index, businessId, orderName) {
   const itemKey = safeMessageLine(item?.itemKey) || slugify([businessId, orderName, item?.productName || item?.name || "item", item?.option || "", index + 1].join("-")) || `item-${index + 1}`;
   return {
@@ -4757,6 +4948,7 @@ function normalizeExternalSupplierPortalItem(item, index, businessId, orderName)
   };
 }
 __name(normalizeExternalSupplierPortalItem, "normalizeExternalSupplierPortalItem");
+__name2(normalizeExternalSupplierPortalItem, "normalizeExternalSupplierPortalItem");
 function normalizeExternalSupplierPortalOrder(order, source = {}) {
   const businessId = supplierPortalBusinessId(order?.businessId || source.businessId || "external");
   const businessName = safeMessageLine(order?.businessName || source.businessName || businessId.toUpperCase());
@@ -4794,6 +4986,7 @@ function normalizeExternalSupplierPortalOrder(order, source = {}) {
   };
 }
 __name(normalizeExternalSupplierPortalOrder, "normalizeExternalSupplierPortalOrder");
+__name2(normalizeExternalSupplierPortalOrder, "normalizeExternalSupplierPortalOrder");
 async function syncXclusivelineSupplierOrdersToPortal(env, requestBody = {}) {
   if (!xclusivelineSupplierEnabled(env)) {
     return {
@@ -4869,64 +5062,83 @@ async function syncXclusivelineSupplierOrdersToPortal(env, requestBody = {}) {
   };
 }
 __name(syncXclusivelineSupplierOrdersToPortal, "syncXclusivelineSupplierOrdersToPortal");
-// Fixed at the owner's request; never derive this from deployment/restart time.
-const WIX_SUPPLIER_START_AT = "2026-10-15T19:44:06.000Z";
+__name2(syncXclusivelineSupplierOrdersToPortal, "syncXclusivelineSupplierOrdersToPortal");
+var WIX_SUPPLIER_START_AT = "2026-10-15T19:44:06.000Z";
 function wixSupplierOrderEligible(order) {
   const created = Date.parse(order?.createdDate || "");
-  return Number.isFinite(created) && created >= Date.parse(WIX_SUPPLIER_START_AT)
-    && order.status === "APPROVED" && order.paymentStatus === "PAID"
-    && !order.imported && !order.channelInfo?.externalOrderId;
+  return Number.isFinite(created) && created >= Date.parse(WIX_SUPPLIER_START_AT) && order.status === "APPROVED" && order.paymentStatus === "PAID" && !order.imported && !order.channelInfo?.externalOrderId;
 }
+__name(wixSupplierOrderEligible, "wixSupplierOrderEligible");
 async function wixSupplierApi(env, path, body) {
   const response = await fetch("https://www.wixapis.com" + path, {
     method: body ? "POST" : "GET",
     headers: { Authorization: env.WIX_API_TOKEN, "wix-site-id": env.WIX_SITE_ID, "Content-Type": "application/json" },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-    signal: AbortSignal.timeout(15000)
+    ...body ? { body: JSON.stringify(body) } : {},
+    signal: AbortSignal.timeout(15e3)
   });
   if (!response.ok) throw new Error("Wix orders API returned " + response.status);
   return response.json();
 }
+__name(wixSupplierApi, "wixSupplierApi");
 function buildWixSupplierPortalOrder(order, products) {
   const recipient = order.recipientInfo || order.shippingInfo?.logistics?.shippingDestination || {};
   const address = recipient.address || {};
   const contact = recipient.contactDetails || {};
   const items = (order.lineItems || []).map((line) => {
     const wixId = String(line.catalogReference?.catalogItemId || "");
-    const product = products.find(p => wixId && [p.wixProductId, p.wixBackupProductId, p.wixBackupPlaceholder?.id].some(id => String(id || "") === wixId));
+    const product = products.find((p) => wixId && [p.wixProductId, p.wixBackupProductId, p.wixBackupPlaceholder?.id].some((id) => String(id || "") === wixId));
     const options = line.catalogReference?.options?.options || {};
-    const option = Object.entries(options).map(([name, value]) => name + ": " + String(value)).join(" / ");
+    const option = Object.entries(options).map(([name2, value]) => name2 + ": " + String(value)).join(" / ");
     const fulfilled = order.fulfillmentStatus === "FULFILLED";
     return {
       itemKey: "wix-" + safeMessageLine(line.id),
       sourceProductId: product ? String(product.id) : "wix-" + wixId,
       productName: product?.name || line.productName?.original || "Unknown item",
-      option, quantity: Number(line.quantity || 1),
-      imageUrl: line.image?.url || product?.images?.[0] || "", productPageUrl: "",
-      wixLineItemId: safeMessageLine(line.id), wixProductId: wixId,
+      option,
+      quantity: Number(line.quantity || 1),
+      imageUrl: line.image?.url || product?.images?.[0] || "",
+      productPageUrl: "",
+      wixLineItemId: safeMessageLine(line.id),
+      wixProductId: wixId,
       supplierStatus: fulfilled ? "Already fulfilled" : "New",
       shopifyUpdated: fulfilled ? "Already fulfilled in Wix" : "No",
-      trackingNumber: "", courier: "", supplierNotes: ""
+      trackingNumber: "",
+      courier: "",
+      supplierNotes: ""
     };
   });
   const shipping = {
     name: [contact.firstName, contact.lastName].filter(Boolean).join(" "),
     address1: address.addressLine || [address.streetAddress?.number, address.streetAddress?.name].filter(Boolean).join(" "),
-    address2: address.addressLine2 || "", city: address.city || "",
+    address2: address.addressLine2 || "",
+    city: address.city || "",
     province: address.subdivisionFullname || address.subdivision || "",
-    postcode: address.postalCode || "", country: address.countryFullname || address.country || ""
+    postcode: address.postalCode || "",
+    country: address.countryFullname || address.country || ""
   };
   if (!shipping.name && !shipping.address1) throw new Error("Wix order has no delivery address");
   const name = "#" + order.number;
   return {
-    key: supplierPortalOrderKey(order.id, "esntls-wix"), businessId: "esntls-wix", businessName: "ESNTLS · Wix",
-    orderId: order.id, orderName: name, orderNumber: Number(order.number), orderDate: order.createdDate,
-    salesTotal: Number(order.priceSummary?.total?.amount || 0), currency: order.currency,
-    shipping, addressLines: supplierPortalAddressLines(shipping), items,
-    status: supplierPortalOrderStatus(items), source: "wix", sourceUpdatedAt: order.updatedDate,
-    excludedLineItems: [], unresolvedLineItems: []
+    key: supplierPortalOrderKey(order.id, "esntls-wix"),
+    businessId: "esntls-wix",
+    businessName: "ESNTLS \xB7 Wix",
+    orderId: order.id,
+    orderName: name,
+    orderNumber: Number(order.number),
+    orderDate: order.createdDate,
+    salesTotal: Number(order.priceSummary?.total?.amount || 0),
+    currency: order.currency,
+    shipping,
+    addressLines: supplierPortalAddressLines(shipping),
+    items,
+    status: supplierPortalOrderStatus(items),
+    source: "wix",
+    sourceUpdatedAt: order.updatedDate,
+    excludedLineItems: [],
+    unresolvedLineItems: []
   };
 }
+__name(buildWixSupplierPortalOrder, "buildWixSupplierPortalOrder");
 async function syncWixSupplierOrdersToPortal(env, requestBody = {}) {
   if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) return { ok: true, businessId: "esntls-wix", status: "not_configured", reason: "Wix API credentials are not configured", syncedOrders: 0 };
   const products = (await readProductsPayload(env)).list;
@@ -4935,7 +5147,8 @@ async function syncWixSupplierOrdersToPortal(env, requestBody = {}) {
   do {
     const search = cursor ? { cursorPaging: { limit: 100, cursor } } : {
       filter: { createdDate: { $gte: WIX_SUPPLIER_START_AT } },
-      sort: [{ fieldName: "createdDate", order: "DESC" }], cursorPaging: { limit: 100 }
+      sort: [{ fieldName: "createdDate", order: "DESC" }],
+      cursorPaging: { limit: 100 }
     };
     const data = await wixSupplierApi(env, "/ecom/v1/orders/search", { search });
     for (const order of data.orders || []) {
@@ -4948,32 +5161,43 @@ async function syncWixSupplierOrdersToPortal(env, requestBody = {}) {
         if (!existing && order.fulfillmentStatus === "FULFILLED") continue;
         if (requestBody.dryRun !== true) await writeSupplierPortalOrder(env, mergeSupplierPortalOrder(existing, incoming));
         results.push({ orderName: incoming.orderName, status: requestBody.dryRun ? "ready" : existing ? "updated" : "created" });
-      } catch (error) { results.push({ orderName: "#" + order.number, status: "failed", error: error.message }); }
+      } catch (error) {
+        results.push({ orderName: "#" + order.number, status: "failed", error: error.message });
+      }
     }
     cursor = data.metadata?.cursors?.next;
   } while (cursor);
-  return { ok: !results.some(r => r.status === "failed"), businessId: "esntls-wix", startAt: WIX_SUPPLIER_START_AT,
-    syncedOrders: results.filter(r => r.status === "created" || r.status === "updated").length, results };
+  return {
+    ok: !results.some((r) => r.status === "failed"),
+    businessId: "esntls-wix",
+    startAt: WIX_SUPPLIER_START_AT,
+    syncedOrders: results.filter((r) => r.status === "created" || r.status === "updated").length,
+    results
+  };
 }
+__name(syncWixSupplierOrdersToPortal, "syncWixSupplierOrdersToPortal");
 async function updateWixSupplierTracking(env, order, items) {
   const base = "/ecom/v1/fulfillments/orders/" + encodeURIComponent(order.orderId);
   const data = await wixSupplierApi(env, base);
   const fulfillments = data.orderWithFulfillments?.fulfillments || [];
   let fulfillmentId = "";
   for (const item of items) {
-    const existing = fulfillments.filter(f => f.completed !== false && (f.lineItems || []).some(l => l.id === item.wixLineItemId));
-    const same = existing.find(f => f.trackingInfo?.trackingNumber === item.trackingNumber);
-    if (same) { fulfillmentId = same.id; continue; }
+    const existing = fulfillments.filter((f) => f.completed !== false && (f.lineItems || []).some((l) => l.id === item.wixLineItemId));
+    const same = existing.find((f) => f.trackingInfo?.trackingNumber === item.trackingNumber);
+    if (same) {
+      fulfillmentId = same.id;
+      continue;
+    }
     if (existing.length) throw new Error("Item is already fulfilled in Wix; edit its tracking in Wix to avoid duplicate fulfilment");
     const result = await wixSupplierApi(env, base + "/create-fulfillment", { fulfillment: {
       lineItems: [{ id: item.wixLineItemId, quantity: item.quantity }],
       trackingInfo: { trackingNumber: item.trackingNumber, shippingProvider: item.courier || "Other" }
-    }});
+    } });
     fulfillmentId = result.fulfillmentId;
   }
   return { status: "fulfilled", fulfillmentId };
 }
-
+__name(updateWixSupplierTracking, "updateWixSupplierTracking");
 async function syncExternalSupplierOrdersToPortal(env, requestBody = {}) {
   const sources = [];
   try {
@@ -5009,6 +5233,7 @@ async function syncExternalSupplierOrdersToPortal(env, requestBody = {}) {
   return summary;
 }
 __name(syncExternalSupplierOrdersToPortal, "syncExternalSupplierOrdersToPortal");
+__name2(syncExternalSupplierOrdersToPortal, "syncExternalSupplierOrdersToPortal");
 async function syncAllSupplierOrdersToPortal(env, requestBody = {}) {
   const local = await syncRecentSupplierOrdersToPortal(env, requestBody);
   const external = await syncExternalSupplierOrdersToPortal(env, requestBody);
@@ -5022,6 +5247,7 @@ async function syncAllSupplierOrdersToPortal(env, requestBody = {}) {
   };
 }
 __name(syncAllSupplierOrdersToPortal, "syncAllSupplierOrdersToPortal");
+__name2(syncAllSupplierOrdersToPortal, "syncAllSupplierOrdersToPortal");
 async function importSupplierSheetOrdersToPortal(env, requestBody = {}) {
   if (!supplierSheetConfigured(env)) {
     return {
@@ -5099,6 +5325,7 @@ async function importSupplierSheetOrdersToPortal(env, requestBody = {}) {
   return summary;
 }
 __name(importSupplierSheetOrdersToPortal, "importSupplierSheetOrdersToPortal");
+__name2(importSupplierSheetOrdersToPortal, "importSupplierSheetOrdersToPortal");
 async function createShopifyFulfillmentForSupplierRows(env, orderName, rows) {
   const orderData = await shopifyGraphql(env, SUPPLIER_TRACKING_ORDER_QUERY, {
     query: shopifyOrderSearchQuery(orderName)
@@ -5142,6 +5369,7 @@ async function createShopifyFulfillmentForSupplierRows(env, orderName, rows) {
   };
 }
 __name(createShopifyFulfillmentForSupplierRows, "createShopifyFulfillmentForSupplierRows");
+__name2(createShopifyFulfillmentForSupplierRows, "createShopifyFulfillmentForSupplierRows");
 function portalTrackingRowsFromItems(items) {
   return (items || []).map((item) => ({
     rowNumber: 0,
@@ -5154,6 +5382,7 @@ function portalTrackingRowsFromItems(items) {
   })).filter((row) => row.trackingNumbers.length);
 }
 __name(portalTrackingRowsFromItems, "portalTrackingRowsFromItems");
+__name2(portalTrackingRowsFromItems, "portalTrackingRowsFromItems");
 async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
   const trackingUrl = safeMessageLine(env.XCLUSIVELINE_SUPPLIER_TRACKING_URL);
   if (!trackingUrl) {
@@ -5199,6 +5428,7 @@ async function updateXclusivelineSupplierTracking(env, order, selectedItems) {
   return data;
 }
 __name(updateXclusivelineSupplierTracking, "updateXclusivelineSupplierTracking");
+__name2(updateXclusivelineSupplierTracking, "updateXclusivelineSupplierTracking");
 function supplierSheetRowMatchesPortalItem(row, order, item) {
   if (normalizeTitleKey(supplierTrackingCell(row, SUPPLIER_SHEET_COLS.ORDER_NAME)) !== normalizeTitleKey(order.orderName)) return false;
   const sheetProduct = normalizeTitleKey(supplierTrackingCell(row, SUPPLIER_SHEET_COLS.PRODUCT_NAME));
@@ -5211,6 +5441,7 @@ function supplierSheetRowMatchesPortalItem(row, order, item) {
   return !sheetOption || !itemOption || sheetOption === itemOption || sheetOption.includes(itemOption) || itemOption.includes(sheetOption);
 }
 __name(supplierSheetRowMatchesPortalItem, "supplierSheetRowMatchesPortalItem");
+__name2(supplierSheetRowMatchesPortalItem, "supplierSheetRowMatchesPortalItem");
 async function updateSupplierSheetTrackingForPortalItems(env, order, items) {
   if (!supplierSheetConfigured(env) || !items.length) return { status: "skipped", reason: "Google Sheet is not configured" };
   const scanLimit = clampInteger(env.SUPPLIER_TRACKING_SCAN_LIMIT, 500, 10, 2e3);
@@ -5240,6 +5471,7 @@ async function updateSupplierSheetTrackingForPortalItems(env, order, items) {
   return batchUpdateSupplierGoogleSheetValues(env, updates);
 }
 __name(updateSupplierSheetTrackingForPortalItems, "updateSupplierSheetTrackingForPortalItems");
+__name2(updateSupplierSheetTrackingForPortalItems, "updateSupplierSheetTrackingForPortalItems");
 async function updateSupplierPortalTracking(env, requestBody = {}) {
   const orderKey = safeMessageLine(requestBody.orderKey || requestBody.key || requestBody.orderName);
   if (!orderKey) throw new Error("Missing order key");
@@ -5300,6 +5532,7 @@ async function updateSupplierPortalTracking(env, requestBody = {}) {
   };
 }
 __name(updateSupplierPortalTracking, "updateSupplierPortalTracking");
+__name2(updateSupplierPortalTracking, "updateSupplierPortalTracking");
 async function sendShopifyOrderToWhatsApp(env, order, options = {}) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const key = supplierWhatsappOrderKey(order, options.deliveryId);
@@ -5345,6 +5578,7 @@ async function sendShopifyOrderToWhatsApp(env, order, options = {}) {
   return { ok: true, status: "sent", key, orderName: built.orderName, recipients: results, message: built.message };
 }
 __name(sendShopifyOrderToWhatsApp, "sendShopifyOrderToWhatsApp");
+__name2(sendShopifyOrderToWhatsApp, "sendShopifyOrderToWhatsApp");
 async function sendWhatsappOrderMessage(env, to, message) {
   if (env.WHATSAPP_TEMPLATE_NAME) {
     return sendWhatsappTemplateMessage(env, to, message);
@@ -5352,11 +5586,13 @@ async function sendWhatsappOrderMessage(env, to, message) {
   return sendWhatsappTextMessage(env, to, message);
 }
 __name(sendWhatsappOrderMessage, "sendWhatsappOrderMessage");
+__name2(sendWhatsappOrderMessage, "sendWhatsappOrderMessage");
 function whatsappGraphMessagesUrl(env) {
   const version = String(env.WHATSAPP_GRAPH_VERSION || WHATSAPP_DEFAULT_GRAPH_VERSION).replace(/^\/+/, "");
   return `https://graph.facebook.com/${version}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
 }
 __name(whatsappGraphMessagesUrl, "whatsappGraphMessagesUrl");
+__name2(whatsappGraphMessagesUrl, "whatsappGraphMessagesUrl");
 async function sendWhatsappTextMessage(env, to, message) {
   const response = await fetch(whatsappGraphMessagesUrl(env), {
     method: "POST",
@@ -5374,6 +5610,7 @@ async function sendWhatsappTextMessage(env, to, message) {
   return parseWhatsappSendResponse(response);
 }
 __name(sendWhatsappTextMessage, "sendWhatsappTextMessage");
+__name2(sendWhatsappTextMessage, "sendWhatsappTextMessage");
 async function sendWhatsappTemplateMessage(env, to, message) {
   const response = await fetch(whatsappGraphMessagesUrl(env), {
     method: "POST",
@@ -5398,6 +5635,7 @@ async function sendWhatsappTemplateMessage(env, to, message) {
   return parseWhatsappSendResponse(response);
 }
 __name(sendWhatsappTemplateMessage, "sendWhatsappTemplateMessage");
+__name2(sendWhatsappTemplateMessage, "sendWhatsappTemplateMessage");
 async function parseWhatsappSendResponse(response) {
   const data = await readJsonResponse(response);
   if (!response.ok || data.error) {
@@ -5409,18 +5647,21 @@ async function parseWhatsappSendResponse(response) {
   };
 }
 __name(parseWhatsappSendResponse, "parseWhatsappSendResponse");
+__name2(parseWhatsappSendResponse, "parseWhatsappSendResponse");
 async function writeWhatsappOrderLog(env, key, record) {
   await env.BUCKET.put(key, JSON.stringify(record, null, 2), {
     httpMetadata: { contentType: JSON_CONTENT_TYPE }
   });
 }
 __name(writeWhatsappOrderLog, "writeWhatsappOrderLog");
+__name2(writeWhatsappOrderLog, "writeWhatsappOrderLog");
 async function writeSupplierOrderLog(env, key, record) {
   await env.BUCKET.put(key, JSON.stringify(record, null, 2), {
     httpMetadata: { contentType: JSON_CONTENT_TYPE }
   });
 }
 __name(writeSupplierOrderLog, "writeSupplierOrderLog");
+__name2(writeSupplierOrderLog, "writeSupplierOrderLog");
 async function logSupplierOrderError(env, order, error, meta = {}) {
   try {
     const key = supplierOrderLogKey(order, meta.deliveryId);
@@ -5441,6 +5682,7 @@ async function logSupplierOrderError(env, order, error, meta = {}) {
   }
 }
 __name(logSupplierOrderError, "logSupplierOrderError");
+__name2(logSupplierOrderError, "logSupplierOrderError");
 async function listWhatsappOrderLogs(env, limit = 50) {
   const safeLimit = Math.max(1, Math.min(100, Number(limit || 50)));
   const listed = await env.BUCKET.list({ prefix: WHATSAPP_ORDER_ROOT, limit: safeLimit });
@@ -5471,6 +5713,7 @@ async function listWhatsappOrderLogs(env, limit = 50) {
   return { ok: true, logs };
 }
 __name(listWhatsappOrderLogs, "listWhatsappOrderLogs");
+__name2(listWhatsappOrderLogs, "listWhatsappOrderLogs");
 async function listSupplierOrderLogs(env, limit = 50) {
   const safeLimit = Math.max(1, Math.min(100, Number(limit || 50)));
   const listed = await env.BUCKET.list({ prefix: SUPPLIER_ORDER_ROOT, limit: safeLimit });
@@ -5503,6 +5746,7 @@ async function listSupplierOrderLogs(env, limit = 50) {
   return { ok: true, logs };
 }
 __name(listSupplierOrderLogs, "listSupplierOrderLogs");
+__name2(listSupplierOrderLogs, "listSupplierOrderLogs");
 function sampleShopifyOrderForWhatsappTest() {
   return {
     id: `test-${Date.now()}`,
@@ -5523,6 +5767,7 @@ function sampleShopifyOrderForWhatsappTest() {
   };
 }
 __name(sampleShopifyOrderForWhatsappTest, "sampleShopifyOrderForWhatsappTest");
+__name2(sampleShopifyOrderForWhatsappTest, "sampleShopifyOrderForWhatsappTest");
 function buildShopifyImagePrompt(product, hasBackground) {
   const backgroundLine = hasBackground ? "Use the provided ESNTLS grey concrete background plate as the final background so Shopify and Wix blank products share the same backdrop." : "Replace the original background with a neutral grey concrete floor/background matching clean ESNTLS Shopify blank product photography.";
   return [
@@ -5541,6 +5786,7 @@ function buildShopifyImagePrompt(product, hasBackground) {
   ].join("\n");
 }
 __name(buildShopifyImagePrompt, "buildShopifyImagePrompt");
+__name2(buildShopifyImagePrompt, "buildShopifyImagePrompt");
 async function readJsonResponse(response) {
   const text = await response.text();
   if (!text) return {};
@@ -5551,13 +5797,14 @@ async function readJsonResponse(response) {
   }
 }
 __name(readJsonResponse, "readJsonResponse");
+__name2(readJsonResponse, "readJsonResponse");
 async function fetchWithTimeout(url, options = {}, timeoutMs = 0, label = "Request") {
   const timeout = Number(timeoutMs || 0);
   if (!timeout) return fetch(url, options);
   const controller = new AbortController();
   const parentSignal = options.signal;
   let timer = null;
-  const abortFromParent = /* @__PURE__ */ __name(() => controller.abort(parentSignal.reason), "abortFromParent");
+  const abortFromParent = /* @__PURE__ */ __name2(() => controller.abort(parentSignal.reason), "abortFromParent");
   if (parentSignal) {
     if (parentSignal.aborted) controller.abort(parentSignal.reason);
     else parentSignal.addEventListener("abort", abortFromParent, { once: true });
@@ -5578,14 +5825,17 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 0, label = "Reque
   }
 }
 __name(fetchWithTimeout, "fetchWithTimeout");
+__name2(fetchWithTimeout, "fetchWithTimeout");
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 __name(sleep, "sleep");
+__name2(sleep, "sleep");
 function shouldRetryImageDownload(status) {
   return [404, 408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status));
 }
 __name(shouldRetryImageDownload, "shouldRetryImageDownload");
+__name2(shouldRetryImageDownload, "shouldRetryImageDownload");
 function base64ToBlob(base64, type = "image/png") {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -5593,6 +5843,7 @@ function base64ToBlob(base64, type = "image/png") {
   return new Blob([bytes], { type });
 }
 __name(base64ToBlob, "base64ToBlob");
+__name2(base64ToBlob, "base64ToBlob");
 function normalizeOpenAIImageMime(type, filename = "") {
   const raw = String(type || "").split(";")[0].trim().toLowerCase();
   if (raw === "image/jpeg" || raw === "image/jpg" || raw === "image/pjpeg") return "image/jpeg";
@@ -5606,10 +5857,12 @@ function normalizeOpenAIImageMime(type, filename = "") {
   return raw || "image/jpeg";
 }
 __name(normalizeOpenAIImageMime, "normalizeOpenAIImageMime");
+__name2(normalizeOpenAIImageMime, "normalizeOpenAIImageMime");
 function isOpenAIImageMime(type) {
   return ["image/jpeg", "image/png", "image/webp"].includes(String(type || "").toLowerCase());
 }
 __name(isOpenAIImageMime, "isOpenAIImageMime");
+__name2(isOpenAIImageMime, "isOpenAIImageMime");
 function requireOpenAIImageMime(type, label = "Image") {
   if (!isOpenAIImageMime(type)) {
     throw new Error(`${label} must be JPEG, PNG, or WebP. The source returned ${type || "an unknown format"}.`);
@@ -5617,6 +5870,7 @@ function requireOpenAIImageMime(type, label = "Image") {
   return type;
 }
 __name(requireOpenAIImageMime, "requireOpenAIImageMime");
+__name2(requireOpenAIImageMime, "requireOpenAIImageMime");
 async function openAIImagePart(part, fallbackFilename = "image.jpg") {
   const blob = part instanceof Blob ? part : part && part.blob;
   if (!(blob instanceof Blob)) throw new Error("Missing image blob");
@@ -5628,6 +5882,7 @@ async function openAIImagePart(part, fallbackFilename = "image.jpg") {
   return { blob: new Blob([await blob.arrayBuffer()], { type }), filename };
 }
 __name(openAIImagePart, "openAIImagePart");
+__name2(openAIImagePart, "openAIImagePart");
 async function blobToBase64(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   let binary = "";
@@ -5638,6 +5893,7 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 __name(blobToBase64, "blobToBase64");
+__name2(blobToBase64, "blobToBase64");
 async function fetchImageBlob(url, label, options = {}) {
   const attempts = Math.max(1, Number(options.attempts || 5));
   let lastStatus = 0;
@@ -5662,11 +5918,13 @@ async function fetchImageBlob(url, label, options = {}) {
   throw new Error(`${label} download failed${lastError ? `: ${lastError.message}` : ""}`);
 }
 __name(fetchImageBlob, "fetchImageBlob");
+__name2(fetchImageBlob, "fetchImageBlob");
 function isAllowedYupooHost(hostname) {
   const host = String(hostname || "").toLowerCase();
   return host === "yupoo.com" || host.endsWith(".yupoo.com");
 }
 __name(isAllowedYupooHost, "isAllowedYupooHost");
+__name2(isAllowedYupooHost, "isAllowedYupooHost");
 function validateYupooUrl(value, label = "Yupoo URL") {
   let parsed;
   try {
@@ -5679,14 +5937,17 @@ function validateYupooUrl(value, label = "Yupoo URL") {
   return parsed;
 }
 __name(validateYupooUrl, "validateYupooUrl");
+__name2(validateYupooUrl, "validateYupooUrl");
 function decodeHtmlEntities(value) {
   return String(value || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'").replace(/&#x3D;/gi, "=").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&#x([a-f0-9]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
 }
 __name(decodeHtmlEntities, "decodeHtmlEntities");
+__name2(decodeHtmlEntities, "decodeHtmlEntities");
 function normalizeYupooHtml(html) {
   return decodeHtmlEntities(html).replace(/\\\//g, "/").replace(/\\u002f/gi, "/").replace(/\\u003a/gi, ":").replace(/\\u0026/gi, "&").replace(/\\u003d/gi, "=");
 }
 __name(normalizeYupooHtml, "normalizeYupooHtml");
+__name2(normalizeYupooHtml, "normalizeYupooHtml");
 function cleanYupooImageUrl(value, baseUrl) {
   let raw = decodeHtmlEntities(value).trim();
   if (!raw) return "";
@@ -5706,6 +5967,7 @@ function cleanYupooImageUrl(value, baseUrl) {
   return parsed.href;
 }
 __name(cleanYupooImageUrl, "cleanYupooImageUrl");
+__name2(cleanYupooImageUrl, "cleanYupooImageUrl");
 function uniquePush(list, seen, value) {
   if (!value || seen.has(value)) return false;
   seen.add(value);
@@ -5713,6 +5975,7 @@ function uniquePush(list, seen, value) {
   return true;
 }
 __name(uniquePush, "uniquePush");
+__name2(uniquePush, "uniquePush");
 function yupooImageFolderKey(value) {
   try {
     const parsed = new URL(value);
@@ -5724,6 +5987,7 @@ function yupooImageFolderKey(value) {
   }
 }
 __name(yupooImageFolderKey, "yupooImageFolderKey");
+__name2(yupooImageFolderKey, "yupooImageFolderKey");
 function isGenericYupooImage(value) {
   try {
     return /\/(?:big|square|small|thumb|thumbnail|tiny|medium)\.(?:jpe?g|png|webp)$/i.test(new URL(value).pathname);
@@ -5732,6 +5996,7 @@ function isGenericYupooImage(value) {
   }
 }
 __name(isGenericYupooImage, "isGenericYupooImage");
+__name2(isGenericYupooImage, "isGenericYupooImage");
 function addYupooImage(list, seen, value) {
   if (!value || seen.has(value)) return false;
   const folder = yupooImageFolderKey(value);
@@ -5751,6 +6016,7 @@ function addYupooImage(list, seen, value) {
   return uniquePush(list, seen, value);
 }
 __name(addYupooImage, "addYupooImage");
+__name2(addYupooImage, "addYupooImage");
 function extractYupooImageUrls(html, pageUrl) {
   const normalized = normalizeYupooHtml(html);
   const images = [];
@@ -5762,6 +6028,7 @@ function extractYupooImageUrls(html, pageUrl) {
   return images;
 }
 __name(extractYupooImageUrls, "extractYupooImageUrls");
+__name2(extractYupooImageUrls, "extractYupooImageUrls");
 function extractYupooPageLinks(html, pageUrl) {
   const normalized = normalizeYupooHtml(html);
   const base = new URL(pageUrl);
@@ -5789,6 +6056,7 @@ function extractYupooPageLinks(html, pageUrl) {
   return links;
 }
 __name(extractYupooPageLinks, "extractYupooPageLinks");
+__name2(extractYupooPageLinks, "extractYupooPageLinks");
 function yupooImageName(imageUrl, index) {
   let name = "";
   try {
@@ -5801,6 +6069,7 @@ function yupooImageName(imageUrl, index) {
   return `yupoo_${String(index + 1).padStart(2, "0")}_${name}`;
 }
 __name(yupooImageName, "yupooImageName");
+__name2(yupooImageName, "yupooImageName");
 async function fetchYupooHtml(pageUrl) {
   const response = await fetch(pageUrl, {
     headers: {
@@ -5812,6 +6081,7 @@ async function fetchYupooHtml(pageUrl) {
   return response.text();
 }
 __name(fetchYupooHtml, "fetchYupooHtml");
+__name2(fetchYupooHtml, "fetchYupooHtml");
 async function listYupooImages(rawUrl, requestedLimit) {
   const start = validateYupooUrl(rawUrl);
   const parsedLimit = parseInt(requestedLimit || YUPOO_IMPORT_LIMIT, 10);
@@ -5847,6 +6117,7 @@ async function listYupooImages(rawUrl, requestedLimit) {
   };
 }
 __name(listYupooImages, "listYupooImages");
+__name2(listYupooImages, "listYupooImages");
 async function proxyYupooImage(rawUrl) {
   const parsed = validateYupooUrl(rawUrl, "Yupoo image URL");
   const imageUrl = cleanYupooImageUrl(parsed.href, parsed.href);
@@ -5872,6 +6143,7 @@ async function proxyYupooImage(rawUrl) {
   });
 }
 __name(proxyYupooImage, "proxyYupooImage");
+__name2(proxyYupooImage, "proxyYupooImage");
 async function requestOpenAIImageEdit(env, product, source, background, model, size) {
   const form = new FormData();
   const sourcePart = await openAIImagePart(source, "source.jpg");
@@ -5903,6 +6175,7 @@ async function requestOpenAIImageEdit(env, product, source, background, model, s
   throw new Error(`OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
 }
 __name(requestOpenAIImageEdit, "requestOpenAIImageEdit");
+__name2(requestOpenAIImageEdit, "requestOpenAIImageEdit");
 function grassReplacementPrompt(productName = "uploaded product") {
   return [
     "Use case: realistic ecommerce flat-lay background replacement for ESNTLSCLUB.",
@@ -5925,12 +6198,14 @@ function grassReplacementPrompt(productName = "uploaded product") {
   ].join(" ");
 }
 __name(grassReplacementPrompt, "grassReplacementPrompt");
+__name2(grassReplacementPrompt, "grassReplacementPrompt");
 function buildGrassImagePrompt(prompt, hasReferences = false) {
   const fallback = grassReplacementPrompt();
   const referenceLine = hasReferences ? "Use the additional reference images only to match the finished ESNTLS artificial-grass product-photo look: real phone photo, natural scale, camera distance, soft grounding, and grass texture. Do not copy or add products, boxes, cards, logos, stickers, packaging, hands, props, text, or layout from the reference images." : "";
   return [String(prompt || fallback).trim() || fallback, referenceLine].filter(Boolean).join(" ");
 }
 __name(buildGrassImagePrompt, "buildGrassImagePrompt");
+__name2(buildGrassImagePrompt, "buildGrassImagePrompt");
 async function requestOpenAIGrassImageEdit(env, source, background, prompt, model, size, quality, references = [], options = {}) {
   const form = new FormData();
   const sourcePart = await openAIImagePart(source, "product.jpg");
@@ -5967,6 +6242,7 @@ async function requestOpenAIGrassImageEdit(env, source, background, prompt, mode
   throw new Error(`${model}: OpenAI image response did not include b64_json or url: ${JSON.stringify(data)}`);
 }
 __name(requestOpenAIGrassImageEdit, "requestOpenAIGrassImageEdit");
+__name2(requestOpenAIGrassImageEdit, "requestOpenAIGrassImageEdit");
 async function createGrassPreview(env, formData) {
   if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY env var not set");
   const image = formData.get("image") || formData.get("image[]");
@@ -6046,6 +6322,7 @@ async function createGrassPreview(env, formData) {
   }
 }
 __name(createGrassPreview, "createGrassPreview");
+__name2(createGrassPreview, "createGrassPreview");
 async function createGrassJob(req, env, formData, ctx) {
   if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY env var not set");
   const images = [
@@ -6125,6 +6402,7 @@ async function createGrassJob(req, env, formData, ctx) {
   return json({ ok: true, job: publicGrassJob(job), queue }, 202);
 }
 __name(createGrassJob, "createGrassJob");
+__name2(createGrassJob, "createGrassJob");
 async function getGrassJobs(req, env, ctx) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
@@ -6152,6 +6430,7 @@ async function getGrassJobs(req, env, ctx) {
   return json({ ok: true, jobs: jobs.slice(0, limit), truncated: listed.truncated, cursor: listed.cursor || null });
 }
 __name(getGrassJobs, "getGrassJobs");
+__name2(getGrassJobs, "getGrassJobs");
 async function resumeGrassJobFromRequest(req, env, ctx) {
   const body = await req.json().catch(() => ({}));
   const id = body.id || new URL(req.url).searchParams.get("id");
@@ -6163,6 +6442,7 @@ async function resumeGrassJobFromRequest(req, env, ctx) {
   return json({ ok: true, job: publicGrassJob(resumed) }, 202);
 }
 __name(resumeGrassJobFromRequest, "resumeGrassJobFromRequest");
+__name2(resumeGrassJobFromRequest, "resumeGrassJobFromRequest");
 async function retryFailedGrassJob(req, env, ctx) {
   const body = await req.json().catch(() => ({}));
   const id = body.id || new URL(req.url).searchParams.get("id");
@@ -6192,6 +6472,7 @@ async function retryFailedGrassJob(req, env, ctx) {
   return json({ ok: true, retried, job: publicGrassJob(queuedJob || job), queue }, 202);
 }
 __name(retryFailedGrassJob, "retryFailedGrassJob");
+__name2(retryFailedGrassJob, "retryFailedGrassJob");
 async function cancelGrassJob(req, env) {
   const body = await req.json().catch(() => ({}));
   const id = body.id || new URL(req.url).searchParams.get("id");
@@ -6217,6 +6498,7 @@ async function cancelGrassJob(req, env) {
   return json({ ok: true, job: publicGrassJob(job) });
 }
 __name(cancelGrassJob, "cancelGrassJob");
+__name2(cancelGrassJob, "cancelGrassJob");
 async function enqueueGrassJob(env, jobId, ctx, reason) {
   const job = await readGrassJob(env, jobId);
   if (!job || isGrassJobTerminal(job.status)) return { method: "none", count: 0 };
@@ -6241,6 +6523,7 @@ async function enqueueGrassJob(env, jobId, ctx, reason) {
   return { method: "queue", reason, count: messages.length, enqueuedAt: (/* @__PURE__ */ new Date()).toISOString() };
 }
 __name(enqueueGrassJob, "enqueueGrassJob");
+__name2(enqueueGrassJob, "enqueueGrassJob");
 async function resumeGrassJob(env, job, ctx, reason) {
   for (const item of job.items || []) {
     if (item.status === "running") {
@@ -6256,6 +6539,7 @@ async function resumeGrassJob(env, job, ctx, reason) {
   return await readGrassJob(env, job.id) || job;
 }
 __name(resumeGrassJob, "resumeGrassJob");
+__name2(resumeGrassJob, "resumeGrassJob");
 async function processGrassJobItem(env, jobId, itemId, fallbackIndex, options = {}) {
   let job = await readGrassJob(env, jobId);
   if (!job || isGrassJobTerminal(job.status)) return;
@@ -6324,6 +6608,7 @@ async function processGrassJobItem(env, jobId, itemId, fallbackIndex, options = 
   await finalizeGrassJob(env, jobId);
 }
 __name(processGrassJobItem, "processGrassJobItem");
+__name2(processGrassJobItem, "processGrassJobItem");
 async function generateGrassJobImage(env, source, background, prompt, quality, references, options = {}) {
   const timeoutMs = Math.max(15e3, Number(options.timeoutMs || env.GRASS_JOB_OPENAI_TIMEOUT_MS || GRASS_JOB_OPENAI_TIMEOUT_MS));
   try {
@@ -6355,6 +6640,7 @@ async function generateGrassJobImage(env, source, background, prompt, quality, r
   }
 }
 __name(generateGrassJobImage, "generateGrassJobImage");
+__name2(generateGrassJobImage, "generateGrassJobImage");
 async function finalizeGrassJob(env, jobId) {
   const job = await readGrassJob(env, jobId);
   if (!job) return null;
@@ -6375,10 +6661,12 @@ async function finalizeGrassJob(env, jobId) {
   return job;
 }
 __name(finalizeGrassJob, "finalizeGrassJob");
+__name2(finalizeGrassJob, "finalizeGrassJob");
 function grassItemAttemptTime(item) {
   return Date.parse(item.lastAttemptAt || item.startedAt || item.createdAt || "");
 }
 __name(grassItemAttemptTime, "grassItemAttemptTime");
+__name2(grassItemAttemptTime, "grassItemAttemptTime");
 function resetStaleGrassJobItems(job, force = false) {
   const now = Date.now();
   let reset = 0;
@@ -6399,6 +6687,7 @@ function resetStaleGrassJobItems(job, force = false) {
   return reset;
 }
 __name(resetStaleGrassJobItems, "resetStaleGrassJobItems");
+__name2(resetStaleGrassJobItems, "resetStaleGrassJobItems");
 async function processNextGrassJobItem(env, jobId, options = {}) {
   let job = await readGrassJob(env, jobId);
   if (!job) throw new Error("Background job was not found");
@@ -6416,20 +6705,24 @@ async function processNextGrassJobItem(env, jobId, options = {}) {
   return await readGrassJob(env, jobId) || job;
 }
 __name(processNextGrassJobItem, "processNextGrassJobItem");
+__name2(processNextGrassJobItem, "processNextGrassJobItem");
 function grassJobPrefix(jobId) {
   return `${GRASS_JOB_ROOT}${jobId}/`;
 }
 __name(grassJobPrefix, "grassJobPrefix");
+__name2(grassJobPrefix, "grassJobPrefix");
 function grassJobRecordKey(jobId) {
   return `${grassJobPrefix(jobId)}job.json`;
 }
 __name(grassJobRecordKey, "grassJobRecordKey");
+__name2(grassJobRecordKey, "grassJobRecordKey");
 async function readGrassJob(env, jobId) {
   const object = await env.BUCKET.get(grassJobRecordKey(jobId));
   if (!object) return null;
   return await object.json();
 }
 __name(readGrassJob, "readGrassJob");
+__name2(readGrassJob, "readGrassJob");
 async function writeGrassJob(env, job) {
   const record = { ...job, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
   await env.BUCKET.put(grassJobRecordKey(job.id), JSON.stringify(record, null, 2) + "\n", {
@@ -6439,10 +6732,12 @@ async function writeGrassJob(env, job) {
   return record;
 }
 __name(writeGrassJob, "writeGrassJob");
+__name2(writeGrassJob, "writeGrassJob");
 function isGrassJobTerminal(status) {
   return GRASS_JOB_TERMINAL_STATUSES.includes(String(status || ""));
 }
 __name(isGrassJobTerminal, "isGrassJobTerminal");
+__name2(isGrassJobTerminal, "isGrassJobTerminal");
 function isStaleGrassJob(job) {
   if (!job || isGrassJobTerminal(job.status)) return false;
   if (job.queue?.method === "queue") return false;
@@ -6452,6 +6747,7 @@ function isStaleGrassJob(job) {
   return incomplete && Date.now() - updatedAt > GRASS_JOB_STALE_AFTER_MS;
 }
 __name(isStaleGrassJob, "isStaleGrassJob");
+__name2(isStaleGrassJob, "isStaleGrassJob");
 function publicGrassJob(job, options = {}) {
   const includeItems = options.includeItems !== false;
   const publicValue = {
@@ -6479,6 +6775,7 @@ function publicGrassJob(job, options = {}) {
   return publicValue;
 }
 __name(publicGrassJob, "publicGrassJob");
+__name2(publicGrassJob, "publicGrassJob");
 async function grassJobBlobPart(env, key, fallbackFilename) {
   const object = await env.BUCKET.get(key);
   if (!object) throw new Error("Stored job source image was not found");
@@ -6492,6 +6789,7 @@ async function grassJobBlobPart(env, key, fallbackFilename) {
   };
 }
 __name(grassJobBlobPart, "grassJobBlobPart");
+__name2(grassJobBlobPart, "grassJobBlobPart");
 async function grassJobBackgroundPart(env, job) {
   if (job.background?.kind === "stored" && job.background.key) {
     return await grassJobBlobPart(env, job.background.key, job.background.filename || "esntls-background.jpg");
@@ -6500,6 +6798,7 @@ async function grassJobBackgroundPart(env, job) {
   return await fetchImageBlob(url, "Grass background image");
 }
 __name(grassJobBackgroundPart, "grassJobBackgroundPart");
+__name2(grassJobBackgroundPart, "grassJobBackgroundPart");
 async function grassJobReferenceParts(referenceUrls) {
   const references = [];
   for (const referenceUrl of (referenceUrls || []).slice(0, 6)) {
@@ -6508,11 +6807,13 @@ async function grassJobReferenceParts(referenceUrls) {
   return references;
 }
 __name(grassJobReferenceParts, "grassJobReferenceParts");
+__name2(grassJobReferenceParts, "grassJobReferenceParts");
 function safeJobFilename(value) {
   const clean = String(value || "image.jpg").replace(/[\/'\\?%*:|"<>]/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "").slice(0, 96);
   return clean || "image.jpg";
 }
 __name(safeJobFilename, "safeJobFilename");
+__name2(safeJobFilename, "safeJobFilename");
 function extensionForContentType(contentType) {
   const type = String(contentType || "").split(";")[0].trim().toLowerCase();
   if (type === "image/jpeg" || type === "image/jpg") return "jpg";
@@ -6522,11 +6823,13 @@ function extensionForContentType(contentType) {
   return "png";
 }
 __name(extensionForContentType, "extensionForContentType");
+__name2(extensionForContentType, "extensionForContentType");
 function outputGrassJobFilename(originalName, contentType) {
   const base = safeJobFilename(originalName || "esntls-grass-output.png").replace(/\.[a-z0-9]+$/i, "") || "esntls-grass-output";
   return `${base}-grass.${extensionForContentType(contentType)}`;
 }
 __name(outputGrassJobFilename, "outputGrassJobFilename");
+__name2(outputGrassJobFilename, "outputGrassJobFilename");
 function validateR2ObjectKey(value, label) {
   const key = String(value || "").trim();
   if (!key) throw new Error(`${label} is required`);
@@ -6535,12 +6838,14 @@ function validateR2ObjectKey(value, label) {
   return key;
 }
 __name(validateR2ObjectKey, "validateR2ObjectKey");
+__name2(validateR2ObjectKey, "validateR2ObjectKey");
 function validateR2ImageKey(value, label) {
   const key = validateR2ObjectKey(value, label);
   if (!/\.(?:jpe?g|png|webp|gif|avif)$/i.test(key)) throw new Error(`${label} must be an image key`);
   return key;
 }
 __name(validateR2ImageKey, "validateR2ImageKey");
+__name2(validateR2ImageKey, "validateR2ImageKey");
 function contentTypeFromImageKey(key) {
   if (/\.jpe?g$/i.test(key)) return "image/jpeg";
   if (/\.png$/i.test(key)) return "image/png";
@@ -6550,6 +6855,7 @@ function contentTypeFromImageKey(key) {
   return "application/octet-stream";
 }
 __name(contentTypeFromImageKey, "contentTypeFromImageKey");
+__name2(contentTypeFromImageKey, "contentTypeFromImageKey");
 async function getSupplierSheetImage(req, env, parts) {
   if (!env.BUCKET) return json({ error: "BUCKET binding is not configured" }, 500);
   let key;
@@ -6568,6 +6874,7 @@ async function getSupplierSheetImage(req, env, parts) {
   return new Response(req.method === "HEAD" ? null : object.body, { headers });
 }
 __name(getSupplierSheetImage, "getSupplierSheetImage");
+__name2(getSupplierSheetImage, "getSupplierSheetImage");
 async function copyR2Object(env, requestBody) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const sourceKey = validateR2ImageKey(requestBody.sourceKey, "sourceKey");
@@ -6584,6 +6891,7 @@ async function copyR2Object(env, requestBody) {
   return { ok: true, sourceKey, key: destKey, url: PUBLIC_BASE + destKey };
 }
 __name(copyR2Object, "copyR2Object");
+__name2(copyR2Object, "copyR2Object");
 function sourceImageFromRequestBody(value) {
   const source = value && typeof value === "object" ? value : null;
   const base64 = String(source?.base64 || "").replace(/^data:[^;]+;base64,/, "");
@@ -6593,6 +6901,7 @@ function sourceImageFromRequestBody(value) {
   return { blob: base64ToBlob(base64, type), type, filename };
 }
 __name(sourceImageFromRequestBody, "sourceImageFromRequestBody");
+__name2(sourceImageFromRequestBody, "sourceImageFromRequestBody");
 function studioMediaKeyFromUrl(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -6607,6 +6916,7 @@ function studioMediaKeyFromUrl(value) {
   return key.startsWith("photo-studio-v2/generated/") ? key : "";
 }
 __name(studioMediaKeyFromUrl, "studioMediaKeyFromUrl");
+__name2(studioMediaKeyFromUrl, "studioMediaKeyFromUrl");
 async function sourceImageFromStudioMedia(env, value) {
   if (!env.ESNTLS_STUDIO_MEDIA) return null;
   const key = studioMediaKeyFromUrl(value);
@@ -6620,6 +6930,7 @@ async function sourceImageFromStudioMedia(env, value) {
   return { blob: new Blob([await object.arrayBuffer()], { type }), type, filename };
 }
 __name(sourceImageFromStudioMedia, "sourceImageFromStudioMedia");
+__name2(sourceImageFromStudioMedia, "sourceImageFromStudioMedia");
 async function generateBlankImage(env, product, sourceOverride = null) {
   if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY env var not set");
   if (!product.image) throw new Error("Product is missing an image");
@@ -6645,6 +6956,7 @@ async function generateBlankImage(env, product, sourceOverride = null) {
   );
 }
 __name(generateBlankImage, "generateBlankImage");
+__name2(generateBlankImage, "generateBlankImage");
 var cachedShopifyAccessToken = null;
 var cachedShopifyAccessTokenExpiresAt = 0;
 async function getShopifyAccessToken(env) {
@@ -6660,6 +6972,7 @@ async function getShopifyAccessToken(env) {
   throw new Error("Set SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET, or replace SHOPIFY_ADMIN_ACCESS_TOKEN with a valid Shopify Admin API access token.");
 }
 __name(getShopifyAccessToken, "getShopifyAccessToken");
+__name2(getShopifyAccessToken, "getShopifyAccessToken");
 async function getShopifyClientCredentialsToken(env) {
   if (cachedShopifyAccessToken && Date.now() < cachedShopifyAccessTokenExpiresAt - 6e4) return cachedShopifyAccessToken;
   const body = new URLSearchParams({
@@ -6682,6 +6995,7 @@ async function getShopifyClientCredentialsToken(env) {
   return cachedShopifyAccessToken;
 }
 __name(getShopifyClientCredentialsToken, "getShopifyClientCredentialsToken");
+__name2(getShopifyClientCredentialsToken, "getShopifyClientCredentialsToken");
 async function shopifyGraphql(env, query, variables) {
   const response = await fetch(`https://${shopifyStoreDomain(env)}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
     method: "POST",
@@ -6702,6 +7016,7 @@ async function shopifyGraphql(env, query, variables) {
   return data.data;
 }
 __name(shopifyGraphql, "shopifyGraphql");
+__name2(shopifyGraphql, "shopifyGraphql");
 async function getShopifyPaymentsPayouts(env, requestBody = {}) {
   const first = clampInteger(requestBody.first || 25, 25, 1, 50);
   const query = safeMessageLine(requestBody.query || "");
@@ -6726,6 +7041,7 @@ async function getShopifyPaymentsPayouts(env, requestBody = {}) {
   };
 }
 __name(getShopifyPaymentsPayouts, "getShopifyPaymentsPayouts");
+__name2(getShopifyPaymentsPayouts, "getShopifyPaymentsPayouts");
 async function launchFootwearBundleDiscount(env, bundle) {
   const code = bundle.code;
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
@@ -6762,6 +7078,7 @@ async function launchFootwearBundleDiscount(env, bundle) {
   };
 }
 __name(launchFootwearBundleDiscount, "launchFootwearBundleDiscount");
+__name2(launchFootwearBundleDiscount, "launchFootwearBundleDiscount");
 async function launchB30BundleDiscount(env) {
   return launchFootwearBundleDiscount(env, {
     brand: "b30",
@@ -6772,6 +7089,7 @@ async function launchB30BundleDiscount(env) {
   });
 }
 __name(launchB30BundleDiscount, "launchB30BundleDiscount");
+__name2(launchB30BundleDiscount, "launchB30BundleDiscount");
 async function launchB22BundleDiscount(env) {
   return launchFootwearBundleDiscount(env, {
     brand: "b22",
@@ -6782,6 +7100,7 @@ async function launchB22BundleDiscount(env) {
   });
 }
 __name(launchB22BundleDiscount, "launchB22BundleDiscount");
+__name2(launchB22BundleDiscount, "launchB22BundleDiscount");
 async function launchAirProAddonDiscount(env) {
   const code = "AIRPROADDON";
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
@@ -6827,6 +7146,7 @@ async function launchAirProAddonDiscount(env) {
   };
 }
 __name(launchAirProAddonDiscount, "launchAirProAddonDiscount");
+__name2(launchAirProAddonDiscount, "launchAirProAddonDiscount");
 async function launchTelegramDiscount(env) {
   const code = "TELEGRAM5";
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
@@ -6856,6 +7176,7 @@ async function launchTelegramDiscount(env) {
   };
 }
 __name(launchTelegramDiscount, "launchTelegramDiscount");
+__name2(launchTelegramDiscount, "launchTelegramDiscount");
 async function launchB30TelegramDiscount(env) {
   const code = "B30TG";
   const existingData = await shopifyGraphql(env, DISCOUNT_BY_CODE_QUERY, { code });
@@ -6892,6 +7213,7 @@ async function launchB30TelegramDiscount(env) {
   };
 }
 __name(launchB30TelegramDiscount, "launchB30TelegramDiscount");
+__name2(launchB30TelegramDiscount, "launchB30TelegramDiscount");
 async function findExistingShopifyProduct(env, product) {
   const data = await shopifyGraphql(env, PRODUCT_SEARCH_QUERY, {
     query: `(tag:ESNTLS-SOURCE-ID-${product.id}) OR (tag:ESNTLS-ID-${product.id})`
@@ -6899,6 +7221,7 @@ async function findExistingShopifyProduct(env, product) {
   return data.products.nodes[0] || null;
 }
 __name(findExistingShopifyProduct, "findExistingShopifyProduct");
+__name2(findExistingShopifyProduct, "findExistingShopifyProduct");
 async function uploadProductImageToShopify(env, product, imageBlob) {
   const mimeType = normalizeOpenAIImageMime(imageBlob && imageBlob.type, "blank.jpg");
   const extension = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
@@ -6919,12 +7242,14 @@ async function uploadProductImageToShopify(env, product, imageBlob) {
   return { resourceUrl: target.resourceUrl, filename };
 }
 __name(uploadProductImageToShopify, "uploadProductImageToShopify");
+__name2(uploadProductImageToShopify, "uploadProductImageToShopify");
 async function uploadExistingProductImageToShopify(env, product) {
   if (!product.image) throw new Error("Product is missing an image");
   const source = await sourceImageFromStudioMedia(env, product.image) || await fetchImageBlob(product.image, "Source image");
   return uploadProductImageToShopify(env, product, source.blob);
 }
 __name(uploadExistingProductImageToShopify, "uploadExistingProductImageToShopify");
+__name2(uploadExistingProductImageToShopify, "uploadExistingProductImageToShopify");
 async function publishProductToOnlineStore(env, productId) {
   if (env.SHOPIFY_PUBLISH_ONLINE_STORE === "false") return null;
   const publications = await shopifyGraphql(env, PUBLICATIONS_QUERY, {});
@@ -6936,6 +7261,7 @@ async function publishProductToOnlineStore(env, productId) {
   return data.publishablePublish.publishable;
 }
 __name(publishProductToOnlineStore, "publishProductToOnlineStore");
+__name2(publishProductToOnlineStore, "publishProductToOnlineStore");
 async function activateAndPublishShopifyProduct(env, productId) {
   const updated = await shopifyGraphql(env, PRODUCT_UPDATE_STATUS_MUTATION, {
     product: { id: productId, status: "ACTIVE" }
@@ -6954,6 +7280,7 @@ async function activateAndPublishShopifyProduct(env, productId) {
   };
 }
 __name(activateAndPublishShopifyProduct, "activateAndPublishShopifyProduct");
+__name2(activateAndPublishShopifyProduct, "activateAndPublishShopifyProduct");
 async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle) {
   const variantPlan = buildProductVariantPlan(product, env);
   const productSet = await shopifyGraphql(env, PRODUCT_SET_MUTATION, {
@@ -6991,6 +7318,7 @@ async function createShopifyProduct(env, product, imageResourceUrl, visibleTitle
   };
 }
 __name(createShopifyProduct, "createShopifyProduct");
+__name2(createShopifyProduct, "createShopifyProduct");
 async function createWixBackupProduct(env, product, visibleTitle) {
   if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
     return { status: "skipped", reason: "WIX_API_TOKEN or WIX_SITE_ID is not configured" };
@@ -7051,6 +7379,7 @@ async function createWixBackupProduct(env, product, visibleTitle) {
   };
 }
 __name(createWixBackupProduct, "createWixBackupProduct");
+__name2(createWixBackupProduct, "createWixBackupProduct");
 async function resolveShopifyProductForPriceSync(env, rawProduct, product) {
   const storedId = rawProduct.shopifyPlaceholder?.shopifyProductId || rawProduct.shopifyProductId || "";
   if (storedId) return { id: storedId, source: "stored" };
@@ -7063,6 +7392,7 @@ async function resolveShopifyProductForPriceSync(env, rawProduct, product) {
   return found ? { id: found.id, title: found.title, handle: found.handle, source: "handle" } : null;
 }
 __name(resolveShopifyProductForPriceSync, "resolveShopifyProductForPriceSync");
+__name2(resolveShopifyProductForPriceSync, "resolveShopifyProductForPriceSync");
 async function updateShopifyLinkedPrice(env, rawProduct, product, price) {
   if (!env.SHOPIFY_STORE_DOMAIN) return { status: "skipped", reason: "SHOPIFY_STORE_DOMAIN is not configured" };
   const target = await resolveShopifyProductForPriceSync(env, rawProduct, product);
@@ -7089,6 +7419,7 @@ async function updateShopifyLinkedPrice(env, rawProduct, product, price) {
   };
 }
 __name(updateShopifyLinkedPrice, "updateShopifyLinkedPrice");
+__name2(updateShopifyLinkedPrice, "updateShopifyLinkedPrice");
 async function loadWixCatalogFromR2(env) {
   if (!env.BUCKET) return [];
   const object = await env.BUCKET.get("wix-products.json");
@@ -7101,6 +7432,7 @@ async function loadWixCatalogFromR2(env) {
   }
 }
 __name(loadWixCatalogFromR2, "loadWixCatalogFromR2");
+__name2(loadWixCatalogFromR2, "loadWixCatalogFromR2");
 async function resolveWixProductIdsForPriceSync(env, rawProduct) {
   const ids = /* @__PURE__ */ new Set();
   const backupId = rawProduct.wixBackupPlaceholder?.id || rawProduct.wixBackupProductId || rawProduct.wixProductId || "";
@@ -7123,6 +7455,7 @@ async function resolveWixProductIdsForPriceSync(env, rawProduct) {
   return [...ids];
 }
 __name(resolveWixProductIdsForPriceSync, "resolveWixProductIdsForPriceSync");
+__name2(resolveWixProductIdsForPriceSync, "resolveWixProductIdsForPriceSync");
 function wixHeaders(env) {
   return {
     "Authorization": env.WIX_API_TOKEN,
@@ -7131,6 +7464,7 @@ function wixHeaders(env) {
   };
 }
 __name(wixHeaders, "wixHeaders");
+__name2(wixHeaders, "wixHeaders");
 async function fetchWixProduct(env, productId) {
   const response = await fetch(`https://www.wixapis.com/stores/v3/products/${encodeURIComponent(productId)}`, {
     method: "GET",
@@ -7141,6 +7475,7 @@ async function fetchWixProduct(env, productId) {
   return data.product || data;
 }
 __name(fetchWixProduct, "fetchWixProduct");
+__name2(fetchWixProduct, "fetchWixProduct");
 async function fetchWixProductBySlug(env, slug) {
   const response = await fetch(`https://www.wixapis.com/stores/v3/products/slug/${encodeURIComponent(slug)}`, {
     method: "GET",
@@ -7151,6 +7486,7 @@ async function fetchWixProductBySlug(env, slug) {
   return data.product || data;
 }
 __name(fetchWixProductBySlug, "fetchWixProductBySlug");
+__name2(fetchWixProductBySlug, "fetchWixProductBySlug");
 async function patchWixProductPrice(env, wixProduct, price) {
   const variants = wixProduct.variantsInfo?.variants || [];
   if (!variants.length) throw new Error(`Wix product ${wixProduct.id} has no variants to update`);
@@ -7176,6 +7512,7 @@ async function patchWixProductPrice(env, wixProduct, price) {
   return data.product || data;
 }
 __name(patchWixProductPrice, "patchWixProductPrice");
+__name2(patchWixProductPrice, "patchWixProductPrice");
 async function updateWixLinkedPrices(env, rawProduct, price) {
   if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
     return { status: "skipped", reason: "WIX_API_TOKEN or WIX_SITE_ID is not configured", products: [] };
@@ -7196,6 +7533,7 @@ async function updateWixLinkedPrices(env, rawProduct, price) {
   return { status: "updated", count: products.length, products };
 }
 __name(updateWixLinkedPrices, "updateWixLinkedPrices");
+__name2(updateWixLinkedPrices, "updateWixLinkedPrices");
 async function searchWixInventoryItems(env, productId) {
   const response = await fetch("https://www.wixapis.com/stores/v3/inventory-items/search", {
     method: "POST",
@@ -7212,6 +7550,7 @@ async function searchWixInventoryItems(env, productId) {
   return data.inventoryItems || [];
 }
 __name(searchWixInventoryItems, "searchWixInventoryItems");
+__name2(searchWixInventoryItems, "searchWixInventoryItems");
 async function createWixInventoryItem(env, productId, variantId) {
   const inventoryItem = {
     productId,
@@ -7229,6 +7568,7 @@ async function createWixInventoryItem(env, productId, variantId) {
   return data.inventoryItem || data;
 }
 __name(createWixInventoryItem, "createWixInventoryItem");
+__name2(createWixInventoryItem, "createWixInventoryItem");
 async function patchWixInventoryItemInStock(env, item, inventoryQuantity) {
   if (!item?.id || item.revision === void 0 || item.revision === null) {
     throw new Error("Wix inventory item is missing id or revision");
@@ -7254,6 +7594,7 @@ async function patchWixInventoryItemInStock(env, item, inventoryQuantity) {
   return data.inventoryItem || data;
 }
 __name(patchWixInventoryItemInStock, "patchWixInventoryItemInStock");
+__name2(patchWixInventoryItemInStock, "patchWixInventoryItemInStock");
 async function restoreWixProductInventory(env, productId, inventoryQuantity) {
   let items = await searchWixInventoryItems(env, productId);
   let created = 0;
@@ -7284,6 +7625,7 @@ async function restoreWixProductInventory(env, productId, inventoryQuantity) {
   };
 }
 __name(restoreWixProductInventory, "restoreWixProductInventory");
+__name2(restoreWixProductInventory, "restoreWixProductInventory");
 async function updateWixLinkedAvailability(env, rawProduct, inventoryQuantity, cache = null) {
   if (!env.WIX_API_TOKEN || !env.WIX_SITE_ID) {
     return { status: "skipped", reason: "WIX_API_TOKEN or WIX_SITE_ID is not configured", products: [] };
@@ -7303,6 +7645,7 @@ async function updateWixLinkedAvailability(env, rawProduct, inventoryQuantity, c
   return { status: "updated", count: products.length, products };
 }
 __name(updateWixLinkedAvailability, "updateWixLinkedAvailability");
+__name2(updateWixLinkedAvailability, "updateWixLinkedAvailability");
 async function restoreStandardStockFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const defaults = [
@@ -7378,6 +7721,7 @@ async function restoreStandardStockFromR2(env, requestBody) {
   };
 }
 __name(restoreStandardStockFromR2, "restoreStandardStockFromR2");
+__name2(restoreStandardStockFromR2, "restoreStandardStockFromR2");
 async function syncLinkedPriceFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const productId = requestBody.productId;
@@ -7418,6 +7762,7 @@ async function syncLinkedPriceFromR2(env, requestBody) {
   return result;
 }
 __name(syncLinkedPriceFromR2, "syncLinkedPriceFromR2");
+__name2(syncLinkedPriceFromR2, "syncLinkedPriceFromR2");
 async function readProductsPayload(env) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const object = await env.BUCKET.get("products.json");
@@ -7428,12 +7773,14 @@ async function readProductsPayload(env) {
   return { payload, list };
 }
 __name(readProductsPayload, "readProductsPayload");
+__name2(readProductsPayload, "readProductsPayload");
 async function writeProductsPayload(env, payload) {
   await env.BUCKET.put("products.json", JSON.stringify(payload, null, 2) + "\n", {
     httpMetadata: { contentType: "application/json" }
   });
 }
 __name(writeProductsPayload, "writeProductsPayload");
+__name2(writeProductsPayload, "writeProductsPayload");
 async function syncProductLinkedPrice(env, rawProduct, price, updatedAt = (/* @__PURE__ */ new Date()).toISOString()) {
   const product = normalizeStoredProduct({ ...rawProduct, price });
   const result = {
@@ -7459,6 +7806,7 @@ async function syncProductLinkedPrice(env, rawProduct, price, updatedAt = (/* @_
   return result;
 }
 __name(syncProductLinkedPrice, "syncProductLinkedPrice");
+__name2(syncProductLinkedPrice, "syncProductLinkedPrice");
 function saleEndDate(requestBody, startsAt) {
   const explicit = Date.parse(requestBody.endsAt || requestBody.endAt || "");
   if (Number.isFinite(explicit) && explicit > startsAt.getTime()) return new Date(explicit);
@@ -7467,6 +7815,7 @@ function saleEndDate(requestBody, startsAt) {
   return new Date(startsAt.getTime() + safeHours * 60 * 60 * 1e3);
 }
 __name(saleEndDate, "saleEndDate");
+__name2(saleEndDate, "saleEndDate");
 async function startTimedSaleFromR2(env, requestBody) {
   const productId = requestBody.productId;
   if (productId === void 0 || productId === null || productId === "") throw new Error("Missing productId");
@@ -7504,6 +7853,7 @@ async function startTimedSaleFromR2(env, requestBody) {
   };
 }
 __name(startTimedSaleFromR2, "startTimedSaleFromR2");
+__name2(startTimedSaleFromR2, "startTimedSaleFromR2");
 async function processExpiredTimedSales(env) {
   const { payload, list } = await readProductsPayload(env);
   const now = Date.now();
@@ -7543,6 +7893,7 @@ async function processExpiredTimedSales(env) {
   return { ok: true, checked: list.length, expired: expired.length, products: expired, skipped, updatedAt };
 }
 __name(processExpiredTimedSales, "processExpiredTimedSales");
+__name2(processExpiredTimedSales, "processExpiredTimedSales");
 async function ensureWixBackupForProduct(env, rawProduct, product, visibleTitle) {
   let wixBackup = rawProduct.wixBackupPlaceholder || null;
   if (hasUsableWixBackup(wixBackup)) return wixBackup;
@@ -7555,6 +7906,7 @@ async function ensureWixBackupForProduct(env, rawProduct, product, visibleTitle)
   return wixBackup;
 }
 __name(ensureWixBackupForProduct, "ensureWixBackupForProduct");
+__name2(ensureWixBackupForProduct, "ensureWixBackupForProduct");
 async function switchCheckoutLinksFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const mode = String(requestBody.mode || "").toLowerCase();
@@ -7623,6 +7975,7 @@ async function switchCheckoutLinksFromR2(env, requestBody) {
   };
 }
 __name(switchCheckoutLinksFromR2, "switchCheckoutLinksFromR2");
+__name2(switchCheckoutLinksFromR2, "switchCheckoutLinksFromR2");
 async function createShopifyPlaceholderFromR2(env, requestBody) {
   if (!env.BUCKET) throw new Error("BUCKET binding is not configured");
   const productId = requestBody.productId;
@@ -7707,6 +8060,7 @@ async function createShopifyPlaceholderFromR2(env, requestBody) {
   return { ok: true, status, productId: product.id, shopifyUrl, shopify: rawProduct.shopifyPlaceholder, wixBackup, checkoutLinks: rawProduct.checkoutLinks };
 }
 __name(createShopifyPlaceholderFromR2, "createShopifyPlaceholderFromR2");
+__name2(createShopifyPlaceholderFromR2, "createShopifyPlaceholderFromR2");
 var r2_worker_default = {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(processExpiredTimedSales(env));
@@ -7785,12 +8139,14 @@ var r2_worker_default = {
         for (const product of data.products?.nodes || []) {
           const id = product.handle === fastDeliveryWatchHandle ? "101" : product.handle.replace(/^esntls-fast-/, "");
           if (!requested.includes(id) || product.status !== "ACTIVE") continue;
-          stock[id] = product.variants.nodes
-            .filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" &&
-              variant.inventoryItem.tracked && (sourceId || variant.inventoryQuantity > 0))
-            .map((variant) => ({ id: normalizeShopifyNumericId(variant.id), size: variant.selectedOptions.find((option) => option.name === "Size")?.value || "One Size",
-              colour: variant.selectedOptions.find((option) => option.name === "Colour")?.value,
-              price: variant.price, compareAtPrice: variant.compareAtPrice, quantity: variant.inventoryQuantity }));
+          stock[id] = product.variants.nodes.filter((variant) => fastParkaSourceId(variant) === id && variant.inventoryPolicy === "DENY" && variant.inventoryItem.tracked && (sourceId || variant.inventoryQuantity > 0)).map((variant) => ({
+            id: normalizeShopifyNumericId(variant.id),
+            size: variant.selectedOptions.find((option) => option.name === "Size")?.value || "One Size",
+            colour: variant.selectedOptions.find((option) => option.name === "Colour")?.value,
+            price: variant.price,
+            compareAtPrice: variant.compareAtPrice,
+            quantity: variant.inventoryQuantity
+          }));
         }
         return json(sourceId ? { variants: stock[sourceId] } : { stock });
       } catch {
@@ -7818,18 +8174,20 @@ var r2_worker_default = {
     if (parts[0] === "supplier-finance-api") {
       return handleSupplierFinanceApi(req, env, parts);
     }
-    if (req.method === 'POST' && parts[0] === 'admin-login') {
+    if (req.method === "POST" && parts[0] === "admin-login") {
       let body;
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
+      try {
+        body = await req.json();
+      } catch {
+        return json({ error: "Invalid JSON body" }, 400);
+      }
       const password = adminPassword(env);
       if (!password || !(env.ADMIN_SESSION_SECRET || env.ADMIN_SECRET)) {
-        return json({ error: 'Admin login is not configured' }, 503);
+        return json({ error: "Admin login is not configured" }, 503);
       }
-      if (String(body.password || '') !== password) return json({ error: 'Invalid password' }, 401);
+      if (String(body.password || "") !== password) return json({ error: "Invalid password" }, 401);
       return json({ ok: true, token: await createAdminSession(env), expiresIn: 7200 });
     }
-
-
     const adminAuthorized = await verifyAdminSession(env, req.headers.get("X-Admin-Session")) || Boolean(env.ADMIN_SECRET && req.headers.get("X-Admin-Secret") === env.ADMIN_SECRET);
     const serviceAuthorized = Boolean(
       env.ESNTLS_STORE_SERVICE_TOKEN && req.headers.get("X-ESNTLS-Service-Token") === env.ESNTLS_STORE_SERVICE_TOKEN
@@ -7843,6 +8201,10 @@ var r2_worker_default = {
       } catch (error) {
         return json({ error: error.message }, 500);
       }
+    }
+    if (req.method === "POST" && parts[0] === "sync-delivery") {
+      try { return json(await syncProductDelivery(env, await req.json())); }
+      catch(error) { return json({error:error.message},400); }
     }
     if (req.method === "POST" && parts[0] === "shopify-create-product") {
       let body;
@@ -8171,9 +8533,6 @@ var r2_worker_default = {
         return json({ error: error.message }, 500);
       }
     }
-    // Authenticated reads used by the admin when patching the live catalogue
-    // (for example /object/products.json). Keep this behind the admin/session
-    // check above so the bucket is never exposed through this Worker route.
     if (req.method === "GET" && parts[0] === "object") {
       const key = parts.slice(1).map(decodeURIComponent).join("/");
       if (!key || key.includes("..") || key.includes("\\")) {
@@ -8438,6 +8797,33 @@ var r2_worker_default = {
     return json({ error: "Not found" }, 404);
   }
 };
+async function syncProductDelivery(env, body) {
+  const id=String(body.productId||'');
+  if(!/^\d+$/.test(id))throw new Error("Invalid product ID");
+  const delivery=String(body.delivery||'');
+  const standard=/7\s*[--]\s*14/i.test(delivery);
+  const next=/next\s*day/i.test(delivery);
+  if(!standard&&!next)throw new Error("Choose at least one delivery option");
+  const result=await shopifyGraphql(env,"query($query:String!){products(first:5,query:$query){nodes{handle variants(first:100){nodes{id inventoryPolicy inventoryItem{tracked}}}}}}",
+    {query:"handle:blank-item-"+id.padStart(3,"0")+" OR handle:"+(id==="101"?fastDeliveryWatchHandle:"esntls-fast-"+id)});
+  const standardProduct=result.products.nodes.find(p=>p.handle==="blank-item-"+id.padStart(3,"0"));
+  const fastProduct=result.products.nodes.find(p=>p.handle===(id==="101"?fastDeliveryWatchHandle:"esntls-fast-"+id));
+  if(standard&&!standardProduct)throw new Error("Generate the Shopify checkout product before enabling 7-14 day delivery");
+  if(next&&(!fastProduct||!fastProduct.variants.nodes.every(v=>v.inventoryPolicy==="DENY"&&v.inventoryItem.tracked)))
+    throw new Error("Set up the UK stock product in Shopify with tracked inventory and overselling disabled before enabling next-day delivery");
+  for(const [profileId,enabled,product] of [
+    ["gid://shopify/DeliveryProfile/120194040058",standard,standardProduct],
+    ["gid://shopify/DeliveryProfile/120193614074",next,fastProduct]
+  ]){
+    const ids=product?.variants.nodes.map(v=>v.id)||[];
+    if(!ids.length)continue;
+    const data=await shopifyGraphql(env,"mutation($id:ID!,$profile:DeliveryProfileInput!){deliveryProfileUpdate(id:$id,profile:$profile){userErrors{message}}}",
+      {id:profileId,profile:{[enabled?"variantsToAssociate":"variantsToDissociate"]:ids}});
+    if(data.deliveryProfileUpdate.userErrors.length)throw new Error(data.deliveryProfileUpdate.userErrors.map(e=>e.message).join("; "));
+  }
+  return {ok:true,productId:id,delivery,standard,next};
+}
+
 export {
   r2_worker_default as default
 };
