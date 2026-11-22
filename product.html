@@ -891,7 +891,7 @@ function openCheckoutConfirm(){
   dialog.innerHTML='<div class="confirm-box" role="dialog" aria-modal="true" aria-label="Checkout confirmation">'
     +'<h2>Blank item = original item</h2>'
     +'<p>You are buying: <strong>'+quantity+' &times; '+escapeHTML(choice.item.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
-    +(choice.item!==product?'<p>Dispatch '+escapeHTML(fastParkaDates().dispatched)+' · Estimated delivery '+escapeHTML(fastParkaDates().expected)+'</p>':'')
+    +(choice.options.Delivery==='Next Day'?'<p>Dispatch '+escapeHTML(fastParkaDates().dispatched)+' · Estimated delivery '+escapeHTML(fastParkaDates().expected)+'</p>':'')
     +'<div class="confirm-actions"><button class="confirm-go" type="button" onclick="continueToCheckout()">Open secure checkout</button><button class="confirm-back" type="button" onclick="closeCheckoutConfirm()">Back to item</button></div>'
     +'</div>';
   dialog.classList.add('open');
