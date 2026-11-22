@@ -12,6 +12,7 @@
   const AIR_PRO_ADDON_CODE = 'AIRPROADDON';
   const AIR_PRO_ADDON_DISCOUNT = 10.00;
   const AIR_PRO_PRODUCT_IDS = new Set(['54']);
+  const STANDARD_DELIVERY_PARKA_IDS = new Set(['21','22','23','24']);
 
 // Owner-directed availability snapshot, 19 Oct 2026: no recorded sales in the
 // 30-day Shopify report; products created after 18 Sep are excluded.
@@ -22,10 +23,11 @@ function isOrangeUK9Product(item){const id=String(item&&(item.dbId!=null?item.db
 
 function storeItemUnavailable(item){
   const sourceId=String(item?.dbId??item?.productId??item?.id??'');
+  const id=String(item?.dbId!=null?item.dbId:(item?.productId||item?.id||'')).replace(/^r2_/,'');
+  if(STANDARD_DELIVERY_PARKA_IDS.has(id))return false;
   if(!/^fast-(3|4|6|11|21|22|23|24|27|28|35|36|39|42|43|44|101)$/.test(sourceId))return true;
   if(isOrangeUK9Product(item))return !!(item.variantId&&String(item.variantId).split('/').pop()!=='49074583961850');
   if(!item)return false;
-  const id=String(item.dbId!=null?item.dbId:(item.productId||item.id||'')).replace(/^r2_/,'');
   const linked=String(item.shopifyProductId||(item.shopifyPlaceholder&&item.shopifyPlaceholder.shopifyProductId)||'').split('/').pop();
   return WITHDRAWN_SITE_IDS.has(id)||WITHDRAWN_SHOPIFY_IDS.has(id.split('/').pop())||WITHDRAWN_SHOPIFY_IDS.has(linked);
 }
@@ -188,7 +190,7 @@ function applyStoreAvailability(item){
     const exact = entries.find(entry => {
       const options = entry.options || {};
       return Object.entries(wanted).every(([name,value]) => {
-        if(!value) return true;
+        if(name === 'Delivery' || !value) return true;
         return String(options[name] || '').toLowerCase() === String(value).toLowerCase();
       });
     });
@@ -299,11 +301,11 @@ function applyStoreAvailability(item){
     if(repairPromise) return repairPromise;
     repairPromise = (async () => {
       const cart = readCart();
-      if(!cart.some(item => !item.variantId)) return cart;
+      if(!cart.some(item => !item.variantId && !item.standardDelivery)) return cart;
       const catalogue = await loadCatalogue();
       let changed = false;
       const repaired = cart.map(item => {
-        if(item.variantId) return item;
+        if(item.variantId || item.standardDelivery) return item;
         const product = findCatalogueProduct(item, catalogue);
         if(!product) return item;
         const variantId = selectedVariantId(product, item.options || {});
@@ -344,9 +346,10 @@ function applyStoreAvailability(item){
       price: product && product.price || '',
       image: product && (product.image || product.img || (product.images && product.images[0]) || (product.imgs && product.imgs[0])) || '',
       options,
-      variantId: selectedVariantId(product, options),
+      variantId: product && product.standardDelivery ? '' : selectedVariantId(product, options),
       fallbackUrl: sourceLink,
       brand: product && product.brand || '',
+      standardDelivery: Boolean(product && product.standardDelivery),
       qty: Math.max(1, Number(qty || 1) || 1)
     };
   }
@@ -406,6 +409,13 @@ function applyStoreAvailability(item){
     const quantity = Math.max(1, Math.min(99, Number(qty) || 1));
     if(isOrangeUK9Product(product)&&String((selections||{}).Size||'').replace(/\s/g,'').toUpperCase()!=='UK9'){alert('Only UK 9 is available for this item.');return false;}
     if(storeItemUnavailable(product)){alert('This item is currently out of stock.');return false;}
+    if(product && product.standardDelivery){
+      const standardLink=product.wixLink || product.link || product.shopifyLink || '';
+      if(standardLink){
+        navigateNoReferrer(standardLink);
+        return true;
+      }
+    }
     let variantId = selectedVariantId(product, selections || {});
     if(!variantId){
       const catalogue = await loadCatalogue();
