@@ -113,6 +113,13 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 .esntls-option-grid input[data-sold-out="true"]+span{text-decoration:line-through;border-style:dashed}
 .esntls-option-grid input:checked+span{background:#111;border-color:#111;color:#fff}
 .buy-actions{display:grid;gap:9px}
+.product-quantity{align-items:center;display:flex;gap:10px;margin:18px 0 12px}
+.product-quantity label{color:#444;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.quantity-stepper{align-items:center;border:1.5px solid #dedede;border-radius:999px;display:inline-flex;overflow:hidden}
+.quantity-stepper button{background:#fff;border:0;color:#111;cursor:pointer;font-size:19px;height:36px;line-height:1;width:38px}
+.quantity-stepper button:hover{background:#f4f4f4}
+.quantity-stepper input{appearance:textfield;border:0;color:#111;font:700 13px inherit;height:36px;outline:0;text-align:center;width:40px}
+.quantity-stepper input::-webkit-inner-spin-button,.quantity-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .buy-actions button:disabled{cursor:default;opacity:.55}
 .product-copy{border-top:1px solid #ebebeb;color:#595959;font-size:13px;line-height:1.65;padding:18px 0}
 .facts{border-top:1px solid #ebebeb;display:grid;gap:0;margin-bottom:18px}
@@ -240,7 +247,7 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <main id="productApp" class="state" aria-live="polite"><p>Loading product...</p></main>
 <div id="checkoutConfirm" class="confirm" aria-hidden="true"></div>
 <div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
-<script src="cart.js?v=20261118-next-day"></script>
+<script src="cart.js?v=20261122-quantity"></script>
 <script>
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const R2_BASE='/media/';
@@ -724,7 +731,7 @@ function renderProduct(){
     +(!sold&&FAST_PARKA_IDS.has(String(product.id))?'<fieldset class="delivery-options" id="fastParkaDelivery" hidden><legend>Delivery</legend><label><input type="radio" name="parkaDelivery" id="fastParkaChoice" disabled><span class="delivery-card"><strong>Free UK next-day delivery 🚚 💨</strong><span class="delivery-estimate" id="fastParkaEstimate"></span><span class="fast-delivery-low" id="fastParkaLow" hidden>Almost sold out</span></span></label></fieldset>':'')
     +(sold
       ?'<div><a class="buy-button sold-button" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Follow restock updates ↗</a><p style="font-size:12px;color:#666;margin:12px 0 0;line-height:1.6">Follow the channel for future drops and restock updates.</p></div>'
-      :'<div class="buy-actions"><button id="productAddToCart" class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
+      :'<div class="product-quantity"><label for="productQuantity">Quantity</label><div class="quantity-stepper"><button type="button" onclick="changeProductQuantity(-1)" aria-label="Decrease quantity">&minus;</button><input id="productQuantity" type="number" min="1" max="99" value="1" inputmode="numeric" aria-label="Quantity"><button type="button" onclick="changeProductQuantity(1)" aria-label="Increase quantity">+</button></div></div><div class="buy-actions"><button id="productAddToCart" class="cart-button" type="button" onclick="addCurrentToCart()">Add to cart</button><button id="productBuyNow" class="buy-button" type="button" onclick="openCheckoutConfirm()">Buy now - '+escapeHTML(productDisplayPrice(product))+'</button></div><div class="checkout-note">Buy the blank item shown at checkout. You\'ll receive the original item you selected.</div>')
     +'</div>'
     +'<p class="product-copy">'+escapeHTML(productCopy(product))+'</p>'
     +'<div class="facts">'
@@ -834,15 +841,29 @@ function closeFullscreen(){
   dialog.setAttribute('aria-hidden','true');
 }
 
+function currentProductQuantity(){
+  const input=document.getElementById('productQuantity');
+  const quantity=Math.max(1,Math.min(99,Number(input&&input.value)||1));
+  if(input)input.value=quantity;
+  return quantity;
+}
+
+function changeProductQuantity(change){
+  const input=document.getElementById('productQuantity');
+  if(!input)return;
+  input.value=Math.max(1,Math.min(99,(Number(input.value)||1)+Number(change||0)));
+}
+
 function openCheckoutConfirm(){
   const choice=productCheckoutSelection();
   if(!choice)return;
   const selected=choice.options;
+  const quantity=currentProductQuantity();
   const optionText=Object.entries(selected).filter(function(entry){return entry[1];}).map(function(entry){return entry[0]+': '+entry[1];}).join(' / ');
   const dialog=document.getElementById('checkoutConfirm');
   dialog.innerHTML='<div class="confirm-box" role="dialog" aria-modal="true" aria-label="Checkout confirmation">'
     +'<h2>Blank item = original item</h2>'
-    +'<p>You are buying: <strong>'+escapeHTML(choice.item.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
+    +'<p>You are buying: <strong>'+quantity+' &times; '+escapeHTML(choice.item.name)+'</strong>'+(optionText?' <strong>('+escapeHTML(optionText)+')</strong>':'')+'. Buy the blank item shown at checkout. You will receive the original item you selected.</p>'
     +(choice.item!==product?'<p>Dispatch '+escapeHTML(fastParkaDates().dispatched)+' · Estimated delivery '+escapeHTML(fastParkaDates().expected)+'</p>':'')
     +'<div class="confirm-actions"><button class="confirm-go" type="button" onclick="continueToCheckout()">Open secure checkout</button><button class="confirm-back" type="button" onclick="closeCheckoutConfirm()">Back to item</button></div>'
     +'</div>';
@@ -858,12 +879,12 @@ function closeCheckoutConfirm(){
 
 function continueToCheckout(){
   const choice=productCheckoutSelection();
-  if(choice)EsntlsCart.checkoutSingle(choice.item,choice.options);
+  if(choice)EsntlsCart.checkoutSingle(choice.item,choice.options,currentProductQuantity());
 }
 
 function addCurrentToCart(){
   const choice=productCheckoutSelection();
-  if(choice)EsntlsCart.add(choice.item,choice.options,1);
+  if(choice)EsntlsCart.add(choice.item,choice.options,currentProductQuantity());
 }
 
 document.addEventListener('keydown',function(event){
