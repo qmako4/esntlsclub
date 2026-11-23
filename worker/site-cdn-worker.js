@@ -2,10 +2,10 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // worker/site-cdn-worker.js
-var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/354747b3044ef52fee821eb4213960af768f1cc2";
+var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/b817482fb38e43df856d35064ffe6b65d0b8a9c6";
 var R2_PUBLIC_ORIGIN = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev";
 var MEDIA_CACHE_VERSION = "3";
-var SOURCE_CACHE_VERSION = "36-next-day-default";
+var SOURCE_CACHE_VERSION = "37-delivery-size-colours";
 var PUBLIC_ROOT_FILES = /* @__PURE__ */ new Set([
   "admin.html",
   "admin-config.js",
@@ -92,6 +92,8 @@ function responseHeaders(originHeaders, file, browserTtl, colo) {
   headers.delete("x-frame-options");
   if (file === "admin.html") {
     headers.set("Cache-Control", "no-store, max-age=0");
+  } else if (file === "product.html") {
+    headers.set("Cache-Control", "no-cache");
   } else {
     headers.set("Cache-Control", `public, max-age=${browserTtl}, stale-while-revalidate=86400`);
   }
