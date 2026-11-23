@@ -804,6 +804,9 @@ function renderProduct(){
   if(selected)selected.checked=true;
   if(document.getElementById('fastParkaDelivery')){
     app.querySelector('.purchase-panel').addEventListener('change',updateFastParkaOptions);
+    if(selectedFastParka()&&document.getElementById('fastParkaChoice')){
+      document.getElementById('parkaDelivery').value='Next Day';
+    }
     updateFastParkaOptions();
   }
 }
