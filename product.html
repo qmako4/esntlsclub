@@ -513,8 +513,8 @@ function updateFastParkaOptions(){
   if(!standard)select.value=fastSelected?'Next Day':'';
   const nextDaySelected=selectedParkaDelivery()==='Next Day'&&fastSelected;
   const {Colour}=EsntlsCart.selectedOptionsFrom('productOptions');
-  document.querySelectorAll('#productOptions [data-option-name="Size"]').forEach(input=>{
-    const unavailable=selectedParkaDelivery()!=='7-14 Days'&&!fastParkaStock.some(v=>v.size===input.value&&(!v.colour||v.colour===Colour));
+  document.querySelectorAll('[data-cart-options="productOptions"] [data-option-name="Size"]').forEach(input=>{
+    const unavailable=selectedParkaDelivery()==='Next Day'&&!fastParkaStock.some(v=>v.size===input.value&&(!v.colour||v.colour===Colour));
     input.dataset.soldOut=String(unavailable);
     input.title=unavailable?'Unavailable for next-day delivery':input.value;
   });
