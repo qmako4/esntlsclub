@@ -493,7 +493,7 @@ function deliveryPickerHTML(){
   const nextDay=FAST_PARKA_IDS.has(String(product.id))&&(restoredStandardFootwear(product)||!product.deliveryConfigured||/next\s*day/i.test(product.delivery||''));
   return '<div class="delivery-options" id="fastParkaDelivery"><label for="parkaDelivery">Delivery option</label><select id="parkaDelivery" aria-describedby="fastParkaEstimate">'
     +(standard?'<option value="7-14 Days">7-14 day delivery</option>':'<option value="" disabled>Choose delivery</option>')
-    +(nextDay?'<option id="fastParkaChoice" value="Next Day" disabled>Free UK next-day delivery</option>':'')
+    +(nextDay?'<option id="fastParkaChoice" value="Next Day"'+(fastParkaStock.length?'':' disabled')+'>Free UK next-day delivery</option>':'')
     +'</select><p class="delivery-estimate" id="fastParkaEstimate" aria-live="polite"></p><span class="fast-delivery-low" id="fastParkaLow" hidden>Almost sold out</span></div>';
 }
 
@@ -510,12 +510,12 @@ function updateFastParkaOptions(){
   const previousPrice=document.getElementById('productPreviousPrice');
   const variant=selectedFastParka();
   const standard=hasStandardParkaDelivery();
-  const fastSelected=Boolean(nextDay&&variant);
-  group.hidden=!standard&&fastParkaStock.length===0;
-  if(nextDay)nextDay.disabled=!fastSelected;
-  if(!fastSelected&&standard)select.value='7-14 Days';
-  if(!standard)select.value=fastSelected?'Next Day':'';
-  const nextDaySelected=selectedParkaDelivery()==='Next Day'&&fastSelected;
+  const nextDayAvailable=Boolean(nextDay&&fastParkaStock.length);
+  group.hidden=!standard&&!nextDayAvailable;
+  if(!nextDayAvailable&&standard)select.value='7-14 Days';
+  if(!standard)select.value=nextDayAvailable?'Next Day':'';
+  const nextDaySelected=select.value==='Next Day';
+  const purchasable=nextDaySelected?Boolean(variant):standard;
   const {Colour}=EsntlsCart.selectedOptionsFrom('productOptions');
   document.querySelectorAll('[data-cart-options="productOptions"] [data-option-name="Size"]').forEach(input=>{
     const unavailable=nextDaySelected&&!fastParkaStock.some(v=>v.size===input.value&&(!v.colour||v.colour===Colour));
@@ -523,15 +523,14 @@ function updateFastParkaOptions(){
     input.title=unavailable?'Unavailable for next-day delivery':input.value;
   });
   const status=document.getElementById('productStockStatus');
-  status.textContent=nextDaySelected?'In UK stock':(standard?'Available for 7-14 day delivery':'Out of stock');
-  status.classList.toggle('sold',!nextDaySelected&&!standard);
+  status.textContent=!purchasable?'Out of stock in this size':(nextDaySelected?'In UK stock':'Available for 7-14 day delivery');
+  status.classList.toggle('sold',!purchasable);
   if(deliveryFact)deliveryFact.textContent=nextDaySelected?'Free UK next-day delivery 🚚 💨':(standard?'7-14 day delivery':'Out of stock in this size');
   const dates=fastParkaDates();
-  estimate.textContent=nextDaySelected?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:(standard?'Available in 7-14 days':'Out of stock in this size');
-  document.getElementById('fastParkaLow').hidden=!(nextDaySelected&&Number(variant.quantity)<5);
+  estimate.textContent=nextDaySelected&&!variant?'Choose an in-stock size for next-day delivery.':nextDaySelected?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:(standard?'Available in 7-14 days':'Out of stock in this size');
+  document.getElementById('fastParkaLow').hidden=!(nextDaySelected&&variant&&Number(variant.quantity)<5);
   const priceVariant=nextDaySelected?variant:null;
   const price=priceVariant?'£'+Number(priceVariant.price).toFixed(2):(product.sellingPrice||productDisplayPrice(product));
-  const purchasable=standard||fastSelected;
   if(previousPrice){
     const compare=Number(priceVariant?.compareAtPrice);
     const previous=priceVariant?(Number.isFinite(compare)&&compare>Number(priceVariant.price)?'£'+compare.toFixed(2):''):previousSellingPrice(product.price);
