@@ -5,7 +5,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/main";
 var R2_PUBLIC_ORIGIN = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev";
 var MEDIA_CACHE_VERSION = "3";
-var SOURCE_CACHE_VERSION = "32-delivery";
+var SOURCE_CACHE_VERSION = "33-footwear-delivery";
 var PUBLIC_ROOT_FILES = /* @__PURE__ */ new Set([
   "admin.html",
   "admin-config.js",
