@@ -2,10 +2,10 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // worker/site-cdn-worker.js
-var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/fdd03c3424545832712fb4bc401b9523d4acce98";
+var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/354747b3044ef52fee821eb4213960af768f1cc2";
 var R2_PUBLIC_ORIGIN = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev";
 var MEDIA_CACHE_VERSION = "3";
-var SOURCE_CACHE_VERSION = "35-size-delivery-state";
+var SOURCE_CACHE_VERSION = "36-next-day-default";
 var PUBLIC_ROOT_FILES = /* @__PURE__ */ new Set([
   "admin.html",
   "admin-config.js",
