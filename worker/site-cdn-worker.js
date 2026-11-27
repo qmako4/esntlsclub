@@ -2,10 +2,10 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // worker/site-cdn-worker.js
-var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/b86d4a0bc9898cedecd530cdc0bdd856a3aed123";
+var GITHUB_ORIGIN = "https://raw.githubusercontent.com/qmako4/esntlsclub/2f379e842043ec30c1961970b77ecdd480a707f4";
 var R2_PUBLIC_ORIGIN = "https://pub-43c9cf7fd2904289881c21839332521c.r2.dev";
 var MEDIA_CACHE_VERSION = "3";
-var SOURCE_CACHE_VERSION = "38-next-day-switch";
+var SOURCE_CACHE_VERSION = "39-wyndham-black-friday";
 var PUBLIC_ROOT_FILES = /* @__PURE__ */ new Set([
   "admin.html",
   "admin-config.js",
