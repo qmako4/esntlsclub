@@ -48,6 +48,10 @@ img{display:block;max-width:100%}
 .mobile-nav-label{color:#8d8d8d;font-size:9px;font-weight:800;letter-spacing:1.3px;padding:8px 10px;text-transform:uppercase}
 .mobile-nav a{border-radius:10px;display:block;font-size:14px;font-weight:700;padding:11px 10px}
 .mobile-nav a:active,.mobile-nav a:hover{background:#effaf2;color:#007e34}
+.mobile-nav a.channel-link{display:flex;align-items:center;justify-content:space-between;min-height:46px;margin:6px 0;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none}
+.mobile-nav .channel-telegram,.mobile-nav .channel-telegram:hover,.mobile-nav .channel-telegram:active{background:#0879ac;color:#fff}
+.mobile-nav .channel-whatsapp,.mobile-nav .channel-whatsapp:hover,.mobile-nav .channel-whatsapp:active{background:#25d366;color:#072b17}
+.mobile-nav .channel-link:focus-visible{outline:2px solid #111;outline-offset:2px}
 .mobile-nav .mobile-nav-featured{background:#00c853;color:#fff;margin:5px 0}
 .mobile-nav .mobile-nav-featured:hover{background:#00ad46;color:#fff}
 @media(max-width:819px){
@@ -227,6 +231,11 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
     <a href="./">Home</a>
     <a class="mobile-nav-featured" href="./?cat=All">Shop all</a>
     <a href="./#stock">⚡ Next-day stock</a>
+    <div class="mobile-nav-section">
+      <div class="mobile-nav-label">Join our channels</div>
+      <a class="channel-link channel-telegram" href="https://t.me/esntlsclub">Join Telegram <span aria-hidden="true">↗</span></a>
+      <a class="channel-link channel-whatsapp" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L">Join WhatsApp Channel <span aria-hidden="true">↗</span></a>
+    </div>
     <div class="mobile-nav-section"><div class="mobile-nav-label">Featured</div>
       <a href="./?cat=New%20Items">New items</a><a href="./?cat=Best%20Sellers">🔥 Best sellers</a><a href="./?cat=Essentials">Essentials</a>
     </div>
