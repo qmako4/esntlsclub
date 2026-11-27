@@ -244,7 +244,7 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5vw,54px);font-weigh
 <main id="productApp" class="state" aria-live="polite"><p>Loading product...</p></main>
 <div id="checkoutConfirm" class="confirm" aria-hidden="true"></div>
 <div id="fullscreen" class="fullscreen" aria-hidden="true"></div>
-<script src="cart.js?v=20261123-footwear-delivery"></script>
+<script src="cart.js?v=20261127-wyndham"></script>
 <script>
 const R2_PUBLIC='https://pub-43c9cf7fd2904289881c21839332521c.r2.dev/';
 const R2_BASE='/media/';
@@ -530,12 +530,13 @@ function updateFastParkaOptions(){
   estimate.textContent=nextDaySelected&&!variant?'Choose an in-stock size for next-day delivery.':nextDaySelected?'Dispatch '+dates.dispatched+' · Estimated delivery '+dates.expected:(standard?'Available in 7-14 days':'Out of stock in this size');
   document.getElementById('fastParkaLow').hidden=!(nextDaySelected&&variant&&Number(variant.quantity)<5);
   const priceVariant=nextDaySelected?variant:null;
-  const price=priceVariant?'£'+Number(priceVariant.price).toFixed(2):(product.sellingPrice||productDisplayPrice(product));
+  const basePrice=priceVariant?'£'+Number(priceVariant.price).toFixed(2):displayPrice(product.sellingPrice||product.price);
+  const price=EsntlsCart.wyndhamDisplayPrice(product,basePrice);
   if(previousPrice){
     const compare=Number(priceVariant?.compareAtPrice);
     const previous=priceVariant?(Number.isFinite(compare)&&compare>Number(priceVariant.price)?'£'+compare.toFixed(2):''):previousSellingPrice(product.price);
-    previousPrice.textContent=previous;
-    previousPrice.hidden=!previous;
+    previousPrice.textContent=price!==basePrice?basePrice:previous;
+    previousPrice.hidden=!previousPrice.textContent;
   }
   if(mainPrice)mainPrice.textContent=price;
   if(cart)cart.disabled=!purchasable;
@@ -606,7 +607,7 @@ function previousSellingPrice(value){
 
 // Keep the saved selling price visible without changing sold-out purchase guards.
 function productDisplayPrice(item){
-  return displayPrice(item.sellingPrice||item.price);
+  return EsntlsCart.wyndhamDisplayPrice(item,displayPrice(item.sellingPrice||item.price));
 }
 
 function displayPrice(value){
@@ -771,6 +772,7 @@ function renderProduct(){
     +'<div class="eyebrow">'+escapeHTML(category||'ESNTLS CLUB')+'</div>'
     +'<h1>'+escapeHTML(product.name)+'</h1>'
     +'<div class="prices"><span id="productPreviousPrice" class="was"'+(previousPrice?'':' hidden')+'>'+escapeHTML(previousPrice)+'</span><span id="productSellingPrice" class="price" aria-live="polite">'+escapeHTML(sellingPrice)+'</span></div>'
+    +(EsntlsCart.wyndhamSaving(product)&&!sold?'<p>Black Friday · £20 off each Wyndham parka through Sunday.</p>':'')
     +productReviewPillHTML(reviews)
     +(sale&&!sold?'<div class="sale-timer">'+escapeHTML(sale.label)+' ends in <span data-sale-countdown="'+sale.endsAt+'">'+countdownText(sale.endsAt-Date.now())+'</span></div>':'')
     +'<span id="productStockStatus" role="status" class="stock '+(sold?'sold':'')+'">'+(sold?'Out of stock':'In UK stock')+'</span>'
