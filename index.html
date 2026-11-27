@@ -575,7 +575,7 @@ function isOrangeUK9Product(item){if(restoredStandardFootwear(item))return false
 function standardDeliveryEnabled(item){
   if(restoredStandardFootwear(item))return true;
   const id=String(item?.dbId??item?.id??'').replace(/^r2_/,'');
-  return item?.deliveryConfigured?/7\s*[-–]\s*14/i.test(item.delivery||''):['21','22','23','24'].includes(id);
+  return item?.deliveryConfigured?/7\s*[-–]\s*14/i.test(item.delivery||''):['21','22','23','24','27','28'].includes(id);
 }
 function storeItemUnavailable(item){
   if(restoredStandardFootwear(item))return false;
