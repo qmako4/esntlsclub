@@ -12,7 +12,7 @@
   const AIR_PRO_ADDON_CODE = 'AIRPROADDON';
   const AIR_PRO_ADDON_DISCOUNT = 10.00;
   const AIR_PRO_PRODUCT_IDS = new Set(['54']);
-  const STANDARD_DELIVERY_PARKA_IDS = new Set(['21','22','23','24']);
+  const STANDARD_DELIVERY_PARKA_IDS = new Set(['21','22','23','24','27','28']);
 
 // Owner-directed availability snapshot, 19 Oct 2026: no recorded sales in the
 // 30-day Shopify report; products created after 18 Sep are excluded.
