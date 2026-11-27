@@ -520,9 +520,25 @@ function applyStoreAvailability(item){
     return activeOffers(items).map(offer => offer.code);
   }
 
+  function wyndhamSaving(item){
+    const now = Date.now();
+    const id = productId(item).replace(/^fast-/, '');
+    return (id === '23' || id === '24') && now >= Date.UTC(2026,10,27) && now < Date.UTC(2026,10,30) ? 20 : 0;
+  }
+
+  function wyndhamDisplayPrice(item, price){
+    const saving = wyndhamSaving(item);
+    if (!saving || !/^£?\d+(\.\d{1,2})?$/.test(String(price))) return price;
+    return '£' + Math.max(0, moneyToNumber(price) - saving).toFixed(2);
+  }
+
   function cartPricing(items){
     const subtotal = items.reduce((sum,item) => sum + moneyToNumber(item.price) * (Number(item.qty) || 1), 0);
-    const offers = activeOffers(items);
+    let offers = activeOffers(items);
+    const saving = items.reduce((sum,item) => sum + wyndhamSaving(item) * (Number(item.qty) || 1), 0);
+    if (saving > offers.reduce((sum,offer) => sum + offer.discount, 0)) {
+      offers = [{label:'Black Friday Wyndham saving', discount:saving, note:'£20 off each Wyndham parka at checkout'}];
+    }
     const discount = offers.reduce((sum,offer) => sum + offer.discount, 0);
     return {subtotal, discount, offers, total:Math.max(0, subtotal-discount)};
   }
@@ -657,6 +673,8 @@ function applyStoreAvailability(item){
   }
 
   window.EsntlsCart = {
+    wyndhamSaving,
+    wyndhamDisplayPrice,
     optionDefinitions,
     add,
     addBundle,
