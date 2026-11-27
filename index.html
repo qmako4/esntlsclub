@@ -184,6 +184,11 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
 .mob-item:hover,.mob-item:active{background:#f5f5f5}
 .mob-item-sub{font-size:13px;color:#555;padding-left:24px;font-weight:500}
 .mob-item.hidden{display:none}
+.mob-panel a.channel-link{display:flex;align-items:center;justify-content:space-between;min-height:46px;margin:6px 0;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none}
+.mob-panel .channel-telegram,.mob-panel .channel-telegram:hover,.mob-panel .channel-telegram:active{background:#0879ac;color:#fff}
+.mob-panel .channel-whatsapp,.mob-panel .channel-whatsapp:hover,.mob-panel .channel-whatsapp:active{background:#25d366;color:#072b17}
+.mob-panel .channel-link:focus-visible{outline:2px solid #111;outline-offset:2px}
+.mob-panel a.channel-link.hidden{display:none}
 .mob-section.hidden{display:none}
 .mob-divider{height:1px;background:#eee;margin:10px 4px}
 .mob-result{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:inherit;transition:background .12s;margin:2px 0}
@@ -374,6 +379,11 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
       <a href="#" class="mob-quick" onclick="toggleMenu();return showStock()">⚡ Next-Day Stock</a>
 
       <div class="mob-section">
+        <div class="mob-section-head">Join our channels</div>
+        <a class="mob-item channel-link channel-telegram" href="https://t.me/esntlsclub" data-keywords="community group restock alerts">Join Telegram <span aria-hidden="true">↗</span></a>
+        <a class="mob-item channel-link channel-whatsapp" href="https://whatsapp.com/channel/0029Vb8oJCa3QxS7ecLDpD2L" data-keywords="community group restock alerts">Join WhatsApp Channel <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="mob-section">
         <div class="mob-section-head">⭐ Featured</div>
         <a href="#" class="mob-item" data-keywords="new items latest recent arrivals newest drops uploaded" onclick="showCat('New Items');toggleMenu()">New Items</a>
         <a href="#" class="mob-item" data-keywords="best sellers popular hot top trending bestsellers" onclick="showCat('Best Sellers');toggleMenu()">🔥 Best Sellers</a>
@@ -420,7 +430,6 @@ section,footer,nav{max-width:100vw;overflow-x:hidden}
         <div class="mob-section-head">💬 Get In Touch</div>
         <a href="https://wa.me/message/QEGPRLGZNZSWN1" target="_blank" rel="noopener noreferrer" class="mob-item" onclick="toggleMenu()">💬 WhatsApp · +44 7731 906137</a>
         <a href="https://instagram.com/cluesntl" target="_blank" rel="noopener" class="mob-item" onclick="toggleMenu()">📸 Instagram · @cluesntl</a>
-        <a href="https://t.me/esntlsclub" target="_blank" rel="noopener" class="mob-item" onclick="toggleMenu()">✈️ Telegram channel</a>
       </div>
     </div>
   </div>
